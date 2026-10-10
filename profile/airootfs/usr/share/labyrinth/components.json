@@ -1,0 +1,175 @@
+{
+  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/local/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR).",
+  "components": [
+    {
+      "id": "steam",
+      "name": "Steam and Proton",
+      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, ProtonUp-Qt, Protontricks, umu, Wine, GameMode, MangoHud, 32-bit NVIDIA/Vulkan libraries.",
+      "proprietary": true,
+      "packages": [
+        "steam",
+        "lib32-nvidia-utils",
+        "lib32-vulkan-icd-loader",
+        "gamemode",
+        "mangohud",
+        "proton-cachyos",
+        "protonup-qt",
+        "protontricks",
+        "umu-launcher",
+        "wine-staging"
+      ],
+      "unverified_packages": [
+        "proton-cachyos",
+        "protonup-qt"
+      ],
+      "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup"
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "description": "Arch's spotify-launcher, which downloads Spotify's own Linux client on first run. Spotify says its Linux client is not officially supported. The bar's media controls talk to it over MPRIS.",
+      "proprietary": true,
+      "packages": [
+        "spotify-launcher"
+      ],
+      "notes": "Run spotify-launcher once to download the client, then sign in."
+    },
+    {
+      "id": "obsidian",
+      "name": "Obsidian",
+      "description": "Notes app, from Arch's official repo. Proprietary but free for personal use. Do not run Obsidian Sync and a cloud-folder sync on the same vault.",
+      "proprietary": true,
+      "packages": [
+        "obsidian"
+      ]
+    },
+    {
+      "id": "vscode",
+      "name": "Visual Studio Code",
+      "description": "Microsoft's official VS Code build (their Linux tarball, repackaged and pinned with its published SHA-256), with the Microsoft extension marketplace. Microsoft's own Linux instructions cover Debian, Fedora, Snap and a community AUR package. Arch's repo has `code`, the open-source build, which uses the Open VSX marketplace and lacks Microsoft-only extensions; it conflicts with this one.",
+      "proprietary": true,
+      "pkgbuild": "visual-studio-code-bin",
+      "notes": "Built on this machine with makepkg. Updating means changing the pinned version in its PKGBUILD."
+    },
+    {
+      "id": "weather",
+      "name": "Weather (multi-model)",
+      "description": "Labyrinth's weather engine: GFS, ECMWF and ICON models plus a 30-member ensemble, with an honest uncertainty range, scored against measured airport temperatures over time. Shows in the top bar and replaces nothing if left out. Uses Open-Meteo and aviationweather.gov, which receive the coordinates of the place you set.",
+      "proprietary": false,
+      "pkgbuild": "labyrinth-weather",
+      "enable_global": [
+        "labyrinth-weather-record.timer"
+      ],
+      "notes": "Set your place once: labyrinth-weather set-location \"Your city\". Accuracy weighting needs a few days of recorded history."
+    },
+    {
+      "id": "proton-drive",
+      "name": "Proton Drive (rclone)",
+      "description": "rclone with FUSE, to mount Proton Drive at ~/ProtonDrive and to link and verify folders with labyrinth-cloud. No official Proton Drive client exists for Linux.",
+      "proprietary": false,
+      "packages": [
+        "rclone",
+        "fuse3"
+      ],
+      "notes": "One-time: run `rclone config`, create a remote named proton of type protondrive. Mount service: /usr/share/labyrinth/proton-drive.service (copy to ~/.config/systemd/user/)."
+    },
+    {
+      "id": "proton-pass",
+      "name": "Proton Pass",
+      "description": "Proton's official desktop app, repackaged from their RPM and pinned to one version with its published SHA-512. Built on this machine with makepkg.",
+      "proprietary": true,
+      "pkgbuild": "proton-pass",
+      "notes": "The browser extension installs from your browser's store."
+    },
+    {
+      "id": "cosmic",
+      "name": "COSMIC desktop (second session)",
+      "description": "System76's COSMIC desktop, selectable at the login screen next to the default Hyprland session.",
+      "proprietary": false,
+      "packages": [
+        "cosmic-session"
+      ]
+    },
+    {
+      "id": "creative",
+      "name": "Creative apps",
+      "description": "Krita, Darktable (photo), Kdenlive, OBS Studio (video), Ardour (music).",
+      "proprietary": false,
+      "packages": [
+        "krita",
+        "darktable",
+        "kdenlive",
+        "obs-studio",
+        "ardour"
+      ]
+    },
+    {
+      "id": "virtualization",
+      "name": "Virtual machines (Limbo)",
+      "description": "QEMU, libvirt, UEFI firmware, dnsmasq and nftables, which Limbo uses to run sandboxed guests.",
+      "proprietary": false,
+      "packages": [
+        "qemu-desktop",
+        "libvirt",
+        "edk2-ovmf",
+        "dnsmasq",
+        "nftables"
+      ]
+    },
+    {
+      "id": "local-ai",
+      "name": "Local AI runtime",
+      "description": "Ollama with CUDA, for running local models (Sarina). Models compete with games for the GPU's 11 GB of memory.",
+      "proprietary": false,
+      "packages": [
+        "ollama-cuda"
+      ]
+    },
+    {
+      "id": "containers",
+      "name": "Fedora / Debian containers (Distrobox)",
+      "description": "Podman and Distrobox: run a Fedora, Debian or Ubuntu userland inside your desktop, with its apps appearing in the app menu, sharing your home folder. For software that only ships .rpm or .deb. Create one with: distrobox create --name fedora --image fedora:latest --nvidia",
+      "proprietary": false,
+      "packages": [
+        "podman",
+        "distrobox"
+      ],
+      "notes": "Containers share the host kernel and, with --nvidia, the GPU driver. Not tested here."
+    },
+    {
+      "id": "flatpak",
+      "name": "Flatpak",
+      "description": "Flatpak, the distro-neutral app format used by Flathub. Many apps that list only Fedora or Debian also publish there.",
+      "proprietary": false,
+      "packages": [
+        "flatpak"
+      ],
+      "notes": "Add the store once: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
+    }
+  ],
+  "presets": {
+    "minimal": [],
+    "gaming": [
+      "steam"
+    ],
+    "creative": [
+      "creative",
+      "obsidian"
+    ],
+    "everything": [
+      "steam",
+      "spotify",
+      "obsidian",
+      "weather",
+      "proton-drive",
+      "proton-pass",
+      "cosmic",
+      "creative",
+      "virtualization",
+      "local-ai",
+      "vscode",
+      "containers",
+      "flatpak"
+    ]
+  }
+}

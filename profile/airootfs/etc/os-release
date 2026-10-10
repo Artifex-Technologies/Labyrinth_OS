@@ -1,0 +1,10 @@
+NAME="Labyrinth OS"
+PRETTY_NAME="Labyrinth OS"
+ID=labyrinth
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;60;180;110"
+HOME_URL="https://github.com/Artifex-Technologies/Labyrinth_OS"
+DOCUMENTATION_URL="https://github.com/Artifex-Technologies/Labyrinth_OS/blob/main/README.md"
+SUPPORT_URL="https://github.com/Artifex-Technologies/Labyrinth_OS/issues"
+BUG_REPORT_URL="https://github.com/Artifex-Technologies/Labyrinth_OS/issues"

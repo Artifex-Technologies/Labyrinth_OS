@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# Runs inside the target after Calamares has installed GRUB. Order of importance:
+#
+#   1. Verify the bootloader result. A machine with no usable grub.cfg does not
+#      boot, so this is the one fatal step.
+#   2. Everything else (snapshots, services, zram) improves the system but is not
+#      needed to boot, so failures there are WARNINGs, not install failures.
+#
+# NEVER RUN in a real install. Written against the documented behavior of snapper,
+# grub-btrfs and systemd; the first VM install is the test.
+
+set -uo pipefail
+
+say()  { printf 'labyrinth-install-bootfinish: %s\n' "$*"; }
+warn() { printf 'labyrinth-install-bootfinish: WARNING: %s\n' "$*"; }
+
+# 1. grub.cfg must exist and boot at least one kernel.
+cfg=/boot/grub/grub.cfg
+if [[ ! -s $cfg ]] || ! grep -q '^[[:space:]]*menuentry ' "$cfg"; then
+  say "error: $cfg is missing or has no menu entries; the system would not boot"
+  exit 1
+fi
+if ! grep -q 'initrd' "$cfg"; then
+  say "error: $cfg lists no initramfs"
+  exit 1
+fi
+say "grub.cfg looks usable ($(grep -c '^[[:space:]]*menuentry ' "$cfg") entries)"
+
+# 2a. Services. `systemctl enable` works in a chroot (it only creates symlinks).
+for unit in NetworkManager.service fstrim.timer; do
+  systemctl enable "$unit" >/dev/null 2>&1 && say "enabled $unit" || warn "could not enable $unit"
+done
+
+# 2a'. The hourly weather-recording timer, for every user, if the optional weather
+#      component is in this image (it exits quietly until a location is set).
+if [[ -e /usr/lib/systemd/user/labyrinth-weather-record.timer ]]; then
+  systemctl --global enable labyrinth-weather-record.timer >/dev/null 2>&1 && say "enabled weather recording timer" || warn "could not enable the weather recording timer"
+fi
+
+# 2b. zram swap for everyday memory pressure. Hibernate uses the disk swap file from 2b'.
+install -d /etc/systemd
+cat >/etc/systemd/zram-generator.conf <<'EOF'
+[zram0]
+zram-size = min(ram / 2, 16384)
+compression-algorithm = zstd
+EOF
+say "configured zram swap"
+
+# 2b. Boot menu: two-second timeout, and the default kernel on top (otherwise GRUB sorts the
+#     LTS kernel first and boots that). The LTS and bore kernels stay in the Advanced menu.
+if [[ -f /etc/default/grub ]]; then
+  sed -i -E 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
+  grep -q '^GRUB_TOP_LEVEL=' /etc/default/grub || echo 'GRUB_TOP_LEVEL="/boot/vmlinuz-linux-cachyos"' >>/etc/default/grub
+fi
+
+# 2b'. Hibernate: a swap file on btrfs the size of RAM (~64 GiB here), plus the resume
+#      plumbing. All of it is optional; if any step fails the file is removed again and the
+#      bar's power menu simply does not offer Hibernate (labyrinth-quick-settings checks).
+#      A swap file on btrfs must be NOCOW and live in a subvolume that is never snapshotted,
+#      so it gets its own nested subvolume (snapshots of @ skip nested subvolumes).
+#      LABYRINTH_SWAP_GIB overrides the size (tests and small VM disks).
+hibernate_setup() {
+  [[ $(findmnt -no FSTYPE / 2>/dev/null) == btrfs ]] || { warn "root is not btrfs; no hibernate"; return 1; }
+  local gib=${LABYRINTH_SWAP_GIB:-}
+  if [[ -z $gib ]]; then
+    gib=$(awk '/^MemTotal:/ { printf "%d", ($2 + 1048575) / 1048576 }' /proc/meminfo)
+  fi
+  [[ $gib =~ ^[0-9]+$ ]] && (( gib >= 1 )) || { warn "could not work out the swap size"; return 1; }
+  # Leave room: do not make a swap file bigger than a third of the free space.
+  local free_gib
+  free_gib=$(df -BG --output=avail / | tail -n1 | tr -dc '0-9')
+  if [[ -n $free_gib ]] && (( gib * 3 > free_gib )); then
+    warn "only ${free_gib} GiB free; a ${gib} GiB swap file would not fit comfortably, skipping hibernate"
+    return 1
+  fi
+  btrfs subvolume create /swap >/dev/null 2>&1 || { warn "could not create the /swap subvolume"; return 1; }
+  if ! btrfs filesystem mkswapfile --size "${gib}g" /swap/swapfile >/dev/null 2>&1; then
+    warn "could not create the swap file"; btrfs subvolume delete /swap >/dev/null 2>&1; return 1
+  fi
+  local uuid offset
+  uuid=$(findmnt -no UUID / 2>/dev/null)
+  offset=$(btrfs inspect-internal map-swapfile -r /swap/swapfile 2>/dev/null)
+  if [[ -z $uuid || ! $offset =~ ^[0-9]+$ ]]; then
+    warn "could not read the swap file's resume offset"
+    rm -f /swap/swapfile; btrfs subvolume delete /swap >/dev/null 2>&1; return 1
+  fi
+  # fstab: lower priority than zram so ordinary swapping stays in RAM.
+  grep -q '^/swap/swapfile' /etc/fstab || printf '/swap/swapfile none swap defaults,pri=1 0 0\n' >>/etc/fstab
+  # Kernel command line: resume device and file offset.
+  if [[ -f /etc/default/grub ]]; then
+    sed -i -E "s|^(GRUB_CMDLINE_LINUX_DEFAULT=['\"])([^'\"]*)(['\"])|\1\2 resume=UUID=${uuid} resume_offset=${offset}\3|" /etc/default/grub
+  fi
+  # Initramfs: the resume hook must run before filesystems.
+  if [[ -f /etc/mkinitcpio.conf ]] && ! grep -Eq '^HOOKS=.*resume' /etc/mkinitcpio.conf; then
+    sed -i -E 's/^(HOOKS=\([^)]*)\bfilesystems\b/\1resume filesystems/' /etc/mkinitcpio.conf
+    mkinitcpio -P >/dev/null 2>&1 || warn "mkinitcpio -P failed after adding the resume hook"
+  fi
+  # NVIDIA keeps video memory across suspend/hibernate only if asked to.
+  install -d /etc/modprobe.d
+  echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' >/etc/modprobe.d/labyrinth-nvidia-power.conf
+  systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service >/dev/null 2>&1     || warn "could not enable the nvidia power services (fine without an NVIDIA driver)"
+  if grub-mkconfig -o /boot/grub/grub.cfg.new >/dev/null 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg.new; then
+    mv /boot/grub/grub.cfg.new /boot/grub/grub.cfg
+  else
+    rm -f /boot/grub/grub.cfg.new; warn "could not regenerate grub.cfg with the resume parameters"; return 1
+  fi
+  say "hibernate ready: ${gib} GiB swap file, resume offset ${offset}"
+}
+hibernate_setup || warn "hibernate not set up"
+
+# 2c. Snapshots: snapper on the root subvolume, and grub-btrfs so snapshots show up
+#     in the boot menu. Only if / is really btrfs.
+if [[ $(findmnt -no FSTYPE / 2>/dev/null) == btrfs ]] && command -v snapper >/dev/null; then
+  if snapper --no-dbus -c root create-config / 2>/dev/null; then
+    say "created snapper config for /"
+    systemctl enable snapper-timeline.timer snapper-cleanup.timer >/dev/null 2>&1 || warn "could not enable snapper timers"
+    if command -v grub-btrfsd >/dev/null; then
+      systemctl enable grub-btrfsd.service >/dev/null 2>&1 || warn "could not enable grub-btrfsd"
+    fi
+    # Regenerate so grub-btrfs' generator runs; keep the old file if this fails.
+    if grub-mkconfig -o /boot/grub/grub.cfg.new >/dev/null 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg.new; then
+      mv /boot/grub/grub.cfg.new /boot/grub/grub.cfg
+      say "regenerated grub.cfg with snapshot support"
+    else
+      rm -f /boot/grub/grub.cfg.new
+      warn "could not regenerate grub.cfg; keeping the working one"
+    fi
+  else
+    warn "snapper create-config failed; no automatic snapshots (system is otherwise fine)"
+  fi
+else
+  warn "root is not btrfs or snapper is missing; skipping snapshots"
+fi
+
+exit 0

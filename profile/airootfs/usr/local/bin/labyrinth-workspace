@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Desktops (Hyprland workspaces), capped at 9, created on demand.
+
+  labyrinth-workspace status   Waybar JSON for the "+" button: shown while fewer than 9 desktops exist
+  labyrinth-workspace new      go to the lowest unused desktop number (1-9); creates it
+  labyrinth-workspace goto N   go to desktop N (1-9)
+
+The bar lists only desktops that currently exist (Waybar's workspaces module with no persistent
+list); this adds the "+" and the keyboard shortcut (SUPER + CTRL + N). Set LABYRINTH_HYPRCTL to
+override hyprctl (tests).
+
+hyprctl's `dispatch` syntax changed with Hyprland's Lua config (0.55+). The classic form is tried
+first and the result is checked against the active workspace; only if that did not take effect is
+the Lua-style form tried. See docs/DESKTOP.md for which one this Hyprland accepts.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+MAX = 9
+
+
+def hyprctl(*args, timeout=3):
+    cmd = os.environ.get("LABYRINTH_HYPRCTL", "hyprctl").split()
+    return subprocess.run(cmd + list(args), capture_output=True, text=True, timeout=timeout)
+
+
+def existing():
+    r = hyprctl("workspaces", "-j")
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or "hyprctl failed")
+    return sorted({w["id"] for w in json.loads(r.stdout) if 1 <= w.get("id", 0) <= MAX})
+
+
+def active():
+    r = hyprctl("activeworkspace", "-j")
+    return json.loads(r.stdout).get("id") if r.returncode == 0 else None
+
+
+def goto(n):
+    if not 1 <= n <= MAX:
+        return False
+    for args in (("dispatch", "workspace", str(n)), ("dispatch", f'hl.dsp.focus({{ workspace = "{n}" }})')):
+        hyprctl(*args)
+        time.sleep(0.15)
+        if active() == n:
+            return True
+    return False
+
+
+def lowest_free(ids):
+    return next((n for n in range(1, MAX + 1) if n not in ids), None)
+
+
+def status():
+    try:
+        count = len(existing())
+    except Exception:
+        count = MAX  # unknown: show nothing rather than a broken button
+    if count >= MAX:
+        return {"text": "", "tooltip": ""}
+    return {"text": "", "tooltip": f"New desktop (SUPER + CTRL + N) — {count} of {MAX} in use"}
+
+
+def main(argv):
+    cmd = argv[0] if argv else "status"
+    if cmd == "status":
+        print(json.dumps(status()))
+        return 0
+    if cmd == "new":
+        try:
+            n = lowest_free(existing())
+        except Exception as e:
+            print(f"labyrinth-workspace: {e}", file=sys.stderr)
+            return 1
+        if n is None:
+            subprocess.run(["notify-send", "Labyrinth", f"All {MAX} desktops are in use"], check=False)
+            return 0
+        return 0 if goto(n) else 1
+    if cmd == "goto" and len(argv) == 2 and argv[1].isdigit():
+        return 0 if goto(int(argv[1])) else 1
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

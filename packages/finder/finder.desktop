@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Finder
+GenericName=File Manager
+Comment=Browse files, with tabs, split view and Proton Drive link status
+Exec=finder
+Icon=system-file-manager
+Terminal=false
+Type=Application
+Categories=Utility;FileTools;FileManager;
+MimeType=inode/directory;
+StartupWMClass=finder

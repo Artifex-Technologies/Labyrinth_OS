@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""Write Hyprland monitor settings for this machine's displays.
+
+  labyrinth-displays --print      show the Lua it would write
+  labyrinth-displays --apply      write ~/.config/hypr/monitors.lua and reload Hyprland
+  labyrinth-displays --list       show what Hyprland reports, for writing rules
+
+Hyprland names outputs (DP-1, HDMI-A-1 ...) by whichever port a cable is in, and those
+names are not known until the machine is running, so rules in displays.json match on the
+monitor's model/description instead, and the connector name is filled in here. Uses the
+documented `hl.monitor({ output, mode, position, scale })` call
+(https://wiki.hypr.land/Configuring/Basics/Monitors/). Reads `hyprctl monitors all -j`;
+set LABYRINTH_HYPRCTL to override hyprctl (tests).
+
+Monitors no rule matches are left to Hyprland: preferred mode, automatic position.
+"""
+import json
+import os
+import subprocess
+import sys
+
+SYSTEM_RULES = os.environ.get("LABYRINTH_DISPLAY_RULES", "/usr/share/labyrinth/displays.json")
+
+
+def user_rules_path():
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    return os.path.join(base, "labyrinth", "displays.json")
+
+
+def load_rules():
+    for path in (user_rules_path(), SYSTEM_RULES):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return json.load(f).get("monitors", [])
+        except (OSError, ValueError):
+            continue
+    return []
+
+
+def hyprctl_monitors():
+    cmd = os.environ.get("LABYRINTH_HYPRCTL", "hyprctl").split()
+    r = subprocess.run(cmd + ["monitors", "all", "-j"], capture_output=True, text=True, timeout=5)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or "hyprctl failed")
+    return json.loads(r.stdout)
+
+
+def parse_mode(s):
+    """'3440x1440@143.97Hz' -> (3440, 1440, 143.97)."""
+    size, _, hz = s.rstrip("Hz").partition("@")
+    w, _, h = size.partition("x")
+    return int(w), int(h), float(hz or 0)
+
+
+def pick_mode(monitor, want):
+    """Exact 'WxH@R' string Hyprland knows for the wanted mode, or None.
+
+    want is 'WxH@Hz'. Prefers the highest refresh rate not above Hz (plus 0.5, since
+    144 Hz panels advertise 143.97), else the closest one above it.
+    """
+    size, _, hz = want.partition("@")
+    w, _, h = size.partition("x")
+    try:
+        w, h, hz = int(w), int(h), float(hz or 0)
+    except ValueError:
+        return None
+    cands = []
+    for m in monitor.get("availableModes", []):
+        try:
+            mw, mh, mr = parse_mode(m)
+        except ValueError:
+            continue
+        if (mw, mh) == (w, h):
+            cands.append(mr)
+    if not cands:
+        return None
+    within = [r for r in cands if r <= hz + 0.5]
+    best = max(within) if within else min(cands)  # nothing at or below: the closest one above
+    return f"{w}x{h}@{best:g}"
+
+
+def find_rule(monitor, rules):
+    text = f"{monitor.get('description', '')} {monitor.get('model', '')} {monitor.get('make', '')}".lower()
+    for r in rules:
+        if r.get("match", "").lower() in text:
+            return r
+    return None
+
+
+def plan(monitors, rules):
+    """List of dicts: output, mode, position, scale, note."""
+    active = [m for m in monitors if not m.get("disabled")]
+    matched = [(m, find_rule(m, rules)) for m in active]
+    primary = next((m for m, r in matched if r and r.get("primary")), None)
+    out, pw = [], None
+    if primary:
+        r = find_rule(primary, rules)
+        scale = float(r.get("scale", 1))
+        mode = pick_mode(primary, r["mode"]) if r.get("mode") else None
+        w, h = (parse_mode(mode)[:2] if mode else (primary["width"], primary["height"]))
+        pw = w / scale
+        out.append({"output": primary["name"], "mode": mode or "preferred", "position": "0x0", "scale": scale,
+                    "note": "primary" + ("" if mode else " (wanted mode not offered; using preferred)")})
+    for m, r in matched:
+        if m is primary:
+            continue
+        if not r:
+            out.append({"output": m["name"], "mode": "preferred", "position": "auto", "scale": 1, "note": "no rule matched"})
+            continue
+        scale = float(r.get("scale", 1))
+        mode = pick_mode(m, r["mode"]) if r.get("mode") else None
+        w, h = (parse_mode(mode)[:2] if mode else (m["width"], m["height"]))
+        lw = w / scale
+        place = r.get("place")
+        if place == "right_of_primary" and pw is not None:
+            pos = f"{round(pw)}x{round(r.get('y', 0))}"
+        elif place == "left_of_primary" and pw is not None:
+            pos = f"{round(-lw)}x{round(r.get('y', 0))}"
+        else:
+            pos = "auto"
+        note = "" if mode else "wanted mode not offered; using preferred"
+        if (w / scale) % 1 or (h / scale) % 1:
+            note = (note + "; " if note else "") + "scaled size is not a whole number of pixels (Hyprland will round it)"
+        out.append({"output": m["name"], "mode": mode or "preferred", "position": pos, "scale": scale, "note": note})
+    return out
+
+
+def lua(entries):
+    lines = ["-- Written by labyrinth-displays from /usr/share/labyrinth/displays.json. Safe to delete;",
+             "-- it is regenerated at login. Edit ~/.config/labyrinth/displays.json to change the rules."]
+    for e in entries:
+        note = f"  -- {e['note']}" if e["note"] else ""
+        lines.append(
+            f'hl.monitor({{ output = {json.dumps(e["output"])}, mode = {json.dumps(e["mode"])}, '
+            f'position = {json.dumps(e["position"])}, scale = {e["scale"]:g} }}){note}'
+        )
+    return "\n".join(lines) + "\n"
+
+
+def main(argv):
+    try:
+        monitors = hyprctl_monitors()
+    except Exception as e:
+        print(f"labyrinth-displays: cannot read monitors from Hyprland: {e}", file=sys.stderr)
+        return 1
+    if "--list" in argv:
+        for m in monitors:
+            print(f"{m['name']}: {m.get('description', '?')}  native {m['width']}x{m['height']}@{m.get('refreshRate', 0):g}"
+                  f"  scale {m.get('scale', 1)}  at {m.get('x', 0)},{m.get('y', 0)}")
+            print("    modes: " + ", ".join(m.get("availableModes", [])[:8]) + (" ..." if len(m.get("availableModes", [])) > 8 else ""))
+        return 0
+    entries = plan(monitors, load_rules())
+    if not entries:
+        print("labyrinth-displays: no active monitors", file=sys.stderr)
+        return 1
+    text = lua(entries)
+    if "--apply" not in argv:
+        print(text, end="")
+        return 0
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    path = os.path.join(base, "hypr", "monitors.lua")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    old = open(path, encoding="utf-8").read() if os.path.exists(path) else None
+    if old == text:
+        return 0  # nothing changed; do not reload
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(tmp, path)
+    cmd = os.environ.get("LABYRINTH_HYPRCTL", "hyprctl").split()
+    subprocess.run(cmd + ["reload"], capture_output=True, timeout=5)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

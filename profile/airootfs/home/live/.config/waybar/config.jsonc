@@ -1,0 +1,152 @@
+// Labyrinth's top bar, laid out after the Omacosy bar (macOS-only, so only its look
+// is reproduced here): launcher, workspaces 1-9 and the focused app's name on the left;
+// Spotify controls, weather, network, Bluetooth, volume, clock and a quick-settings button on the
+// right. Battery and brightness are left out: this is a desktop. Icons are Font
+// Awesome codepoints from the Nerd Font, written as \u escapes so they survive editors.
+{
+  "layer": "top",
+  "position": "top",
+  "height": 34,
+  "margin-top": 6,
+  "margin-left": 8,
+  "margin-right": 8,
+  "spacing": 6,
+  "modules-left": ["custom/logo", "hyprland/workspaces", "custom/newws", "hyprland/window"],
+  "modules-center": [],
+  "modules-right": ["custom/prev", "custom/playpause", "custom/next", "mpris", "custom/floats", "custom/activity", "custom/weather", "network", "bluetooth", "pulseaudio", "clock", "custom/power"],
+
+  "custom/logo": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "fuzzel"
+  },
+
+  // Only desktops that exist are listed (no persistent list), at most 9. The "+" appears while
+  // fewer than 9 exist; SUPER + CTRL + N does the same.
+  "hyprland/workspaces": {
+    "format": "{id}",
+    "show-special": false,
+    "on-click": "activate"
+  },
+  "custom/newws": {
+    "exec": "labyrinth-workspace status",
+    "return-type": "json",
+    "interval": 1,
+    "on-click": "labyrinth-workspace new"
+  },
+
+  // The focused app's name, in bold (style.css), as on macOS. Empty when nothing is focused,
+  // so the bar is then just the plain bar. The app's own File/Edit/View menus would follow
+  // here once labyrinth-appmenu exists (see docs/DESKTOP.md, "Global menu").
+  "hyprland/window": {
+    "format": "{initialClass}",
+    "max-length": 24,
+    "separate-outputs": true,
+    // The launcher and menus are not "the app you are in"; showing them made the bar change
+    // width every time one opened, which pushed the right-hand end off narrow screens.
+    "rewrite": {
+      "fuzzel": "",
+      "google-chrome": "Google Chrome",
+      "chromium": "Chromium",
+      "firefox": "Firefox",
+      "foot": "Terminal",
+      "finder": "Finder",
+      "code": "Visual Studio Code",
+      "obsidian": "Obsidian",
+      "Spotify": "Spotify",
+      "spotify": "Spotify",
+      "steam": "Steam",
+      "org.pulseaudio.pavucontrol": "Volume Control",
+      "nm-connection-editor": "Network Connections",
+      "blueman-manager": "Bluetooth"
+    }
+  },
+
+  // Spotify only. `playerctl -p spotify` talks to its MPRIS interface.
+  "custom/prev": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "playerctl -p spotify previous"
+  },
+  "custom/playpause": {
+    "format": " ",
+    "tooltip": false,
+    "on-click": "playerctl -p spotify play-pause"
+  },
+  "custom/next": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "playerctl -p spotify next"
+  },
+  "mpris": {
+    "player": "spotify",
+    "format": "{artist} — {title}",
+    "format-paused": "{artist} — {title}",
+    "max-length": 40,
+    "on-click": "playerctl -p spotify play-pause"
+  },
+
+  // Omacosy's "floats" and "activity" pills. floats shows only when the current
+  // workspace has floating windows; activity opens btop in a floating terminal.
+  "custom/floats": {
+    "exec": "labyrinth-floats",
+    "return-type": "json",
+    "interval": 2
+  },
+  "custom/activity": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "foot --app-id labyrinth-activity -e btop"
+  },
+
+  // OPTIONAL component (labyrinth-apps install weather): hidden when not installed.
+  // Multi-model consensus with measured-accuracy weighting. Set a place once:
+  //   labyrinth-weather set-location "Your city"
+  // Click for the next 24 hours in a terminal.
+  "custom/weather": {
+    "exec-if": "command -v labyrinth-weather",
+    "exec": "labyrinth-weather bar",
+    "return-type": "json",
+    "interval": 900,
+    "on-click": "foot --hold -e labyrinth-weather forecast 24"
+  },
+
+  "network": {
+    "format-wifi": "",
+    "format-ethernet": "",
+    "format-disconnected": "",
+    "tooltip-format-wifi": "{essid} ({signalStrength}%)  {ipaddr}",
+    "tooltip-format-ethernet": "{ifname}  {ipaddr}",
+    "tooltip-format-disconnected": "No connection",
+    "on-click": "nm-connection-editor"
+  },
+
+  "bluetooth": {
+    "format": "",
+    "format-connected": " {num_connections}",
+    "format-disabled": "",
+    "tooltip-format": "{status}",
+    "on-click": "blueman-manager"
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": " muted",
+    "format-icons": { "default": ["", ""] },
+    "scroll-step": 5,
+    "on-click": "pavucontrol"
+  },
+
+  "clock": {
+    // No GNU dash flags (%-d, %-I): Waybar formats with fmt, which rejects them and
+    // the module silently disappears (found the hard way in Chymaera).
+    "format": "  {:%a %d %b  %H:%M}",
+    "tooltip-format": "{:%A, %d %B %Y}"
+  },
+
+  "custom/power": {
+    "format": "",
+    "tooltip": false,
+    "on-click": "labyrinth-quick-settings"
+  }
+}

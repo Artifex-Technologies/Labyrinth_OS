@@ -1,0 +1,9 @@
+# Notifications.
+font=JetBrainsMono Nerd Font 11
+background-color=#0e1e16ee
+text-color=#d9f2e1
+border-radius=18
+border-size=0
+padding=12
+margin=12
+default-timeout=6000

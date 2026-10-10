@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""labyrinth-apps: install or remove Labyrinth's optional software.
+
+  labyrinth-apps list
+  labyrinth-apps info ID
+  labyrinth-apps install ID...        or  --preset NAME
+  labyrinth-apps remove ID...
+  add --dry-run to print the commands without running anything
+
+Components are described in /usr/share/labyrinth/components.json. Packages come from
+pacman; components with a "pkgbuild" are built with makepkg from
+/usr/share/labyrinth/pkgbuilds/<name>/ (a copy in a temp dir, so the source is never
+modified). Installing needs network access and sudo.
+"""
+import json
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+
+MANIFEST = os.environ.get("LABYRINTH_COMPONENTS", "/usr/share/labyrinth/components.json")
+PKGBUILDS = os.environ.get("LABYRINTH_PKGBUILDS", "/usr/share/labyrinth/pkgbuilds")
+
+
+def load(path=None):
+    with open(path or MANIFEST, encoding="utf-8") as f:
+        data = json.load(f)
+    comps = {c["id"]: c for c in data["components"]}
+    for pname, ids in data.get("presets", {}).items():
+        for i in ids:
+            if i not in comps:
+                raise ValueError(f"preset {pname!r} names unknown component {i!r}")
+    return comps, data.get("presets", {})
+
+
+def all_packages(c):
+    """Names pacman should know the component by (a pkgbuild component installs its own name)."""
+    return list(c.get("packages", [])) + ([c["pkgbuild"]] if c.get("pkgbuild") else [])
+
+
+def state(c, installed):
+    pk = all_packages(c)
+    have = [p for p in pk if p in installed]
+    if len(have) == len(pk):
+        return "installed"
+    return "partial" if have else "not installed"
+
+
+def pacman_installed():
+    """Names pacman reports installed, or None when pacman itself is missing."""
+    try:
+        out = subprocess.run(["pacman", "-Qq"], capture_output=True, text=True)
+    except FileNotFoundError:
+        return None
+    return set(out.stdout.split()) if out.returncode == 0 else set()
+
+
+def resolve(ids, presets, comps):
+    """Expand preset names, validate ids, keep order, drop duplicates."""
+    chosen = []
+    for i in ids:
+        if i not in comps:
+            raise KeyError(i)
+        if i not in chosen:
+            chosen.append(i)
+    return chosen
+
+
+def sudo(cmd):
+    return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else ["sudo"] + cmd
+
+
+def plan_install(chosen, comps, installed):
+    """List of (description, argv, cwd_pkgbuild) steps. Skips what is already installed."""
+    steps = []
+    repo = []
+    for i in chosen:
+        for p in comps[i].get("packages", []):
+            if p not in installed and p not in repo:
+                repo.append(p)
+    if repo:
+        steps.append((f"install {len(repo)} package(s) with pacman", sudo(["pacman", "-S", "--needed"] + repo), None))
+    for i in chosen:
+        pb = comps[i].get("pkgbuild")
+        if pb and pb not in installed:
+            steps.append((f"build and install {pb} from its PKGBUILD", ["makepkg", "-si"], pb))
+    for i in chosen:
+        units = comps[i].get("enable_global", [])
+        if units:
+            steps.append((f"enable {', '.join(units)} for every user", sudo(["systemctl", "--global", "enable"] + units), None))
+    return steps
+
+
+def plan_remove(chosen, comps, installed):
+    pk = []
+    for i in chosen:
+        for p in all_packages(comps[i]):
+            if p in installed and p not in pk:
+                pk.append(p)
+    steps = []
+    for i in chosen:
+        units = comps[i].get("enable_global", [])
+        if units and any(p in installed for p in all_packages(comps[i])):
+            steps.append((f"disable {', '.join(units)}", sudo(["systemctl", "--global", "disable"] + units), None))
+    if pk:
+        steps.append((f"remove {len(pk)} package(s) and their unneeded dependencies", sudo(["pacman", "-Rs"] + pk), None))
+    return steps
+
+
+def run_steps(steps, dry_run):
+    for desc, argv, pkgbuild in steps:
+        shown = " ".join(shlex.quote(a) for a in argv)
+        print(f"==> {desc}\n    {shown}" + (f"   (in a copy of {pkgbuild})" if pkgbuild else ""))
+        if dry_run:
+            continue
+        if pkgbuild:
+            src = os.path.join(PKGBUILDS, pkgbuild)
+            if not os.path.isfile(os.path.join(src, "PKGBUILD")):
+                print(f"error: no PKGBUILD at {src}", file=sys.stderr)
+                return 1
+            with tempfile.TemporaryDirectory(prefix="labyrinth-build-") as tmp:
+                work = os.path.join(tmp, pkgbuild)
+                shutil.copytree(src, work)
+                rc = subprocess.run(argv, cwd=work).returncode
+        else:
+            rc = subprocess.run(argv).returncode
+        if rc != 0:
+            print(f"error: step failed (exit {rc}); stopping", file=sys.stderr)
+            return rc
+    return 0
+
+
+def main(argv, installed=None):
+    args = [a for a in argv if a != "--dry-run"]
+    dry = "--dry-run" in argv
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    cmd, rest = args[0], args[1:]
+    try:
+        comps, presets = load()
+    except (OSError, ValueError, KeyError) as e:
+        print(f"error: cannot read {MANIFEST}: {e}", file=sys.stderr)
+        return 2
+    if installed is None:
+        installed = pacman_installed()
+        if installed is None:
+            installed = set()
+            if cmd in ("install", "remove") and not dry:
+                print("error: pacman not found; labyrinth-apps works on Arch-based systems only "
+                      "(use --dry-run to see what it would do)", file=sys.stderr)
+                return 2
+            print("note: pacman not found; showing everything as not installed", file=sys.stderr)
+
+    if cmd == "list":
+        w = max(len(i) for i in comps)
+        for i, c in comps.items():
+            flag = " [proprietary]" if c.get("proprietary") else ""
+            print(f"{i:<{w}}  {state(c, installed):<13} {c['name']}{flag}")
+        print("\npresets: " + ", ".join(f"{n} ({', '.join(v) or 'nothing extra'})" for n, v in presets.items()))
+        return 0
+    if cmd == "info" and len(rest) == 1:
+        c = comps.get(rest[0])
+        if not c:
+            print(f"error: unknown component {rest[0]!r}", file=sys.stderr)
+            return 2
+        print(f"{c['name']}  ({state(c, installed)})\n{c['description']}")
+        print("packages: " + (", ".join(all_packages(c)) or "-") + (f"  [built from PKGBUILD {c['pkgbuild']}]" if c.get("pkgbuild") else ""))
+        if c.get("unverified_packages"):
+            print("not found in Arch's repos (need CachyOS repo or AUR): " + ", ".join(c["unverified_packages"]))
+        if c.get("notes"):
+            print("after install: " + c["notes"])
+        return 0
+    if cmd in ("install", "remove"):
+        ids = list(rest)
+        if "--preset" in ids:
+            k = ids.index("--preset")
+            if k + 1 >= len(ids) or ids[k + 1] not in presets:
+                print(f"error: --preset needs one of: {', '.join(presets)}", file=sys.stderr)
+                return 2
+            ids = ids[:k] + presets[ids[k + 1]] + ids[k + 2:]
+        if not ids:
+            print("error: nothing selected", file=sys.stderr)
+            return 2
+        try:
+            chosen = resolve(ids, presets, comps)
+        except KeyError as e:
+            print(f"error: unknown component {e}", file=sys.stderr)
+            return 2
+        steps = (plan_install if cmd == "install" else plan_remove)(chosen, comps, installed)
+        if not steps:
+            print("nothing to do")
+            return 0
+        rc = run_steps(steps, dry)
+        if rc == 0 and cmd == "install" and not dry:
+            for i in chosen:
+                if comps[i].get("notes"):
+                    print(f"\n{comps[i]['name']}: {comps[i]['notes']}")
+        return rc
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,8 @@
+// Same reasoning as sudoers.d/00-live-nopasswd: with a passwordless live
+// user, any polkit prompt is a dead end -- which would block Calamares and
+// every GUI admin action. Live medium only.
+polkit.addRule(function (action, subject) {
+    if (subject.isInGroup("wheel")) {
+        return polkit.Result.YES;
+    }
+});

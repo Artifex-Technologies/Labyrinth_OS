@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# labyrinth-gaming: make sure Steam + Proton are installed and actually working.
+#
+#   labyrinth-gaming check    read-only; PASS/WARN/FAIL per item, exit 1 if any FAIL
+#   labyrinth-gaming setup    install what is missing (asks sudo), enable Steam Play
+#                             for all titles, then run `check`
+#
+# Written without a Linux machine to test on: every check is a plain command, and
+# `check` is the source of truth, so run it after `setup` and read its output.
+set -u
+
+fails=0
+pass() { printf '  [PASS] %s\n' "$1"; }
+warn() { printf '  [WARN] %s\n' "$1"; }
+fail() { printf '  [FAIL] %s\n' "$1"; fails=$((fails + 1)); }
+have() { command -v "$1" >/dev/null 2>&1; }
+pkg()  { pacman -Q "$1" >/dev/null 2>&1; }
+
+REQUIRED_PKGS=(steam lib32-nvidia-utils nvidia-utils lib32-vulkan-icd-loader vulkan-icd-loader gamemode mangohud)
+OPTIONAL_PKGS=(proton-cachyos protonup-qt protontricks umu-launcher)
+
+steam_root() {
+  for d in "$HOME/.local/share/Steam" "$HOME/.steam/steam"; do
+    [ -d "$d/steamapps" ] && { echo "$d"; return; }
+  done
+}
+
+do_check() {
+  fails=0
+  echo "Packages"
+  for p in "${REQUIRED_PKGS[@]}"; do pkg "$p" && pass "$p installed" || fail "$p missing"; done
+  for p in "${OPTIONAL_PKGS[@]}"; do pkg "$p" && pass "$p installed" || warn "$p not installed (optional)"; done
+
+  echo "32-bit support (Proton needs it)"
+  grep -q '^\[multilib\]' /etc/pacman.conf 2>/dev/null && pass "multilib repo enabled" || fail "multilib repo not enabled in /etc/pacman.conf"
+
+  echo "GPU / Vulkan"
+  if have nvidia-smi && nvidia-smi -L >/dev/null 2>&1; then
+    pass "NVIDIA driver loaded: $(nvidia-smi -L | head -1)"
+  else
+    fail "nvidia-smi cannot talk to the driver"
+  fi
+  if have vulkaninfo; then
+    vulkaninfo --summary 2>/dev/null | grep -qi 'deviceName.*NVIDIA' && pass "Vulkan sees the NVIDIA GPU" || fail "Vulkan does not list an NVIDIA device"
+  else
+    warn "vulkaninfo not installed (package vulkan-tools); cannot check Vulkan"
+  fi
+  if [ -f /sys/module/nvidia_drm/parameters/modeset ]; then
+    [ "$(cat /sys/module/nvidia_drm/parameters/modeset)" = "Y" ] && pass "nvidia_drm.modeset=1" || warn "nvidia_drm.modeset is off (Wayland needs it)"
+  fi
+
+  echo "Kernel limits some games need"
+  mm=$(cat /proc/sys/vm/max_map_count 2>/dev/null || echo 0)
+  [ "$mm" -ge 1048576 ] && pass "vm.max_map_count=$mm" || warn "vm.max_map_count=$mm (some games crash below 1048576)"
+  nf=$(ulimit -Hn 2>/dev/null || echo 0)
+  [ "$nf" = unlimited ] || [ "$nf" -ge 524288 ] && pass "open-file hard limit $nf (esync ok)" || warn "open-file hard limit $nf (esync wants 524288)"
+
+  echo "Steam and Proton"
+  root=$(steam_root)
+  if [ -z "$root" ]; then
+    warn "Steam has not been run yet (no steamapps folder). Start Steam once, sign in, then re-run."
+  else
+    pass "Steam data at $root"
+    ls -d "$root"/steamapps/common/Proton* >/dev/null 2>&1 && pass "Valve Proton present: $(ls -d "$root"/steamapps/common/Proton* | xargs -n1 basename | tr '\n' ' ')" \
+      || warn "no Valve Proton downloaded yet (Steam fetches it the first time a game needs it)"
+    ls -d "$root"/compatibilitytools.d/* /usr/share/steam/compatibilitytools.d/* >/dev/null 2>&1 \
+      && pass "extra compatibility tools installed" || warn "no extra tools (Proton-CachyOS/GE); optional"
+    cfg="$root/config/config.vdf"
+    if [ -f "$cfg" ] && python3 - "$cfg" <<'PY' >/dev/null 2>&1
+import sys,re
+t=open(sys.argv[1],encoding="utf-8").read()
+m=re.search(r'"CompatToolMapping"\s*\{',t)
+sys.exit(0 if m and re.search(r'^\s*"0"\s*$',t[m.end():],re.M) else 1)
+PY
+    then pass "Steam Play enabled for all titles"; else warn "Steam Play for all titles not enabled yet (run: labyrinth-gaming setup)"; fi
+  fi
+  pgrep -x steam >/dev/null 2>&1 && echo "  (Steam is running)"
+
+  echo
+  [ "$fails" -eq 0 ] && echo "Result: OK" || echo "Result: $fails FAIL"
+  [ "$fails" -eq 0 ]
+}
+
+do_setup() {
+  missing=()
+  for p in "${REQUIRED_PKGS[@]}" "${OPTIONAL_PKGS[@]}"; do pkg "$p" || missing+=("$p"); done
+  if [ "${#missing[@]}" -gt 0 ]; then
+    echo "Installing: ${missing[*]}"
+    sudo pacman -S --needed "${missing[@]}" || echo "pacman failed for some packages; see output above"
+  fi
+
+  root=$(steam_root)
+  helper="$(dirname "$(readlink -f "$0")")/steam_playall.py"
+  if [ -z "$root" ]; then
+    echo "Steam has not been run yet: start it once and sign in, then run this again to enable Steam Play."
+  elif pgrep -x steam >/dev/null 2>&1; then
+    echo "Steam is running: close it fully, then run setup again so its config can be edited safely."
+  elif [ -f "$root/config/config.vdf" ] && [ -f "$helper" ]; then
+    # Prefer Proton-CachyOS if present, else Valve's Proton Experimental.
+    tool=proton_experimental
+    ls -d "$root"/compatibilitytools.d/proton-cachyos* /usr/share/steam/compatibilitytools.d/proton-cachyos* >/dev/null 2>&1 && \
+      tool=$(basename "$(ls -d "$root"/compatibilitytools.d/proton-cachyos* /usr/share/steam/compatibilitytools.d/proton-cachyos* 2>/dev/null | head -1)")
+    python3 "$helper" "$root/config/config.vdf" "$tool"
+  fi
+  echo
+  do_check
+}
+
+case "${1:-check}" in
+  check) do_check ;;
+  setup) do_setup ;;
+  *) echo "usage: labyrinth-gaming check|setup"; exit 2 ;;
+esac

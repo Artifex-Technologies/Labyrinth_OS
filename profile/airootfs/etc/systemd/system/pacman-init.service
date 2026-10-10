@@ -1,0 +1,16 @@
+[Unit]
+Description=Initialize the pacman keyring
+# Runs only when there is no keyring yet: on the live medium, and as a safety net on an installed
+# system if the installer's own initialisation (labyrinth-install-cleanup) did not happen.
+ConditionPathExists=!/etc/pacman.d/gnupg/pubring.gpg
+After=systemd-random-seed.service
+Before=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/pacman-key --init
+ExecStart=/usr/bin/pacman-key --populate archlinux cachyos
+
+[Install]
+WantedBy=multi-user.target

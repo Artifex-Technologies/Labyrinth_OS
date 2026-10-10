@@ -1,0 +1,62 @@
+# Maintainer: Labyrinth OS
+#
+# Microsoft's official VS Code build for Linux, repackaged and pinned. Microsoft ships
+# .deb/.rpm/Snap/tarball only; the Arch route they list is the community AUR package
+# visual-studio-code-bin. This is our own copy of that idea so the version and checksum
+# are fixed by a visible commit. Arch's own `code` package is the open-source "Code - OSS"
+# build instead (different extension marketplace); `conflicts` keeps them from co-existing.
+#
+# Version and checksum come from Microsoft's update API:
+#   https://update.code.visualstudio.com/api/update/linux-x64/stable/latest
+# (fields: url, productVersion, sha256hash). To update: replace pkgver, the commit id in
+# the URL and the file number, and sha256sums with the API's values.
+#
+# Verified 2026-10-10: the sha256 below matches the API AND the file's actual hash (downloaded
+# and hashed independently). Layout inspected from the tarball: VSCode-linux-x64/{code,
+# chrome-sandbox,bin/code,resources/app/...}. NOT yet built or run on Linux.
+#
+# The built-in Copilot extension and the Microsoft marketplace are part of this build.
+
+pkgname=visual-studio-code-bin
+pkgver=1.141.0
+pkgrel=1
+pkgdesc="Visual Studio Code, Microsoft's official build (repackaged tarball, pinned)"
+arch=('x86_64')
+url="https://code.visualstudio.com"
+license=('custom')
+depends=('gtk3' 'nss' 'alsa-lib' 'libxss' 'libxtst' 'libxkbfile' 'libnotify' 'libsecret' 'at-spi2-core' 'xdg-utils')
+optdepends=('libappindicator-gtk3: tray support')
+conflicts=('code')
+options=('!strip' '!debug')
+source=("vscode-${pkgver}-linux-x64.tar.gz::https://vscode.download.prss.microsoft.com/dbazure/download/stable/2a59476c9bfcb90b3ddc372c36762471b7dfad1c/code-stable-x64-1791276637.tar.gz")
+sha256sums=('d77d588f0454cbaaa71e723497de4160d15b95fba4988abe177b1432e6bd570a')
+
+package() {
+  install -d "$pkgdir/opt/visual-studio-code" "$pkgdir/usr/bin"
+  cp -a "$srcdir/VSCode-linux-x64/." "$pkgdir/opt/visual-studio-code/"
+  ln -s /opt/visual-studio-code/bin/code "$pkgdir/usr/bin/code"
+
+  # Electron's sandbox helper must be setuid root unless unprivileged user namespaces
+  # are enabled (they are on stock Arch/CachyOS kernels, not on every hardened kernel).
+  chmod 4755 "$pkgdir/opt/visual-studio-code/chrome-sandbox"
+
+  install -Dm644 "$srcdir/VSCode-linux-x64/resources/app/resources/linux/code.png" \
+    "$pkgdir/usr/share/pixmaps/visual-studio-code.png"
+  install -Dm644 "$srcdir/VSCode-linux-x64/resources/app/LICENSE.rtf" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE.rtf"
+
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/visual-studio-code.desktop" <<'DESKTOP'
+[Desktop Entry]
+Name=Visual Studio Code
+Comment=Code editing, redefined
+GenericName=Text Editor
+Exec=/usr/bin/code %F
+Icon=visual-studio-code
+Type=Application
+StartupNotify=false
+StartupWMClass=Code
+Categories=Utility;TextEditor;Development;IDE;
+MimeType=text/plain;inode/directory;
+Keywords=vscode;
+DESKTOP
+}

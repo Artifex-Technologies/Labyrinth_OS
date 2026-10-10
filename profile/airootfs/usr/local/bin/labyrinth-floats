@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""Waybar module: how many floating windows are on the current workspace.
+
+Idea from Omacosy's "floats" pill: floating windows can sink behind tiled ones and be
+forgotten. Prints Waybar JSON; empty text hides the module, so it only appears when
+there is something to find. Set LABYRINTH_HYPRCTL to override the hyprctl command (tests).
+"""
+import json
+import os
+import subprocess
+import sys
+
+
+def hypr_json(*args):
+    cmd = os.environ.get("LABYRINTH_HYPRCTL", "hyprctl").split()
+    out = subprocess.run(cmd + list(args) + ["-j"], capture_output=True, text=True, timeout=3)
+    if out.returncode != 0:
+        raise RuntimeError(out.stderr.strip() or "hyprctl failed")
+    return json.loads(out.stdout)
+
+
+def floats_on_active_workspace(clients, workspace_id):
+    return [c for c in clients if c.get("floating") and c.get("mapped", True) and c.get("workspace", {}).get("id") == workspace_id]
+
+
+def main():
+    try:
+        ws = hypr_json("activeworkspace")["id"]
+        found = floats_on_active_workspace(hypr_json("clients"), ws)
+    except Exception:
+        found = []
+    if not found:
+        print(json.dumps({"text": "", "tooltip": ""}))
+        return 0
+    names = ", ".join(sorted({c.get("class") or c.get("title") or "?" for c in found}))
+    print(json.dumps({"text": f" {len(found)}", "tooltip": f"Floating windows here: {names}"}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

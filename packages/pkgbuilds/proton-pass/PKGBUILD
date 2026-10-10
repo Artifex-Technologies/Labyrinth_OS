@@ -1,0 +1,46 @@
+# Maintainer: Labyrinth OS
+#
+# Repackages Proton's OFFICIAL Linux build of Proton Pass (they ship only .deb and
+# .rpm; there is no official Arch package). Vendored here instead of using the AUR,
+# so what gets installed is exactly what is pinned below.
+#
+# Source of truth for version + checksum:
+#   https://proton.me/download/PassDesktop/linux/x64/version.json
+# To update: take the newest "Stable" .rpm entry, set pkgver and sha512sums to the
+# Url / Sha512CheckSum shown there, and re-check with `makepkg --verifysource`.
+#
+# Verified 2026-10-10: the sha512 below matches version.json AND the file's actual
+# hash (downloaded and hashed independently). Layout inspected from the RPM:
+# /usr/bin/proton-pass (symlink), /usr/lib/proton-pass/ (Electron app),
+# /usr/share/{applications,doc,pixmaps}. NOT yet built or run on Linux.
+
+pkgname=proton-pass
+pkgver=1.42.0
+pkgrel=1
+pkgdesc="Proton Pass desktop password manager (official binary, repackaged from Proton's RPM)"
+arch=('x86_64')
+url="https://proton.me/pass"
+license=('custom')
+# Electron runtime libraries the bundled Chromium links against.
+depends=('gtk3' 'nss' 'alsa-lib' 'libxss' 'libxtst' 'libnotify' 'at-spi2-core' 'libsecret' 'xdg-utils')
+optdepends=('libappindicator-gtk3: tray icon')
+options=('!strip' '!debug')
+source=("proton-pass-${pkgver}-${pkgrel}.x86_64.rpm::https://proton.me/download/pass/linux/proton-pass-${pkgver}-${pkgrel}.x86_64.rpm")
+noextract=("proton-pass-${pkgver}-${pkgrel}.x86_64.rpm")
+sha512sums=('8b5523a6da4d29eb75c8d271911fac37e0b9e4acc1b8eacbd5c2a2797b99f5c2927bd0444f55f45359fe9feee2778639201dd2bd548876b7383775ac1f1a7582')
+
+package() {
+  # bsdtar (libarchive) reads RPM directly.
+  bsdtar -xf "${srcdir}/proton-pass-${pkgver}-${pkgrel}.x86_64.rpm" -C "${pkgdir}" ./usr
+
+  # Debug-id links from the RPM are not wanted in an Arch package.
+  rm -rf "${pkgdir}/usr/lib/.build-id"
+
+  # Electron's sandbox helper must be setuid root unless unprivileged user
+  # namespaces are enabled (they are on stock Arch/CachyOS kernels; not on every
+  # hardened kernel).
+  chmod 4755 "${pkgdir}/usr/lib/proton-pass/chrome-sandbox"
+
+  install -Dm644 "${pkgdir}/usr/share/doc/proton-pass/copyright" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/copyright"
+}

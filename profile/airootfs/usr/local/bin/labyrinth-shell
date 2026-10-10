@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# (Re)start the bar and the dock. Called from hyprland.lua at session start; run it
+# by hand after editing waybar or dock config.
+#
+# Both traps below were found by boot-testing Chymaera's equivalent:
+#  * `pkill -x nwg-dock-hyprland` never matches. The kernel truncates process names
+#    to 15 characters and this one is 18, so match the full command line with -f.
+#  * nwg-dock-hyprland's -s takes a filename relative to ~/.config/nwg-dock-hyprland/;
+#    an absolute path made it fatal at startup. We rely on its default (style.css).
+set -u
+
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
+
+WALLPAPER=${LABYRINTH_WALLPAPER:-/usr/share/labyrinth/wallpapers/labyrinth-green.png}
+
+apply() {
+  pkill -x swaybg 2>/dev/null
+  if command -v swaybg >/dev/null && [ -f "$WALLPAPER" ]; then
+    setsid -f swaybg -i "$WALLPAPER" -m fill >/dev/null 2>&1
+  fi
+  pkill -x waybar 2>/dev/null
+  pkill -f '^nwg-dock-hyprland' 2>/dev/null
+  setsid -f waybar -c "$CONFIG/waybar/config.jsonc" -s "$CONFIG/waybar/style.css" >/dev/null 2>&1
+  if command -v nwg-dock-hyprland >/dev/null; then
+    # -c fuzzel: the dock's launcher button. -i icon size, -mb bottom margin.
+    setsid -f nwg-dock-hyprland -i 44 -mb 8 -w 5 -c fuzzel >/dev/null 2>&1
+  fi
+}
+
+case "${1:-apply}" in
+  apply) apply ;;
+  *) echo "Usage: labyrinth-shell [apply]" >&2; exit 2 ;;
+esac

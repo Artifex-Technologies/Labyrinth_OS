@@ -1,0 +1,3 @@
+# The live user has no password, so a password prompt is unanswerable.
+# Installed medium only -- Calamares writes the installed system's sudoers.
+%wheel ALL=(ALL:ALL) NOPASSWD: ALL

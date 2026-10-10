@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# Runs inside the target system, right after Calamares' unpackfs has copied the
+# live image onto the disk (see /etc/calamares/settings.conf). Removes the
+# live-medium-only pieces and restores what mkarchiso strips, so the installed
+# system boots on its own and has a real login.
+#
+# Adapted from Chymaera_OS's chymaera-install-cleanup. The difference that
+# matters: Labyrinth ships SEVERAL kernels (linux-cachyos, -bore, -lts), so every
+# step that Chymaera did for a single "linux" kernel is done per kernel here.
+#
+#  * mkarchiso empties /boot, so there are no kernels to boot.
+#  * the initramfs presets and drop-in are archiso's, building an initramfs that
+#    looks for the live squashfs and cannot mount a real root.
+#  * the live account is passwordless: sudo, polkit and display-manager autologin
+#    were opened up for it.
+#
+# LABYRINTH_ROOT (default empty) prefixes every path so this can be tested against
+# a mock tree; see tests/test_install_cleanup.sh. It is never set in a real install.
+#
+# Keep the removal list in step with profile/airootfs/etc.
+
+set -euo pipefail
+
+R="${LABYRINTH_ROOT:-}"
+say() { printf 'labyrinth-install-cleanup: %s\n' "$*"; }
+
+# 1. Seed new users with the live user's desktop config. /etc/skel is what
+#    useradd copies from, so Calamares' users job picks it up and handles ownership.
+if [[ -d $R/home/live/.config ]]; then
+  install -d -m 0755 "$R/etc/skel"
+  cp -a "$R/home/live/.config" "$R/etc/skel/"
+  say "seeded /etc/skel from the live user's .config"
+fi
+
+# 2. Remove the live-only files and the account's home directory.
+live_only=(
+  /etc/mkinitcpio.conf.d/archiso.conf
+  /etc/sddm.conf.d/autologin.conf
+  /etc/systemd/system/getty@tty1.service.d/autologin.conf
+  /etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf
+  /etc/sudoers.d/00-live-nopasswd
+  /etc/polkit-1/rules.d/49-live-nopasswd.rules
+  /etc/sysusers.d/live.conf
+  /etc/tmpfiles.d/live-home.conf
+  /etc/xdg/kscreenlockerrc
+)
+for f in "${live_only[@]}"; do rm -f -- "$R$f"; done
+rm -rf -- "$R/home/live"
+say "removed live-only configuration"
+
+# The live account must not exist on the installed system. Normally it is only created at live
+# boot (sysusers.d), but a package hook that ran after the live files were copied into the image
+# creates it too; remove it either way, so the user created by the installer gets uid 1000.
+if [[ -z $R ]] && getent passwd live >/dev/null 2>&1; then
+  userdel -f live >/dev/null 2>&1 && say "removed the live account" || say "WARNING: could not remove the live account"
+fi
+
+# Make Hyprland the session the login screen starts on (SDDM would otherwise pick the first one
+# alphabetically: COSMIC). SDDM remembers what the user picks afterwards.
+if [[ -e $R/usr/share/wayland-sessions/hyprland.desktop ]]; then
+  install -d -m 0755 "$R/var/lib/sddm"
+  printf '[Last]
+Session=/usr/share/wayland-sessions/hyprland.desktop
+User=
+' >"$R/var/lib/sddm/state.conf"
+  if [[ -z $R ]] && getent passwd sddm >/dev/null 2>&1; then chown -R sddm:sddm /var/lib/sddm; fi
+  say "default login session: Hyprland"
+fi
+
+# 3. Restore a stock initramfs preset for every installed kernel. Arch generates
+#    presets from mkinitcpio's own template (see /usr/share/libalpm/scripts/mkinitcpio)
+#    so use that rather than a hand-written copy that could drift. %PKGBASE% is the
+#    kernel's package base (linux-cachyos, linux-cachyos-bore, ...), which also names
+#    the files in /boot: vmlinuz-<pkgbase> and initramfs-<pkgbase>.img.
+# 3a. GRUB cannot read zstd-compressed btrfs files whose size is not a multiple of 4096: it drops
+#     the last partial sector, so a kernel such as linux-cachyos-lts (17785344 bytes) loads
+#     512 bytes short and GRUB stops with "premature end of file" (found by booting the first
+#     installed system; reproduced with grub-fstest). Files that are NOCOW are never compressed,
+#     and NOCOW is inherited from the directory, so mark /boot before any kernel or initramfs is
+#     written. Snapshots still work; only /boot loses compression and checksums.
+if [[ -z $R && $(findmnt -no FSTYPE / 2>/dev/null) == btrfs ]]; then
+  if chattr +C /boot 2>/dev/null; then
+    say "marked /boot NOCOW so GRUB can read the kernels"
+  else
+    say "WARNING: could not mark /boot NOCOW; GRUB may fail to read some kernels"
+  fi
+fi
+
+template=$R/usr/share/mkinitcpio/hook.preset
+[[ -s $template ]] || { say "error: $template missing or empty, cannot restore presets"; exit 1; }
+install -d -m 0755 "$R/etc/mkinitcpio.d"
+
+# Drop archiso's presets first so a kernel that is no longer installed leaves nothing behind.
+rm -f -- "$R"/etc/mkinitcpio.d/*.preset
+
+installed=()
+for dir in "$R"/usr/lib/modules/*/; do
+  [[ -r ${dir}pkgbase && -r ${dir}vmlinuz ]] || continue
+  base=$(<"${dir}pkgbase")
+  [[ $base =~ ^[A-Za-z0-9._+-]+$ ]] || { say "error: odd kernel pkgbase '$base' in $dir"; exit 1; }
+  # 4. Put the kernel back in /boot (the pacman hook does this on a normal install;
+  #    mkarchiso deleted the result, and the package's own copy under
+  #    /usr/lib/modules survives).
+  install -Dm644 -- "${dir}vmlinuz" "$R/boot/vmlinuz-$base"
+  sed "s|%PKGBASE%|$base|g" "$template" >"$R/etc/mkinitcpio.d/$base.preset"
+  # An empty or wrong preset builds an initramfs that cannot boot and nothing else
+  # would notice until first boot, so check what was written.
+  grep -q "^PRESETS=" "$R/etc/mkinitcpio.d/$base.preset" \
+    || { say "error: generated $base.preset has no PRESETS line"; exit 1; }
+  installed+=("$base")
+done
+
+if (( ${#installed[@]} == 0 )); then
+  say "error: no kernel with a pkgbase and vmlinuz found under /usr/lib/modules"
+  exit 1
+fi
+say "restored kernels and presets: ${installed[*]}"
+
+# The LTS kernel is the fallback when a new kernel or NVIDIA module breaks boot.
+# Not fatal, but the installed system loses its safety net without it.
+case " ${installed[*]} " in
+  *" linux-cachyos-lts "*) ;;
+  *) say "WARNING: linux-cachyos-lts is not installed; there is no fallback kernel" ;;
+esac
+
+# 5. Make sure pacman can verify packages. The installed system needs this for
+#    `pacman -Syu` and for Sarina to install anything later. Only initialise if the
+#    image did not carry a keyring. Skipped under a mock root.
+if [[ -z $R && ! -s /etc/pacman.d/gnupg/pubring.gpg ]]; then
+  say "no pacman keyring in the image; initialising"
+  pacman-key --init
+  pacman-key --populate archlinux cachyos
+fi

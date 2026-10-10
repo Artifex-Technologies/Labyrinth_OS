@@ -1,0 +1,107 @@
+# Base system for every Labyrinth install. Optional software lives in
+# airootfs/usr/share/labyrinth/components.json; scripts/gen-packages.py combines the two
+# into packages.x86_64. Comments on their own lines only.
+base
+base-devel
+linux-firmware
+intel-ucode
+btrfs-progs
+snapper
+sbctl
+networkmanager
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+# kernels: default, bore, and LTS fallback, each with headers and open NVIDIA modules
+linux-cachyos
+linux-cachyos-headers
+linux-cachyos-nvidia-open
+linux-cachyos-bore
+linux-cachyos-bore-headers
+linux-cachyos-bore-nvidia-open
+linux-cachyos-lts
+linux-cachyos-lts-headers
+linux-cachyos-lts-nvidia-open
+nvidia-utils
+nvidia-settings
+vulkan-icd-loader
+# iGPU: fallback display and passthrough host
+mesa
+vulkan-intel
+intel-media-driver
+# desktop (Omarchy model)
+hyprland
+waybar
+sddm
+xdg-desktop-portal-hyprland
+# diagnostics for the driver lab
+pciutils
+usbutils
+dkms
+glmark2
+iperf3
+vulkan-tools
+python
+# installer: Calamares is built from packages/pkgbuilds/calamares into the local repo
+calamares
+rsync
+# Calamares unpackfs needs unsquashfs
+squashfs-tools
+# Calamares displaymanager imports toml
+python-toml
+grub
+efibootmgr
+grub-btrfs
+# grub-btrfsd (snapshot entries) needs inotifywait; hostname for scripts
+inotify-tools
+inetutils
+dosfstools
+zram-generator
+mkinitcpio
+# live medium: archiso's initramfs hooks and the UEFI memory tester
+mkinitcpio-archiso
+memtest86+-efi
+# CachyOS signing keys and mirror lists, so the installed system can keep updating
+cachyos-keyring
+cachyos-mirrorlist
+cachyos-v3-mirrorlist
+archlinux-keyring
+bluez
+bluez-utils
+# desktop: Hyprland session, bar, dock, launcher, terminal, notifications
+nwg-dock-hyprland
+nwg-displays
+mako
+fuzzel
+foot
+uwsm
+hyprpolkitagent
+cliphist
+grim
+slurp
+wl-clipboard
+playerctl
+firefox
+kvantum
+xdg-utils
+curl
+libnotify
+pavucontrol
+blueman
+nm-connection-editor
+ttf-jetbrains-mono-nerd
+# extra desktop tools
+btop
+# emoji font for the bar's weather icons
+noto-fonts-emoji
+# Labyrinth's own file explorer, built from packages/pkgbuilds into the local repo
+labyrinth-finder
+# Finder: archives (7z), PDF and video previews, RAR
+7zip
+poppler
+ffmpegthumbnailer
+unrar
+# wallpaper
+swaybg

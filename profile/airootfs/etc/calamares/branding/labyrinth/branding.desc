@@ -1,0 +1,38 @@
+# Labyrinth OS installer branding. Derived from the structure of Calamares 3.4.2's
+# branding/default/branding.desc; all text and images are Labyrinth's own.
+---
+componentName:  labyrinth
+welcomeStyleCalamares:   false
+welcomeExpandingLogo:   true
+windowExpanding:    normal
+windowSize: 900px,560px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+    productName:         "Labyrinth OS"
+    shortProductName:    Labyrinth
+    version:             rolling
+    shortVersion:        rolling
+    versionedName:       "Labyrinth OS"
+    shortVersionedName:  "Labyrinth OS"
+    bootloaderEntryName: Labyrinth
+    productUrl:          https://github.com/Artifex-Technologies/Labyrinth_OS
+    supportUrl:          https://github.com/Artifex-Technologies/Labyrinth_OS/issues
+    knownIssuesUrl:      https://github.com/Artifex-Technologies/Labyrinth_OS/issues
+    releaseNotesUrl:     https://github.com/Artifex-Technologies/Labyrinth_OS
+
+images:
+    productIcon:         "logo.png"
+    productLogo:         "logo.png"
+    productWelcome:      "welcome.png"
+
+style:
+   SidebarBackground:        "#0e1e16"
+   SidebarText:              "#e6f4ea"
+   SidebarTextCurrent:       "#0e1e16"
+   SidebarBackgroundCurrent: "#8fd9a8"
+
+slideshow:               "show.qml"
+slideshowAPI: 2

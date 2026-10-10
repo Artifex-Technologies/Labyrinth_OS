@@ -1,0 +1,8 @@
+# archiso builds ONE initramfs for the live medium, from the default CachyOS kernel.
+# The installer replaces this with stock presets for every kernel (labyrinth-install-cleanup).
+PRESETS=('archiso')
+
+ALL_kver='/boot/vmlinuz-linux-cachyos'
+archiso_config='/etc/mkinitcpio.conf.d/archiso.conf'
+
+archiso_image="/boot/initramfs-linux-cachyos.img"

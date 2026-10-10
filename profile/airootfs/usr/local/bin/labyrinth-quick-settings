@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# The bar's power button: Settings, Sleep, Hibernate, Log out, Restart, Power off.
+# A menu (fuzzel in dmenu mode) rather than a popup panel, so it works in any
+# session and needs no extra toolkit.
+#
+#  * Hibernate is listed only when the machine can actually do it (a real swap at
+#    least as big as RAM, and a resume= device on the kernel command line). The
+#    default install uses zram swap, which cannot hibernate, so by default it is not
+#    offered rather than offered and broken.
+#  * Log out, Restart and Power off ask for confirmation.
+#
+# Environment overrides exist so tests/test_desktop_scripts.sh can run this without
+# a desktop: LABYRINTH_MENU, LABYRINTH_SYS_POWER_STATE, LABYRINTH_PROC_SWAPS,
+# LABYRINTH_PROC_MEMINFO, LABYRINTH_PROC_CMDLINE.
+set -u
+
+MENU=${LABYRINTH_MENU:-fuzzel --dmenu}
+STATE=${LABYRINTH_SYS_POWER_STATE:-/sys/power/state}
+SWAPS=${LABYRINTH_PROC_SWAPS:-/proc/swaps}
+MEMINFO=${LABYRINTH_PROC_MEMINFO:-/proc/meminfo}
+CMDLINE=${LABYRINTH_PROC_CMDLINE:-/proc/cmdline}
+
+menu() { printf '%s\n' "$@" | $MENU; }
+
+can_hibernate() {
+  grep -qw disk "$STATE" 2>/dev/null || return 1
+  grep -q 'resume=' "$CMDLINE" 2>/dev/null || return 1
+  local ram_kb swap_kb
+  ram_kb=$(awk '/^MemTotal:/ {print $2}' "$MEMINFO" 2>/dev/null)
+  # Sum /proc/swaps sizes (KiB, column 3), ignoring zram, which cannot hold a hibernation image.
+  swap_kb=$(awk 'NR>1 && $1 !~ /zram/ {s+=$3} END {print s+0}' "$SWAPS" 2>/dev/null)
+  [[ -n $ram_kb && $ram_kb -gt 0 && $swap_kb -ge $ram_kb ]]
+}
+
+confirm() {  # confirm "Power off"
+  [[ $(menu "Yes, $1" "Cancel") == "Yes, $1" ]]
+}
+
+settings() {
+  local choice
+  choice=$(menu "Network" "Sound" "Bluetooth" "Displays" "Dock and bar opacity" "Gaming check") || return 0
+  case $choice in
+    Network)       launch nm-connection-editor ;;
+    Sound)         launch pavucontrol ;;
+    Bluetooth)     launch blueman-manager ;;
+    Displays)      launch nwg-displays ;;
+    "Dock and bar opacity") labyrinth-opacity pick ;;
+    "Gaming check") launch foot -e sh -c 'labyrinth-gaming check; printf "\nPress Enter to close. "; read -r _' ;;
+  esac
+}
+
+launch() {
+  if command -v "$1" >/dev/null 2>&1; then
+    setsid -f "$@" >/dev/null 2>&1
+  else
+    notify-send "Labyrinth" "$1 is not installed" 2>/dev/null || echo "$1 is not installed" >&2
+  fi
+}
+
+entries=("Settings" "Sleep")
+can_hibernate && entries+=("Hibernate")
+entries+=("Log out" "Restart" "Power off")
+
+choice=$(menu "${entries[@]}") || exit 0
+case $choice in
+  Settings)  settings ;;
+  Sleep)     systemctl suspend ;;
+  Hibernate) can_hibernate && systemctl hibernate ;;
+  "Log out")
+    confirm "log out" || exit 0
+    if command -v uwsm >/dev/null 2>&1; then uwsm stop; else hyprctl dispatch exit; fi ;;
+  Restart)   confirm "restart" && systemctl reboot ;;
+  "Power off") confirm "power off" && systemctl poweroff ;;
+esac
+exit 0
