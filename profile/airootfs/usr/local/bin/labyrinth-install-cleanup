@@ -5,7 +5,7 @@
 # system boots on its own and has a real login.
 #
 # Adapted from Chymaera_OS's chymaera-install-cleanup. The difference that
-# matters: Labyrinth ships SEVERAL kernels (linux-cachyos, -bore, -lts), so every
+# matters: Labyrinth ships SEVERAL kernels (linux-cachyos, -lts), so every
 # step that Chymaera did for a single "linux" kernel is done per kernel here.
 #
 #  * mkarchiso empties /boot, so there are no kernels to boot.
@@ -57,7 +57,7 @@ if [[ -z $R ]] && getent passwd live >/dev/null 2>&1; then
 fi
 
 # Pick the session the login screen starts on: Plasma (the macOS-style desktop) when it is
-# installed, else Hyprland. SDDM would otherwise take the first one alphabetically (COSMIC) and
+# installed, else Hyprland. SDDM would otherwise take the first one alphabetically and
 # remembers whatever the user picks afterwards.
 for session in plasma hyprland; do
   if [[ -e $R/usr/share/wayland-sessions/$session.desktop ]]; then
@@ -75,7 +75,7 @@ done
 # 3. Restore a stock initramfs preset for every installed kernel. Arch generates
 #    presets from mkinitcpio's own template (see /usr/share/libalpm/scripts/mkinitcpio)
 #    so use that rather than a hand-written copy that could drift. %PKGBASE% is the
-#    kernel's package base (linux-cachyos, linux-cachyos-bore, ...), which also names
+#    kernel's package base (linux-cachyos, linux-cachyos-lts), which also names
 #    the files in /boot: vmlinuz-<pkgbase> and initramfs-<pkgbase>.img.
 # 3a. GRUB cannot read zstd-compressed btrfs files whose size is not a multiple of 4096: it drops
 #     the last partial sector, so a kernel such as linux-cachyos-lts (17785344 bytes) loads
@@ -128,11 +128,25 @@ case " ${installed[*]} " in
   *) say "WARNING: linux-cachyos-lts is not installed; there is no fallback kernel" ;;
 esac
 
-# 5. Make sure pacman can verify packages. The installed system needs this for
-#    `pacman -Syu` and for Sarina to install anything later. Only initialise if the
-#    image did not carry a keyring. Skipped under a mock root.
-if [[ -z $R && ! -s /etc/pacman.d/gnupg/pubring.gpg ]]; then
-  say "no pacman keyring in the image; initialising"
-  pacman-key --init
-  pacman-key --populate archlinux cachyos
+# 5. The pacman keyring is not made here (it took ~30 s of the install): pacman-init.service,
+#    enabled in the image, creates it on the first boot when it is missing, before the network
+#    is up and long before anyone runs pacman.
+
+# 6. The resume hook, before the installer builds the initramfs, so hibernate does not have to
+#    rebuild every kernel's image afterwards. It does nothing until the kernel command line has
+#    resume= (labyrinth-install-bootfinish adds that only if the swap file was made). A drop-in,
+#    because the installer rewrites HOOKS in mkinitcpio.conf. The systemd hook resumes by itself.
+install -d -m 0755 "$R/etc/mkinitcpio.conf.d"
+cat >"$R/etc/mkinitcpio.conf.d/labyrinth-resume.conf" <<'EOF'
+# Labyrinth: resume from hibernation (the swap file). Added before "filesystems".
+if [[ " ${HOOKS[*]} " != *" resume "* && " ${HOOKS[*]} " != *" systemd "* ]]; then
+  _labyrinth_hooks=()
+  for _h in "${HOOKS[@]}"; do
+    [[ $_h == filesystems ]] && _labyrinth_hooks+=(resume)
+    _labyrinth_hooks+=("$_h")
+  done
+  HOOKS=("${_labyrinth_hooks[@]}")
+  unset _labyrinth_hooks _h
 fi
+EOF
+say "added the resume hook drop-in"

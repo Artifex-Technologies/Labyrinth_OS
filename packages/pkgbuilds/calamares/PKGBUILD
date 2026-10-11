@@ -1,6 +1,11 @@
-# Vendored from the AUR `calamares` package (via Chymaera_OS), because Calamares is
-# not in Arch's or CachyOS's official repos:
+# Vendored from the AUR `calamares` package (via Chymaera_OS): plain upstream Calamares.
 # https://aur.archlinux.org/packages/calamares
+#
+# CachyOS's repo has `cachyos-calamares` (same version, prebuilt), considered 2026-10-11 and not
+# used: it ships ~60 files in /etc/calamares that collide with ours, and its modules are patched
+# for CachyOS's online (pacstrap) installer, while Labyrinth copies the finished image, which is
+# faster. Its useful parts were adopted in labyrinth-install-bootfinish instead: the firewall on by
+# default and a "fresh install" snapshot. This package is only rebuilt when its version changes.
 # Upstream source: https://codeberg.org/Calamares/calamares (the GitHub repo is
 # archived). Source hash re-verified 2026-10-10 against the v3.4.2 release tarball.
 #

@@ -4,8 +4,8 @@
 set -eu
 name=${1:-}
 case $name in
-  plasma|hyprland|cosmic) ;;
-  *) echo "usage: labyrinth-set-session plasma|hyprland|cosmic" >&2; exit 2 ;;
+  plasma|hyprland) ;;
+  *) echo "usage: labyrinth-set-session plasma|hyprland" >&2; exit 2 ;;
 esac
 file=/usr/share/wayland-sessions/$name.desktop
 [[ -e $file ]] || { echo "session $name is not installed" >&2; exit 1; }

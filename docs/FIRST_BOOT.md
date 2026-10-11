@@ -5,9 +5,9 @@ The OptiPlex has two 256 GB drives (one M.2, one SATA), 8 GB RAM and Intel graph
 
 ## What you need
 
-- The ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.10-x86_64.iso` (about 10 GB;
+- The ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.11-x86_64.iso` (about 6 GB;
   `SHA256SUMS` next to it).
-- A USB stick of **16 GB or more**. Everything on it is erased.
+- A USB stick of **8 GB or more** (16 GB to be safe). Everything on it is erased.
 - A DisplayPort or HDMI cable and a screen for the OptiPlex, a keyboard and a mouse.
 - A network cable for the OptiPlex (Wi-Fi may not be present on a 3080).
 
@@ -17,7 +17,7 @@ The OptiPlex has two 256 GB drives (one M.2, one SATA), 8 GB RAM and Intel graph
 2. Device: your USB stick. Boot selection: the ISO above.
 3. Partition scheme: **GPT**, target system: **UEFI (non CSM)**.
 4. Press START. If Rufus asks, choose **"Write in DD Image mode"**. Do not choose ISO mode.
-5. Wait for READY (10 to 20 minutes for 10 GB), then eject the stick.
+5. Wait for READY (~5 to 15 minutes), then eject the stick.
 
 Optional check: in PowerShell, `Get-FileHash <path to iso> -Algorithm SHA256` should match `SHA256SUMS`.
 
@@ -33,7 +33,8 @@ Optional check: in PowerShell, `Get-FileHash <path to iso> -Algorithm SHA256` sh
 ## 3. Boot the stick
 
 Press F12 at the Dell logo, pick the stick's UEFI entry. The macOS-style desktop (KDE Plasma) comes up
-by itself: menu bar on top, a floating dock at the bottom, window buttons on the left. Try it first
+by itself: menu bar on top, a floating dock at the bottom, window buttons on the right (minimize,
+maximize, close, as on Windows). Try it first
 without installing:
 
 - Does the desktop appear on the screen at its full resolution and refresh rate? Is the network up?
@@ -48,7 +49,8 @@ without installing:
 1. Start the installer: double-click **Install Labyrinth** on the desktop, or tap SUPER and type "install".
 2. Follow the pages. On **Partitions**, pick the drive to erase in "Select storage device"
    (one of the two 256 GB drives; the other is left alone). Leave "Erase disk" selected.
-3. Choose a name and a password; click Install. It takes about 10 minutes.
+3. Choose a name and a password; click Install. It took 2 minutes in the VM; ~3 to 6 minutes from a
+   USB stick, depending on the stick.
 4. Restart when it says "All done", remove the USB stick, and log in.
 
 The first login builds the desktop layout (a few seconds). To try the tiling desktop (Hyprland), open
@@ -57,14 +59,16 @@ Desktop" in its power menu (SUPER + ESCAPE) comes back.
 
 ## 5. What to check after the first real boot
 
-- The GRUB menu appears for ~2 seconds, then the desktop login (SDDM, session "Hyprland").
+- The GRUB menu appears for ~2 seconds, then the desktop login (SDDM, session "Plasma").
 - `systemctl is-system-running` says `running`; `systemctl --failed` lists nothing.
 - `cat /proc/cmdline` contains `resume=UUID=...` and `resume_offset=...`; `swapon --show` lists
   `/swap/swapfile` (about 8 GB here) and zram.
 - **Hibernate** (power button in the bar, then Hibernate; or `systemctl hibernate`): the machine
   powers off. Turn it on: it should come back to the same windows. This is the one thing the VM
   could not prove (the VM reset right after resuming), so please report exactly what happens.
-- **Snapshots**: `sudo snapper list`; after rebooting, look for a snapshots submenu in the GRUB menu (grub-btrfs adds it once a snapshot exists; the first one appears after snapper's timer runs, or create one with `sudo snapper create`).
+- **Firewall**: `sudo ufw status` says active, incoming denied, outgoing allowed (System Settings >
+  Firewall manages it).
+- **Snapshots**: `sudo snapper list` shows "Fresh Labyrinth OS install" (kept for good); after rebooting, look for a snapshots submenu in the GRUB menu (grub-btrfs adds it once a snapshot exists; the first one appears after snapper's timer runs, or create one with `sudo snapper create`).
 - Vivaldi opens (it is the default browser; Firefox is installed as the backup), Finder opens and
   previews files, sound and the network work, and wireless keyboards do not drop keys.
 
@@ -85,3 +89,21 @@ or more. Your Acer ultrawide and the LG DualUp are recognised by name and get th
 done once per monitor; anything you change later in System Settings is kept. To redo it:
 `rm ~/.config/labyrinth/displays-kde.json` and log in again.
 
+## 8. Coming from Windows
+
+The Windows shortcuts work on both desktops:
+
+| Keys | Does |
+|---|---|
+| Win + E | Finder (Explorer) |
+| Win + R | Run box (type an app or command) |
+| Win + I | Settings |
+| Win + L | Lock |
+| Win + V | Clipboard history |
+| Win + Shift + S | Screenshot of a region |
+| Ctrl + Shift + Esc | Task manager (System Monitor) |
+| Win + arrow keys | Snap the window (macOS-style desktop) |
+| Alt + Tab, Alt + F4 | Switch windows, close a window |
+
+In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in
+the Windows layout (`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.

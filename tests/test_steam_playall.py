@@ -1,6 +1,11 @@
 import unittest
 
-from steam_playall import apply
+import os
+import sys
+
+# The shipped copy is the only one: profile/airootfs/usr/local/bin/steam_playall.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profile", "airootfs", "usr", "local", "bin"))
+from steam_playall import apply  # noqa: E402
 
 BASE = '''"InstallConfigStore"
 {

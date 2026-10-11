@@ -14,13 +14,10 @@ pipewire-alsa
 pipewire-pulse
 pipewire-jack
 wireplumber
-# kernels: default, bore, and LTS fallback, each with headers and open NVIDIA modules
+# kernels: default and the LTS fallback, each with headers and open NVIDIA modules
 linux-cachyos
 linux-cachyos-headers
 linux-cachyos-nvidia-open
-linux-cachyos-bore
-linux-cachyos-bore-headers
-linux-cachyos-bore-nvidia-open
 linux-cachyos-lts
 linux-cachyos-lts-headers
 linux-cachyos-lts-nvidia-open
@@ -91,6 +88,9 @@ plasma-systemmonitor
 kscreenlocker
 # unlocks KDE Wallet with the login password, so apps stop asking for it
 kwallet-pam
+# firewall: incoming blocked, outgoing allowed (like Windows); System Settings > Firewall
+ufw
+plasma-firewall
 kio-extras
 konsole
 yakuake

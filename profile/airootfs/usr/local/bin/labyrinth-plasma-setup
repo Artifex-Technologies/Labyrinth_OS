@@ -17,9 +17,10 @@ busctl --user status org.kde.plasmashell >/dev/null 2>&1 || exit 0   # not Plasm
 if command -v plasma-apply-lookandfeel >/dev/null; then
   plasma-apply-lookandfeel -a com.github.vinceliuice.WhiteSur-dark >/dev/null 2>&1
 fi
-# Window buttons on the left, macOS order: close, minimize, maximize.
-kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft XIA
-kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
+# Window buttons on the right in Windows order (minimize, maximize, close), drawn in the macOS style.
+# The same side as apps that draw their own buttons (Steam, Spotify, VS Code), so all windows match.
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft ""
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight IAX
 # A real border around windows, so their edges and corners can be grabbed to resize (the WhiteSur
 # frame is very thin, which made diagonal resizing of apps like VS Code nearly impossible).
 kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSizeAuto false

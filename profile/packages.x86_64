@@ -17,9 +17,6 @@ wireplumber
 linux-cachyos
 linux-cachyos-headers
 linux-cachyos-nvidia-open
-linux-cachyos-bore
-linux-cachyos-bore-headers
-linux-cachyos-bore-nvidia-open
 linux-cachyos-lts
 linux-cachyos-lts-headers
 linux-cachyos-lts-nvidia-open
@@ -79,6 +76,8 @@ plasma-browser-integration
 plasma-systemmonitor
 kscreenlocker
 kwallet-pam
+ufw
+plasma-firewall
 kio-extras
 konsole
 yakuake
@@ -150,8 +149,6 @@ rclone
 fuse3
 # component: proton-pass
 proton-pass
-# component: cosmic
-cosmic-session
 # component: creative
 krita
 darktable
@@ -164,8 +161,6 @@ libvirt
 edk2-ovmf
 dnsmasq
 nftables
-# component: local-ai
-ollama-cuda
 # component: vscode
 visual-studio-code-bin
 # component: containers

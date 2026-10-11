@@ -4,9 +4,10 @@
 
 - Repos: `cachyos-v3`, `cachyos-core-v3`, `cachyos-extra-v3`. The 9900K has AVX2
   but not AVX-512, so `-v4` would not run. Do not use `znver4`.
-- Kernel: `linux-cachyos` (EEVDF, Clang ThinLTO) by default, `linux-cachyos-bore`
-  as the selectable desktop/gaming-latency alternative, and `linux-cachyos-lts`
-  always installed as the **bootable fallback**.
+- Kernel: `linux-cachyos` (EEVDF, Clang ThinLTO) by default and `linux-cachyos-lts`
+  always installed as the **bootable fallback**. (`linux-cachyos-bore` was dropped
+  2026-10-11: a third kernel meant a third initramfs and DKMS build on every install and
+  update; `sudo pacman -S linux-cachyos-bore linux-cachyos-bore-headers` adds it back.)
 - Do not hand-roll a kernel. Rewriting Linux is out of scope; CachyOS already
   tracks and patches it.
 - Build system: archiso profile (same as Chymaera_OS) with CachyOS repos in

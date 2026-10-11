@@ -86,7 +86,7 @@ sys.exit(1 if missing else 0)
 EOF2
 [ $? -eq 0 ] && ok "waybar config parses and defines every listed module" || bad "waybar config parses and defines every listed module"
 check "waybar clock has no GNU dash flags (comments ignored)" "! grep -v '^[[:space:]]*//' $cfg/waybar/config.jsonc | grep -q '%-'"
-check "gtk: buttons on the left" "grep -q 'close,minimize,maximize:' $cfg/gtk-3.0/settings.ini && grep -q 'close,minimize,maximize:' $cfg/gtk-4.0/settings.ini"
+check "gtk: buttons on the right" "grep -q ':minimize,maximize,close' $cfg/gtk-3.0/settings.ini && grep -q ':minimize,maximize,close' $cfg/gtk-4.0/settings.ini"
 check "shell scripts have valid syntax" "bash -n $bin/labyrinth-shell && bash -n $bin/labyrinth-quick-settings"
 
 printf '\n%d passed, %d failed\n' "$pass" "$failn"

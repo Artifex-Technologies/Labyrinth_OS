@@ -21,7 +21,22 @@ need() {
   command -v "$1" >/dev/null 2>&1 || { say "labyrinth-sarina: $1 is not installed ($2)"; exit 1; }
 }
 need sarina "install the sarina-git package"
-need ollama "install the ollama package (ollama-cuda on an NVIDIA machine)"
+
+# The model server is not in the image (with CUDA it is about 6 GB); offer it on first use.
+# NVIDIA cards get the CUDA build, everything else the Vulkan build (AMD and Intel GPUs).
+if ! command -v ollama >/dev/null 2>&1; then
+  if [[ -e /proc/driver/nvidia/version ]] || lspci 2>/dev/null | grep -qiE '(vga|3d).*nvidia'; then
+    pkg=ollama-cuda; size="about 6 GB with NVIDIA's CUDA libraries"
+  else
+    pkg=ollama-vulkan; size="a few hundred MB"
+  fi
+  say "Sarina needs a model server (Ollama). For this computer: $pkg ($size)."
+  read -r -p "Install $pkg now? It asks for your password. [y/N] " ans
+  case $ans in
+    y|Y|yes) sudo pacman -S --needed "$pkg" || exit 1 ;;
+    *) say "Install it later with: sudo pacman -S $pkg"; exit 0 ;;
+  esac
+fi
 
 server_up() { curl -fsS -m 2 "$OLLAMA_URL/api/tags" >/dev/null 2>&1; }
 

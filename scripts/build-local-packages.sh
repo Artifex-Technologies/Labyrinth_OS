@@ -17,10 +17,23 @@ pkgbuilds_dir="$repo_root/packages/pkgbuilds"
 repo_dir="$repo_root/repo/x86_64"
 mkdir -p "$repo_dir"
 
-only=("$@")   # optional: build just these package directory names
+# Packages built from source in this repo (or the Sarina checkout next to it): their version does
+# not change when the code does, so they are always rebuilt. Every other package is pinned to a
+# released version and checksum, and is skipped when that exact version is already in the repo
+# (Calamares alone is a ~10-minute C++ build). Naming packages rebuilds them regardless.
+local_source=(labyrinth-finder labyrinth-weather sarina-git)
+
+only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/; do
   name="$(basename "$dir")"
   if (( ${#only[@]} )) && [[ " ${only[*]} " != *" $name "* ]]; then continue; fi
+  if (( ! ${#only[@]} )) && [[ " ${local_source[*]} " != *" $name "* ]]; then
+    built=1
+    while read -r f; do
+      [[ -e "$repo_dir/$(basename "$f")" ]] || built=0
+    done < <(cd "$dir" && makepkg --packagelist 2>/dev/null)
+    if (( built )); then echo "==> $name: this version is already built, skipping"; continue; fi
+  fi
   echo "==> Building $name"
   (
     cd "$dir"

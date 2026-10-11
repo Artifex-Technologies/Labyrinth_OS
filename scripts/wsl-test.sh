@@ -31,10 +31,10 @@ tests() {
   step "display layout"
   run python3 tests/test_displays.py
   step "steam config editor"
-  (cd packages/labyrinth-gaming && run python3 -m unittest test_steam_playall)
+  run python3 tests/test_steam_playall.py
   step "shell syntax and shellcheck"
   for f in profile/airootfs/usr/local/bin/labyrinth-install-* profile/airootfs/usr/local/bin/labyrinth-shell \
-           profile/airootfs/usr/local/bin/labyrinth-quick-settings packages/labyrinth-gaming/labyrinth-gaming \
+           profile/airootfs/usr/local/bin/labyrinth-quick-settings profile/airootfs/usr/local/bin/labyrinth-gaming \
            packages/labyrinth-driverlab/probe.sh profile/profiledef.sh; do
     run bash -n "$f"
   done

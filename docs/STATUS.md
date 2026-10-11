@@ -10,7 +10,7 @@
   Proton Drive link verification logic.
 - The egui app builds, opens, and writes `state.json` on exit (session restore
   data). `labyrinth-cloud` CLI builds and handles arguments.
-- `packages/labyrinth-gaming/steam_playall.py`: 7 tests pass.
+- `tests/test_steam_playall.py` (Steam config editor): 7 tests pass.
 
 ## Written but never exercised
 
@@ -69,10 +69,8 @@ Ran on real Arch Linux under WSL2 (no GPU session, so no Hyprland, installer or 
   Bugs found by this and fixed: Wayland app id contained a space (WSLg dropped the
   connection), Enter in the Rename dialog did nothing, Ctrl+C/X/V shortcuts never fired,
   and arrow glyphs drew as empty boxes.
-- `tests/gui_smoke_wsl.sh` repeats the GUI checks, but **does not pass unattended**: WSLg
-  only delivers keystrokes to the active Windows window, and `tests/gui_smoke_wsl.ps1`
-  (which keeps it active) did not fix that. It also takes over the screen while it runs.
-  The checks above were done by hand with the window in front. Treat the script as a draft.
+- GUI checks now run on a virtual display (`scripts/xvfb/xv.sh`), which never takes over the
+  screen; the old WSLg script (`tests/gui_smoke_wsl.*`) was removed.
 - Native Wayland run of the explorer works under WSLg (after the app-id fix) with software
   rendering; GPU rendering is untested.
 

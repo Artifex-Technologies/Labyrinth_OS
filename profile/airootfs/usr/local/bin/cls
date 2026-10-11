@@ -1,0 +1,3 @@
+#!/bin/sh
+# Windows' `cls`: clear the terminal and its scrollback.
+exec clear "$@"

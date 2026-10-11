@@ -39,7 +39,7 @@ partition (erase disk) -> mount (btrfs subvolumes) -> unpackfs (copy live squash
 | Bootloader | GRUB + grub-btrfs | Calamares supports it as shipped, and it can read btrfs, so kernels live inside the snapshotted root and a rollback never leaves kernel and modules out of step. systemd-boot cannot do that with kernels on the ESP; Limine needs a patched Calamares |
 | Kernel cmdline | `quiet nvidia_drm.modeset=1 nvidia_drm.fbdev=1` | NVIDIA on Wayland |
 | GRUB timeout | 2 s | Faster boot; hold Esc/Shift for the menu |
-| Kernels | `linux-cachyos`, `-bore`, `-lts` all get presets, images and entries | `-lts` is the fallback; cleanup warns if it is missing |
+| Kernels | `linux-cachyos` and `-lts` both get presets, images and entries | `-lts` is the fallback; cleanup warns if it is missing |
 | Root account | Locked; the user is in `wheel` and uses sudo | |
 | Hostname | `labyrinth` | |
 | Min. disk / RAM | ~30 GB / ~4 GB | Both are guesses; the installed size is unmeasured |

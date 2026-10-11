@@ -34,7 +34,7 @@ populated by another process**, exactly how OneDrive looks in Windows Explorer.
 `~/Proton Drive` (the official Windows client's name), or whatever
 `LABYRINTH_PROTON_DRIVE` points to. It shows under **Cloud** in the sidebar, or
 greyed out as "not mounted" with the expected path. The mount unit is
-`packages/labyrinth-cloud/proton-drive.service` (untested).
+`/usr/share/labyrinth/proton-drive.service` (untested).
 
 ### The official `proton-drive` CLI
 
@@ -47,7 +47,7 @@ opened. Those codes belong in a password manager, not a synced file.
 
 ## Setup and verification (built)
 
-`labyrinth-gaming` (in `packages/labyrinth-gaming/`, installed to `/usr/local/bin`):
+`labyrinth-gaming` (`/usr/local/bin/labyrinth-gaming`):
 
 - `labyrinth-gaming check` is read-only. It reports PASS/WARN/FAIL for: Steam and
   32-bit NVIDIA/Vulkan packages, the multilib repo, whether the NVIDIA driver is

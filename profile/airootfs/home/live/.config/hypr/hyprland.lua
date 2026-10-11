@@ -89,6 +89,15 @@ o.bind("SUPER + CTRL + L", "Lock screen", "pidof hyprlock || hyprlock")
 o.bind("SUPER + K", "Show keybindings", "labyrinth-keys")
 o.bind("SUPER + CTRL + N", "New desktop", "labyrinth-workspace new")
 
+-- The Windows shortcuts, so muscle memory from Windows works here too.
+o.bind("SUPER + E", "File manager (Windows: Explorer)", "uwsm-app -- finder")
+o.bind("SUPER + R", "Run (Windows: Run box)", "fuzzel")
+o.bind("SUPER + I", "Settings", "uwsm-app -- systemsettings")
+o.bind("SUPER + L", "Lock screen", "pidof hyprlock || hyprlock")
+o.bind("SUPER + V", "Clipboard history", "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy")
+o.bind("SUPER + SHIFT + S", "Screenshot region", "grim -g \"$(slurp)\" - | wl-copy")
+o.bind("CTRL + SHIFT + ESCAPE", "Task manager", "uwsm-app -- plasma-systemmonitor")
+
 -- Screenshots, clipboard, media. Spotify is the default media target.
 o.bind("PRINT", "Screenshot region", "grim -g \"$(slurp)\" - | wl-copy")
 o.bind("SUPER + CTRL + V", "Clipboard history", "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy")

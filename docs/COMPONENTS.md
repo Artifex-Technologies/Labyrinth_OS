@@ -15,10 +15,9 @@ choose, so someone else's install need not carry what you use. The list is
 | `flatpak` | Flatpak (Flathub) | See below |
 | `proton-drive` | rclone + FUSE, mount service, `labyrinth-cloud` links | No official Linux client exists |
 | `proton-pass` | Proton's official desktop app, repackaged from their RPM, pinned and hash-checked | Built on the machine with makepkg |
-| `cosmic` | The COSMIC desktop as a second session | |
 | `creative` | Krita, Darktable, Kdenlive, OBS Studio, Ardour | |
 | `virtualization` | QEMU, libvirt, UEFI firmware, dnsmasq, nftables (for Limbo) | |
-| `local-ai` | Ollama with CUDA (for Sarina) | Competes with games for the 2080 Ti's 11 GB |
+| `local-ai` | Ollama for Sarina (CUDA on NVIDIA, Vulkan otherwise) | Not in the image (~6 GB with CUDA); Sarina offers to install it on first use. Competes with games for GPU memory |
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
 obsidian), `everything` (all of the above including weather; your own setup).

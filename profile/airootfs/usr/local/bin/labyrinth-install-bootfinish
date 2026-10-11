@@ -6,8 +6,7 @@
 #   2. Everything else (snapshots, services, zram) improves the system but is not
 #      needed to boot, so failures there are WARNINGs, not install failures.
 #
-# NEVER RUN in a real install. Written against the documented behavior of snapper,
-# grub-btrfs and systemd; the first VM install is the test.
+# Verified by VM installs and on a real machine (Dell OptiPlex 3080, including hibernate).
 
 set -uo pipefail
 
@@ -31,6 +30,18 @@ for unit in NetworkManager.service fstrim.timer ratbagd.service; do
   systemctl enable "$unit" >/dev/null 2>&1 && say "enabled $unit" || warn "could not enable $unit"
 done
 
+# 2a'''. Firewall: block incoming, allow outgoing, as Windows does out of the box. Done through
+#        ufw's config files, not `ufw enable`, which would change the live system's firewall
+#        (this runs in a chroot). KDE Connect, if installed, keeps working.
+if command -v ufw >/dev/null; then
+  sed -i -E 's/^DEFAULT_INPUT_POLICY=.*/DEFAULT_INPUT_POLICY="DROP"/; s/^DEFAULT_OUTPUT_POLICY=.*/DEFAULT_OUTPUT_POLICY="ACCEPT"/' /etc/default/ufw
+  sed -i -E 's/^ENABLED=.*/ENABLED=yes/' /etc/ufw/ufw.conf
+  if pacman -Qq kdeconnect >/dev/null 2>&1 && [[ -f /etc/ufw/applications.d/kdeconnect ]] && ! grep -q 'KDE Connect' /etc/ufw/user.rules 2>/dev/null; then
+    warn "KDE Connect is installed; allow it with: sudo ufw allow 'KDE Connect'"
+  fi
+  systemctl enable ufw.service >/dev/null 2>&1 && say "firewall on (incoming blocked, outgoing allowed)" || warn "could not enable the firewall"
+fi
+
 # 2a''. Razer devices: the OpenRazer daemon runs per user.
 if [[ -e /usr/lib/systemd/user/openrazer-daemon.service ]]; then
   systemctl --global enable openrazer-daemon.service >/dev/null 2>&1 && say "enabled the OpenRazer daemon" || warn "could not enable the OpenRazer daemon"
@@ -52,7 +63,7 @@ EOF
 say "configured zram swap"
 
 # 2b. Boot menu: two-second timeout, and the default kernel on top (otherwise GRUB sorts the
-#     LTS kernel first and boots that). The LTS and bore kernels stay in the Advanced menu.
+#     LTS kernel first and boots that). The LTS kernel stays in the Advanced menu.
 if [[ -f /etc/default/grub ]]; then
   sed -i -E 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
   grep -q '^GRUB_TOP_LEVEL=' /etc/default/grub || echo 'GRUB_TOP_LEVEL="/boot/vmlinuz-linux-cachyos"' >>/etc/default/grub
@@ -98,20 +109,11 @@ hibernate_setup() {
   if [[ -f /etc/default/grub ]]; then
     sed -i -E "s|^(GRUB_CMDLINE_LINUX_DEFAULT=['\"])([^'\"]*)(['\"])|\1\2 resume=UUID=${uuid} resume_offset=${offset}\3|" /etc/default/grub
   fi
-  # Initramfs: the resume hook must run before filesystems.
-  if [[ -f /etc/mkinitcpio.conf ]] && ! grep -Eq '^HOOKS=.*resume' /etc/mkinitcpio.conf; then
-    sed -i -E 's/^(HOOKS=\([^)]*)\bfilesystems\b/\1resume filesystems/' /etc/mkinitcpio.conf
-    mkinitcpio -P >/dev/null 2>&1 || warn "mkinitcpio -P failed after adding the resume hook"
-  fi
+  # The initramfs already has the resume hook (labyrinth-install-cleanup's drop-in), so no rebuild.
   # NVIDIA keeps video memory across suspend/hibernate only if asked to.
   install -d /etc/modprobe.d
   echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' >/etc/modprobe.d/labyrinth-nvidia-power.conf
   systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service >/dev/null 2>&1     || warn "could not enable the nvidia power services (fine without an NVIDIA driver)"
-  if grub-mkconfig -o /boot/grub/grub.cfg.new >/dev/null 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg.new; then
-    mv /boot/grub/grub.cfg.new /boot/grub/grub.cfg
-  else
-    rm -f /boot/grub/grub.cfg.new; warn "could not regenerate grub.cfg with the resume parameters"; return 1
-  fi
   say "hibernate ready: ${gib} GiB swap file, resume offset ${offset}"
 }
 hibernate_setup || warn "hibernate not set up"
@@ -121,23 +123,35 @@ hibernate_setup || warn "hibernate not set up"
 if [[ $(findmnt -no FSTYPE / 2>/dev/null) == btrfs ]] && command -v snapper >/dev/null; then
   if snapper --no-dbus -c root create-config / 2>/dev/null; then
     say "created snapper config for /"
+    # A snapshot of the system as installed, kept for good (important=yes is never cleaned up):
+    # always somewhere clean to roll back to from the boot menu.
+    if snapper --no-dbus -c root create --description "Fresh Labyrinth OS install" --userdata "important=yes" 2>/dev/null; then
+      say "took the fresh-install snapshot"
+    else
+      warn "could not take the fresh-install snapshot"
+    fi
     systemctl enable snapper-timeline.timer snapper-cleanup.timer >/dev/null 2>&1 || warn "could not enable snapper timers"
     if command -v grub-btrfsd >/dev/null; then
       systemctl enable grub-btrfsd.service >/dev/null 2>&1 || warn "could not enable grub-btrfsd"
-    fi
-    # Regenerate so grub-btrfs' generator runs; keep the old file if this fails.
-    if grub-mkconfig -o /boot/grub/grub.cfg.new >/dev/null 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg.new; then
-      mv /boot/grub/grub.cfg.new /boot/grub/grub.cfg
-      say "regenerated grub.cfg with snapshot support"
-    else
-      rm -f /boot/grub/grub.cfg.new
-      warn "could not regenerate grub.cfg; keeping the working one"
     fi
   else
     warn "snapper create-config failed; no automatic snapshots (system is otherwise fine)"
   fi
 else
   warn "root is not btrfs or snapper is missing; skipping snapshots"
+fi
+
+# 2d. One grub.cfg for everything above (timeout and command line from 2b, resume parameters,
+#     grub-btrfs' snapshot menu), instead of one run after each step. The installer's own
+#     grub.cfg is kept if this fails (it boots, but without resume= there is no hibernate).
+if [[ -f /etc/default/grub ]]; then
+  if grub-mkconfig -o /boot/grub/grub.cfg.new >/dev/null 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg.new; then
+    mv /boot/grub/grub.cfg.new /boot/grub/grub.cfg
+    say "regenerated grub.cfg"
+  else
+    rm -f /boot/grub/grub.cfg.new
+    warn "could not regenerate grub.cfg; keeping the installer's (no hibernate until it is regenerated)"
+  fi
 fi
 
 exit 0

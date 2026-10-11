@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""Windows' `ipconfig`, laid out the way Windows prints it, from `ip` and NetworkManager.
+
+  ipconfig              addresses, masks and gateways of each adapter
+  ipconfig /all         also the adapter model, MAC, DHCP, lease and DNS servers
+  ipconfig /release     drop the DHCP lease (disconnects the adapters, like Windows)
+  ipconfig /renew       get a new lease (reconnects the adapters)
+  ipconfig /flushdns    clear the DNS cache
+
+Options may be written /all, -all or --all. `ip a` still works and shows the Linux view.
+"""
+import ipaddress
+import json
+import os
+import socket
+import subprocess
+import sys
+
+
+def run(cmd):
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        return r.stdout if r.returncode == 0 else ""
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def ip_json(*args):
+    try:
+        return json.loads(run(["ip", "-j", *args]) or "[]")
+    except ValueError:
+        return []
+
+
+def nm_device(dev):
+    """NetworkManager's view of one device: {'GENERAL.CONNECTION': ..., 'IP4.DNS': [...], ...}."""
+    info = {}
+    for line in run(["nmcli", "-t", "-e", "no", "device", "show", dev]).splitlines():
+        key, _, value = line.partition(":")
+        key = key.split("[")[0]
+        if value:
+            info.setdefault(key, []).append(value)
+    return info
+
+
+def model(dev):
+    """The adapter's product name (e.g. 'Intel Corporation Ethernet Connection I219-V')."""
+    props = {}
+    for line in run(["udevadm", "info", "-q", "property", "-p", f"/sys/class/net/{dev}"]).splitlines():
+        k, _, v = line.partition("=")
+        props[k] = v
+    name = " ".join(x for x in (props.get("ID_VENDOR_FROM_DATABASE"), props.get("ID_MODEL_FROM_DATABASE")) if x)
+    if name:
+        return name
+    driver = os.path.basename(os.path.realpath(f"/sys/class/net/{dev}/device/driver"))
+    return driver if os.path.exists(f"/sys/class/net/{dev}/device/driver") else "Virtual adapter"
+
+
+def kind(link):
+    dev = link["ifname"]
+    if os.path.isdir(f"/sys/class/net/{dev}/wireless"):
+        return "Wireless LAN adapter"
+    if link.get("link_type") == "ether":
+        return "Ethernet adapter"
+    return "Tunnel adapter" if link.get("link_type") != "loopback" else ""
+
+
+def resolv_conf():
+    try:
+        return [l.split()[1] for l in open("/etc/resolv.conf") if l.startswith("nameserver") and len(l.split()) > 1]
+    except OSError:
+        return []
+
+
+def lease(seconds):
+    if not isinstance(seconds, int) or seconds >= 4294967295:
+        return None
+    d, rem = divmod(seconds, 86400)
+    h, rem = divmod(rem, 3600)
+    m, s = divmod(rem, 60)
+    return f"{d} days {h:02d}:{m:02d}:{s:02d} remaining" if d else f"{h:02d}:{m:02d}:{s:02d} remaining"
+
+
+def line(label, value, width=36):
+    """'   IPv4 Address. . . . . . . . . . . : 192.168.1.5', as Windows aligns it."""
+    print(f"   {(label + '. ' * width)[:width - 1].rstrip().ljust(width - 1)} : {value}")
+
+
+def show(full):
+    links = ip_json("addr")
+    gateways = {}
+    for r in ip_json("route", "show", "default") + ip_json("-6", "route", "show", "default"):
+        if r.get("gateway"):
+            gateways.setdefault(r.get("dev"), []).append(r["gateway"])
+    print("\nLabyrinth OS IP Configuration\n")
+    if full:
+        line("Host Name", socket.gethostname())
+        line("Primary Dns Suffix", "")
+        line("Node Type", "Hybrid")
+        line("IP Routing Enabled", "Yes" if open("/proc/sys/net/ipv4/ip_forward").read().strip() == "1" else "No")
+        print()
+    for link in links:
+        if link.get("link_type") == "loopback":
+            continue
+        dev = link["ifname"]
+        nm = nm_device(dev)
+        name = (nm.get("GENERAL.CONNECTION") or [dev])[0]
+        print(f"{kind(link)} {dev}{' (' + name + ')' if name != dev else ''}:\n")
+        addrs = link.get("addr_info", [])
+        up = link.get("operstate") in ("UP", "UNKNOWN") and addrs
+        if not up:
+            line("Media State", "Media disconnected")
+        line("Connection-specific DNS Suffix", " ".join(nm.get("IP4.DOMAIN", [])))
+        if full:
+            line("Description", model(dev))
+            line("Physical Address", link.get("address", "").upper().replace(":", "-"))
+            dhcp = any(a.get("dynamic") for a in addrs)
+            line("DHCP Enabled", "Yes" if dhcp else "No")
+            line("Autoconfiguration Enabled", "Yes")
+        if up:
+            for a in addrs:
+                if a["family"] == "inet6":
+                    scope = "Link-local IPv6 Address" if a.get("scope") == "link" else "IPv6 Address"
+                    line(scope, f"{a['local']}%{dev}" if a.get("scope") == "link" else a["local"])
+            for a in addrs:
+                if a["family"] == "inet":
+                    line("IPv4 Address", a["local"] + ("(Preferred)" if full else ""))
+                    line("Subnet Mask", str(ipaddress.IPv4Network(f"0.0.0.0/{a['prefixlen']}").netmask))
+                    if full and a.get("dynamic"):
+                        left = lease(a.get("valid_life_time"))
+                        if left:
+                            line("Lease Expires", left)
+            gws = gateways.get(dev, [])
+            line("Default Gateway", gws[0] if gws else "")
+            for g in gws[1:]:
+                print(" " * 43 + g)
+            if full:
+                dns = nm.get("IP4.DNS", []) + nm.get("IP6.DNS", []) or resolv_conf()
+                if dns:
+                    line("DNS Servers", dns[0])
+                    for d in dns[1:]:
+                        print(" " * 43 + d)
+        print()
+
+
+def nm_devices():
+    out = run(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device"])
+    return [l.split(":")[0] for l in out.splitlines()
+            if l.split(":")[1:2] and l.split(":")[1] in ("ethernet", "wifi") and "unavailable" not in l]
+
+
+def main(argv):
+    opts = [a.lstrip("/-").lower() for a in argv]
+    if not opts:
+        show(False)
+    elif opts[0] == "all":
+        show(True)
+    elif opts[0] == "release":
+        for d in nm_devices():
+            subprocess.run(["nmcli", "device", "disconnect", d])
+    elif opts[0] == "renew":
+        for d in nm_devices():
+            subprocess.run(["nmcli", "device", "connect", d])
+    elif opts[0] == "flushdns":
+        ok = subprocess.run(["resolvectl", "flush-caches"], capture_output=True).returncode == 0
+        print("Successfully flushed the DNS Resolver Cache." if ok else
+              "There is no DNS cache running on this computer (nothing to flush).")
+    elif opts[0] in ("?", "h", "help"):
+        print(__doc__)
+    else:
+        print(f"Error: unrecognized or incomplete command line.\n{__doc__}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
