@@ -1,6 +1,6 @@
 # Labyrinth OS
 
-A daily-driver Linux for one specific machine, meant to replace Windows on it:
+A daily-driver Linux for one specific machine (for now), meant to replace Windows on it:
 
 | Part | Hardware |
 | --- | --- |
