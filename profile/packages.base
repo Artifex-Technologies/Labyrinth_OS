@@ -88,6 +88,8 @@ plasma-systemmonitor
 kscreenlocker
 # unlocks KDE Wallet with the login password, so apps stop asking for it
 kwallet-pam
+# tiling for one screen of the macOS-style desktop (labyrinth-tiling; ours, packages/pkgbuilds)
+kwin-scripts-krohnkite
 # firewall: incoming blocked, outgoing allowed (like Windows); System Settings > Firewall
 ufw
 plasma-firewall

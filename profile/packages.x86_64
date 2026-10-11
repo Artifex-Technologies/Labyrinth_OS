@@ -76,6 +76,7 @@ plasma-browser-integration
 plasma-systemmonitor
 kscreenlocker
 kwallet-pam
+kwin-scripts-krohnkite
 ufw
 plasma-firewall
 kio-extras

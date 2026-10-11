@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Id": "labyrinth-screen-keys",
+        "Name": "Screen-aware shortcuts",
+        "Description": "Windows-style shortcuts on the everyday screen and Omarchy-style ones on the tiling screen, with the same keys.",
+        "Authors": [{ "Name": "Labyrinth OS" }],
+        "License": "MIT",
+        "Version": "1.0",
+        "EnabledByDefault": true
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "KPackageStructure": "KWin/Script"
+}

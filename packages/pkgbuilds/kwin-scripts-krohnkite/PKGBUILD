@@ -1,0 +1,27 @@
+# Krohnkite: dynamic tiling for KWin 6 (MIT). Labyrinth uses it for the tiling screen of the
+# macOS-style desktop (labyrinth-tiling); it is installed disabled and only switched on for the
+# screens labyrinth-tiling names.
+# Upstream: https://codeberg.org/anametologin/Krohnkite (the GitHub repo is archived).
+# Pinned to the last stable release; checksum taken 2026-10-11 from the release asset.
+pkgname=kwin-scripts-krohnkite
+pkgver=0.9.9.2
+_commit=1d7fd74
+pkgrel=1
+pkgdesc="Dynamic tiling extension for KWin 6"
+arch=('any')
+url="https://codeberg.org/anametologin/Krohnkite"
+license=('MIT')
+depends=('kwin')
+makedepends=('libarchive')
+source=("krohnkite-$pkgver.kwinscript::https://codeberg.org/anametologin/Krohnkite/releases/download/$pkgver/krohnkite-$pkgver-$_commit.kwinscript")
+noextract=("krohnkite-$pkgver.kwinscript")
+sha256sums=('42f7f66531d366c74b5fc860381da3517ccb4cdccd1f80c122fcab6e9a8fcf7e')
+
+package() {
+  local dest="$pkgdir/usr/share/kwin/scripts/krohnkite"
+  install -d "$dest"
+  bsdtar -xf "$srcdir/krohnkite-$pkgver.kwinscript" -C "$dest"
+  # The archive is a zip with no permissions worth keeping.
+  find "$dest" -type d -exec chmod 755 {} +
+  find "$dest" -type f -exec chmod 644 {} +
+}

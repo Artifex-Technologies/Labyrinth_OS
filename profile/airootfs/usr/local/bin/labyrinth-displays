@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 SYSTEM_RULES = os.environ.get("LABYRINTH_DISPLAY_RULES", "/usr/share/labyrinth/displays.json")
 
@@ -306,6 +307,23 @@ def kde_plan(outputs, seen, rules=None, models=None):
     return args, keys, notes
 
 
+def tiling_target(outputs, rules, models):
+    """(connector, model) of the connected monitor whose rule says "tiling": true, or None.
+
+    That monitor becomes the Omarchy-style tiling screen of the macOS-style desktop (see
+    labyrinth-tiling). Matched by the EDID model like every other rule, so it follows the monitor
+    to whichever port it is plugged into.
+    """
+    for o in outputs:
+        if not (o.get("connected") and o.get("enabled")):
+            continue
+        model = models.get(o["name"], "")
+        rule = find_rule({"description": model, "model": model, "make": ""}, rules) if model else None
+        if rule and rule.get("tiling"):
+            return o["name"], model
+    return None
+
+
 def kde_main():
     base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
     state_path = os.path.join(base, "labyrinth", "displays-kde.json")
@@ -331,6 +349,19 @@ def kde_main():
             return 1
     for k in keys:
         seen[k] = True
+    # The tiling screen, once per monitor and port: after that, `labyrinth-tiling off` or another
+    # screen chosen by hand is never overridden.
+    target = tiling_target(outputs, load_rules(), models)
+    if target:
+        key = f"tiling|{target[1]}|{target[0]}"
+        if not seen.get(key):
+            tool = os.environ.get("LABYRINTH_TILING", "labyrinth-tiling").split()
+            if args:
+                time.sleep(2)  # let the new positions settle; the tiling bar is placed by them
+            r = subprocess.run(tool + [target[0]], capture_output=True, text=True, timeout=60)
+            print(f"labyrinth-displays: tiling screen {target[0]} ({target[1]}): " + (r.stdout.strip() or r.stderr.strip()))
+            if r.returncode == 0:
+                seen[key] = True
     os.makedirs(os.path.dirname(state_path), exist_ok=True)
     with open(state_path, "w", encoding="utf-8") as f:
         json.dump(seen, f, indent=1)

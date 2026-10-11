@@ -1,5 +1,5 @@
 {
-  "_comment": "Monitor layout rules for this machine, read by labyrinth-displays. 'match' is a case-insensitive substring of the monitor's description or model as Hyprland reports it (from the EDID: Windows reported 'ACR X34 GS' and 'GSM LG SDQHD'). Positions are in Hyprland's logical pixels, i.e. after scaling. The values below copy the Windows arrangement on 2026-10-10: ultrawide at 0,0; the tall LG DualUp (2560x2880 native, shown at 125% = 2048x2304) to its right with its top 783 px above the ultrawide's top edge. Hyprland's connector names are not known until a real boot, so rules never name them. Edit ~/.config/labyrinth/displays.json to override.",
+  "_comment": "Monitor layout rules for this machine, read by labyrinth-displays. 'match' is a case-insensitive substring of the monitor's description or model as Hyprland reports it (from the EDID: Windows reported 'ACR X34 GS' and 'GSM LG SDQHD'). Positions are in Hyprland's logical pixels, i.e. after scaling. The values below copy the Windows arrangement on 2026-10-10: ultrawide at 0,0; the tall LG DualUp (2560x2880 native, shown at 125% = 2048x2304) to its right with its top 783 px above the ultrawide's top edge. Hyprland's connector names are not known until a real boot, so rules never name them. Edit ~/.config/labyrinth/displays.json to override. 'tiling': true makes that monitor the Omarchy-style tiling screen of the macOS-style desktop (labyrinth-tiling), once per connector it is plugged into.",
   "monitors": [
     {
       "match": "X34 GS",
@@ -12,7 +12,8 @@
       "mode": "2560x2880@60",
       "scale": 1.25,
       "place": "right_of_primary",
-      "y": -783
+      "y": -783,
+      "tiling": true
     }
   ]
 }

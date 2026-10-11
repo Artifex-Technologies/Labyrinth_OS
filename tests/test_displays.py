@@ -278,5 +278,40 @@ class Kde(unittest.TestCase):
             self.assertEqual(open(log).read().count("output.HDMI-A-1.mode.2"), 1)
 
 
+class Tiling(unittest.TestCase):
+    def test_the_dualup_is_the_tiling_screen(self):
+        rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
+        self.assertEqual(disp.tiling_target([ACER, DUALUP_K], rules, MODELS), ("HDMI-A-1", "GSM LG SDQHD"))
+
+    def test_no_rule_no_tiling_screen(self):
+        rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
+        self.assertIsNone(disp.tiling_target([ACER], rules, MODELS))
+        self.assertIsNone(disp.tiling_target([DUALUP_K], rules, {"HDMI-A-1": "DEL U2720Q"}))
+        self.assertIsNone(disp.tiling_target([dict(DUALUP_K, enabled=False)], rules, MODELS))
+
+    @unittest.skipIf(os.name == "nt", "needs a POSIX shell to stand in for kscreen-doctor")
+    def test_kde_main_turns_tiling_on_once(self):
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "calls.txt")
+            fixture = os.path.join(d, "out.json")
+            # Both monitors already at their best modes, so only the tiling step runs.
+            json.dump({"outputs": [dict(DUALUP_K, currentModeId="3", scale=1.25)]}, open(fixture, "w"))
+            for name, body in (("kscreen-doctor", 'if [ "$1" = -j ]; then cat ' + fixture + '; else echo "kscreen $*" >> ' + log + "; fi"),
+                               ("labyrinth-tiling", 'echo "tiling $*" >> ' + log + '; echo "$1 tiles"')):
+                path = os.path.join(d, name)
+                open(path, "w").write("#!/bin/sh\n" + body + "\n")
+                os.chmod(path, 0o755)
+            os.makedirs(os.path.join(d, "card1-HDMI-A-1"))
+            open(os.path.join(d, "card1-HDMI-A-1", "edid"), "wb").write(make_edid("GSM", "LG SDQHD"))
+            os.makedirs(os.path.join(d, "labyrinth"))
+            open(os.path.join(d, "labyrinth", "displays.json"), "w").write(open(RULES, encoding="utf-8").read())
+            env = dict(os.environ, LABYRINTH_KSCREEN=os.path.join(d, "kscreen-doctor"), XDG_CONFIG_HOME=d,
+                       LABYRINTH_DRM_ROOT=d, LABYRINTH_TILING=os.path.join(d, "labyrinth-tiling"))
+            for _ in range(2):
+                r = subprocess.run([sys.executable, TOOL, "--kde"], env=env, capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(open(log).read().count("tiling HDMI-A-1"), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

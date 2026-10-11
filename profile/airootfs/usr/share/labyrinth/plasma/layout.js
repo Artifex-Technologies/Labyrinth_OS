@@ -18,7 +18,6 @@ launcher.currentConfigGroup = ["General"];
 launcher.writeConfig("icon", "labyrinthos");
 launcher.currentConfigGroup = ["Shortcuts"];
 launcher.writeConfig("global", "Alt+F1");
-top.addWidget("org.kde.plasma.pager");           // desktops: switch and add
 // The focused app's name in bold, like macOS. It is there for apps whose menus cannot be shown in
 // the bar (Vivaldi, Obsidian and other Electron apps), and the menus follow it for the rest.
 var appname = top.addWidget("org.kde.windowtitle");

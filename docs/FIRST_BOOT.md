@@ -107,5 +107,12 @@ The Windows shortcuts work on both desktops:
 | Win + F | Full screen (hides the dock and top bar) |
 | Win + Space | In full screen: bring up the dock and top bar, Esc hides them again (on the tiling desktop it opens the launcher) |
 
+**Your DualUp is the Omarchy-style screen.** Windows dragged or opened there tile automatically
+(no title bars, gaps), it has its own workspaces 1-9, and on it some keys switch to their Omarchy
+meaning: Win + Arrows moves focus, Win + Shift + Arrows swaps tiles, Win + 1..9 switches workspace,
+Win + W closes the window, Win + Space opens the launcher, Win + T floats a window. On the Acer they
+keep the Windows meaning (snap, dock apps, overview). Win + Shift + Alt + Left/Right throws a window
+to the other monitor. Turn it off with `labyrinth-tiling off`; DESKTOP.md has the full table.
+
 In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in
 the Windows layout (`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.

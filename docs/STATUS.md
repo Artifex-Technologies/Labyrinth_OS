@@ -1,4 +1,4 @@
-# Status (2026-10-10)
+# Status (updated 2026-10-11)
 
 ## Verified (built and tested on Windows)
 
@@ -126,22 +126,55 @@ On a Dell OptiPlex 3080 (i5, 8 GB, 2 x 256 GB, Intel graphics), installed from t
 - Direction change: the macOS-style desktop becomes KDE Plasma with the WhiteSur (SmallSur) look;
   Hyprland stays as the Omarchy-style tiling mode, chosen at login (`labyrinth-switch-mode`).
 
-### Where things stand (2026-10-11, evening)
+### Where things stand (2026-10-11, end of session)
 
-Done and seen working (VM screenshots): Plasma macOS-style desktop (WhiteSur look, traffic-light buttons
-on the left, global menu in the top bar showing the focused app's menus, floating dock with hover
-previews, Meta key opens the launcher), the Labyrinth installer inside it, a full install, hibernate
-on real hardware (OptiPlex), Hyprland tiling session with floating-by-default windows.
+Latest ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.11-x86_64.iso` (6.0 GB, sha256
+`e19469a5...cfaf246b6`, in SHA256SUMS next to it). Built from the working tree; **nothing from
+2026-10-11 is committed yet** (the GitHub repo Artifex-Technologies/Labyrinth_OS has the earlier work).
 
-Built since but not yet confirmed on a screen: the arrowhead logo set (`scripts/gen-logo.sh`) in the
-installer, dock launcher and login screen; the login-screen background fix; no Apple logo in the top
-bar; live session no longer locks or blanks during an install; Yakuake without its first-run dialog;
-USB/Bluetooth power-saving off for wireless keyboards; best monitor mode on KDE (`labyrinth-displays
---kde`, tested against a fake kscreen-doctor and, in the VM, picks the largest 60 Hz+ mode).
+Done on 2026-10-11 and verified in the VM (screenshots), unless marked otherwise:
+- **Windows feel.** Window buttons on the right in Windows order (minimize, maximize, close), macOS
+  look. Shortcuts: Win+E Finder, Win+R run, Win+I settings, Win+L lock, Win+V clipboard,
+  Win+Shift+S screenshot, Ctrl+Shift+Esc task manager. Terminal commands `cls` and `ipconfig`
+  (/all, /release, /renew, /flushdns) in the Windows layout.
+- **Dock like a taskbar.** Maximized and new windows stop above it (KWin script
+  `labyrinth-fit-windows`); Win+F full screen hides dock and bar; Win+Space brings them up over a
+  full-screen app, Esc hides them. The Hyprland (Omarchy) session has no dock any more.
+- **One screen macOS-style, one Omarchy-style** (DESKTOP.md has the full key table): the LG DualUp
+  tiles with Krohnkite (`kwin-scripts-krohnkite`, our PKGBUILD), has its own workspaces 1-9 and a
+  slim bar; keys change meaning by screen (KWin script `labyrinth-screen-keys`);
+  `labyrinth-tiling OUTPUT|off`; labyrinth-displays turns it on for the DualUp once per port.
+  Verified in a two-monitor VM at half size; **not yet on the real monitors**.
+- **Faster, smaller install.** ~2 min in the VM (was ~6): resume hook added before the initramfs is
+  built (no second `mkinitcpio -P`), one grub-mkconfig, keyring made on first boot. 15 GB installed
+  / 6 GB ISO (was 21 / 10): Ollama+CUDA no longer in the image (Sarina offers `ollama-cuda` or
+  `ollama-vulkan` on first use), COSMIC dropped, bore kernel dropped (cachyos + lts remain).
+- **From CachyOS's installer, adopted into ours:** firewall on by default (ufw: deny incoming, allow
+  outgoing; System Settings > Firewall) and a permanent "Fresh Labyrinth OS install" snapshot.
+  Decision: keep our upstream Calamares build (cachyos-calamares collides with our config).
+- **Cleanup:** duplicate gaming tools and Proton Drive unit removed; old VM scripts and the WSLg GUI
+  test removed; already-built local packages are skipped (scripts/build-local-packages.sh).
+- Daedalus CAD (separate repo) builds on Arch: 39 tests pass, `flatten` numbers hand-checked.
 
-Still to do, in the order that matters for daily use:
-1. Boot the next ISO on the OptiPlex: login page, first Plasma login, switching to tiling and back.
-2. Plasma lock screen in the "Split" style (hyprlock Split exists for the tiling session).
-3. App name in bold next to the menus in the top bar; media controls, weather in the Plasma tray.
-4. NVIDIA and the two real monitors (your main PC): boot the live USB there before installing.
-5. Finder: icon packs; install-time component chooser; remaining ISO gaps (docs/ARCHITECTURE.md).
+Still to do, most important first:
+1. **Commit and push** today's work (ask first; the owner has not said to commit yet).
+2. **Real hardware on the main PC** (i9-9900K, RTX 2080 Ti, Acer X34 GS + LG DualUp): boot the live
+   USB, check NVIDIA, both monitors at the right mode/scale/position, the DualUp tiling screen and
+   the per-screen keys, then install. Secure Boot off; BitLocker recovery key at hand.
+3. **Tiling screen polish:** coloured border on the active tile (Omarchy style); check heavy apps
+   (CAD, games) tiled; maybe an on/off toggle in the top bar.
+4. Plasma lock screen in the "Split" style; SDDM logo not showing.
+5. Finder as the file picker for all apps (xdg-desktop-portal FileChooser backend), owner approved.
+6. Confirm on a screen: kwallet-pam (no wallet prompt at login), easier window-edge resizing,
+   Yakuake colours.
+7. Dual-boot support in the installer (BitLocker note); Claude Code on Linux; icon packs for Finder.
+8. Optional: package Daedalus CAD as a component (like sarina-git) with .stl/.dxf file associations.
+
+How to build and test (WSL distro `archlinux`): `scripts/build-local-packages.sh` as builder (copy new
+PKGBUILDs to /home/builder/labyrinth/packages first), then `LABYRINTH_WORK_DIR=/root/isowork
+LABYRINTH_OUT_DIR=/root/isoout scripts/build.sh` as root. VM: `scripts/vm/run-iso.sh new|iso|disk`;
+two monitors with `VGA_ARGS="-device virtio-vga,id=vga0,xres=1720,yres=720 -device
+virtio-gpu-pci,id=vga1,xres=1280,yres=1440"` (QEMU 11.1.2 crashes on per-screen `screendump`; take
+screenshots in the guest with `spectacle -b -n -f`). Tests: `bash tests/test_desktop_scripts.sh`,
+`bash tests/test_install_cleanup.sh`, `python3 -m unittest tests.test_displays tests.test_bar_tools
+tests.test_labyrinth_apps tests.test_steam_playall`.
