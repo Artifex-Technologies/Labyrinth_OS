@@ -104,6 +104,8 @@ The Windows shortcuts work on both desktops:
 | Ctrl + Shift + Esc | Task manager (System Monitor) |
 | Win + arrow keys | Snap the window (macOS-style desktop) |
 | Alt + Tab, Alt + F4 | Switch windows, close a window |
+| Win + F | Full screen (hides the dock and top bar) |
+| Win + Space | In full screen: bring up the dock and top bar, Esc hides them again (on the tiling desktop it opens the launcher) |
 
 In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in
 the Windows layout (`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.

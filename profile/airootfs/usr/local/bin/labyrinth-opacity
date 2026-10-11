@@ -1,54 +1,40 @@
 #!/usr/bin/env bash
-# Set how see-through the dock or the top bar is. The colour stays the theme's dark purple
-# (23, 13, 38); only the opacity changes. Blur behind them comes from Hyprland.
+# Set how see-through the tiling desktop's top bar (waybar) is. The colour stays the theme's dark
+# purple (23, 13, 38); only the opacity changes. Blur behind it comes from Hyprland. (The
+# macOS-style desktop's bar and dock are Plasma panels: right-click one > Show Panel Configuration.)
 #
-#   labyrinth-opacity dock 40      dock 40% opaque (0 = invisible shelf, 100 = solid)
-#   labyrinth-opacity bar 80
-#   labyrinth-opacity              show the current values
+#   labyrinth-opacity 80           bar 80% opaque (0 = invisible, 100 = solid)
+#   labyrinth-opacity show         show the current value
 #   labyrinth-opacity pick         choose from a menu (used by the power menu's Settings)
 #
-# It edits the user's own copies of nwg-dock-hyprland/style.css and waybar/style.css and
-# restarts that component. The values are remembered in those files themselves.
+# It edits the user's own waybar/style.css, where the value is remembered, and restarts the bar.
 set -u
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
-DOCK_CSS=$CONFIG/nwg-dock-hyprland/style.css
 BAR_CSS=$CONFIG/waybar/style.css
 MENU=${LABYRINTH_MENU:-fuzzel --dmenu}
 
-# The line that sets the shelf colour: the first "rgba(23, 13, 38, A)" in the file for the bar
-# (its #waybar capsules), and the one inside `window {` for the dock.
-current() {  # current FILE -> percent
+current() {  # the first "rgba(23, 13, 38, A)" in the bar's CSS, as a percent
   local a
-  a=$(grep -m1 -oE 'rgba\(23, 13, 38, *[0-9.]+\)' "$1" 2>/dev/null | grep -oE '[0-9.]+\)$' | tr -d ')')
+  a=$(grep -m1 -oE 'rgba\(23, 13, 38, *[0-9.]+\)' "$BAR_CSS" 2>/dev/null | grep -oE '[0-9.]+\)$' | tr -d ')')
   [[ -n $a ]] && awk -v a="$a" 'BEGIN { printf "%d", a * 100 + 0.5 }'
 }
 
-set_opacity() {  # set_opacity dock|bar PERCENT
-  local what=$1 pct=$2 file alpha
+set_opacity() {  # set_opacity PERCENT
+  local pct=$1 alpha
   [[ $pct =~ ^[0-9]+$ ]] && (( pct >= 0 && pct <= 100 )) || { echo "opacity must be 0-100" >&2; return 2; }
   alpha=$(awk -v p="$pct" 'BEGIN { printf "%.2f", p / 100 }')
-  case $what in
-    dock) file=$DOCK_CSS ;;
-    bar)  file=$BAR_CSS ;;
-    *) echo "usage: labyrinth-opacity dock|bar PERCENT" >&2; return 2 ;;
-  esac
-  [[ -f $file ]] || { echo "no $file; run labyrinth-shell once first" >&2; return 1; }
-  sed -i -E "s/rgba\(23, 13, 38, *[0-9.]+\)/rgba(23, 13, 38, $alpha)/g" "$file"
+  [[ -f $BAR_CSS ]] || { echo "no $BAR_CSS; run labyrinth-shell once first" >&2; return 1; }
+  sed -i -E "s/rgba\(23, 13, 38, *[0-9.]+\)/rgba(23, 13, 38, $alpha)/g" "$BAR_CSS"
   command -v labyrinth-shell >/dev/null && labyrinth-shell apply
-  echo "$what opacity: ${pct}%"
+  echo "bar opacity: ${pct}%"
 }
 
 case "${1:-show}" in
-  show)
-    echo "dock: $(current "$DOCK_CSS")%"
-    echo "bar:  $(current "$BAR_CSS")%" ;;
-  dock|bar) set_opacity "$1" "${2:-}" ;;
+  show) echo "bar: $(current)%" ;;
   pick)
-    what=$(printf '%s\n' "Dock opacity" "Top bar opacity" | $MENU) || exit 0
-    pct=$(printf '%s\n' 0 10 20 30 40 50 60 70 80 90 100 | $MENU) || exit 0
-    case $what in
-      "Dock opacity")    set_opacity dock "$pct" ;;
-      "Top bar opacity") set_opacity bar "$pct" ;;
-    esac ;;
-  *) echo "usage: labyrinth-opacity [dock|bar PERCENT | pick | show]" >&2; exit 2 ;;
+    pct=$(printf '%s
+' 0 10 20 30 40 50 60 70 80 90 100 | $MENU) || exit 0
+    set_opacity "$pct" ;;
+  [0-9]*) set_opacity "$1" ;;
+  *) echo "usage: labyrinth-opacity [PERCENT | pick | show]" >&2; exit 2 ;;
 esac

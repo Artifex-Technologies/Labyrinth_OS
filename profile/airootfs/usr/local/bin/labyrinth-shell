@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# (Re)start the bar and the dock. Called from hyprland.lua at session start; run it
-# by hand after editing waybar or dock config.
-#
-# Both traps below were found by boot-testing Chymaera's equivalent:
-#  * `pkill -x nwg-dock-hyprland` never matches. The kernel truncates process names
-#    to 15 characters and this one is 18, so match the full command line with -f.
-#  * nwg-dock-hyprland's -s takes a filename relative to ~/.config/nwg-dock-hyprland/;
-#    an absolute path made it fatal at startup. We rely on its default (style.css).
+# (Re)start the wallpaper and the bar of the tiling desktop (Hyprland). Called from hyprland.lua
+# at session start; run it by hand after editing the waybar config. The tiling desktop has no
+# dock, as in Omarchy: SUPER + SPACE opens the launcher.
 set -u
 
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
@@ -19,16 +14,7 @@ apply() {
     setsid -f swaybg -i "$WALLPAPER" -m fill >/dev/null 2>&1
   fi
   pkill -x waybar 2>/dev/null
-  pkill -f '^nwg-dock-hyprland' 2>/dev/null
   setsid -f waybar -c "$CONFIG/waybar/config.jsonc" -s "$CONFIG/waybar/style.css" >/dev/null 2>&1
-  if command -v nwg-dock-hyprland >/dev/null; then
-    # -c fuzzel: the dock's launcher button. -i icon size, -mb bottom margin, -w workspaces.
-    # -x reserves the dock's space: windows are laid out above it instead of underneath, so no
-    # button at the bottom of a window is ever hidden by the dock (found with the installer).
-    # With an exclusive zone the dock is on the "top" layer, so a full-screen window (SUPER + F)
-    # still covers it, as on macOS.
-    setsid -f nwg-dock-hyprland -i 44 -mb 8 -w 9 -x -c fuzzel >/dev/null 2>&1
-  fi
 }
 
 case "${1:-apply}" in

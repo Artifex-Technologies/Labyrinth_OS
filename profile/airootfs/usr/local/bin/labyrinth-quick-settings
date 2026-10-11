@@ -38,13 +38,13 @@ confirm() {  # confirm "Power off"
 
 settings() {
   local choice
-  choice=$(menu "Network" "Sound" "Bluetooth" "Displays" "Dock and bar opacity" "Gaming check") || return 0
+  choice=$(menu "Network" "Sound" "Bluetooth" "Displays" "Bar opacity" "Gaming check") || return 0
   case $choice in
     Network)       launch nm-connection-editor ;;
     Sound)         launch pavucontrol ;;
     Bluetooth)     launch blueman-manager ;;
     Displays)      launch nwg-displays ;;
-    "Dock and bar opacity") labyrinth-opacity pick ;;
+    "Bar opacity") labyrinth-opacity pick ;;
     "Gaming check") launch foot -e sh -c 'labyrinth-gaming check; printf "\nPress Enter to close. "; read -r _' ;;
   esac
 }

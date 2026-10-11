@@ -12,3 +12,9 @@ _launch=Ctrl+Shift+Esc\tCtrl+Esc
 
 [services][org.kde.spectacle.desktop]
 RectangularRegionScreenShot=Meta+Shift+S\tMeta+Shift+Print
+
+[kwin]
+Window Fullscreen=Meta+F,none,Make Window Fullscreen
+
+[plasmashell]
+cycle-panels=Meta+Space\tMeta+Alt+P,Meta+Alt+P,Move keyboard focus between panels
