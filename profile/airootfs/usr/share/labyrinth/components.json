@@ -145,6 +145,14 @@
         "flatpak"
       ],
       "notes": "Add the store once: flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo"
+    },
+    {
+      "id": "sarina",
+      "name": "Sarina (local AI agent)",
+      "description": "Sarina, the local-model agent: a Go program that talks to any OpenAI-compatible model server (such as Ollama), calls tools, and keeps sessions on disk. Built here with makepkg from the Sarina repository.",
+      "proprietary": false,
+      "pkgbuild": "sarina-git",
+      "notes": "Needs a model server. Install Ollama (the local-ai component, or the plain 'ollama' package on a machine without an NVIDIA card), pull a model, then: sarina chat --interactive. The web console is 'sarina gui'."
     }
   ],
   "presets": {
@@ -169,7 +177,8 @@
       "local-ai",
       "vscode",
       "containers",
-      "flatpak"
+      "flatpak",
+      "sarina"
     ]
   }
 }

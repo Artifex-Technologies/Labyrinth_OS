@@ -78,6 +78,7 @@ kdeplasma-addons
 plasma-browser-integration
 plasma-systemmonitor
 kscreenlocker
+kwallet-pam
 kio-extras
 konsole
 yakuake
@@ -88,6 +89,7 @@ whitesur-kde-theme
 whitesur-gtk-theme
 whitesur-icon-theme
 whitesur-cursor-theme
+plasma6-applets-window-title
 nwg-dock-hyprland
 nwg-displays
 mako
@@ -110,6 +112,12 @@ curl
 libnotify
 pavucontrol
 blueman
+solaar
+piper
+libratbag
+openrazer-daemon
+openrazer-driver-dkms
+python-openrazer
 nm-connection-editor
 ttf-jetbrains-mono-nerd
 btop
@@ -165,3 +173,5 @@ podman
 distrobox
 # component: flatpak
 flatpak
+# component: sarina
+sarina-git

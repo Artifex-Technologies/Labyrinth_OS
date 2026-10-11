@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Blueman Applet
+Comment=Bluetooth tray icon and pairing agent, for the Hyprland session only
+Exec=blueman-applet
+Icon=blueman
+OnlyShowIn=Hyprland;

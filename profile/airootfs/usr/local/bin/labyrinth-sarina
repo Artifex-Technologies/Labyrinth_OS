@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Start Sarina (the local-model agent) with a model server behind it.
+#
+#   labyrinth-sarina            chat in this terminal (the "Sarina" launcher opens one for you)
+#   labyrinth-sarina gui        start Sarina's web console and open it in the browser
+#   labyrinth-sarina model      pick and download a model, then exit
+#
+# Sarina talks to any OpenAI-compatible server. This script uses Ollama: if nothing is answering
+# on 127.0.0.1:11434 it starts `ollama serve` for your user (with a 16k context window, which
+# Sarina needs; Ollama's default is too small), and if no model is installed it offers to download
+# one that fits this computer's memory. It never downloads anything without asking.
+set -u
+
+OLLAMA_URL=http://127.0.0.1:11434
+export OPENAI_BASE_URL=$OLLAMA_URL/v1
+export OPENAI_API_KEY=${OPENAI_API_KEY:-local-token}
+
+say() { printf '%s\n' "$*"; }
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || { say "labyrinth-sarina: $1 is not installed ($2)"; exit 1; }
+}
+need sarina "install the sarina-git package"
+need ollama "install the ollama package (ollama-cuda on an NVIDIA machine)"
+
+server_up() { curl -fsS -m 2 "$OLLAMA_URL/api/tags" >/dev/null 2>&1; }
+
+start_server() {
+  server_up && return 0
+  say "Starting the model server (Ollama)..."
+  OLLAMA_CONTEXT_LENGTH=16384 setsid -f ollama serve >"${XDG_RUNTIME_DIR:-/tmp}/ollama-serve.log" 2>&1
+  for _ in $(seq 1 30); do server_up && return 0; sleep 1; done
+  say "labyrinth-sarina: the model server did not start. See ${XDG_RUNTIME_DIR:-/tmp}/ollama-serve.log"
+  exit 1
+}
+
+# A model that fits: about 1/3 of the RAM is a safe ceiling for the weights plus the context.
+suggest_model() {
+  local gb
+  gb=$(awk '/^MemTotal:/ { printf "%d", $2 / 1048576 }' /proc/meminfo)
+  if   (( gb >= 48 )); then echo "qwen3:30b"
+  elif (( gb >= 24 )); then echo "qwen3:14b"
+  elif (( gb >= 12 )); then echo "qwen3:8b"
+  else                      echo "qwen3:4b"
+  fi
+}
+
+ensure_model() {
+  if [[ -n ${OPENAI_MODEL:-} ]]; then return 0; fi
+  local have
+  have=$(ollama list 2>/dev/null | awk 'NR>1 {print $1}' | head -n1)
+  if [[ -n $have ]]; then OPENAI_MODEL=$have; export OPENAI_MODEL; return 0; fi
+  local m
+  m=$(suggest_model)
+  say "No model is installed yet. For this computer I suggest: $m"
+  read -r -p "Download $m now? It can be several gigabytes. [y/N] " ans
+  case $ans in
+    y|Y|yes) ollama pull "$m" || exit 1 ;;
+    *) say "Run 'ollama pull <model>' when you are ready, then start Sarina again."; exit 0 ;;
+  esac
+  OPENAI_MODEL=$m; export OPENAI_MODEL
+}
+
+case ${1:-chat} in
+  chat)
+    start_server; ensure_model
+    exec sarina chat --interactive --cwd "$HOME"
+    ;;
+  gui)
+    start_server; ensure_model
+    (sleep 2; xdg-open http://127.0.0.1:8765 >/dev/null 2>&1) &
+    exec sarina gui
+    ;;
+  model)
+    start_server
+    unset OPENAI_MODEL
+    ensure_model
+    ;;
+  *)
+    say "usage: labyrinth-sarina [chat|gui|model]"; exit 2
+    ;;
+esac

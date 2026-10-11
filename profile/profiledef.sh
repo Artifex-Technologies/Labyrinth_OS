@@ -31,6 +31,7 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-workspace"]="0:0:755"
   ["/usr/local/bin/labyrinth-opacity"]="0:0:755"
   ["/usr/local/bin/labyrinth-install"]="0:0:755"
+  ["/usr/local/bin/labyrinth-sarina"]="0:0:755"
   ["/home/live/Desktop/install-labyrinth.desktop"]="1000:1000:755"
   ["/usr/local/bin/labyrinth-plasma-setup"]="0:0:755"
   ["/usr/local/bin/labyrinth-set-session"]="0:0:755"

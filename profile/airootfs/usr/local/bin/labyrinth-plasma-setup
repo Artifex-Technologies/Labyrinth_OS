@@ -20,6 +20,10 @@ fi
 # Window buttons on the left, macOS order: close, minimize, maximize.
 kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft XIA
 kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
+# A real border around windows, so their edges and corners can be grabbed to resize (the WhiteSur
+# frame is very thin, which made diagonal resizing of apps like VS Code nearly impossible).
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSizeAuto false
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSize Normal
 # Windows open like on a Mac; tiling is a button away (Meta + T).
 kwriteconfig6 --file kdeglobals --group General --key AccentColorFromWallpaper false
 # Brand purple (#3A1F5D family). The UI accent is Finder's own violet (124,84,214), a lighter tint, so selections stay visible on dark windows and the desktop matches Finder.

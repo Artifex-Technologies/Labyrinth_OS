@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Sarina Console
+GenericName=Local AI agent, web console
+Comment=Open Sarina's web console in the browser
+Exec=labyrinth-sarina gui
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;

@@ -89,6 +89,8 @@ kdeplasma-addons
 plasma-browser-integration
 plasma-systemmonitor
 kscreenlocker
+# unlocks KDE Wallet with the login password, so apps stop asking for it
+kwallet-pam
 kio-extras
 konsole
 yakuake
@@ -99,6 +101,7 @@ whitesur-kde-theme
 whitesur-gtk-theme
 whitesur-icon-theme
 whitesur-cursor-theme
+plasma6-applets-window-title
 # desktop 2, Omarchy-style tiling: Hyprland session, bar, dock, launcher, terminal, notifications
 nwg-dock-hyprland
 nwg-displays
@@ -123,6 +126,13 @@ curl
 libnotify
 pavucontrol
 blueman
+# input devices: Logitech (Solaar), gaming mice (Piper), Razer (OpenRazer)
+solaar
+piper
+libratbag
+openrazer-daemon
+openrazer-driver-dkms
+python-openrazer
 nm-connection-editor
 ttf-jetbrains-mono-nerd
 # extra desktop tools

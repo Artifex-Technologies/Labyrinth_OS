@@ -1,0 +1,29 @@
+# Maintainer: Labyrinth OS
+# Window Title: a Plasma 6 panel widget that shows the active window's application name and/or
+# title. Labyrinth uses it for the bold app name in the top bar, next to the app's menus.
+# Upstream: https://github.com/dhruv8sh/plasma6-window-title-applet (GPL). The patch is the
+# compatibility fix that the AUR package of the same name carries.
+pkgname=plasma6-applets-window-title
+pkgver=0.9.0
+pkgrel=1
+pkgdesc='Plasma 6 widget showing the active window title and application name'
+arch=('any')
+url='https://github.com/dhruv8sh/plasma6-window-title-applet'
+license=('GPL-3.0-or-later')
+depends=('plasma-workspace')
+source=("window-title-v$pkgver.tar.gz::https://github.com/dhruv8sh/plasma6-window-title-applet/archive/refs/tags/v$pkgver.tar.gz"
+        '41.patch')
+sha256sums=('82a0ae9d10c47e36c510a45fb8f793891def81addfa32b0697b580a84d18a6c2'
+            'd4bc81895961e99ddceeab3a018a9afbe5d01203d7e0eba9279a09a3432b4088')
+
+prepare() {
+  cd "$srcdir/plasma6-window-title-applet-$pkgver"
+  patch -Np1 -i "$srcdir/41.patch"
+}
+
+package() {
+  local d="$pkgdir/usr/share/plasma/plasmoids/org.kde.windowtitle"
+  install -d "$d"
+  cp -r "$srcdir/plasma6-window-title-applet-$pkgver/." "$d/"
+  rm -f "$d/README.md"
+}

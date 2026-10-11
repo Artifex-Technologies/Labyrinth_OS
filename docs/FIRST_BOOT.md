@@ -69,3 +69,19 @@ Desktop" in its power menu (SUPER + ESCAPE) comes back.
   previews files, sound and the network work, and wireless keyboards do not drop keys.
 
 If anything fails, note what is on the screen (a photo works) and tell me.
+
+## 6. Sarina (the local AI agent)
+
+Open **Sarina** from the launcher (tap SUPER, type "sarina"). It starts the model server (Ollama) for
+you if it is not running, and if no model is installed it suggests one that fits your memory and asks
+before downloading it (a few gigabytes). **Sarina Console** opens her web console in the browser.
+From a terminal: `labyrinth-sarina`, `labyrinth-sarina gui`, `labyrinth-sarina model`.
+
+## 7. Monitors
+
+On first login each monitor is set to its native shape at the highest refresh rate it offers at 60 Hz
+or more. Your Acer ultrawide and the LG DualUp are recognised by name and get the layout from
+`/usr/share/labyrinth/displays.json` (Acer 3440x1440 at 144 Hz, LG at 125% placed to its right). It is
+done once per monitor; anything you change later in System Settings is kept. To redo it:
+`rm ~/.config/labyrinth/displays-kde.json` and log in again.
+

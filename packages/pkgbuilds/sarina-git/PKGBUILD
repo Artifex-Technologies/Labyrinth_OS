@@ -1,0 +1,61 @@
+# Maintainer: Labyrinth OS
+#
+# Sarina, the local-model agent (Go core, optional Python helper), built from the Sarina
+# repository checked out next to this one: Artifex/Sarina. It builds from the commit that
+# checkout is on (committed work only), so a new build picks up Sarina as it moves on.
+# Layout needed: <dir>/Sarina and <dir>/Labyrinth_OS/packages/pkgbuilds/sarina-git/PKGBUILD,
+# which is how the Artifex repositories sit on disk. The packaging files below come from
+# Sarina's own packaging/ directory.
+
+_agent_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Sarina" && pwd)"
+
+pkgname=sarina-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc='Local-model agent: Go core with an optional Python ML/voice helper (built from the local Sarina checkout)'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Sarina'
+license=('MPL-2.0')
+depends=('glibc')
+optdepends=(
+  'ollama: a local model server for Sarina to talk to (ollama-cuda on an NVIDIA machine)'
+  'python: the optional ML/voice helper (sarina-helpers)'
+  'python-onnxruntime: semantic search and desktop-audit classification (helper)'
+)
+makedepends=('go' 'python-build' 'python-installer' 'python-wheel' 'python-setuptools' 'git')
+provides=('sarina')
+conflicts=('sarina')
+source=("sarina::git+file://${_agent_src}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/sarina"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/sarina/go"
+  export CGO_ENABLED=0 GOFLAGS="-trimpath -mod=readonly -modcacherw"
+  go build -ldflags "-s -w" -o sarina ./cmd/sarina
+
+  cd ../python/sarina_helpers
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$srcdir/sarina"
+
+  install -Dm755 go/sarina "$pkgdir/usr/bin/sarina"
+  ln -s sarina "$pkgdir/usr/bin/sarina-gui"
+  ln -s sarina "$pkgdir/usr/bin/sarina-service"
+
+  python -m installer --destdir="$pkgdir" python/sarina_helpers/dist/*.whl
+
+  install -Dm644 packaging/arch/sarina-service.service "$pkgdir/usr/lib/systemd/system/sarina-service.service"
+  install -Dm644 packaging/arch/sarina.sysusers "$pkgdir/usr/lib/sysusers.d/sarina.conf"
+  install -Dm644 packaging/arch/service.env.example "$pkgdir/etc/sarina/service.env.example"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 packaging/skills/ecosystem-troubleshoot/SKILL.md \
+    "$pkgdir/usr/share/sarina/skills/ecosystem-troubleshoot/SKILL.md"
+}

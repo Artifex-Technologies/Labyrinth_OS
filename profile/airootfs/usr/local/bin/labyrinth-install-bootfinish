@@ -27,9 +27,14 @@ fi
 say "grub.cfg looks usable ($(grep -c '^[[:space:]]*menuentry ' "$cfg") entries)"
 
 # 2a. Services. `systemctl enable` works in a chroot (it only creates symlinks).
-for unit in NetworkManager.service fstrim.timer; do
+for unit in NetworkManager.service fstrim.timer ratbagd.service; do
   systemctl enable "$unit" >/dev/null 2>&1 && say "enabled $unit" || warn "could not enable $unit"
 done
+
+# 2a''. Razer devices: the OpenRazer daemon runs per user.
+if [[ -e /usr/lib/systemd/user/openrazer-daemon.service ]]; then
+  systemctl --global enable openrazer-daemon.service >/dev/null 2>&1 && say "enabled the OpenRazer daemon" || warn "could not enable the OpenRazer daemon"
+fi
 
 # 2a'. The hourly weather-recording timer, for every user, if the optional weather
 #      component is in this image (it exits quietly until a location is set).

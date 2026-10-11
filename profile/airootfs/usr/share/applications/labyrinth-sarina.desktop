@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Sarina
+GenericName=Local AI agent
+Comment=Chat with Sarina, the local-model agent (starts the model server if needed)
+Exec=labyrinth-sarina chat
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;

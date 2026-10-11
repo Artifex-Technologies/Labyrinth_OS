@@ -1,3 +1,8 @@
+[Appearance]
+Skin=plastik_dark
+Translucency=true
+SkinInstalledWithKns=false
+
 [Dialogs]
 FirstRun=false
 
