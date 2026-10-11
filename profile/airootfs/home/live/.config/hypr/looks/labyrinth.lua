@@ -1,5 +1,5 @@
 -- The Labyrinth look: macOS-like. Rounded corners, soft shadows and real compositor
--- blur behind translucent windows, tiling by default (SUPER + T floats a window).
+-- blur behind translucent windows. Windows float by default like macOS (SUPER + T tiles one).
 --
 -- Blur here is Hyprland's own, applied to ANY translucent window (the foot terminal
 -- is made translucent in foot/foot.ini). This is why Labyrinth uses Hyprland and not

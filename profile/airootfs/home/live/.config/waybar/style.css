@@ -9,7 +9,7 @@
 
 window#waybar {
   background: transparent;
-  color: #d9f2e1;
+  color: #e8e0f5;
 }
 
 #custom-logo,
@@ -28,7 +28,7 @@ window#waybar {
 #pulseaudio,
 #clock,
 #custom-power {
-  background: rgba(14, 30, 22, 0.62);
+  background: rgba(23, 13, 38, 0.62);
   border-radius: 16px;
   padding: 2px 14px;
   margin: 2px 0;
@@ -37,7 +37,7 @@ window#waybar {
 #workspaces { padding: 2px 4px; }
 
 #workspaces button {
-  color: rgba(217, 242, 225, 0.45);
+  color: rgba(232, 224, 245, 0.45);
   padding: 0 7px;
   margin: 0 1px;
   border-radius: 12px;
@@ -45,8 +45,8 @@ window#waybar {
 }
 
 #workspaces button.active {
-  color: #0e1e16;
-  background: #8fd9a8;
+  color: #170d26;
+  background: #c9b2f5;
 }
 
 #workspaces button.urgent { color: #ff453a; }
@@ -57,7 +57,7 @@ window#waybar {
 
 #custom-prev, #custom-next { padding: 2px 9px; }
 #custom-newws:hover, #custom-prev:hover, #custom-playpause:hover, #custom-next:hover,
-#custom-power:hover, #custom-logo:hover, #custom-activity:hover { background: rgba(143, 217, 168, 0.30); }
+#custom-power:hover, #custom-logo:hover, #custom-activity:hover { background: rgba(124, 84, 214, 0.30); }
 
 #network.disconnected { color: #ffd60a; }
-#pulseaudio.muted { color: rgba(217, 242, 225, 0.5); }
+#pulseaudio.muted { color: rgba(232, 224, 245, 0.5); }

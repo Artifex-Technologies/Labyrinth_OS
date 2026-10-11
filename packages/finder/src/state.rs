@@ -50,6 +50,18 @@ pub struct State {
     pub gallery_size: usize,
     /// The right-hand preview pane.
     pub preview: bool,
+    /// Use the system's accent color (KDE Plasma) for Finder's highlights. On by default.
+    pub follow_accent: bool,
+    /// The system accent last read; not saved. Set by the app while it runs.
+    #[serde(skip)]
+    pub system_accent: Option<[u8; 3]>,
+}
+
+impl State {
+    /// The accent to draw with: the system's, if following it and there is one.
+    pub fn accent(&self) -> Option<[u8; 3]> {
+        if self.follow_accent { self.system_accent } else { None }
+    }
 }
 
 impl Default for State {
@@ -75,6 +87,8 @@ impl Default for State {
             view: ViewMode::Details,
             gallery_size: 1,
             preview: true,
+            follow_accent: true,
+            system_accent: None,
         }
     }
 }

@@ -39,12 +39,16 @@ hl.env("NVD_BACKEND", "direct")
 hl.config({
   input = {
     kb_layout = "us",
-    follow_mouse = 1,
+    -- 2 = click to focus (cursor movement alone does not change focus), as on macOS.
+    follow_mouse = 2,
   },
 
   general = {
     layout = "dwindle",
     allow_tearing = false,
+    -- Drag a window's edge or corner to resize it (there are no title bars to grab).
+    resize_on_border = true,
+    extend_border_grab_area = 12,
   },
 
   dwindle = {
@@ -63,14 +67,25 @@ hl.config({
   },
 })
 
+-- Windows behave like macOS: every window floats, centred, at the size the app asks for, and you
+-- move and resize it freely. Tiling is opt-in per window with SUPER + T (see bindings/tiling.lua).
+hl.window_rule({
+  name = "windows-float-like-macos",
+  match = { class = ".*" },
+  float = true,
+  center = true,
+})
+
 -- Applications and shell.
 o.bind("SUPER + RETURN", "Terminal", "uwsm-app -- foot")
-o.bind("SUPER + SHIFT + RETURN", "Browser", "uwsm-app -- firefox")
-o.bind("SUPER + SHIFT + B", "Browser", "uwsm-app -- firefox")
+o.bind("SUPER + SHIFT + RETURN", "Browser", "uwsm-app -- vivaldi")
+o.bind("SUPER + SHIFT + B", "Browser", "uwsm-app -- vivaldi")
+o.bind("SUPER + SHIFT + ALT + B", "Backup browser (Firefox)", "uwsm-app -- firefox")
 o.bind("SUPER + SHIFT + F", "File manager", "uwsm-app -- finder")
 o.bind("SUPER + SHIFT + N", "Notes", "uwsm-app -- obsidian")
 o.bind("SUPER + SPACE", "Launcher", "fuzzel")
 o.bind("SUPER + ESCAPE", "Power and quick settings", "labyrinth-quick-settings")
+o.bind("SUPER + CTRL + L", "Lock screen", "pidof hyprlock || hyprlock")
 o.bind("SUPER + K", "Show keybindings", "labyrinth-keys")
 o.bind("SUPER + CTRL + N", "New desktop", "labyrinth-workspace new")
 
@@ -92,6 +107,7 @@ hl.on("hyprland.start", function()
   hl.exec_cmd("dbus-update-activation-environment --systemd --all")
   hl.exec_cmd("uwsm-app -- hyprpolkitagent")
   hl.exec_cmd("uwsm-app -- mako")
+  hl.exec_cmd("uwsm-app -- hypridle")
   hl.exec_cmd("wl-paste --watch cliphist store")
   hl.exec_cmd("labyrinth-displays --apply")
   hl.exec_cmd("labyrinth-shell apply")

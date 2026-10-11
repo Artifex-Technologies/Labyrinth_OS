@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Yakuake
+Comment=Drop-down terminal (F12)
+Exec=yakuake
+OnlyShowIn=KDE;
+NoDisplay=true

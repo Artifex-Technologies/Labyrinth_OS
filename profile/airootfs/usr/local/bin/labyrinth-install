@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Start the Calamares installer from the desktop (launcher, dock). Live medium only.
+#
+# Calamares needs root, and it must still reach the Wayland session. The stock launcher entry
+# runs `pkexec calamares`, which drops the environment, so the installer started with no
+# display and exited without a word (found on the first real boot of the ISO). sudo with an
+# explicit environment keeps the session; the live account has passwordless sudo
+# (/etc/sudoers.d/00-live-nopasswd, removed by labyrinth-install-cleanup on the installed system).
+set -u
+LOG=${XDG_RUNTIME_DIR:-/tmp}/labyrinth-install.log
+
+if [[ $EUID -eq 0 ]]; then
+  exec env QT_QPA_PLATFORM=wayland calamares "$@"
+fi
+
+runtime=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+display=${WAYLAND_DISPLAY:-wayland-1}
+if [[ ! -S $runtime/$display ]]; then
+  msg="No desktop session found ($runtime/$display); start the installer from inside the Labyrinth desktop."
+  notify-send "Labyrinth installer" "$msg" 2>/dev/null || echo "$msg" >&2
+  exit 1
+fi
+
+if ! sudo -n true 2>/dev/null; then
+  msg="The installer needs administrator rights and this account has none without a password."
+  notify-send "Labyrinth installer" "$msg" 2>/dev/null || echo "$msg" >&2
+  exit 1
+fi
+
+exec sudo -n env WAYLAND_DISPLAY="$display" XDG_RUNTIME_DIR="$runtime" QT_QPA_PLATFORM=wayland \
+  XDG_CURRENT_DESKTOP="${XDG_CURRENT_DESKTOP:-Hyprland}" calamares "$@" >>"$LOG" 2>&1

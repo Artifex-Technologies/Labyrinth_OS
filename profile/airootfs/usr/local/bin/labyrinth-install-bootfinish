@@ -51,6 +51,9 @@ say "configured zram swap"
 if [[ -f /etc/default/grub ]]; then
   sed -i -E 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
   grep -q '^GRUB_TOP_LEVEL=' /etc/default/grub || echo 'GRUB_TOP_LEVEL="/boot/vmlinuz-linux-cachyos"' >>/etc/default/grub
+  # Wireless keyboards and mice drop keys or repeat them when Linux power-saves their USB receiver
+  # or Bluetooth adapter (seen with a Logitech MX Mechanical on a Dell OptiPlex). Turn that off.
+  grep -q 'usbcore.autosuspend' /etc/default/grub || sed -i -E "s|^(GRUB_CMDLINE_LINUX_DEFAULT=['\"])|\1usbcore.autosuspend=-1 |" /etc/default/grub
 fi
 
 # 2b'. Hibernate: a swap file on btrfs the size of RAM (~64 GiB here), plus the resume

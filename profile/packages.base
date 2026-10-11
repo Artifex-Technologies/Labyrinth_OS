@@ -70,10 +70,41 @@ cachyos-v3-mirrorlist
 archlinux-keyring
 bluez
 bluez-utils
-# desktop: Hyprland session, bar, dock, launcher, terminal, notifications
+# desktop 1, macOS-style: KDE Plasma with the WhiteSur look (built into the local repo)
+plasma-desktop
+plasma-workspace
+kwin
+kscreen
+plasma-nm
+plasma-pa
+powerdevil
+bluedevil
+kde-gtk-config
+xdg-desktop-portal-kde
+breeze
+breeze-gtk
+systemsettings
+kinfocenter
+kdeplasma-addons
+plasma-browser-integration
+plasma-systemmonitor
+kscreenlocker
+kio-extras
+konsole
+yakuake
+spectacle
+appmenu-gtk-module
+kvantum
+whitesur-kde-theme
+whitesur-gtk-theme
+whitesur-icon-theme
+whitesur-cursor-theme
+# desktop 2, Omarchy-style tiling: Hyprland session, bar, dock, launcher, terminal, notifications
 nwg-dock-hyprland
 nwg-displays
 mako
+hyprlock
+hypridle
 fuzzel
 foot
 uwsm
@@ -84,6 +115,8 @@ slurp
 wl-clipboard
 playerctl
 firefox
+vivaldi
+vivaldi-ffmpeg-codecs
 kvantum
 xdg-utils
 curl

@@ -43,6 +43,7 @@ live_only=(
   /etc/sysusers.d/live.conf
   /etc/tmpfiles.d/live-home.conf
   /etc/xdg/kscreenlockerrc
+  /etc/xdg/powerdevilrc
 )
 for f in "${live_only[@]}"; do rm -f -- "$R$f"; done
 rm -rf -- "$R/home/live"
@@ -55,17 +56,21 @@ if [[ -z $R ]] && getent passwd live >/dev/null 2>&1; then
   userdel -f live >/dev/null 2>&1 && say "removed the live account" || say "WARNING: could not remove the live account"
 fi
 
-# Make Hyprland the session the login screen starts on (SDDM would otherwise pick the first one
-# alphabetically: COSMIC). SDDM remembers what the user picks afterwards.
-if [[ -e $R/usr/share/wayland-sessions/hyprland.desktop ]]; then
-  install -d -m 0755 "$R/var/lib/sddm"
-  printf '[Last]
-Session=/usr/share/wayland-sessions/hyprland.desktop
+# Pick the session the login screen starts on: Plasma (the macOS-style desktop) when it is
+# installed, else Hyprland. SDDM would otherwise take the first one alphabetically (COSMIC) and
+# remembers whatever the user picks afterwards.
+for session in plasma hyprland; do
+  if [[ -e $R/usr/share/wayland-sessions/$session.desktop ]]; then
+    install -d -m 0755 "$R/var/lib/sddm"
+    printf '[Last]
+Session=/usr/share/wayland-sessions/%s.desktop
 User=
-' >"$R/var/lib/sddm/state.conf"
-  if [[ -z $R ]] && getent passwd sddm >/dev/null 2>&1; then chown -R sddm:sddm /var/lib/sddm; fi
-  say "default login session: Hyprland"
-fi
+' "$session" >"$R/var/lib/sddm/state.conf"
+    if [[ -z $R ]] && getent passwd sddm >/dev/null 2>&1; then chown -R sddm:sddm /var/lib/sddm; fi
+    say "default login session: $session"
+    break
+  fi
+done
 
 # 3. Restore a stock initramfs preset for every installed kernel. Arch generates
 #    presets from mkinitcpio's own template (see /usr/share/libalpm/scripts/mkinitcpio)

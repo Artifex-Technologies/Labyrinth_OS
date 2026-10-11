@@ -26,7 +26,59 @@ pub struct Palette {
     pub red: Color32,
 }
 
+/// The default palette (Finder's own purple).
 pub fn palette(dark: bool) -> Palette {
+    palette_for(dark, None)
+}
+
+/// The palette with a different accent color: the accent itself, plus the active-tab and selection
+/// colors mixed from it so they stay readable on the background.
+pub fn palette_for(dark: bool, accent: Option<[u8; 3]>) -> Palette {
+    let mut p = base_palette(dark);
+    if let Some([r, g, b]) = accent {
+        let a = Color32::from_rgb(r, g, b);
+        p.accent = a;
+        p.tab_active = mix(p.bg, a, if dark { 0.55 } else { 0.40 });
+        p.select = mix(p.bg, a, if dark { 0.28 } else { 0.30 });
+    }
+    p
+}
+
+fn mix(a: Color32, b: Color32, t: f32) -> Color32 {
+    let f = |x: u8, y: u8| (x as f32 + (y as f32 - x as f32) * t).round().clamp(0.0, 255.0) as u8;
+    Color32::from_rgb(f(a.r(), b.r()), f(a.g(), b.g()), f(a.b(), b.b()))
+}
+
+/// The accent color from KDE's settings text (`[General]` then `AccentColor=r,g,b`).
+pub fn parse_kde_accent(text: &str) -> Option<[u8; 3]> {
+    let mut in_general = false;
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_general = line == "[General]";
+            continue;
+        }
+        if !in_general {
+            continue;
+        }
+        if let Some(v) = line.strip_prefix("AccentColor=") {
+            let parts: Vec<u8> = v.trim().trim_matches('"').split(',').filter_map(|x| x.trim().parse().ok()).collect();
+            if parts.len() == 3 {
+                return Some([parts[0], parts[1], parts[2]]);
+            }
+        }
+    }
+    None
+}
+
+/// The system's accent color, if there is one to read (KDE Plasma's `kdeglobals`). None on other
+/// desktops, where Finder keeps its own purple.
+pub fn system_accent() -> Option<[u8; 3]> {
+    let dir = std::env::var_os("XDG_CONFIG_HOME").map(std::path::PathBuf::from).or_else(|| dirs::home_dir().map(|h| h.join(".config")))?;
+    parse_kde_accent(&std::fs::read_to_string(dir.join("kdeglobals")).ok()?)
+}
+
+fn base_palette(dark: bool) -> Palette {
     if dark {
         Palette {
             bg: Color32::from_rgb(16, 17, 22),
@@ -83,8 +135,8 @@ pub fn usage_color(p: &Palette, fraction: f32) -> Color32 {
     }
 }
 
-pub fn apply(ctx: &egui::Context, dark: bool) {
-    let p = palette(dark);
+pub fn apply(ctx: &egui::Context, dark: bool, accent: Option<[u8; 3]>) {
+    let p = palette_for(dark, accent);
     ctx.set_theme(if dark { egui::Theme::Dark } else { egui::Theme::Light });
     ctx.all_styles_mut(|style| {
         let v = &mut style.visuals;
@@ -111,4 +163,59 @@ pub fn apply(ctx: &egui::Context, dark: bool) {
         v.menu_corner_radius = CornerRadius::same(10);
         style.spacing.item_spacing = egui::vec2(8.0, 6.0);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_the_kde_accent() {
+        let text = "[General]\nColorScheme=WhiteSurDark\nAccentColor=124,84,214\n\n[KDE]\nwidgetStyle=kvantum\n";
+        assert_eq!(parse_kde_accent(text), Some([124, 84, 214]));
+    }
+
+    #[test]
+    fn ignores_an_accent_in_the_wrong_section() {
+        assert_eq!(parse_kde_accent("[Other]\nAccentColor=1,2,3\n"), None);
+    }
+
+    #[test]
+    fn rejects_malformed_values() {
+        assert_eq!(parse_kde_accent("[General]\nAccentColor=12,34\n"), None);
+        assert_eq!(parse_kde_accent("[General]\nAccentColor=a,b,c\n"), None);
+        assert_eq!(parse_kde_accent("[General]\nAccentColor=300,0,0\n"), None);
+        assert_eq!(parse_kde_accent(""), None);
+    }
+
+    #[test]
+    fn tolerates_quotes_and_spaces() {
+        assert_eq!(parse_kde_accent("[General]\nAccentColor=\"10, 20, 30\"\n"), Some([10, 20, 30]));
+    }
+
+    #[test]
+    fn no_accent_gives_the_default_palette() {
+        let a = palette(true);
+        let b = palette_for(true, None);
+        assert_eq!((a.accent, a.tab_active, a.select), (b.accent, b.tab_active, b.select));
+    }
+
+    #[test]
+    fn a_system_accent_drives_the_highlights_and_stays_readable() {
+        let p = palette_for(true, Some([40, 160, 90]));
+        assert_eq!(p.accent, Color32::from_rgb(40, 160, 90));
+        // The selection and active tab take the accent's hue but stay darker than the accent itself.
+        assert!(p.select.g() > p.select.r() && p.select.g() > p.select.b());
+        assert!(p.tab_active.g() > p.tab_active.r());
+        assert!(p.select.g() < p.accent.g());
+        // The background and text are untouched.
+        assert_eq!(p.bg, palette(true).bg);
+        assert_eq!(p.text, palette(true).text);
+    }
+
+    #[test]
+    fn the_light_palette_gets_lighter_mixes() {
+        let p = palette_for(false, Some([110, 70, 200]));
+        assert!(p.select.r() > 190, "light selection should be pale, got {:?}", p.select);
+    }
 }

@@ -1,0 +1,9 @@
+# Default applications for everyone: Vivaldi opens web links and pages; Firefox stays installed
+# as the backup. A user's own choices (~/.config/mimeapps.list) override this.
+[Default Applications]
+x-scheme-handler/http=vivaldi-stable.desktop
+x-scheme-handler/https=vivaldi-stable.desktop
+x-scheme-handler/about=vivaldi-stable.desktop
+x-scheme-handler/unknown=vivaldi-stable.desktop
+text/html=vivaldi-stable.desktop
+application/xhtml+xml=vivaldi-stable.desktop

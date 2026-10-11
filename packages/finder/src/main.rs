@@ -9,7 +9,7 @@ mod theme;
 
 use eframe::egui::{self, pos2, vec2, Align, Align2, Color32, CornerRadius, FontId, Layout, Rect, RichText, Sense, UiBuilder};
 use icons::Icon;
-use theme::{palette, Palette};
+use theme::{palette, palette_for, Palette};
 use egui_extras::{Column, TableBuilder};
 use finder_core::archive::{self, Format};
 use finder_core::cloud::{self, Badge, Link, Report};
@@ -810,7 +810,7 @@ fn draw_pane(ui: &mut egui::Ui, pane: &mut Pane, pi: usize, focused: bool, st: &
         actions.push(Action::Focus(pi));
     }
     let hidden = st.show_hidden;
-    let pal = palette(st.dark);
+    let pal = palette_for(st.dark, st.accent());
     let cx = Ctx { st, links: cloud_ctx.0, reports: cloud_ctx.1, clip_has, pi };
 
     tab_strip(ui, pane, pi, &pal, actions);
@@ -1164,7 +1164,8 @@ struct App {
     verify_tx: Sender<(String, Result<Report, String>)>,
     verify_rx: Receiver<(String, Result<Report, String>)>,
     link_form: Option<(String, String, String)>,
-    applied_theme: Option<bool>,
+    applied_theme: Option<(bool, Option<[u8; 3]>)>,
+    accent_checked: Instant,
     pv: PreviewState,
 }
 
@@ -1201,6 +1202,7 @@ impl App {
             verify_rx,
             link_form: None,
             applied_theme: None,
+            accent_checked: Instant::now(),
             pv: PreviewState::new(),
         }
     }
@@ -1676,11 +1678,23 @@ impl App {
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
-        if self.applied_theme != Some(self.st.dark) {
-            theme::apply(&ctx, self.st.dark);
-            self.applied_theme = Some(self.st.dark);
+        // Follow the system accent: read it now and then, so a change in the system settings
+        // shows up without restarting Finder.
+        if self.st.follow_accent && self.accent_checked.elapsed() >= Duration::from_secs(2) {
+            self.st.system_accent = theme::system_accent();
+            self.accent_checked = Instant::now();
+        } else if !self.st.follow_accent {
+            self.st.system_accent = None;
         }
-        let pal = palette(self.st.dark);
+        if self.st.follow_accent {
+            ctx.request_repaint_after(Duration::from_secs(2));
+        }
+        let want = (self.st.dark, self.st.accent());
+        if self.applied_theme != Some(want) {
+            theme::apply(&ctx, want.0, want.1);
+            self.applied_theme = Some(want);
+        }
+        let pal = palette_for(self.st.dark, self.st.accent());
         let hidden = self.st.show_hidden;
         let split = self.st.split;
         for (i, p) in self.panes.iter_mut().enumerate() {
@@ -1783,6 +1797,11 @@ impl eframe::App for App {
                             self.st.show_hidden = h;
                             self.dirty = true;
                             actions.push(Action::Reload);
+                        }
+                        let mut f = self.st.follow_accent;
+                        if ui.checkbox(&mut f, "Follow system accent color").changed() {
+                            self.st.follow_accent = f;
+                            self.dirty = true;
                         }
                         ui.separator();
                         if ui.selectable_label(self.st.view == ViewMode::Details, "Details view").clicked() {
@@ -1975,7 +1994,8 @@ fn main() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            theme::apply(&cc.egui_ctx, State::config_path().as_deref().map(State::load_from).map(|s| s.dark).unwrap_or(true));
+            let st = State::config_path().as_deref().map(State::load_from).unwrap_or_default();
+            theme::apply(&cc.egui_ctx, st.dark, if st.follow_accent { theme::system_accent() } else { None });
             Ok(Box::new(App::new()))
         }),
     )

@@ -11,7 +11,7 @@ set -u
 
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
 
-WALLPAPER=${LABYRINTH_WALLPAPER:-/usr/share/labyrinth/wallpapers/labyrinth-green.png}
+WALLPAPER=${LABYRINTH_WALLPAPER:-/usr/share/labyrinth/wallpapers/labyrinth-purple.png}
 
 apply() {
   pkill -x swaybg 2>/dev/null
@@ -22,8 +22,12 @@ apply() {
   pkill -f '^nwg-dock-hyprland' 2>/dev/null
   setsid -f waybar -c "$CONFIG/waybar/config.jsonc" -s "$CONFIG/waybar/style.css" >/dev/null 2>&1
   if command -v nwg-dock-hyprland >/dev/null; then
-    # -c fuzzel: the dock's launcher button. -i icon size, -mb bottom margin.
-    setsid -f nwg-dock-hyprland -i 44 -mb 8 -w 5 -c fuzzel >/dev/null 2>&1
+    # -c fuzzel: the dock's launcher button. -i icon size, -mb bottom margin, -w workspaces.
+    # -x reserves the dock's space: windows are laid out above it instead of underneath, so no
+    # button at the bottom of a window is ever hidden by the dock (found with the installer).
+    # With an exclusive zone the dock is on the "top" layer, so a full-screen window (SUPER + F)
+    # still covers it, as on macOS.
+    setsid -f nwg-dock-hyprland -i 44 -mb 8 -w 9 -x -c fuzzel >/dev/null 2>&1
   fi
 }
 

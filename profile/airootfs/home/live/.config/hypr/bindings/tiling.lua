@@ -8,9 +8,16 @@
 
 o.bind("SUPER + W", "Close window", hl.dsp.window.close())
 
+-- Mouse: SUPER + left button drags and SUPER + right button resizes (bound further down).
+-- Dragging a window edge also resizes it; see general.resize_on_border in hyprland.lua.
+
+-- Minimize like macOS: park the window on a hidden workspace; SUPER + SHIFT + M shows/hides it.
+o.bind("SUPER + M", "Minimize window", hl.dsp.window.move({ workspace = "special:minimized", follow = false }))
+o.bind("SUPER + SHIFT + M", "Show minimized windows", hl.dsp.workspace.toggle_special("minimized"))
+
 o.bind("SUPER + J", "Toggle window split", hl.dsp.layout("togglesplit"))
 o.bind("SUPER + P", "Pseudo window", hl.dsp.window.pseudo())
-o.bind("SUPER + T", "Toggle window floating/tiling", hl.dsp.window.float({ action = "toggle" }))
+o.bind("SUPER + T", "Tile or float this window (windows float by default)", hl.dsp.window.float({ action = "toggle" }))
 o.bind("SUPER + F", "Full screen", hl.dsp.window.fullscreen({ mode = "fullscreen" }))
 o.bind("SUPER + ALT + F", "Full width", hl.dsp.window.fullscreen({ mode = "maximized" }))
 

@@ -29,10 +29,10 @@ images:
     productWelcome:      "welcome.png"
 
 style:
-   SidebarBackground:        "#0e1e16"
-   SidebarText:              "#e6f4ea"
-   SidebarTextCurrent:       "#0e1e16"
-   SidebarBackgroundCurrent: "#8fd9a8"
+   SidebarBackground:        "#170d26"
+   SidebarText:              "#e8e0f5"
+   SidebarTextCurrent:       "#170d26"
+   SidebarBackgroundCurrent: "#c9b2f5"
 
 slideshow:               "show.qml"
 slideshowAPI: 2

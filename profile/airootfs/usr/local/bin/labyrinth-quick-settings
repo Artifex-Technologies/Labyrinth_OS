@@ -57,13 +57,15 @@ launch() {
   fi
 }
 
-entries=("Settings" "Sleep")
+entries=("Settings" "Switch to macOS desktop" "Lock" "Sleep")
 can_hibernate && entries+=("Hibernate")
 entries+=("Log out" "Restart" "Power off")
 
 choice=$(menu "${entries[@]}") || exit 0
 case $choice in
   Settings)  settings ;;
+  "Switch to macOS desktop") confirm "switch (this logs you out)" && labyrinth-switch-mode macos ;;
+  Lock)      pidof hyprlock >/dev/null || hyprlock ;;
   Sleep)     systemctl suspend ;;
   Hibernate) can_hibernate && systemctl hibernate ;;
   "Log out")

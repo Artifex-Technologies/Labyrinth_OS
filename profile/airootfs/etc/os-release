@@ -1,6 +1,7 @@
 NAME="Labyrinth OS"
 PRETTY_NAME="Labyrinth OS"
 ID=labyrinth
+LOGO=labyrinthos
 ID_LIKE=arch
 BUILD_ID=rolling
 ANSI_COLOR="38;2;60;180;110"

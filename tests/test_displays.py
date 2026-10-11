@@ -56,22 +56,36 @@ class Rules(unittest.TestCase):
         p = {e["output"]: e for e in disp.plan([u, d], self.rules)}
         self.assertEqual(p["DP-2"]["position"], "3440x-783")
 
-    def test_unknown_monitor_is_left_to_hyprland(self):
-        other = dict(DUALUP, name="DP-9", description="Dell U2720Q", model="U2720Q", make="Dell")
+    def test_unknown_monitor_gets_its_best_mode(self):
+        other = dict(DUALUP, name="DP-9", description="Dell U2720Q", model="U2720Q", make="Dell",
+                     availableModes=["3840x2160@30.00Hz", "3840x2160@60.00Hz", "2560x1440@120.00Hz", "1920x1080@120.00Hz"])
         p = {e["output"]: e for e in disp.plan([ULTRAWIDE, other], self.rules)}
-        self.assertEqual((p["DP-9"]["mode"], p["DP-9"]["position"]), ("preferred", "auto"))
-        self.assertEqual(p["DP-9"]["note"], "no rule matched")
+        self.assertEqual((p["DP-9"]["mode"], p["DP-9"]["position"]), ("3840x2160@60", "auto"))
+        self.assertIn("no rule matched", p["DP-9"]["note"])
+
+    def test_best_mode_skips_a_slow_top_resolution(self):
+        # A 120 Hz monitor whose 4K mode only runs at 30 Hz over this cable: step down to 1440p@120.
+        m = {"availableModes": ["3840x2160@30.00Hz", "2560x1440@120.00Hz", "2560x1440@60.00Hz", "1920x1080@120.00Hz"]}
+        self.assertEqual(disp.best_mode(m), "2560x1440@120")
+
+    def test_best_mode_when_nothing_reaches_60hz(self):
+        m = {"availableModes": ["1920x1080@30.00Hz", "1280x720@50.00Hz"]}
+        self.assertEqual(disp.best_mode(m), "1280x720@50")
+
+    def test_best_mode_without_a_mode_list(self):
+        self.assertIsNone(disp.best_mode({}))
 
     def test_missing_primary_means_everything_auto(self):
         p = disp.plan([DUALUP], self.rules)
         self.assertEqual(p[0]["position"], "auto")
 
-    def test_unavailable_mode_falls_back_to_preferred_with_a_note(self):
-        low = dict(ULTRAWIDE, availableModes=["1920x1080@60.00Hz"])
+    def test_unavailable_mode_falls_back_to_the_best_with_a_note(self):
+        low = dict(ULTRAWIDE, availableModes=["1920x1080@60.00Hz", "1920x1080@120.00Hz"])
         p = disp.plan([low, DUALUP], self.rules)
         e = next(x for x in p if x["output"] == "DP-1")
-        self.assertEqual(e["mode"], "preferred")
+        self.assertEqual(e["mode"], "1920x1080@120")
         self.assertIn("not offered", e["note"])
+        self.assertIn("best available", e["note"])
 
     def test_mode_picking(self):
         m = {"availableModes": ["3440x1440@180.00Hz", "3440x1440@143.97Hz", "3440x1440@59.97Hz"]}
@@ -131,6 +145,64 @@ class Output(unittest.TestCase):
         r = subprocess.run([sys.executable, TOOL, "--print"], env=env, capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)
         self.assertIn("cannot read monitors", r.stderr)
+
+
+def kscreen_output(name, modes, current, **kw):
+    """One output as `kscreen-doctor -j` reports it (mode ids are strings)."""
+    return dict({"name": name, "connected": True, "enabled": True, "currentModeId": str(current),
+                 "modes": [{"id": str(i + 1), "name": f"{w}x{h}@{r:g}", "refreshRate": r, "size": {"width": w, "height": h}}
+                           for i, (w, h, r) in enumerate(modes)]}, **kw)
+
+
+class Kde(unittest.TestCase):
+    HDMI = kscreen_output("HDMI-A-1", [(3840, 2160, 29.98), (3840, 2160, 59.94), (2560, 1440, 119.88), (1920, 1080, 119.88)], current=1)
+
+    def test_picks_the_best_mode_and_its_id(self):
+        todo = disp.kde_plan([self.HDMI], {})
+        self.assertEqual(len(todo), 1)
+        name, mode_id, best, key = todo[0]
+        self.assertEqual((name, mode_id, best), ("HDMI-A-1", "2", "3840x2160@59.94"))
+
+    def test_already_best_changes_nothing_but_is_remembered(self):
+        out = dict(self.HDMI, currentModeId="2")
+        name, mode_id, best, key = disp.kde_plan([out], {})[0]
+        self.assertIsNone(mode_id)
+        self.assertEqual(disp.kde_plan([out], {key: True}), [])
+
+    def test_a_monitor_already_handled_is_left_alone(self):
+        key = disp.kde_plan([self.HDMI], {})[0][3]
+        self.assertEqual(disp.kde_plan([self.HDMI], {key: True}), [])   # the user's own choice is never overridden
+
+    def test_a_different_monitor_on_the_same_port_is_handled_again(self):
+        key = disp.kde_plan([self.HDMI], {})[0][3]
+        other = kscreen_output("HDMI-A-1", [(1920, 1080, 60), (1920, 1080, 144)], current=1)
+        self.assertEqual(len(disp.kde_plan([other], {key: True})), 1)
+
+    def test_disconnected_or_disabled_outputs_are_skipped(self):
+        off = dict(self.HDMI, enabled=False)
+        gone = dict(self.HDMI, connected=False)
+        self.assertEqual(disp.kde_plan([off, gone], {}), [])
+
+    @unittest.skipIf(os.name == "nt", "needs a POSIX shell to stand in for kscreen-doctor")
+    def test_kde_main_applies_and_records(self):
+        with tempfile.TemporaryDirectory() as d:
+            fake = os.path.join(d, "kscreen-doctor")
+            log = os.path.join(d, "calls.txt")
+            fixture = os.path.join(d, "out.json")
+            json.dump({"outputs": [self.HDMI]}, open(fixture, "w"))
+            script = "\n".join([
+                "#!/bin/sh",
+                'if [ "$1" = -j ]; then cat ' + fixture + '; else echo "$@" >> ' + log + "; fi",
+                "",
+            ])
+            open(fake, "w").write(script)
+            os.chmod(fake, 0o755)
+            env = dict(os.environ, LABYRINTH_KSCREEN=fake, XDG_CONFIG_HOME=d)
+            r = subprocess.run([sys.executable, TOOL, "--kde"], env=env, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("output.HDMI-A-1.mode.2", open(log).read())
+            r = subprocess.run([sys.executable, TOOL, "--kde"], env=env, capture_output=True, text=True)
+            self.assertEqual(open(log).read().count("output.HDMI-A-1.mode.2"), 1)   # second run does nothing
 
 
 if __name__ == "__main__":

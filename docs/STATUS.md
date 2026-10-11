@@ -94,7 +94,7 @@ Done, on Arch under WSL:
   repeat. Not explained yet.
 - Hibernate: `labyrinth-install-bootfinish` creates a RAM-sized swap file (nested btrfs subvolume),
   resume parameters and hook. Not yet confirmed by an install.
-- `labyrinth-opacity` (dock/bar opacity), bar layout change, installer branding (`gen-brand.py`).
+- `labyrinth-opacity` (dock/bar opacity), bar layout change, installer branding and the logo set (`scripts/gen-logo.sh`, from `assets/logo/labyrinth-source.jpg`).
 
 ### First full install in a VM (2026-10-10): what it found
 
@@ -114,3 +114,36 @@ QEMU/UEFI. Bugs the test found, all fixed in the tree:
   it looked like a hang. Use a text console / serial to see GRUB errors.
 Still unconfirmed on a real install: the hibernate resume parameters (the test disk was patched by
 hand), snapshot entries in the GRUB menu, NVIDIA, the two real monitors.
+
+### Real hardware (2026-10-11)
+
+On a Dell OptiPlex 3080 (i5, 8 GB, 2 x 256 GB, Intel graphics), installed from the USB:
+- The live session boots (DD-mode USB; ISO-mode in Rufus does not work), Wi-Fi sets up, the
+  installer opens (once the launcher was fixed; see `labyrinth-install`), the system installs.
+- **Hibernate works end to end** (power off, power on, session restored). The VM reset after
+  resume seen in the nested-QEMU test was an artifact of that environment.
+- Found on hardware: the dock covered the bottom of other windows (fixed: `-x`), the refresh rate
+  stayed at 30 Hz on a monitor that can do 120 Hz (fixed: `labyrinth-displays` picks the best
+  mode), tapping SUPER did nothing (to do).
+- Direction change: the macOS-style desktop becomes KDE Plasma with the WhiteSur (SmallSur) look;
+  Hyprland stays as the Omarchy-style tiling mode, chosen at login (`labyrinth-switch-mode`).
+
+### Where things stand (2026-10-11, evening)
+
+Done and seen working (VM screenshots): Plasma macOS-style desktop (WhiteSur look, traffic-light buttons
+on the left, global menu in the top bar showing the focused app's menus, floating dock with hover
+previews, Meta key opens the launcher), the Labyrinth installer inside it, a full install, hibernate
+on real hardware (OptiPlex), Hyprland tiling session with floating-by-default windows.
+
+Built since but not yet confirmed on a screen: the arrowhead logo set (`scripts/gen-logo.sh`) in the
+installer, dock launcher and login screen; the login-screen background fix; no Apple logo in the top
+bar; live session no longer locks or blanks during an install; Yakuake without its first-run dialog;
+USB/Bluetooth power-saving off for wireless keyboards; best monitor mode on KDE (`labyrinth-displays
+--kde`, tested against a fake kscreen-doctor and, in the VM, picks the largest 60 Hz+ mode).
+
+Still to do, in the order that matters for daily use:
+1. Boot the next ISO on the OptiPlex: login page, first Plasma login, switching to tiling and back.
+2. Plasma lock screen in the "Split" style (hyprlock Split exists for the tiling session).
+3. App name in bold next to the menus in the top bar; media controls, weather in the Plasma tray.
+4. NVIDIA and the two real monitors (your main PC): boot the live USB there before installing.
+5. Finder: icon packs; install-time component chooser; remaining ISO gaps (docs/ARCHITECTURE.md).

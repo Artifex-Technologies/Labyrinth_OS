@@ -1,0 +1,21 @@
+# Maintainer: Labyrinth OS
+pkgname=whitesur-gtk-theme
+pkgver=r2026.09.11
+_commit=d5782652d412137e26fb8ff55b55a5572e4c6995
+pkgrel=1
+pkgdesc='WhiteSur macOS Big Sur GTK theme (window buttons on the left)'
+arch=('any')
+url='https://github.com/vinceliuice/WhiteSur-gtk-theme'
+license=('GPL-3.0-or-later')
+depends=('gtk3' 'gnome-themes-extra')
+makedepends=('sassc' 'glib2' 'libxml2')
+source=("WhiteSur-gtk-theme-$_commit.tar.gz::https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/$_commit.tar.gz")
+sha256sums=('9d8be3dca76f7be36dfb6513aa2c301be1ff265a9c1c4c1006b5ed0f89df29f1')
+
+package() {
+  cd "$srcdir/WhiteSur-gtk-theme-$_commit"
+  export HOME="$srcdir/home"; mkdir -p "$HOME"
+  install -d "$pkgdir/usr/share/themes"
+  ./install.sh -d "$pkgdir/usr/share/themes" -c light -c dark -o normal
+  install -Dm644 COPYING "$pkgdir/usr/share/licenses/$pkgname/COPYING"
+}

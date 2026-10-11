@@ -4,6 +4,7 @@
   labyrinth-displays --print      show the Lua it would write
   labyrinth-displays --apply      write ~/.config/hypr/monitors.lua and reload Hyprland
   labyrinth-displays --list       show what Hyprland reports, for writing rules
+  labyrinth-displays --kde        KDE Plasma: give each new monitor its best mode (once per monitor)
 
 Hyprland names outputs (DP-1, HDMI-A-1 ...) by whichever port a cable is in, and those
 names are not known until the machine is running, so rules in displays.json match on the
@@ -12,7 +13,7 @@ documented `hl.monitor({ output, mode, position, scale })` call
 (https://wiki.hypr.land/Configuring/Basics/Monitors/). Reads `hyprctl monitors all -j`;
 set LABYRINTH_HYPRCTL to override hyprctl (tests).
 
-Monitors no rule matches are left to Hyprland: preferred mode, automatic position.
+Monitors no rule matches get the best mode they offer (see best_mode) and an automatic position.
 """
 import json
 import os
@@ -79,6 +80,33 @@ def pick_mode(monitor, want):
     return f"{w}x{h}@{best:g}"
 
 
+def best_mode(monitor):
+    """'WxH@R' for the best mode a monitor offers, or None if it lists none.
+
+    Hyprland's "preferred" mode is whatever the monitor's EDID lists first, which on some
+    monitors over some cables is a slow one (a 120 Hz monitor stuck at 30 Hz). Choose the
+    largest resolution that offers 60 Hz or more, at its highest refresh rate. If nothing
+    reaches 60 Hz, take the highest refresh rate available (largest resolution on a tie).
+    """
+    modes = []
+    for m in monitor.get("availableModes", []):
+        try:
+            modes.append(parse_mode(m))
+        except ValueError:
+            continue
+    if not modes:
+        return None
+    fast = [m for m in modes if m[2] >= 59.5]
+    pool = fast or modes
+    if fast:
+        top_pixels = max(w * h for w, h, _ in fast)
+        pool = [m for m in fast if m[0] * m[1] == top_pixels]
+        w, h, r = max(pool, key=lambda m: m[2])
+    else:
+        w, h, r = max(modes, key=lambda m: (m[2], m[0] * m[1]))
+    return f"{w}x{h}@{r:g}"
+
+
 def find_rule(monitor, rules):
     text = f"{monitor.get('description', '')} {monitor.get('model', '')} {monitor.get('make', '')}".lower()
     for r in rules:
@@ -96,19 +124,23 @@ def plan(monitors, rules):
     if primary:
         r = find_rule(primary, rules)
         scale = float(r.get("scale", 1))
-        mode = pick_mode(primary, r["mode"]) if r.get("mode") else None
+        wanted = pick_mode(primary, r["mode"]) if r.get("mode") else None
+        mode = wanted or best_mode(primary)
         w, h = (parse_mode(mode)[:2] if mode else (primary["width"], primary["height"]))
         pw = w / scale
         out.append({"output": primary["name"], "mode": mode or "preferred", "position": "0x0", "scale": scale,
-                    "note": "primary" + ("" if mode else " (wanted mode not offered; using preferred)")})
+                    "note": "primary" + ("" if wanted else " (wanted mode not offered; using " + ("best available)" if mode else "preferred)"))})
     for m, r in matched:
         if m is primary:
             continue
         if not r:
-            out.append({"output": m["name"], "mode": "preferred", "position": "auto", "scale": 1, "note": "no rule matched"})
+            best = best_mode(m)
+            out.append({"output": m["name"], "mode": best or "preferred", "position": "auto", "scale": 1,
+                        "note": "no rule matched; " + (f"best mode {best}" if best else "no modes listed, using preferred")})
             continue
         scale = float(r.get("scale", 1))
-        mode = pick_mode(m, r["mode"]) if r.get("mode") else None
+        wanted = pick_mode(m, r["mode"]) if r.get("mode") else None
+        mode = wanted or best_mode(m)
         w, h = (parse_mode(mode)[:2] if mode else (m["width"], m["height"]))
         lw = w / scale
         place = r.get("place")
@@ -118,7 +150,7 @@ def plan(monitors, rules):
             pos = f"{round(-lw)}x{round(r.get('y', 0))}"
         else:
             pos = "auto"
-        note = "" if mode else "wanted mode not offered; using preferred"
+        note = "" if wanted else "wanted mode not offered; using " + ("best available" if mode else "preferred")
         if (w / scale) % 1 or (h / scale) % 1:
             note = (note + "; " if note else "") + "scaled size is not a whole number of pixels (Hyprland will round it)"
         out.append({"output": m["name"], "mode": mode or "preferred", "position": pos, "scale": scale, "note": note})
@@ -137,7 +169,75 @@ def lua(entries):
     return "\n".join(lines) + "\n"
 
 
+def kscreen_outputs():
+    cmd = os.environ.get("LABYRINTH_KSCREEN", "kscreen-doctor").split()
+    r = subprocess.run(cmd + ["-j"], capture_output=True, text=True, timeout=10)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or "kscreen-doctor failed")
+    return json.loads(r.stdout).get("outputs", [])
+
+
+def kde_plan(outputs, seen):
+    """[(output name, mode id, 'WxH@R', state key)] for connected monitors that still need their best mode.
+
+    `seen` maps state keys to True for monitors already handled, so a mode the user picks later
+    in System Settings is never overridden. The key is the output name plus its list of modes:
+    a different monitor on the same port, or a changed mode list, is handled again.
+    """
+    todo = []
+    for o in outputs:
+        if not (o.get("connected") and o.get("enabled")):
+            continue
+        modes = o.get("modes", [])
+        names = [f"{m['size']['width']}x{m['size']['height']}@{m['refreshRate']:.2f}Hz" for m in modes]
+        key = o["name"] + "|" + ",".join(sorted(names))
+        if seen.get(key):
+            continue
+        best = best_mode({"availableModes": names})
+        if not best:
+            continue
+        bw, bh, br = parse_mode(best)
+        pick = None
+        for m in modes:
+            if (m["size"]["width"], m["size"]["height"]) == (bw, bh) and abs(m["refreshRate"] - br) < 0.51:
+                pick = m
+                break
+        if pick is None or str(pick["id"]) == str(o.get("currentModeId")):
+            todo.append((o["name"], None, best, key))      # nothing to change, but remember it
+        else:
+            todo.append((o["name"], pick["id"], best, key))
+    return todo
+
+
+def kde_main():
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    state_path = os.path.join(base, "labyrinth", "displays-kde.json")
+    try:
+        seen = json.load(open(state_path, encoding="utf-8"))
+    except (OSError, ValueError):
+        seen = {}
+    try:
+        outputs = kscreen_outputs()
+    except Exception as e:
+        print(f"labyrinth-displays: cannot read monitors from KDE: {e}", file=sys.stderr)
+        return 1
+    cmd = os.environ.get("LABYRINTH_KSCREEN", "kscreen-doctor").split()
+    for name, mode_id, best, key in kde_plan(outputs, seen):
+        if mode_id is not None:
+            r = subprocess.run(cmd + [f"output.{name}.mode.{mode_id}"], capture_output=True, text=True, timeout=15)
+            print(f"labyrinth-displays: {name}: {best}" + ("" if r.returncode == 0 else f" (failed: {r.stderr.strip()})"))
+            if r.returncode != 0:
+                continue
+        seen[key] = True
+    os.makedirs(os.path.dirname(state_path), exist_ok=True)
+    with open(state_path, "w", encoding="utf-8") as f:
+        json.dump(seen, f, indent=1)
+    return 0
+
+
 def main(argv):
+    if "--kde" in argv:
+        return kde_main()
     try:
         monitors = hyprctl_monitors()
     except Exception as e:

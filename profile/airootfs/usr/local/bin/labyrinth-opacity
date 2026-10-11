@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Set how see-through the dock or the top bar is. The colour stays the theme's dark green
-# (14, 30, 22); only the opacity changes. Blur behind them comes from Hyprland.
+# Set how see-through the dock or the top bar is. The colour stays the theme's dark purple
+# (23, 13, 38); only the opacity changes. Blur behind them comes from Hyprland.
 #
 #   labyrinth-opacity dock 40      dock 40% opaque (0 = invisible shelf, 100 = solid)
 #   labyrinth-opacity bar 80
@@ -15,11 +15,11 @@ DOCK_CSS=$CONFIG/nwg-dock-hyprland/style.css
 BAR_CSS=$CONFIG/waybar/style.css
 MENU=${LABYRINTH_MENU:-fuzzel --dmenu}
 
-# The line that sets the shelf colour: the first "rgba(14, 30, 22, A)" in the file for the bar
+# The line that sets the shelf colour: the first "rgba(23, 13, 38, A)" in the file for the bar
 # (its #waybar capsules), and the one inside `window {` for the dock.
 current() {  # current FILE -> percent
   local a
-  a=$(grep -m1 -oE 'rgba\(14, 30, 22, *[0-9.]+\)' "$1" 2>/dev/null | grep -oE '[0-9.]+\)$' | tr -d ')')
+  a=$(grep -m1 -oE 'rgba\(23, 13, 38, *[0-9.]+\)' "$1" 2>/dev/null | grep -oE '[0-9.]+\)$' | tr -d ')')
   [[ -n $a ]] && awk -v a="$a" 'BEGIN { printf "%d", a * 100 + 0.5 }'
 }
 
@@ -33,7 +33,7 @@ set_opacity() {  # set_opacity dock|bar PERCENT
     *) echo "usage: labyrinth-opacity dock|bar PERCENT" >&2; return 2 ;;
   esac
   [[ -f $file ]] || { echo "no $file; run labyrinth-shell once first" >&2; return 1; }
-  sed -i -E "s/rgba\(14, 30, 22, *[0-9.]+\)/rgba(14, 30, 22, $alpha)/g" "$file"
+  sed -i -E "s/rgba\(23, 13, 38, *[0-9.]+\)/rgba(23, 13, 38, $alpha)/g" "$file"
   command -v labyrinth-shell >/dev/null && labyrinth-shell apply
   echo "$what opacity: ${pct}%"
 }

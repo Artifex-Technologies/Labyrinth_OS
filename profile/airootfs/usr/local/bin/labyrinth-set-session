@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Root helper for labyrinth-switch-mode: make SDDM start on the given session next time.
+# Run through pkexec. Only known session names are accepted.
+set -eu
+name=${1:-}
+case $name in
+  plasma|hyprland|cosmic) ;;
+  *) echo "usage: labyrinth-set-session plasma|hyprland|cosmic" >&2; exit 2 ;;
+esac
+file=/usr/share/wayland-sessions/$name.desktop
+[[ -e $file ]] || { echo "session $name is not installed" >&2; exit 1; }
+user=${2:-}
+[[ $user =~ ^[a-z_][a-z0-9_-]*$ || -z $user ]] || { echo "bad user name" >&2; exit 2; }
+install -d -m 0755 /var/lib/sddm
+printf '[Last]\nSession=%s\nUser=%s\n' "$file" "$user" >/var/lib/sddm/state.conf
+if getent passwd sddm >/dev/null 2>&1; then chown -R sddm:sddm /var/lib/sddm; fi

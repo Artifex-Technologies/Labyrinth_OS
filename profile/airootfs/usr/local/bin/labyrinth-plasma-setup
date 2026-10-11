@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# First Plasma login of each user: apply the WhiteSur (macOS Big Sur) look and the Labyrinth top
+# bar and dock (usr/share/labyrinth/plasma/layout.js). Runs once; delete
+# ~/.config/labyrinth/plasma-setup-done to run it again. Autostarted in Plasma only.
+set -u
+STAMP=${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/plasma-setup-done
+[[ -e $STAMP ]] && exit 0
+LAYOUT=/usr/share/labyrinth/plasma/layout.js
+
+# Wait for the shell to be on the bus (it starts just before autostart entries).
+for _ in $(seq 1 60); do
+  busctl --user status org.kde.plasmashell >/dev/null 2>&1 && break
+  sleep 1
+done
+busctl --user status org.kde.plasmashell >/dev/null 2>&1 || exit 0   # not Plasma: try next login
+
+if command -v plasma-apply-lookandfeel >/dev/null; then
+  plasma-apply-lookandfeel -a com.github.vinceliuice.WhiteSur-dark >/dev/null 2>&1
+fi
+# Window buttons on the left, macOS order: close, minimize, maximize.
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft XIA
+kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
+# Windows open like on a Mac; tiling is a button away (Meta + T).
+kwriteconfig6 --file kdeglobals --group General --key AccentColorFromWallpaper false
+# Brand purple (#3A1F5D family). The UI accent is Finder's own violet (124,84,214), a lighter tint, so selections stay visible on dark windows and the desktop matches Finder.
+kwriteconfig6 --file kdeglobals --group General --key AccentColor "124,84,214"
+kwriteconfig6 --file kdeglobals --group General --key LastUsedCustomAccentColor "124,84,214"
+qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1
+
+if [[ -r $LAYOUT ]]; then
+  busctl --user call org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell evaluateScript s "$(cat "$LAYOUT")" >/dev/null 2>&1
+fi
+
+mkdir -p "$(dirname "$STAMP")" && touch "$STAMP"
