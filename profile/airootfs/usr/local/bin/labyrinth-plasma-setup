@@ -17,6 +17,8 @@ busctl --user status org.kde.plasmashell >/dev/null 2>&1 || exit 0   # not Plasm
 if command -v plasma-apply-lookandfeel >/dev/null; then
   plasma-apply-lookandfeel -a com.github.vinceliuice.WhiteSur-dark >/dev/null 2>&1
 fi
+# Icons: MacTahoe in dark, plus the per-app overrides of the Labyrinth theme (labyrinth-icon).
+kwriteconfig6 --file kdeglobals --group Icons --key Theme Labyrinth
 # Title bars: Klassy (packages/pkgbuilds/klassy) with macOS traffic lights on the right in Windows
 # order (minimize, maximize, close), the same side as apps that draw their own (Vivaldi, Spotify,
 # Steam, Finder). Its title bar takes the app's colour, so title bar and toolbar are one header, and

@@ -207,3 +207,9 @@ tests.test_labyrinth_apps tests.test_steam_playall`.
 - **Installer:** Calamares kept; branding `stylesheet.qss` uses the Finder/Settings palette. Needs a visual check in a VM install.
 - Not yet verified in a VM: Settings dock controls end-to-end, the installer look, panel on real NVIDIA hardware.
 - Candidates to rewrite next: launcher/KRunner, notification daemon, lock screen, SDDM login, screenshot tool, task manager, volume/brightness OSD, clipboard history.
+
+## Icons (2026-10-12)
+- System icon theme is **MacTahoe (purple)**, dark flavour, via package `mactahoe-icon-theme` (replaces WhiteSur icons). KDE/GTK use the overlay theme **Labyrinth** (`/usr/share/icons/Labyrinth`, inherits MacTahoe-purple-dark) so per-app overrides work everywhere.
+- Finder now draws folders, files, drives, Home and This PC from the theme (`labyrinth-ui::sysicon`); folders with a colour tag keep the tinted drawn icon, and every icon falls back to the old vector one.
+- `labyrinth-icon APP FILE`, `labyrinth-icon --import FOLDER`, `labyrinth-icon --reset APP`: give apps other icons (png/svg/macOS .icns; `labyrinth-icns` extracts the PNG from an .icns). Used for the dark macOS 27 icons from macosicons.com, which are not redistributed with the ISO.
+- Not done: Settings' own sidebar icons are still hand-drawn; icon theme does not switch to a light flavour with the light theme; the Golden Gate flat set has no public pack.

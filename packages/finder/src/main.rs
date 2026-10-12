@@ -8,6 +8,7 @@ mod icons;
 
 use eframe::egui::{self, pos2, vec2, Align, Align2, Color32, CornerRadius, FontId, Layout, Rect, RichText, Sense, UiBuilder};
 use icons::Icon;
+use labyrinth_ui::sysicon;
 use labyrinth_ui::{chrome, theme};
 use theme::{palette, palette_for, Palette};
 use egui_extras::{Column, TableBuilder};
@@ -504,7 +505,24 @@ fn entry_icon(ui: &mut egui::Ui, pal: &Palette, st: &State, e: &Entry, size: f32
     } else {
         (Icon::File, tint.unwrap_or(pal.file))
     };
+    if tint.is_none() && sys_entry_icon(ui.painter(), rect, e) {
+        return;
+    }
     icons::paint(ui.painter(), rect, icon, color);
+}
+
+/// The system theme's icon for a listing entry (a tinted folder keeps the drawn one, so colour tags still show).
+fn sys_entry_icon(p: &egui::Painter, rect: Rect, e: &Entry) -> bool {
+    let name = e.path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    if e.usage.is_some() {
+        sysicon::paint(p, rect, &["drive-harddisk"])
+    } else if e.is_dir {
+        sysicon::paint(p, rect, &sysicon::folder_names(&name))
+    } else if archive::is_archive_name(&e.path) {
+        sysicon::paint(p, rect, &["application-zip", "package-x-generic"])
+    } else {
+        sysicon::paint(p, rect, &sysicon::file_names(&name))
+    }
 }
 
 /// Sync-status badge, drawn as shapes (no font needed).
@@ -583,7 +601,12 @@ fn tab_strip(ui: &mut egui::Ui, pane: &Pane, pi: usize, pal: &Palette, actions: 
             ui.painter().rect_filled(rect, CornerRadius { nw: 10, ne: 10, sw: 0, se: 0 }, fill);
             let icon = if places::is_this_pc(&dir) { Icon::Computer } else { Icon::Folder };
             let icon_col = if active { pal.text } else if places::is_this_pc(&dir) { pal.dim } else { pal.folder };
-            icons::paint(ui.painter(), Rect::from_min_size(rect.min + vec2(10.0, 7.0), vec2(18.0, 18.0)), icon, icon_col);
+            let tab_rect = Rect::from_min_size(rect.min + vec2(10.0, 7.0), vec2(18.0, 18.0));
+            let dir_name = dir.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            let sys_names = if places::is_this_pc(&dir) { vec!["computer"] } else { sysicon::folder_names(&dir_name) };
+            if !sysicon::paint(ui.painter(), tab_rect, &sys_names) {
+                icons::paint(ui.painter(), tab_rect, icon, icon_col);
+            }
             let mut x = rect.left() + 10.0 + 18.0 + 6.0;
             if t.tab.pinned {
                 icons::paint(ui.painter(), Rect::from_min_size(pos2(x - 2.0, rect.top() + 9.0), vec2(14.0, 14.0)), Icon::Pin, pal.accent);
@@ -958,7 +981,9 @@ fn draw_pane(ui: &mut egui::Ui, pane: &mut Pane, pi: usize, focused: bool, st: &
                             } else {
                                 (Icon::File, tint.unwrap_or(pal.file))
                             };
-                            icons::paint(ui.painter(), img_rect.shrink(size * 0.08), icon, color);
+                            if !(tint.is_none() && sys_entry_icon(ui.painter(), img_rect, e)) {
+                                icons::paint(ui.painter(), img_rect.shrink(size * 0.08), icon, color);
+                            }
                         }
                         if let Some(b) = cloud::badge_for(&e.path, cx.links, cx.reports) {
                             paint_badge(ui.painter(), rect.right_top() + vec2(-10.0, 12.0), b, &pal);
@@ -1541,7 +1566,7 @@ fn section_heading(ui: &mut egui::Ui, pal: &Palette, text: &str) {
 }
 
 /// One row of the sidebar: icon, label, and optionally a usage bar underneath (drives).
-fn side_row(ui: &mut egui::Ui, pal: &Palette, icon: Icon, icon_color: Color32, label: &str, selected: bool, bar: Option<(f32, Color32)>) -> egui::Response {
+fn side_row(ui: &mut egui::Ui, pal: &Palette, icon: Icon, icon_color: Color32, sys: &[&str], label: &str, selected: bool, bar: Option<(f32, Color32)>) -> egui::Response {
     let h = if bar.is_some() { 40.0 } else { 28.0 };
     let (rect, r) = ui.allocate_exact_size(vec2(ui.available_width(), h), Sense::click());
     let row = Rect::from_min_size(rect.min, vec2(rect.width(), 28.0));
@@ -1550,7 +1575,10 @@ fn side_row(ui: &mut egui::Ui, pal: &Palette, icon: Icon, icon_color: Color32, l
     } else if r.hovered() {
         ui.painter().rect_filled(row, CornerRadius::same(8), pal.hover);
     }
-    icons::paint(ui.painter(), Rect::from_min_size(row.min + vec2(8.0, 5.0), vec2(18.0, 18.0)), icon, icon_color);
+    let icon_rect = Rect::from_min_size(row.min + vec2(8.0, 4.0), vec2(20.0, 20.0));
+    if sys.is_empty() || !sysicon::paint(ui.painter(), icon_rect, sys) {
+        icons::paint(ui.painter(), Rect::from_min_size(row.min + vec2(8.0, 5.0), vec2(18.0, 18.0)), icon, icon_color);
+    }
     ui.painter().with_clip_rect(row.shrink2(vec2(4.0, 0.0))).text(pos2(row.left() + 34.0, row.center().y), Align2::LEFT_CENTER, label, FontId::proportional(13.5), pal.text);
     if let Some((frac, color)) = bar {
         let track = Rect::from_min_size(pos2(row.left() + 8.0, row.bottom() + 1.0), vec2(rect.width() - 16.0, 5.0));
@@ -1569,7 +1597,17 @@ impl App {
             let p = &self.panes[self.focus];
             p.tabs[p.active].dir() == path
         };
-        let r = side_row(ui, pal, icon, icon_color, label, selected, bar);
+        // A folder that has a colour tag keeps its drawn, tinted icon; the rest use the system theme.
+        let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        let sys: Vec<&str> = match icon {
+            Icon::Computer => vec!["computer"],
+            Icon::Home => vec!["user-home"],
+            Icon::Drive => vec!["drive-harddisk"],
+            Icon::Cloud => vec!["folder-cloud", "folder"],
+            Icon::Folder if icon_color == pal.folder => sysicon::folder_names(&name),
+            _ => vec![],
+        };
+        let r = side_row(ui, pal, icon, icon_color, &sys, label, selected, bar);
         if r.clicked() {
             actions.push(Action::Go(self.focus, path.to_path_buf()));
         }
@@ -1651,7 +1689,7 @@ impl App {
                     let p = &self.panes[self.focus];
                     p.tabs[p.active].dir() == l.local
                 };
-                let r = side_row(ui, pal, Icon::Folder, pal.folder, &l.name, selected, None);
+                let r = side_row(ui, pal, Icon::Folder, pal.folder, &["folder-cloud", "folder"], &l.name, selected, None);
                 if let Some(b) = badge {
                     paint_badge(ui.painter(), pos2(r.rect.right() - 16.0, r.rect.top() + 14.0), b, pal);
                 }

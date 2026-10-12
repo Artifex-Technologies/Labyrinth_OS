@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=Labyrinth
+Comment=MacTahoe (dark) plus any app icons dropped in apps/scalable (see labyrinth-icon)
+Inherits=MacTahoe-purple-dark,hicolor,breeze
+Directories=apps/scalable
+
+[apps/scalable]
+Size=128
+MinSize=8
+MaxSize=1024
+Type=Scalable
+Context=Applications

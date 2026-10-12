@@ -1,0 +1,24 @@
+# Maintainer: Labyrinth OS
+# MacTahoe: the macOS Tahoe look for icons. Only the purple variant is installed (folders in our
+# accent); its -dark flavour has the dark symbolic/panel icons, app icons are shared with the base.
+pkgname=mactahoe-icon-theme
+pkgver=r2026.09.10
+_commit=839848b9a8a38a92a6936e30c4abe35cc6f2546d
+pkgrel=1
+pkgdesc='MacTahoe macOS Tahoe icon theme (purple, light and dark)'
+arch=('any')
+url='https://github.com/vinceliuice/MacTahoe-icon-theme'
+license=('GPL-3.0-or-later')
+depends=('gtk-update-icon-cache')
+source=("MacTahoe-icon-theme-$_commit.tar.gz::https://github.com/vinceliuice/MacTahoe-icon-theme/archive/$_commit.tar.gz")
+sha256sums=('00cb36a3883e40687ade9f57a0c1dd3e14fda84b73efc69aa86e2be67f32ab0a')
+
+package() {
+  cd "$srcdir/MacTahoe-icon-theme-$_commit"
+  export HOME="$srcdir/home"; mkdir -p "$HOME"
+  install -d "$pkgdir/usr/share/icons"
+  ./install.sh -d "$pkgdir/usr/share/icons" -t purple
+  # The installer also writes the default (blue) set; only the purple ones are used.
+  rm -rf "$pkgdir"/usr/share/icons/MacTahoe "$pkgdir"/usr/share/icons/MacTahoe-dark "$pkgdir"/usr/share/icons/MacTahoe-light
+  install -Dm644 COPYING "$pkgdir/usr/share/licenses/$pkgname/COPYING"
+}
