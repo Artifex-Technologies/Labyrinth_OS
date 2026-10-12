@@ -1,8 +1,17 @@
 # Labyrinth OS
 
-![The Labyrinth OS desktop with the installer open](assets/screenshots/desktop-installer.png)
+## Screenshots
 
-*The live desktop: Labyrinth top bar and dock, MacTahoe icons, and the installer.*
+| | |
+| --- | --- |
+| ![Installer welcome](assets/screenshots/installer-welcome.png) | ![Installer, your details](assets/screenshots/installer-users.png) |
+| *The installer: the same dark look as the apps; the computer's name is asked here.* | *Name, login and computer name.* |
+| ![Minos, the file explorer](assets/screenshots/minos.png) | ![Settings, Appearance](assets/screenshots/settings.png) |
+| *Minos: Storage lists the disk; select it for its partitions.* | *Settings > Appearance: dock position, distance from the edge, size, colour.* |
+
+![Calculator](assets/screenshots/calculator.png)
+
+*Calculator: editable equation at the top, history on the right, scientific pad when wide.*
 
 A daily-driver Linux for one specific machine (for now), meant to replace Windows on it:
 

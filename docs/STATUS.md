@@ -218,4 +218,12 @@ tests.test_labyrinth_apps tests.test_steam_playall`.
 The file explorer is now **Minos** (was Finder, and Labyrinth Files before): `packages/minos`, package `labyrinth-minos`, binary `minos`, config folder `~/.config/minos` (reads fall back to `finder` and `labyrinth-files`). `/usr/bin/finder` stays as a link, and pins named `finder` in the dock file still work. The macOS Finder icon (a dark macOS icon you may import) is unaffected: `labyrinth-icon` still matches files named `Finder_...` and `Minos_...`.
 
 ## Dock (2026-10-12)
-`panel.conf` has `dock_pos` (bottom, left, right) and `dock_gap` (0 to 40 px, default 4; 0 is right on the edge); Settings > Appearance > Dock has both. The Trash is the last dock item (empty or full, opens the trash folder in Minos). KWin lays a layer surface out inside the space other layer surfaces reserve, so the dock reserves room with a separate invisible strip (`Kind::Strut`) and pulls itself back to the edge with a negative margin.
+`panel.conf` has `dock_pos` (bottom, left, right) and `dock_gap` (0 to 40 px, default 4; 0 is right on the edge); Settings > Appearance > Dock has both. The Trash is the last dock item (empty or full; opens the trash folder in Minos).
+
+How it is placed (found by testing in the VM): KWin lays a layer-shell surface out above any room reserved on its edge, including its own exclusive zone, so a layer-shell dock floated off the edge by its own height, and negative margins or zone -1 did not help. The dock is therefore a **Plasma panel window** (xdg toplevel with the `org_kde_plasma_surface` panel role and an explicit position), which KWin puts exactly where it is told. KWin takes no strut from such a window in Plasma 6, so an invisible layer-shell strip (`Kind::Strut`, Background layer, anchored along the edge) reserves the room; maximized windows stop at the dock. The top bar stays a layer-shell surface (flush at the top).
+
+## Minos Storage (2026-10-12)
+Storage lists the physical disks (`lsblk`), with one usage bar each; selecting a disk shows its partitions (`Disk:vda` is a virtual location like This PC). A partition that is not mounted is listed but cannot be opened yet. The computer's name replaces "This PC" once it is set. This PC, My User Home and the drives use Minos' own drawn icons; folders and files use the MacTahoe theme.
+
+## Installer (2026-10-12)
+Title bar: the installer runs as root and does not read the user's colour scheme, so KWin drew it grey. The live image ships `LabyrinthInstaller.colors` and a KWin window rule (`~/.config/kwinrulesrc`) that gives the Calamares window that scheme, so the title bar blends in. The slideshow gets a dark background and says Plasma, not Hyprland.

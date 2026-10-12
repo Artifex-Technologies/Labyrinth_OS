@@ -1,0 +1,11 @@
+[General]
+count=1
+rules=labyrinth-installer
+
+[labyrinth-installer]
+Description=Labyrinth installer: a title bar in the installer's own dark colours
+decocolor=LabyrinthInstaller
+decocolorrule=2
+wmclass=calamares
+wmclasscomplete=false
+wmclassmatch=2
