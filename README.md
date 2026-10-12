@@ -1,5 +1,9 @@
 # Labyrinth OS
 
+![The Labyrinth OS desktop with the installer open](assets/screenshots/desktop-installer.png)
+
+*The live desktop: Labyrinth top bar and dock, MacTahoe icons, and the installer.*
+
 A daily-driver Linux for one specific machine (for now), meant to replace Windows on it:
 
 | Part | Hardware |

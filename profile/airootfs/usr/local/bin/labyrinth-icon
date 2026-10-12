@@ -58,6 +58,7 @@ names_for() {
     freecad*)           echo org.freecad.FreeCAD freecad ;;
     sketchup*)          echo sketchup ;;
     protonvpn*)         echo protonvpn proton-vpn ;;
+    logi*)              echo logi-options-plus logiops solaar logitech-options ;;
     minecraft_launcher*) echo minecraft-launcher minecraft ;;
     duckstation*)       echo duckstation org.duckstation.DuckStation ;;
     retroarch*)         echo retroarch com.libretro.RetroArch ;;

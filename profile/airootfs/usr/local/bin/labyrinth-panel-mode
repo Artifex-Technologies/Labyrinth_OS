@@ -32,6 +32,8 @@ X-KDE-autostart-phase=2
 D
     plasma 'panels().forEach(function (p) { p.remove(); });'
     pkill -f '^/usr/bin/labyrinth-panel$' 2>/dev/null
+    # Let KWin drop Plasma's panels (and the space they reserved) before the dock is placed, or it sits above it.
+    sleep 2
     setsid -f /usr/bin/labyrinth-panel >/dev/null 2>&1
     echo "labyrinth-panel on"
     ;;

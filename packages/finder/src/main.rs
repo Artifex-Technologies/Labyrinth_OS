@@ -2022,6 +2022,15 @@ fn ui_pane(ui: &mut egui::Ui, pane: &mut Pane, pi: usize, focused: bool, st: &St
     ui.push_id(pi, |ui| draw_pane(ui, pane, pi, focused, st, cloud_ctx, clip_has, actions));
 }
 
+/// A folder given on the command line: a path, a file:// URL, or trash:/ (the trash folder).
+fn start_path(arg: &str) -> PathBuf {
+    if arg.starts_with("trash:") {
+        let base = std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).or_else(|| dirs::home_dir().map(|h| h.join(".local/share")));
+        return base.map(|b| b.join("Trash/files")).unwrap_or_default();
+    }
+    PathBuf::from(arg.strip_prefix("file://").unwrap_or(arg))
+}
+
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -2042,7 +2051,14 @@ fn main() -> eframe::Result {
             egui_extras::install_image_loaders(&cc.egui_ctx);
             let st = State::config_path().as_deref().map(State::load_from).unwrap_or_default();
             theme::apply(&cc.egui_ctx, st.dark, if st.follow_accent { theme::system_accent() } else { None });
-            Ok(Box::new(App::new()))
+            let mut app = App::new();
+            // `finder FOLDER` (the dock's Trash, "open with"): that folder in a new tab.
+            if let Some(p) = std::env::args().nth(1).map(|a| start_path(&a)).filter(|p| p.is_dir()) {
+                let (sort, hidden) = (app.panes[0].sort, app.st.show_hidden);
+                app.panes[0].tabs.push(TabView::new(p, false, sort, hidden));
+                app.panes[0].active = app.panes[0].tabs.len() - 1;
+            }
+            Ok(Box::new(app))
         }),
     )
 }

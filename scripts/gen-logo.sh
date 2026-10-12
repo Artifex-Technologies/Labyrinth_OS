@@ -42,8 +42,8 @@ for s in 512 256 128 64 48 32; do
 done
 b=$root/profile/airootfs/etc/calamares/branding/labyrinth
 mkdir -p "$b"
-magick "$out/labyrinth-white.png" -resize 126x126 "$b/logo.png"                     # dark sidebar
-magick "$out/labyrinth-black.png" -resize 190x190 -background none -gravity center -extent 480x190 "$b/welcome.png"   # light page
+magick "$out/labyrinth-white.png" -resize 78x78 -background none -gravity center -extent 126x126 "$b/logo.png"   # dark sidebar (room around it so it is not clipped)
+magick "$out/labyrinth-white.png" -resize 190x190 -background none -gravity center -extent 480x190 "$b/welcome.png"   # dark page
 mkdir -p "$root/profile/airootfs/usr/share/sddm/themes/WhiteSur"
 cp "$out/labyrinth-white.svg" "$root/profile/airootfs/usr/share/sddm/themes/WhiteSur/labyrinth-logo.svg"   # login screen
 echo "logo set written to $out and the profile"

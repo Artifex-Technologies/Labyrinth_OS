@@ -8,5 +8,6 @@ Exec=labyrinth-install
 Icon=labyrinthos
 Terminal=false
 StartupNotify=true
+StartupWMClass=io.calamares.calamares
 Categories=Qt;System;
 X-AppStream-Ignore=true

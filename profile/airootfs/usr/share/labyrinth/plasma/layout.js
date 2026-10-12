@@ -52,3 +52,6 @@ tasks.writeConfig("launchers", [
     "applications:steam.desktop",
     "applications:labyrinth-settings.desktop"
 ]);
+// The trash, at the right end: empty or full by what is in it (Plasma's own widget; it opens
+// trash:/ , which Finder understands).
+dock.addWidget("org.kde.plasma.trash");

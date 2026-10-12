@@ -2,7 +2,7 @@
 Name=Finder
 GenericName=File Manager
 Comment=Browse files, with tabs, split view and Proton Drive link status
-Exec=finder
+Exec=finder %U
 Icon=system-file-manager
 Terminal=false
 Type=Application
