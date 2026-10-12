@@ -13,9 +13,6 @@
 
 *The boot menu: Labyrinth's emblem, the UEFI firmware setting, and any other system found on the disks (Windows, another Linux). Theme: [grub-evodevo](https://github.com/ftonneau/grub-evodevo), MIT.*
 
-![Calculator](assets/screenshots/calculator.png)
-
-*Calculator: editable equation at the top, history on the right, scientific pad when wide.*
 
 A daily-driver Linux for one specific machine (for now), meant to replace Windows on it:
 
