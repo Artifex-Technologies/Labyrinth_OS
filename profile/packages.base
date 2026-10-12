@@ -49,6 +49,10 @@ squashfs-tools
 # Calamares displaymanager imports toml
 python-toml
 grub
+librsvg
+# finds Windows and other systems on the disks for the boot menu (dual boot)
+os-prober
+ntfs-3g
 efibootmgr
 grub-btrfs
 # grub-btrfsd (snapshot entries) needs inotifywait; hostname for scripts

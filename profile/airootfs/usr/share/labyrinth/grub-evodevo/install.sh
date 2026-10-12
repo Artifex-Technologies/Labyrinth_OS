@@ -1,0 +1,884 @@
+#!/bin/sh
+
+# ------------------------------------------------------------
+# CONFIGURATION
+# ------------------------------------------------------------
+
+# This section of the script is a series of VARIABLE=VALUE assignments. There
+# should be no spaces around the equal sign. If VALUE includes blanks, surround
+# VALUE with quotes. For example:
+
+# Wallpaper='my favorite picture.png'
+
+# The lines starting with '#' are comments to help you with the assignments.
+
+ScreenWidth=1920
+ScreenHeight=1080
+# Width and height (in pixels) of your screen at boot time. These values
+# must be those actually used by GRUB, so do not try to read them from your
+# desktop environment. Instead, reboot your computer, and type 'c' when the
+# GRUB menu shows up. This will open a command line with a prompt ('>'). Type
+# 'videoinfo' [Enter], and GRUB will print a list of resolutions. The one used
+# at boot time is prefixed with an asterisk (*). For example, with this list:
+
+#   0x000  320 x  200 x 32 (1280)  Direct color, mask: 8/8/8/8  pos: 16/8/0/24
+#   0x001  640 x  480 x 32 (2560)  Direct color, mask: 8/8/8/8  pos: 16/8/0/24
+#   0x006  320 x  240 x 32 (1280)  Direct color, mask: 8/8/8/8  pos: 16/8/0/24
+#   0x007  320 x  200 x 32 (2560)  Direct color, mask: 8/8/8/8  pos: 16/8/0/24
+# * 0x008 1600 x 1200 x 32 (6400)  Direct color, mask: 8/8/8/8  pos: 16/8/0/24
+#   0x009 1280 x  800 x 32 (5120)  Direct color, mask: 8/8/8/8  pos: 16/8/0/24
+
+# boot-time resolution is 1600 x 1200, and you should set ScreenWidth and
+# ScreenHeight to 1600 and 1200, respectively.
+
+FontSize=20
+# Font size in pixels. The default value, 20, works well with a screen height
+# of about 1000 pixels. With a larger screen height (e.g., 2000 pixels), try
+# a larger font size (e.g., 40).
+
+Wallpaper='default.jpg'
+# The value assigned to `Wallpaper` should be either (a) the name of a JPEG
+# or PNG file to use as wallpaper, or (b) a color name in the #rrggbb format
+# (e.g., '#ba84c2'). If you choose option (a), put your file in the wallpapers/
+# subdirectory of the install folder, otherwise the file will not be detected.
+# If you choose option (b), don't forget the quotes around the color name.
+
+Image_A=
+Image_A_Left=
+Image_A_Top=
+# These parameters can be used to add a custom image to the screen. Image_A
+# should be assigned the name of a valid JPEG or PNG file. Image_A_Left and
+# Image_A_Top should contain the X and Y coordinates (in pixels) of the top
+# left corner of the image. For example:
+# Image_A='my logo.png'
+# Image_A_Left=1000
+# Image_A_Top=250
+# Put your JPEG or PNG file in the images/ subdirectory of the install folder,
+# otherwise the image will not be detected.
+
+Image_B=
+Image_B_Left=
+Image_B_Top=
+# Use these parameters to add a second custom image to the screeen.
+
+MenuStyle=wide
+# Possible values are 'narrow', 'wide', and 'maximal'. A narrow menu has rounded
+# corners, a header that can be colored differently, and entries without margins.
+# A wide menu has square corners, no separate header, and rounded entries with
+# left and right margins. A maximal menu is fully transparent and has a large
+# title followed by a horizontal separator.
+
+XPercent=center
+YPercent=center
+# Percent-of-screen values (without the % sign) for the X and Y coordinates of
+# the menu. For example, XPercent=30 will position the menu at 30% of screen
+# width. Using 'center' as value leaves the menu centered on the screen.
+
+MenuPercent=60
+# Menu width as percentage of screen width; do not include the % sign. Set this
+# percentage wide enough to avoid truncating menu entries.
+
+MenuCapacity=6
+# Menu capacity in entries (i.e., maximum number of entries visible on the
+# screen). If more entries are available, Grub will allow you to scroll down
+# the menu with arrows.
+
+MenuBg='200 10 10'
+HeaderBg='200 0 10'
+FocusBg='185 10 40'
+TextFg='0 0 100'
+IconFg='0 0 85'
+BarBg='0 0 100'
+BarFg='185 10 10'
+# Values of menu background, header background, entry focus, text color, icon
+# color, progress-bar background, and progress-bar foreground. Each value is
+# expressed as 'H S L' (quoted and blank separated), with H = hue from 0 to
+# 360, S = saturation from 0 to 100, and L = lightness from 0 to 100. Note:
+# HeaderBg applies only for MenuStyle=narrow.
+
+MenuOpacity=0.75
+HeaderOpacity=0.90
+FocusOpacity=0.80
+# Opacity values for the menu, the header, and the background of the focused
+# entry. Each value is a floating-point number from 0 (full transparency) to
+# 1 (full opacity). Note: HeaderOpacity applies only for MenuStyle=narrow.
+
+Sigma=20
+# This value is the amount, in pixels, of wallpaper blurring behind the menu.
+# A value of 0 means no blurring.
+
+FontFamily='Sans'
+# Any true-type font installed on your system. Example: 'Roboto Mono'.
+
+Title='Boot Menu'
+EnterMsg='[ Enter  Accept ]'
+CommandMsg='[ e  Edit   |   c  Console ]'
+# These menu messages can be freely customized, provided you avoid characters
+# such as quotes, <, and &. You can use successive blanks to increase spacing
+# betwen words.
+
+Repair=
+# Some distros (e.g., Linux Mint) may have their name replaced by another one
+# e.g., Ubuntu) in the GRUB menu. You can restore the correct name by writing:
+# Repair='Ubuntu@Linux Mint'
+# for example. The left side of the @ symbol is the name to be replaced, the
+# right side of the @ symbol is the correct name. Names may comprise blanks,
+# but the value for Repair must be quoted.
+
+Change_0=
+Change_1=
+Change_2=
+Change_3=
+Change_4=
+Change_5=
+Change_6=
+Change_7=
+Change_8=
+Change_9=
+# These assignments give you the opportunity to change the apperance of up to
+# ten distro names (or parts of entries) in the GRUB menu. The syntax is the
+# same as for Repair. For example: Change_0='Linux Mint@Mint Xfce'
+
+MemoryRegex='memory|memtest'
+PowerRegex='halt|reboot|shutdown'
+SnapshotRegex='snapshot'
+SystemRegex='bios|firmware|setting|setup|uefi'
+# These are regular expressions, used to detect different types of menu-entry
+# emblems.
+
+# ------------------------------------------------------------
+# END OF CONFIGURATION
+# ------------------------------------------------------------
+
+# ***Do not change anything below this line.***
+
+# ------------------------------------------------------------
+# Program start
+# ------------------------------------------------------------
+
+stop() {
+    printf %s\\n "Install stopped: $1" >&2
+    exit 1
+}
+
+if [ "$*" = -preview ]; then
+    mode=preview
+elif [ $# -eq 0 ]; then
+    mode=install
+else
+    echo 'Usage: `./install.sh -preview` or `sudo ./install.sh`' >&2
+    exit 1
+fi
+
+if [ "$mode" = install ]; then
+    root_id=0
+    user_id=$(id -u)
+    if [ "$user_id" -ne "$root_id" ]; then
+        stop 'this script should be run as root, sudo ./install.sh'
+    fi
+fi
+
+command -v grub-mkconfig >/dev/null || stop "GRUB setup not supported"
+
+grub_control=/etc/default/grub
+grub_config_file=/boot/grub/grub.cfg
+[ -r "$grub_control" ] || stop "cannot read $grub_control"
+[ -r "$grub_config_file" ] || stop "cannot read $grub_config_file"
+
+case $Wallpaper in
+'#'*)
+    using_wallpaper=
+    WallColor=$Wallpaper
+    ;;
+*)
+    using_wallpaper=yes
+    if command -v gm >/dev/null; then
+        change='gm convert'
+        smooth='gm mogrify -blur'
+    elif command -v convert >/dev/null; then
+        change='convert'
+        smooth='mogrify -blur'
+    else
+        stop 'neither GraphicsMagick nor ImageMagick was detected.'
+    fi
+    ;;
+esac
+
+if command -v rsvg-convert >/dev/null; then
+    png_make='rsvg-convert -o tmp.png'
+elif command -v inkscape >/dev/null; then
+    png_make='inkscape --export-type=png'
+else
+    stop 'neither rsvg-convert nor Inkscape was detected.'
+fi
+
+theme_path=/usr/share/grub/themes/evodevo
+theme_file="$theme_path/theme.txt"
+icons_path="$theme_path/icons"
+
+if [ "$mode" = install ]; then
+    rm -rf "$theme_path"
+    mkdir -p "$theme_path"
+    mkdir -p "$icons_path"
+fi
+
+rm -f custom.cfg scan.txt *png tmp.svg  # clean any residue from other install
+
+# ------------------------------------------------------------
+# Derived graphical values
+# ------------------------------------------------------------
+
+ItemSquare=$((FontSize * 22/10))
+[ $((ItemSquare % 2)) -eq 1 ] && ItemSquare=$((ItemSquare + 1)) # => even number
+LargerSize=$((FontSize * 15/10))
+HalfSquare=$((ItemSquare / 2))
+Tiny=2
+
+case $MenuStyle in
+narrow)
+    SideMargin=0
+    HeaderHeight=$((FontSize * 28/10))
+    BottomMargin=$((FontSize * 32/10))
+    PanelRadius=$HalfSquare
+    ItemRadius=0
+    ;;
+*)
+    SideMargin=$((FontSize * 15/10))
+    HeaderHeight=0
+    BottomMargin=$((FontSize * 50/10))
+    PanelRadius=0
+    ItemRadius=$HalfSquare
+    ;;
+esac
+case $MenuStyle in
+narrow)
+    TopMargin=$((FontSize * 35/10))
+    TopGuide=$((FontSize * 15/10))
+    ItemSpacing=$Tiny
+    ;;
+wide)
+    TopMargin=$((FontSize * 60/10))
+    TopGuide=$((FontSize * 30/10))
+    ItemSpacing=$Tiny
+    ;;
+*)
+    TopMargin=$((FontSize * 115/10))
+    LineGuide=$((FontSize * 53/10))
+    TopGuide=$((FontSize * 85/10))
+    ItemSpacing=$((FontSize / 2))
+    ;;
+esac
+
+ItemShare=$((ItemSquare + ItemSpacing))
+MenuHeight=$((MenuCapacity * ItemShare - ItemSpacing))
+PanelHeight=$((TopMargin + MenuHeight + BottomMargin))
+TopNavGuide=$((TopGuide - ItemSquare / 2))
+BottomGuide=$((PanelHeight - BottomMargin / 2))
+BottomNavGuide=$((BottomGuide - ItemSquare / 2))
+
+MenuWidth=$((ScreenWidth * MenuPercent / 100))
+PanelWidth=$((SideMargin + MenuWidth + SideMargin))
+
+Tab=$HalfSquare
+SideTab=$((SideMargin + Tab))
+case $MenuStyle in
+narrow|wide)
+    TitleGuide=$TopGuide
+    TitleTab=$((SideTab + ItemSquare + Tab))
+    TitleSize=$FontSize
+    ;;
+*)
+    TitleGuide=$((FontSize * 18/10))
+    TitleTab=$SideTab
+    TitleSize=$LargerSize
+    ;;
+esac
+MsgStop=$((PanelWidth - SideTab - PanelRadius))
+
+GlyphPos=$Tab
+CaptionPos=$((Tab + ItemSquare + Tab))
+GlyphScale=$(awk "BEGIN { print $ItemSquare * 0.042 }")
+
+BarTab=$((PanelWidth * 1/10))
+BarWidth=$((PanelWidth - BarTab * 2))
+BarLevel=$((PanelHeight + FontSize * 2))
+BarHeight=$((FontSize / 8))
+BarLimit=50
+
+case $XPercent in
+    center) PanelX=$(((ScreenWidth - PanelWidth) / 2)) ;;
+    *) PanelX=$((ScreenWidth * $XPercent / 100)) ;;
+esac
+case $YPercent in
+    center) PanelY=$(((ScreenHeight - PanelHeight) / 2)) ;;
+    *) PanelY=$((ScreenHeight * $YPercent / 100)) ;;
+esac
+
+xpos() { printf %s $((PanelX + $1)); }
+ypos() { printf %s $((PanelY + $1)); }
+
+rgb() {
+    if [ "$1" = none ]; then
+        printf none
+        return
+    fi
+    printf %s "$1" | awk '     # H S V => (R, G, B)
+        END {
+            H = ($1 + 0) / 60
+            S = ($2 + 0) / 100
+            V = ($3 + 0) / 100
+            M = V                       # max RGB
+            m = M * (1 - S)             # min RGB
+            c = M - m                   # range
+
+            if (H >= 5) H = H - 6       # undo wrapping so that H < 0
+
+            if (H < 0)      { R = M; G = m; B = m + (0 - H) * c }
+            else if (H < 1) { R = M; G = m + (H - 0) * c; B = m }
+            else if (H < 2) { R = m + (2 - H) * c; G = M; B = m }
+            else if (H < 3) { R = m; G = M; B = m + (H - 2) * c }
+            else if (H < 4) { R = m; G = m + (4 - H) * c; B = M }
+            else if (H < 5) { R = m + (H - 4) * c; G = m; B = M }
+
+            R = int(R * 255 + 0.5)
+            G = int(G * 255 + 0.5)
+            B = int(B * 255 + 0.5)
+
+            print "rgb(" R "," G "," B ")"
+        }
+    '
+}
+
+MenuBg=$(rgb "$MenuBg")
+HeaderBg=$(rgb "$HeaderBg")
+FocusBg=$(rgb "$FocusBg")
+TextFg=$(rgb "$TextFg")
+IconFg=$(rgb "$IconFg")
+BarBg=$(rgb "$BarBg")
+BarFg=$(rgb "$BarFg")
+
+if [ "$MenuStyle" = maximal ]; then
+    MenuOpacity=0
+    Sigma=0
+fi
+
+# ------------------------------------------------------------
+# Background pixel covering (install mode)
+# ------------------------------------------------------------
+
+open_svg() {
+    # $1: width; $2: height; $3 (optional): fill; $4 (optional): opacity
+    printf %s "
+        <svg xmlns='http://www.w3.org/2000/svg' width='$1' height='$2'
+         xmlns:xlink='http://www.w3.org/1999/xlink'>
+    " > tmp.svg
+    if [ "$3" ]; then
+        printf %s "<rect x='0' y='0' width='100%' height='100%' stroke-width='0'
+        fill='$3' fill-opacity='${4:-1}' />" >> tmp.svg
+    fi
+}
+
+convert_svg() {
+    # $1: destination
+    printf %s\\n "</svg>" >> tmp.svg
+    $png_make tmp.svg || stop 'unable to convert SVG to PNG.'
+    mv tmp.png "$1" || stop 'could not move tmp.png to destination.'
+}
+
+if [ "$mode" = install ]; then
+    # We cover the desktop background by a PNG (otherwise the GRUB may show
+    # bugs), and we cover the background of the focused item.
+    open_svg 1 1 gray
+    convert_svg "$theme_path/desktop.png"
+    open_svg 1 1 "$FocusBg" "$FocusOpacity"
+    convert_svg "$theme_path/item-selected-c.png"
+fi
+
+# ------------------------------------------------------------
+# Wallpaper and screen splits
+# ------------------------------------------------------------
+
+[ "$Wallpaper" ] || stop 'no wallpaper or background specified.'
+
+if [ "$using_wallpaper" ]; then
+    # We build a real wallpaper image.
+    [ -f "wallpapers/$Wallpaper" ] || stop "cannot find $Wallpaper"
+    echo 'Preparing wallpaper [may take a few seconds] ... '
+    $change \
+    "wallpapers/$Wallpaper" -geometry "${ScreenWidth}x${ScreenHeight}!" screen.png \
+    || stop "cannot resize $Wallpaper"
+else
+    # We create a monochromatic, screen-size rectangle.
+    open_svg "$ScreenWidth" "$ScreenHeight" "$WallColor"
+    convert_svg screen.png
+fi
+
+crop() {
+    # $1: input file; $2: width; $3: height; $4: x; $5: y; $6: destination
+    $change "$1" -crop "$2x$3+$4+$5" "$6"
+}
+
+ScreenL=$(xpos $PanelWidth)
+ScreenR=$((ScreenWidth - ScreenL))
+
+if [ "$mode" = install ]; then
+    if [ "$using_wallpaper" ]; then
+        # Each split is a cut from the real wallpaper image.
+        crop screen.png "$ScreenL" "$ScreenHeight" 0 0 "$theme_path/left.png"
+        crop screen.png "$ScreenR" "$ScreenHeight" "$ScreenL" 0 "$theme_path/right.png"
+    else
+        # Each split is made from a single, extensible color pixel.
+        open_svg 1 1 "$WallColor"
+        convert_svg "$theme_path/left.png"
+        open_svg 1 1 "$WallColor"
+        convert_svg "$theme_path/right.png"
+    fi
+fi
+
+# ------------------------------------------------------------
+# Menu panel
+# ------------------------------------------------------------
+
+add_str() {
+    printf %s\\n "$1" >> tmp.svg
+}
+
+add_box() {
+    # $1: x; $2: y; $3: width; $4: height; $5: fill; $6 (optional): opacity;
+    # $7 (optional): corner radius
+    add_str "<rect x='$1' y='$2' width='$3' height='$4' fill='$5'
+        fill-opacity='${6:-1}' rx='${7:-0}' ry='${7:-0}' stroke-width='0'/>"
+}
+
+add_band() {
+    # $1: y; $2: height; $3: fill
+    add_str "<rect x='0' y='$1' width='100%' height='$2' fill='$3'
+        fill-opacity='$4' stroke-width='0' mask='url(#cut)'/>"
+}
+
+add_image() {
+    add_str "<image x='0' y='0' width='100%' height='$100%' xlink:href='$1'
+        mask='url(#cut)'/>"
+}
+
+if [ "$using_wallpaper" ]; then
+    # We cut a rectangle from the processed background screen.
+    echo 'Preparing menu background [may take a few seconds] ... '
+    cp screen.png surface.png
+    [ "$Sigma" = 0 ] || $smooth "$((Sigma * 3))x${Sigma}" surface.png
+    crop surface.png "$PanelWidth" "$PanelHeight" "$PanelX" "$PanelY" panel-base.png
+    rm surface.png
+else
+    # We make a simple, wallpaper-colored rectangle.
+    open_svg "$PanelWidth" "$PanelHeight" "$WallColor"
+    convert_svg panel-base.png
+fi
+
+# Menu entries are sandwiched between two layers of panel rendering. The
+# bottom layer, panel-back.png, is a cutout of the background. The top layer,
+# panel-front.png, is a copy of panel-back.png with hollow contours to let the
+# menu entries show through.
+
+open_svg $PanelWidth $PanelHeight
+add_str "<defs> <mask id='cut'>"
+add_box 0 0 100% 100% black 1
+add_box 0 0 100% 100% white 1 "$PanelRadius"
+add_str "</mask> </defs>"
+add_image panel-base.png
+add_band 0 $HeaderHeight "$HeaderBg" "$HeaderOpacity"
+add_band $HeaderHeight $((PanelHeight - HeaderHeight)) "$MenuBg" "$MenuOpacity"
+convert_svg panel-back.png
+rm panel-base.png
+
+add_text() {
+    # $1: x; $2: y; $3: string; $4 (optional): anchoring; $5 (optional): size
+    anchor=${4:-start}
+    size=${5:-$FontSize}
+    add_str "<text x='$1' y='$(($2 + size * 3/10))' text-anchor='$anchor'
+        font-family='$FontFamily' font-size='$size' xml:space='preserve'
+        fill='$TextFg' stroke-width='0'>$3</text>"
+}
+
+add_glyph() {
+    # $1: x; $2: y; $3: glyph name; $4: color. Raw glyph area is 24x24 pixels,
+    # so we must first center the glyph by (-12, -12).
+    add_str "<path d='$(cat data/$3)'
+         transform='translate($(($1 + HalfSquare)), $(($2 + HalfSquare)))
+         scale($GlyphScale) translate(-12, -12)' stroke-width='0'
+         fill-rule='evenodd' fill='$4'/>"
+}
+
+contains() {
+    printf %s\\n "$1" | grep -E -iq "$2"        # quiet and case insensitive
+}
+
+datum() {
+    query=$1
+    if contains "$query" "$MemoryRegex"; then
+        printf %s memory
+    elif contains "$query" "$PowerRegex"; then
+        printf %s power
+    elif contains "$query" "$SnapshotRegex"; then
+        printf %s camera
+    elif contains "$query" "$SystemRegex"; then
+        printf %s cog
+    elif contains "$query" '^commodore'; then
+        printf %s Commodore
+    elif contains "$query" '^guix'; then
+        printf %s Guix
+    elif contains "$query" 'linux ?mint'; then
+        printf %s Mint
+    elif contains "$query" '^(macos|osx)'; then
+        printf %s Apple
+    elif contains "$query" '^pop'; then
+        printf %s Pop
+    elif contains "$query" '^sparky'; then
+        printf %s Sparky
+    else
+        # Use first word as search key, after cleaning possible suffixes.
+        stem=${query%% *}
+        stem=${stem%,}
+        stem=${stem%OS}
+        match=$(ls -1 data/ | grep -E -is "^${stem}$")
+        if [ "$match" ]; then
+            printf %s "$match"
+        else
+            printf %s unknown
+        fi
+    fi
+}
+
+open_svg $PanelWidth $PanelHeight
+add_str "<defs> <mask id='cut'>"
+add_box 0 0 100% 100% white
+k=0; while [ $k -lt "$MenuCapacity" ]; do
+    add_box \
+        $SideMargin $((TopMargin + k * ItemShare)) $MenuWidth $ItemSquare \
+        black 1 $ItemRadius
+    k=$((k + 1))
+done
+add_str "</mask> </defs>"
+add_image panel-back.png
+add_text $TitleTab $TitleGuide "$Title" start $TitleSize
+if [ "$MenuStyle" = maximal ]; then
+    add_str "<line stroke='$FocusBg' stroke-width='$Tiny'
+        x1='$SideTab' y1='$LineGuide' x2='$MsgStop' y2='$LineGuide'
+    />"
+fi
+add_glyph $SideTab $TopNavGuide top $TextFg
+add_text $MsgStop $TopGuide "$CommandMsg" end
+add_glyph $SideTab $BottomNavGuide bottom $TextFg
+add_text $MsgStop $BottomGuide "$EnterMsg" end
+convert_svg panel-front.png
+
+if [ "$mode" = install ]; then
+    mv panel-back.png panel-front.png "$theme_path"
+fi
+
+# ------------------------------------------------------------
+# Custom images (optional)
+# ------------------------------------------------------------
+
+make_copy() {
+    # $1: image filename; $2: destination path
+    cp "images/$1" "$2" || stop "cannot find $1"
+}
+
+get_resolution() {
+    # $1: image filename
+    file "$1" | awk '
+        {
+            sub(/density[^,]+,/, "", $0)    # remove "density DDDxDDD" noise
+            image_dims="[[:digit:]]+ ?x ?[[:digit:]]+"
+            if (match($0, image_dims) > 0) {
+                info = substr($0, RSTART, RLENGTH)
+                gsub(/ /, "", info)
+                print(info)
+            }
+            else print("100x100")           # fake values if nothing detected
+        }
+    '
+}
+
+CUSTOM_IMAGE_A=
+CUSTOM_IMAGE_B=
+
+if [ "$Image_A" ]; then
+    if [ "$mode" = preview ]; then
+        make_copy "$Image_A" .
+        info=$(get_resolution "$Image_A")
+        img_a_w=${info%x*}
+        img_a_h=${info#*x}
+    else
+        make_copy "$Image_A" "$theme_path"
+        CUSTOM_IMAGE_A="
+            + image {
+                left = $Image_A_Left
+                top = $Image_A_Top
+                file = \"$Image_A\"
+            }
+        "
+    fi
+fi
+
+if [ "$Image_B" ]; then
+    if [ "$mode" = preview ]; then
+        make_copy "$Image_B" .
+        info=$(get_resolution "$Image_B")
+        img_b_w=${info%x*}
+        img_b_h=${info#*x}
+    else
+        make_copy "$Image_B" "$theme_path"
+        CUSTOM_IMAGE_B="
+            + image {
+                left = $Image_B_Left
+                top = $Image_B_Top
+                file = \"$Image_B\"
+            }
+        "
+    fi
+fi
+
+# ------------------------------------------------------------
+# Progress bar
+# ------------------------------------------------------------
+
+make_bar() {
+    # $1: color; $2: filename
+    open_svg 1 $BarLimit
+    add_box 0 0 1 $BarHeight $1
+    convert_svg "$theme_path/$2"
+}
+
+if [ "$mode" = preview ]; then
+    open_svg "$BarWidth" "$BarHeight" "$BarBg"
+    add_box 0 0 "$((BarWidth * 3/4))" "$BarHeight" "$BarFg"
+    convert_svg bar.png
+else
+    make_bar $BarBg bar-default-c.png
+    make_bar $BarFg bar-highlighted-c.png
+fi
+
+# ------------------------------------------------------------
+# Preview composition (preview mode only)
+# ------------------------------------------------------------
+
+add_atom() {
+    # $1: x, $2: y, $3: width, $4: height, $5: filename
+    add_str "<image x='$1' y='$2' width='$3' height='$4' xlink:href='$5'/>"
+}
+
+xshift() {
+    value=${1:-0}
+    printf %s $((PanelX + SideMargin + $value))
+}
+
+yshift() {
+    value=${1:-0}
+    printf %s $((PanelY + TopMargin + $value))
+}
+
+if [ "$mode" = preview ]; then
+    open_svg $ScreenWidth $ScreenHeight
+    add_atom 0 0 $ScreenWidth $ScreenHeight screen.png
+
+    add_atom $(xpos 0) $(ypos 0) $PanelWidth $PanelHeight panel-back.png
+    add_box $(xshift) $(yshift) $MenuWidth $ItemSquare $FocusBg $FocusOpacity
+    add_glyph $(xshift $GlyphPos) $(yshift) unknown $IconFg
+    add_text $(xshift $CaptionPos) $(yshift $HalfSquare) "Example of entry"
+    add_atom $(xpos 0) $(ypos 0) $PanelWidth $PanelHeight panel-front.png
+
+    if [ "$Image_A" ]; then
+        add_atom "$Image_A_Left" "$Image_A_Top" $img_a_w $img_a_h "$Image_A"
+    fi
+    if [ "$Image_B" ]; then
+        add_atom "$Image_B_Left" "$Image_B_Top" $img_b_w $img_b_h "$Image_B"
+    fi
+
+    add_atom $(xpos $BarTab) $(ypos $BarLevel) "$BarWidth" "$BarHeight" bar.png
+    convert_svg preview.png
+
+    [ "$Image_A" ] && rm "$Image_A"
+    [ "$Image_B" ] && rm "$Image_B"
+    rm screen.png panel*png bar.png tmp.svg
+cat << DOC
+
+-----------------------------
+preview.png successfully generated!
+-----------------------------
+DOC
+fi
+
+# ------------------------------------------------------------
+# Theme composition (install mode only)
+# ------------------------------------------------------------
+
+[ "$mode" = preview ] && exit 0
+
+posix_sed() {
+    # $1: sed expression, $2: target file
+    sed "$1" "$2" > tmp.txt && mv tmp.txt "$2"
+    [ "$?" -eq 0 ] || stop 'could not perform replacement.'
+}
+
+# Prepare control file and theme file.
+
+posix_sed '/GRUB_BACKGROUND/s,^.*$,#GRUB_BACKGROUND="wallpaper",' "$grub_control"
+if grep -q 'GRUB_THEME' "$grub_control"; then
+    posix_sed "/GRUB_THEME/s,^.*$,GRUB_THEME=$theme_file," "$grub_control"
+else
+    printf %s\\n "GRUB_THEME=$theme_file" >> "$grub_control"
+fi
+
+{
+cat << DOC
+title-text: ""
+
+desktop-image: "desktop.png"
+
+terminal-left: "10%"
+terminal-top: "10%"
+terminal-width: "80%"
+terminal-height: "80%"
+
+$CUSTOM_IMAGE_A
+
+$CUSTOM_IMAGE_B
+
++ image {
+    left = $(xpos 0)
+    top = $(ypos 0)
+    file = "panel-front.png"
+}
+
++ image {
+    left = $ScreenL
+    top = 0
+    width = $ScreenR
+    height = 100%
+    file = "right.png"
+}
+
++ boot_menu {
+    left = $(xpos $SideMargin)
+    top = $(ypos $TopMargin)
+    width = $MenuWidth
+    height = $MenuHeight
+    item_color = gray
+    selected_item_color = gray
+    icon_width = $MenuWidth
+    icon_height = $ItemSquare
+    item_icon_space = 0
+    item_padding = 0
+    item_height = $ItemSquare
+    item_spacing = $ItemSpacing
+    selected_item_pixmap_style = "item-selected-*.png"
+}
+
++ progress_bar {
+    id = "__timeout__"
+    left = $(xpos $BarTab)
+    top = $(ypos $BarLevel)
+    width = $BarWidth
+    bar_style = "bar-default-*.png"
+    highlight_style = "bar-highlighted-*.png"
+}
+
++ image {
+    left = $(xpos 0)
+    top = $(ypos 0)
+    file = "panel-back.png"
+}
+
++ image {
+    left = 0
+    top = 0
+    width = $ScreenL
+    height = 100%
+    file = "left.png"
+}
+
+DOC
+} > "$theme_file"
+
+# Create GRUB configuration from control file and theme file. Then scan the
+# configuration to create a list of menu entries.
+
+grub-mkconfig -o "$grub_config_file" || stop 'could not configure GRUB.'
+
+< "$grub_config_file" awk '
+BEGIN {
+    DQ = "\042"
+    SQ = "\047"
+    EntryRegex = "^[[:blank:]]*(menuentry|submenu) [" DQ SQ "]"
+    EscapedQuote = "\\\\" DQ
+    Space = " "
+}
+{
+    line = $0
+    if (match(line, EntryRegex) > 0) {
+        first_quote_pos = RLENGTH
+        quote = substr(line, first_quote_pos, 1)
+        cmd_head = substr(line, 1, first_quote_pos - 2)
+        remainder = substr(line, first_quote_pos + 1)
+        gsub(EscapedQuote, "", remainder) # simplify search for title end
+        if (match(remainder, quote Space) > 0) {
+            second_quote_pos = RSTART
+            title = substr(remainder, 1, second_quote_pos - 1)
+            gsub("<", "\\&lt;", title) # sanitize title for SVG handling
+            cmd_tail = substr(remainder, second_quote_pos + 2)
+            class = "--class evodevo_entry_" ++num
+            line = cmd_head Space quote title quote Space class Space cmd_tail
+            category = match(cmd_head, "menuentry") > 0 ? "ENTRY" : "SUBMENU"
+            print category ":" title > "scan.txt"
+        }
+    }
+    print(line) > "custom.cfg"
+}
+' || stop 'configuration scan failure'
+
+[ -f scan.txt ] || stop 'no captions generated.'
+
+# Use transformations to correct and/or customize EvoDevo's list of entries.
+
+[ -z "$Repair" ] || posix_sed "s@${Repair}@g" scan.txt
+
+[ -z "$Change_0" ] || posix_sed "s@${Change_0}@g" scan.txt
+[ -z "$Change_1" ] || posix_sed "s@${Change_1}@g" scan.txt
+[ -z "$Change_2" ] || posix_sed "s@${Change_2}@g" scan.txt
+[ -z "$Change_3" ] || posix_sed "s@${Change_3}@g" scan.txt
+[ -z "$Change_4" ] || posix_sed "s@${Change_4}@g" scan.txt
+[ -z "$Change_5" ] || posix_sed "s@${Change_5}@g" scan.txt
+[ -z "$Change_6" ] || posix_sed "s@${Change_6}@g" scan.txt
+[ -z "$Change_7" ] || posix_sed "s@${Change_7}@g" scan.txt
+[ -z "$Change_8" ] || posix_sed "s@${Change_8}@g" scan.txt
+[ -z "$Change_9" ] || posix_sed "s@${Change_9}@g" scan.txt
+
+mv custom.cfg "$grub_config_file" || stop "cannot update $grub_config_file"
+
+# Finally, build graphical entries (i.e., entry icons) from scan file.
+
+printf %s 'Building menu entries [may take a few seconds] ... '
+index=0; while read entry; do
+    index=$((index + 1))
+    category=${entry%%:*}
+    caption=${entry#*:}
+    open_svg $MenuWidth $ItemSquare
+    case $category in
+        ENTRY) glyph=$(datum "$caption") ;;
+        SUBMENU) glyph=more ;;
+    esac
+    add_glyph $GlyphPos 0 $glyph $IconFg
+    add_text $CaptionPos $HalfSquare "$caption"
+    convert_svg "$icons_path/evodevo_entry_${index}.png"
+done < scan.txt
+
+rm -f screen.png scan.txt tmp.svg
+
+cat << DOC
+
+-----------------------------
+Theme installed successfully!
+-----------------------------
+DOC
+

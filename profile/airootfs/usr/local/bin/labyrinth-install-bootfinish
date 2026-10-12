@@ -66,6 +66,12 @@ say "configured zram swap"
 #     LTS kernel first and boots that). The LTS kernel stays in the Advanced menu.
 if [[ -f /etc/default/grub ]]; then
   sed -i -E 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
+  # Other systems on the disks (Windows, another Linux) get a menu entry, found by os-prober when grub.cfg is made.
+  if grep -q '^#\?GRUB_DISABLE_OS_PROBER=' /etc/default/grub; then
+    sed -i -E 's/^#?GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
+  else
+    echo 'GRUB_DISABLE_OS_PROBER=false' >>/etc/default/grub
+  fi
   grep -q '^GRUB_TOP_LEVEL=' /etc/default/grub || echo 'GRUB_TOP_LEVEL="/boot/vmlinuz-linux-cachyos"' >>/etc/default/grub
   # Wireless keyboards and mice drop keys or repeat them when Linux power-saves their USB receiver
   # or Bluetooth adapter (seen with a Logitech MX Mechanical on a Dell OptiPlex). Turn that off.
@@ -152,6 +158,15 @@ if [[ -f /etc/default/grub ]]; then
     rm -f /boot/grub/grub.cfg.new
     warn "could not regenerate grub.cfg; keeping the installer's (no hibernate until it is regenerated)"
   fi
+fi
+
+
+# 2e. The boot menu theme (grub-evodevo with Labyrinth's emblem). It regenerates grub.cfg itself and puts
+#     the old menu back if the result is unusable, so a failure here costs only the looks.
+if command -v labyrinth-grub-theme >/dev/null && command -v rsvg-convert >/dev/null; then
+  labyrinth-grub-theme && say "boot menu theme installed" || warn "could not install the boot menu theme (the plain menu stays)"
+else
+  warn "labyrinth-grub-theme or rsvg-convert is missing; plain boot menu"
 fi
 
 exit 0

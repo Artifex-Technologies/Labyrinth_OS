@@ -1,0 +1,66 @@
+#!/bin/sh
+# Install the Labyrinth boot menu theme: grub-evodevo (MIT, vendored in /usr/share/labyrinth/grub-evodevo)
+# with Labyrinth's settings: black background, the purple accent, an emblem for each system (Labyrinth's
+# included) and 1920x1080. Run as root on the installed system (the installer's boot step does).
+#
+#   labyrinth-grub-theme              install the theme and regenerate grub.cfg
+#   labyrinth-grub-theme --preview F  write a picture of the menu to F (needs no root, changes nothing)
+#
+# It is safe to fail: grub.cfg and /etc/default/grub are put back if the result has no menu entries.
+set -eu
+src=/usr/share/labyrinth/grub-evodevo
+preview=
+if [ "${1:-}" = --preview ]; then
+    preview=${2:?usage: labyrinth-grub-theme --preview FILE}
+fi
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+cp -r "$src"/. "$work"/
+cd "$work"
+
+set_var() {   # set_var NAME VALUE: change the first NAME=VALUE setting (the later ones are derived values)
+    sed -i -E "0,/^$1=/s|^$1=.*|$1='$2'|" install.sh
+}
+set_var ScreenWidth 1920
+set_var ScreenHeight 1080
+set_var FontSize 22
+set_var Wallpaper '#000000'
+set_var Title 'Labyrinth OS'
+# Colours are H S V (degrees, percent, percent): the Labyrinth purple (hue 259) on black.
+set_var MenuBg '259 30 9'
+set_var HeaderBg '259 35 12'
+set_var FocusBg '259 61 55'
+set_var TextFg '0 0 100'
+set_var IconFg '0 0 88'
+set_var BarBg '0 0 100'
+set_var BarFg '259 61 84'
+set_var MenuOpacity 0.88
+set_var HeaderOpacity 0.95
+set_var FocusOpacity 0.90
+
+if [ -n "$preview" ]; then
+    sh ./install.sh -preview >/dev/null
+    cp preview.png "$preview" 2>/dev/null || cp ./*.png "$preview"
+    exit 0
+fi
+
+[ "$(id -u)" -eq 0 ] || { echo "labyrinth-grub-theme: run as root" >&2; exit 1; }
+cp /etc/default/grub "$work/grub.default.orig"
+cp /boot/grub/grub.cfg "$work/grub.cfg.orig"
+# GRUB must draw at the size the theme is made for.
+if grep -q '^#\?GRUB_GFXMODE=' /etc/default/grub; then
+    sed -i -E 's|^#?GRUB_GFXMODE=.*|GRUB_GFXMODE=1920x1080,auto|' /etc/default/grub
+else
+    echo 'GRUB_GFXMODE=1920x1080,auto' >>/etc/default/grub
+fi
+grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub || echo 'GRUB_GFXPAYLOAD_LINUX=keep' >>/etc/default/grub
+
+if sh ./install.sh >"$work/install.log" 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg && grep -q initrd /boot/grub/grub.cfg; then
+    echo "labyrinth-grub-theme: installed"
+else
+    echo "labyrinth-grub-theme: failed; putting the old menu back" >&2
+    tail -5 "$work/install.log" >&2 || true
+    cp "$work/grub.default.orig" /etc/default/grub
+    cp "$work/grub.cfg.orig" /boot/grub/grub.cfg
+    exit 1
+fi
