@@ -44,7 +44,7 @@ dock.hiding = "none";
 var tasks = dock.addWidget("org.kde.plasma.icontasks");
 tasks.currentConfigGroup = ["General"];
 tasks.writeConfig("launchers", [
-    "applications:finder.desktop",
+    "applications:minos.desktop",
     "applications:vivaldi-stable.desktop",
     "applications:com.mitchellh.ghostty.desktop",
     "applications:obsidian.desktop",
@@ -53,5 +53,5 @@ tasks.writeConfig("launchers", [
     "applications:labyrinth-settings.desktop"
 ]);
 // The trash, at the right end: empty or full by what is in it (Plasma's own widget; it opens
-// trash:/ , which Finder understands).
+// trash:/ , which Minos understands).
 dock.addWidget("org.kde.plasma.trash");

@@ -1,5 +1,5 @@
 # The dock's pinned apps, in order: desktop file ids. A user copy in ~/.config/labyrinth/dock wins.
-finder
+minos
 vivaldi-stable
 com.mitchellh.ghostty
 obsidian

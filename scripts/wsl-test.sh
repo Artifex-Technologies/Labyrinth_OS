@@ -39,7 +39,7 @@ tests() {
     run bash -n "$f"
   done
   step "Rust: file explorer"
-  (cd packages/finder && run cargo test --lib)
+  (cd packages/minos && run cargo test --lib)
   step "Rust: weather"
   (cd packages/labyrinth-weather && run cargo test --lib)
 }

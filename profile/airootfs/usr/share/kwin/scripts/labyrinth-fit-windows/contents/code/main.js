@@ -1,7 +1,7 @@
 // Keep windows out from under the dock and top bar, as Windows and macOS do.
 //
 // KWin stops a maximized window at the dock, but an app that opens (or later grows) taller than
-// the space left was placed with its bottom underneath the dock: the Finder at its default size on
+// the space left was placed with its bottom underneath the dock: the Minos at its default size on
 // a small screen, the installer's summary page. This shrinks such a window to the free area and
 // moves it inside. Full-screen windows are left alone (they cover the dock on purpose; Meta+Space
 // shows it), and so is a window the user is moving or resizing.

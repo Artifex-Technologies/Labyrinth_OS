@@ -26,7 +26,7 @@ There is no official Proton Drive client for Linux. What exists:
 | rclone `protondrive` backend | rclone speaks to Proton Drive and can FUSE-mount it | **Chosen for now**: packaged, mounts at `~/ProtonDrive` |
 | The `proton-drive` CLI in your `Documents\Github` folder | A single Bun-compiled executable (Linux ELF + Windows exe). Embeds `@protontech/drive-sdk`, Proton's own SDK. Not signed | Promising; blocked on provenance and its command list (see below) |
 
-### How it appears in finder
+### How it appears in minos
 
 The explorer does not speak any cloud protocol. A provider is a **folder kept
 populated by another process**, exactly how OneDrive looks in Windows Explorer.

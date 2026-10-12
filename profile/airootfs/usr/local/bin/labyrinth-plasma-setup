@@ -21,7 +21,7 @@ fi
 kwriteconfig6 --file kdeglobals --group Icons --key Theme Labyrinth
 # Title bars: Klassy (packages/pkgbuilds/klassy) with macOS traffic lights on the right in Windows
 # order (minimize, maximize, close), the same side as apps that draw their own (Vivaldi, Spotify,
-# Steam, Finder). Its title bar takes the app's colour, so title bar and toolbar are one header, and
+# Steam, Minos). Its title bar takes the app's colour, so title bar and toolbar are one header, and
 # there is no border or chin: BorderSize None, with invisible resize edges just outside the window.
 # The settings file goes in first; Klassy reads it when it is loaded by the switch below.
 CONF=${XDG_CONFIG_HOME:-$HOME/.config}
@@ -48,7 +48,7 @@ if [[ -e /usr/lib/qt6/plugins/org.kde.kdecoration3/org.kde.klassy.so ]]; then
 fi
 # Windows open like on a Mac; tiling is a button away (Meta + T).
 kwriteconfig6 --file kdeglobals --group General --key AccentColorFromWallpaper false
-# Brand purple (#3A1F5D family). The UI accent is Finder's own violet (124,84,214), a lighter tint, so selections stay visible on dark windows and the desktop matches Finder.
+# Brand purple (#3A1F5D family). The UI accent is Minos's own violet (124,84,214), a lighter tint, so selections stay visible on dark windows and the desktop matches Minos.
 kwriteconfig6 --file kdeglobals --group General --key AccentColor "124,84,214"
 kwriteconfig6 --file kdeglobals --group General --key LastUsedCustomAccentColor "124,84,214"
 qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1

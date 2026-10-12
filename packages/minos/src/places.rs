@@ -98,6 +98,19 @@ fn label_with(path: &Path, known: &[(&str, Option<PathBuf>)]) -> String {
 /// The virtual "This PC" location (a list of drives), not a folder on disk.
 pub const THIS_PC: &str = "This PC";
 
+/// What "This PC" is called on screen: the computer's name once it has been given one, else "This PC".
+/// (The location itself stays `THIS_PC`; only the label changes.) The names a fresh install or the
+/// live session carries ("labyrinth", "archiso", "localhost") do not count as a name.
+pub fn pc_name() -> String {
+    let host = std::fs::read_to_string("/etc/hostname").ok().or_else(|| std::env::var("HOSTNAME").ok()).unwrap_or_default();
+    display_name(host.trim())
+}
+
+fn display_name(host: &str) -> String {
+    let generic = ["", "localhost", "localhost.localdomain", "archiso", "labyrinth", "labyrinth-os"];
+    if generic.contains(&host.to_lowercase().as_str()) { THIS_PC.to_string() } else { host.to_string() }
+}
+
 pub fn this_pc() -> PathBuf {
     PathBuf::from(THIS_PC)
 }
@@ -214,6 +227,15 @@ mod tests {
         let d = filter_drives(vec![raw("OS", "C:\\", "NTFS", 100), raw("", "E:\\", "NTFS", 100)]);
         assert_eq!(d[0].label, "OS (C:\\)");
         assert_eq!(d[1].label, "Local Disk (E:\\)");
+    }
+
+    #[test]
+    fn the_computer_name_replaces_this_pc_only_once_it_is_set() {
+        assert_eq!(display_name("OptiPlex"), "OptiPlex");
+        assert_eq!(display_name("Matthews-PC"), "Matthews-PC");
+        for unnamed in ["", "labyrinth", "Labyrinth", "archiso", "localhost"] {
+            assert_eq!(display_name(unnamed), "This PC");
+        }
     }
 
     #[test]

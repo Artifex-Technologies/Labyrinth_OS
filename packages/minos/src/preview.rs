@@ -170,7 +170,7 @@ pub fn tool_exists(name: &str) -> bool {
 }
 
 fn temp_png(tag: &str) -> PathBuf {
-    std::env::temp_dir().join(format!("finder-preview-{}-{tag}.png", std::process::id()))
+    std::env::temp_dir().join(format!("minos-preview-{}-{tag}.png", std::process::id()))
 }
 
 fn image_body(rgba: Option<(u32, u32, Vec<u8>)>, fallback: &str) -> Body {

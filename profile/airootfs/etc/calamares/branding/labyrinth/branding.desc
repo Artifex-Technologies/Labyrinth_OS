@@ -34,7 +34,7 @@ style:
    SidebarTextCurrent:       "#ffffff"
    SidebarBackgroundCurrent: "#3a2a6b"
 
-# Finder/Settings look: dark panels, purple accent, rounded controls.
+# Minos/Settings look: dark panels, purple accent, rounded controls.
 stylesheet:              "stylesheet.qss"
 
 slideshow:               "show.qml"

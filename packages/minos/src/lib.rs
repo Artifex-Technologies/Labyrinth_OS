@@ -1,4 +1,4 @@
-//! GUI-independent core of finder: per-tab history and address-bar
+//! GUI-independent core of minos: per-tab history and address-bar
 //! expansion. The egui front end and udisks2/inotify layers come later.
 //! Feature set modelled on EdenExplorer (MIT, https://github.com/mtucciarone/EdenExplorer).
 

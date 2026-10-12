@@ -3,7 +3,7 @@
 # [labyrinth] pacman repo at repo/x86_64/. Run as a regular user (makepkg refuses root),
 # before scripts/build.sh, and again whenever a package's source changes.
 #
-# Requires: Arch Linux (or a container), base-devel, git, rust (finder, weather).
+# Requires: Arch Linux (or a container), base-devel, git, rust (minos, weather).
 set -euo pipefail
 
 if [[ $EUID -eq 0 ]]; then
@@ -21,7 +21,7 @@ mkdir -p "$repo_dir"
 # not change when the code does, so they are always rebuilt. Every other package is pinned to a
 # released version and checksum, and is skipped when that exact version is already in the repo
 # (Calamares alone is a ~10-minute C++ build). Naming packages rebuilds them regardless.
-local_source=(labyrinth-finder labyrinth-settings labyrinth-calculator labyrinth-panel labyrinth-weather sarina-git)
+local_source=(labyrinth-minos labyrinth-settings labyrinth-calculator labyrinth-panel labyrinth-weather sarina-git)
 
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/; do

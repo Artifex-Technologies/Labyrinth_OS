@@ -1,12 +1,15 @@
 # Maintainer: Labyrinth OS
-# Builds the file explorer (finder) and the cloud-link tool (labyrinth-cloud)
-# from this repository's source: packages/finder/. Build from this directory
+# Builds the file explorer (minos) and the cloud-link tool (labyrinth-cloud)
+# from this repository's source: packages/minos/. Build from this directory
 # with `makepkg -s`; the source path below is relative to it. NOT yet built on Linux:
 # the code is only built and tested on Windows so far.
-pkgname=labyrinth-finder
+pkgname=labyrinth-minos
 pkgver=0.1.0
 pkgrel=1
-pkgdesc="Labyrinth file explorer (egui) and Proton Drive link verifier"
+pkgdesc="Minos, the Labyrinth file explorer (egui), and the Proton Drive link verifier"
+replaces=('labyrinth-finder')
+conflicts=('labyrinth-finder')
+provides=('labyrinth-finder')
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
 license=('MIT')
@@ -18,7 +21,7 @@ optdepends=('rclone: Proton Drive links and verification (labyrinth-cloud)'
             'unrar: opening RAR archives with 7z')
 options=('!lto')
 
-_src="$startdir/../../finder"
+_src="$startdir/../../minos"
 
 build() {
   cd "$_src"
@@ -31,8 +34,10 @@ check() {
 }
 
 package() {
-  install -Dm755 "$srcdir/target/release/finder" "$pkgdir/usr/bin/finder"
+  install -Dm755 "$srcdir/target/release/minos" "$pkgdir/usr/bin/minos"
   install -Dm755 "$srcdir/target/release/labyrinth-cloud" "$pkgdir/usr/bin/labyrinth-cloud"
+  # It was called Finder first: old shortcuts and scripts that run `finder` still work.
+  ln -s minos "$pkgdir/usr/bin/finder"
   # StartupWMClass matches the window app id set in main.rs, so docks and bars find the icon.
-  install -Dm644 "$_src/finder.desktop" "$pkgdir/usr/share/applications/finder.desktop"
+  install -Dm644 "$_src/minos.desktop" "$pkgdir/usr/share/applications/minos.desktop"
 }

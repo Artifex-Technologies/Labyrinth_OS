@@ -12,14 +12,14 @@ use labyrinth_ui::sysicon;
 use labyrinth_ui::{chrome, theme};
 use theme::{palette, palette_for, Palette};
 use egui_extras::{Column, TableBuilder};
-use finder_core::archive::{self, Format};
-use finder_core::cloud::{self, Badge, Link, Report};
-use finder_core::listing::{self, Entry, Sort, SortKey};
-use finder_core::places::{self, CloudPlace, CloudState};
-use finder_core::preview::{self, Body, PreviewData};
-use finder_core::search::{display_relative, Search};
-use finder_core::state::{SavedTab, State, ViewMode, GALLERY_SIZES};
-use finder_core::{expand_address, fileops, History, Tab};
+use minos_core::archive::{self, Format};
+use minos_core::cloud::{self, Badge, Link, Report};
+use minos_core::listing::{self, Entry, Sort, SortKey};
+use minos_core::places::{self, CloudPlace, CloudState};
+use minos_core::preview::{self, Body, PreviewData};
+use minos_core::search::{display_relative, Search};
+use minos_core::state::{SavedTab, State, ViewMode, GALLERY_SIZES};
+use minos_core::{expand_address, fileops, History, Tab};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 
 /// Drag-and-drop payload: the files being dragged.
@@ -574,7 +574,7 @@ fn name_text(e: &Entry, st: &State, pal: &Palette) -> RichText {
 
 fn tab_title(dir: &Path) -> String {
     if places::is_this_pc(dir) {
-        return "This PC".into();
+        return places::pc_name();
     }
     dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| dir.to_string_lossy().into_owned())
 }
@@ -649,7 +649,7 @@ fn tab_strip(ui: &mut egui::Ui, pane: &Pane, pi: usize, pal: &Palette, actions: 
 }
 
 fn crumbs(dir: &Path) -> Vec<(String, PathBuf)> {
-    let mut v = vec![("This PC".to_string(), places::this_pc())];
+    let mut v = vec![(places::pc_name(), places::this_pc())];
     if places::is_this_pc(dir) {
         return v;
     }
@@ -1042,7 +1042,7 @@ impl PreviewState {
         self.texture = match &d.body {
             Body::Image { width, height, rgba } => {
                 let img = egui::ColorImage::from_rgba_unmultiplied([*width as usize, *height as usize], rgba);
-                Some(ctx.load_texture("finder-preview", img, egui::TextureOptions::LINEAR))
+                Some(ctx.load_texture("minos-preview", img, egui::TextureOptions::LINEAR))
             }
             _ => None,
         };
@@ -1343,7 +1343,7 @@ impl App {
                 Action::OpenFile(p) => match archive::split(&p) {
                     None => open_with_system(&p),
                     Some((arc, inner)) => {
-                        let tmp = std::env::temp_dir().join(format!("finder-open-{}", std::process::id()));
+                        let tmp = std::env::temp_dir().join(format!("minos-open-{}", std::process::id()));
                         match archive::extract_file_flat(&arc, &inner, &tmp) {
                             Ok(file) => open_with_system(&file),
                             Err(e) => self.status = format!("Could not open {inner}: {e}"),
@@ -1640,7 +1640,7 @@ impl App {
     fn sidebar(&self, ui: &mut egui::Ui, pal: &Palette, actions: &mut Vec<Action>) {
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             section_heading(ui, pal, "Places");
-            self.nav_row(ui, pal, Icon::Computer, pal.drive, "This PC", &places::this_pc(), None, false, actions);
+            self.nav_row(ui, pal, Icon::Computer, pal.drive, &places::pc_name(), &places::this_pc(), None, false, actions);
             if let Some(home) = dirs::home_dir() {
                 self.nav_row(ui, pal, Icon::Home, pal.drive, "My User Home", &home, None, false, actions);
             }
@@ -1717,7 +1717,7 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         // Follow the system accent: read it now and then, so a change in the system settings
-        // shows up without restarting Finder.
+        // shows up without restarting Minos.
         if self.st.follow_accent && self.accent_checked.elapsed() >= Duration::from_secs(2) {
             self.st.system_accent = theme::system_accent();
             self.accent_checked = Instant::now();
@@ -1898,7 +1898,7 @@ impl eframe::App for App {
                     if want.len() == 1 && places::is_this_pc(&t.dir()) {
                         t.entries.iter().find(|e| e.path == want[0]).and_then(|e| e.usage.map(|(total, free)| preview::drive(&e.name, total, free)))
                     } else if want.len() == 1 && places::is_this_pc(&want[0]) {
-                        Some(preview::message("This PC", "Your drives", "Select a drive to see how full it is"))
+                        Some(preview::message(&places::pc_name(), "Your drives", "Select a drive to see how full it is"))
                     } else {
                         None
                     }
@@ -2036,23 +2036,23 @@ fn main() -> eframe::Result {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1200.0, 760.0])
             .with_min_inner_size([640.0, 400.0])
-            .with_title("Finder")
-            // Finder draws its own title bar (chrome.rs): no grey system title bar or frame.
+            .with_title("Minos")
+            // Minos draws its own title bar (chrome.rs): no grey system title bar or frame.
             .with_decorations(false)
-            // Wayland/X11 application id: matches finder.desktop so docks and the
-            // bar can find the icon. Must be a plain name; "Finder" was not.
-            .with_app_id("finder"),
+            // Wayland/X11 application id: matches minos.desktop so docks and the
+            // bar can find the icon. Must be a plain name; "Minos" was not.
+            .with_app_id("minos"),
         ..Default::default()
     };
     eframe::run_native(
-        "Finder",
+        "Minos",
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
             let st = State::config_path().as_deref().map(State::load_from).unwrap_or_default();
             theme::apply(&cc.egui_ctx, st.dark, if st.follow_accent { theme::system_accent() } else { None });
             let mut app = App::new();
-            // `finder FOLDER` (the dock's Trash, "open with"): that folder in a new tab.
+            // `minos FOLDER` (the dock's Trash, "open with"): that folder in a new tab.
             if let Some(p) = std::env::args().nth(1).map(|a| start_path(&a)).filter(|p| p.is_dir()) {
                 let (sort, hidden) = (app.panes[0].sort, app.st.show_hidden);
                 app.panes[0].tabs.push(TabView::new(p, false, sort, hidden));

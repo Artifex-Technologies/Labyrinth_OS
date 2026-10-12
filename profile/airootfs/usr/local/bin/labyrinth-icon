@@ -6,7 +6,7 @@
 #                                      app it is (Finder_..., Spotify_..., Steam_...); lists the rest
 #   labyrinth-icon --reset APP         back to the theme's icon
 # Icons go to ~/.local/share/icons/Labyrinth, the theme Labyrinth uses everywhere, so the dock,
-# Finder, Settings and the launcher all pick them up (restart an app to see its new icon).
+# Minos, Settings and the launcher all pick them up (restart an app to see its new icon).
 set -eu
 THEME=${XDG_DATA_HOME:-$HOME/.local/share}/icons/Labyrinth
 DIR=$THEME/apps/scalable
@@ -36,7 +36,7 @@ install_icon() {
 # File-name keyword -> icon names the app (or Labyrinth's own app) uses.
 names_for() {
   case ${1,,} in
-    finder*)            echo system-file-manager file-manager org.kde.dolphin ;;
+    finder*|minos*)     echo system-file-manager file-manager org.kde.dolphin ;;
     settings*)          echo preferences-system labyrinth-settings systemsettings ;;
     terminal*)          echo utilities-terminal ;;
     ghostty*)           echo com.mitchellh.ghostty ghostty ;;
@@ -63,6 +63,7 @@ names_for() {
     duckstation*)       echo duckstation org.duckstation.DuckStation ;;
     retroarch*)         echo retroarch com.libretro.RetroArch ;;
     macos_bin*)         echo user-trash-full ;;
+    this_pc*|this-pc*)  echo computer ;;
     *)                  return 1 ;;
   esac
 }

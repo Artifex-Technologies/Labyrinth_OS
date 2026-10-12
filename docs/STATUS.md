@@ -2,7 +2,7 @@
 
 ## Verified (built and tested on Windows)
 
-`packages/finder` (`cargo test`: 20 pass; `cargo build` clean):
+`packages/minos` (`cargo test`: 20 pass; `cargo build` clean):
 - Core logic: history/tabs, listing + sort + filter, file operations
   (copy/move/rename/new folder, never overwrite, refuses folder-into-itself),
   persistent state (tabs, favorites, tags, colors, view; atomic save, corrupt
@@ -41,13 +41,13 @@ devices, Sarina hook, a desktop in the live image (Hyprland/SDDM), Calamares bra
 
 Tested here: `tests/test_labyrinth_apps.py` (20), `test_bar_tools.py` (7), `test_displays.py` (13),
 `test_desktop_scripts.sh` (16), `test_install_cleanup.sh` (20); `cargo test` in
-`packages/finder` (22) and `packages/labyrinth-weather` (34).
+`packages/minos` (22) and `packages/labyrinth-weather` (34).
 Not done: everything that needs Linux or the real machine. See DESKTOP.md, COMPONENTS.md,
 WEATHER.md, INSTALLER.md, and the "what is missing for an ISO" list below.
 
 ### Missing before an ISO can be built
 - `profile/pacman.conf` has no `[labyrinth]` local repo for the packages we build ourselves
-  (calamares, finder, labyrinth-weather, proton-pass, visual-studio-code-bin).
+  (calamares, minos, labyrinth-weather, proton-pass, visual-studio-code-bin).
 - No `scripts/build.sh` or `scripts/build-local-packages.sh` (Chymaera has these to port).
 - No live-session setup in `airootfs`: live user, SDDM + session files, os-release, hostname,
   locale, `efiboot`/bootloader entries. The profile is a skeleton.
@@ -60,10 +60,10 @@ Ran on real Arch Linux under WSL2 (no GPU session, so no Hyprland, installer or 
 - Package names: all found in Arch's repos (core/extra/multilib) except CachyOS's own
   (`linux-cachyos*`, `proton-cachyos`), `protonup-qt` (AUR), and our own packages.
 - `makepkg` built `proton-pass`, `visual-studio-code-bin`, `labyrinth-weather` and
-  `finder` successfully; checksums verified; packages inspected.
+  `minos` successfully; checksums verified; packages inspected.
 - `labyrinth-weather` run live on Linux; `labyrinth-apps`, `probe.sh`, `labyrinth-gaming check`
   and `labyrinth-displays` (clean failure without Hyprland) run for real.
-- `finder` run as a real window under WSLg and driven with mouse and keyboard:
+- `minos` run as a real window under WSLg and driven with mouse and keyboard:
   navigation, hidden files, tabs, split pane, gallery thumbnails, rename, copy/paste,
   cut/paste, new folder, delete to the freedesktop Trash all verified on the real filesystem.
   Bugs found by this and fixed: Wayland app id contained a space (WSLg dropped the
@@ -77,7 +77,7 @@ Ran on real Arch Linux under WSL2 (no GPU session, so no Hyprland, installer or 
 ## ISO build and first boot (2026-10-10)
 
 Done, on Arch under WSL:
-- Local `[labyrinth]` repo built by `scripts/build-local-packages.sh`: calamares, labyrinth-finder,
+- Local `[labyrinth]` repo built by `scripts/build-local-packages.sh`: calamares, labyrinth-minos,
   labyrinth-weather, proton-pass, visual-studio-code-bin all build.
 - `scripts/build.sh` builds the ISO with mkarchiso (CachyOS keyring and mirrorlists provisioned on
   the host; the generated package list resolves against the CachyOS v3 repos). Result: a ~9.7 GB
@@ -134,7 +134,7 @@ Latest ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.11-x86_64.i
 
 Done on 2026-10-11 and verified in the VM (screenshots), unless marked otherwise:
 - **Windows feel.** Window buttons on the right in Windows order (minimize, maximize, close), macOS
-  look. Shortcuts: Win+E Finder, Win+R run, Win+I settings, Win+L lock, Win+V clipboard,
+  look. Shortcuts: Win+E Minos, Win+R run, Win+I settings, Win+L lock, Win+V clipboard,
   Win+Shift+S screenshot, Ctrl+Shift+Esc task manager. Terminal commands `cls` and `ipconfig`
   (/all, /release, /renew, /flushdns) in the Windows layout.
 - **Dock like a taskbar.** Maximized and new windows stop above it (KWin script
@@ -158,7 +158,7 @@ Done on 2026-10-11 and verified in the VM (screenshots), unless marked otherwise
 
 Later on 2026-10-11 (in the working tree, VM-tested unless noted; not yet in a copied ISO):
 - Window frames: Klassy replaces WhiteSur's aurorae (traffic lights, title bar in the app's colour,
-  no chin, invisible resize edges); Kvantum WhiteSurDark so KDE toolbars are dark. Finder draws its
+  no chin, invisible resize edges); Kvantum WhiteSurDark so KDE toolbars are dark. Minos draws its
   own title bar (chrome.rs). Konsole + Yakuake replaced by Ghostty (tabs in the title bar,
   traffic-light CSS, F12 drop-down pre-approved in kglobalshortcutsrc, systemd drop-in fixing
   "lacks handler for reload signal USR2" on systemd 262). Krohnkite floats portal/polkit dialogs.
@@ -185,10 +185,10 @@ Still to do, most important first:
 3. **Tiling screen polish:** coloured border on the active tile (Omarchy style); check heavy apps
    (CAD, games) tiled; maybe an on/off toggle in the top bar.
 4. Plasma lock screen in the "Split" style; SDDM logo not showing.
-5. Finder as the file picker for all apps (xdg-desktop-portal FileChooser backend), owner approved.
+5. Minos as the file picker for all apps (xdg-desktop-portal FileChooser backend), owner approved.
 6. Confirm on a screen: kwallet-pam (no wallet prompt at login), easier window-edge resizing,
    Yakuake colours.
-7. Dual-boot support in the installer (BitLocker note); Claude Code on Linux; icon packs for Finder.
+7. Dual-boot support in the installer (BitLocker note); Claude Code on Linux; icon packs for Minos.
 8. Optional: package Daedalus CAD as a component (like sarina-git) with .stl/.dxf file associations.
 
 How to build and test (WSL distro `archlinux`): `scripts/build-local-packages.sh` as builder (copy new
@@ -204,12 +204,18 @@ tests.test_labyrinth_apps tests.test_steam_playall`.
 - **labyrinth-panel (packages/panel):** Rust top bar + dock (Wayland layer-shell, plasma-window-management for the task list). Opt-in: `labyrinth-panel-mode on|off|status` (Settings → Appearance → "Top bar and dock"). Missing for parity: system tray (StatusNotifier), global menu, quick-settings popover, launcher, notifications, fractional scaling, dock context menus/previews.
 - **panel.conf (packages/labyrinth-conf):** `~/.config/labyrinth/panel.conf` (dock size 32-72, dock/bar opacity 0-100 where 0 = invisible, colour = match theme or plain dark/light). Settings writes it; the panel re-reads it about once a second.
 - **labyrinth-calculator (packages/calculator):** standard pad plus history at >= 600 px, scientific pad at >= 860 px. The equation stays at the top and editable after "="; the result shows below. One decimal point per number. History persists.
-- **Installer:** Calamares kept; branding `stylesheet.qss` uses the Finder/Settings palette. Needs a visual check in a VM install.
+- **Installer:** Calamares kept; branding `stylesheet.qss` uses the Minos/Settings palette. Needs a visual check in a VM install.
 - Not yet verified in a VM: Settings dock controls end-to-end, the installer look, panel on real NVIDIA hardware.
 - Candidates to rewrite next: launcher/KRunner, notification daemon, lock screen, SDDM login, screenshot tool, task manager, volume/brightness OSD, clipboard history.
 
 ## Icons (2026-10-12)
 - System icon theme is **MacTahoe (purple)**, dark flavour, via package `mactahoe-icon-theme` (replaces WhiteSur icons). KDE/GTK use the overlay theme **Labyrinth** (`/usr/share/icons/Labyrinth`, inherits MacTahoe-purple-dark) so per-app overrides work everywhere.
-- Finder now draws folders, files, drives, Home and This PC from the theme (`labyrinth-ui::sysicon`); folders with a colour tag keep the tinted drawn icon, and every icon falls back to the old vector one.
+- Minos now draws folders, files, drives, Home and This PC from the theme (`labyrinth-ui::sysicon`); folders with a colour tag keep the tinted drawn icon, and every icon falls back to the old vector one.
 - `labyrinth-icon APP FILE`, `labyrinth-icon --import FOLDER`, `labyrinth-icon --reset APP`: give apps other icons (png/svg/macOS .icns; `labyrinth-icns` extracts the PNG from an .icns). Used for the dark macOS 27 icons from macosicons.com, which are not redistributed with the ISO.
 - Not done: Settings' own sidebar icons are still hand-drawn; icon theme does not switch to a light flavour with the light theme; the Golden Gate flat set has no public pack.
+
+## Rename (2026-10-12)
+The file explorer is now **Minos** (was Finder, and Labyrinth Files before): `packages/minos`, package `labyrinth-minos`, binary `minos`, config folder `~/.config/minos` (reads fall back to `finder` and `labyrinth-files`). `/usr/bin/finder` stays as a link, and pins named `finder` in the dock file still work. The macOS Finder icon (a dark macOS icon you may import) is unaffected: `labyrinth-icon` still matches files named `Finder_...` and `Minos_...`.
+
+## Dock (2026-10-12)
+`panel.conf` has `dock_pos` (bottom, left, right) and `dock_gap` (0 to 40 px, default 4; 0 is right on the edge); Settings > Appearance > Dock has both. The Trash is the last dock item (empty or full, opens the trash folder in Minos). KWin lays a layer surface out inside the space other layer surfaces reserve, so the dock reserves room with a separate invisible strip (`Kind::Strut`) and pulls itself back to the edge with a negative margin.

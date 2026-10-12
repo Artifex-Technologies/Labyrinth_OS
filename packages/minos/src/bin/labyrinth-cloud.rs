@@ -10,7 +10,7 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use finder_core::cloud::{self, Link, Problem};
+use minos_core::cloud::{self, Link, Problem};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();

@@ -43,7 +43,7 @@ Creative / CAD / gaming layer: Krita, Darktable (photo); Kdenlive, OBS (video);
 Ardour with PipeWire-JACK and realtime tuning (music); Steam + Proton;
 Daedalus_CAD (native Rust).
 
-## 4. File explorer: `finder`
+## 4. File explorer: `minos`
 
 EdenExplorer is Windows-only (NT file APIs, Recycle Bin, shell context menu), so
 it cannot be ported as-is. Its **feature set and UX** are the spec. Rust + egui
@@ -61,7 +61,7 @@ substitutions:
 Keep: tabs + pinning + session restore, saved history, split pane, media gallery,
 tags/folder colors, multi-column sort, favorites sidebar, real-time index search.
 A Sarina hook ("organize these photos", "find duplicate takes") is a later phase.
-`packages/finder` currently holds only the GUI-independent core
+`packages/minos` currently holds only the GUI-independent core
 (tabs, history, address expansion).
 
 ## 5. Artifex apps

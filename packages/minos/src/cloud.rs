@@ -117,12 +117,12 @@ pub struct Link {
 }
 
 pub fn links_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("finder").join("cloud-links.json"))
+    dirs::config_dir().map(|d| d.join("minos").join("cloud-links.json"))
 }
 
 pub fn report_path(link_name: &str) -> Option<PathBuf> {
     let safe: String = link_name.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' }).collect();
-    dirs::config_dir().map(|d| d.join("finder").join(format!("verify-{safe}.json")))
+    dirs::config_dir().map(|d| d.join("minos").join(format!("verify-{safe}.json")))
 }
 
 pub fn load_links(path: &Path) -> Vec<Link> {

@@ -1,16 +1,16 @@
 [package]
-name = "finder"
+name = "minos"
 version = "0.1.0"
 edition = "2021"
-description = "GUI-independent core of finder, a Linux file explorer modelled on EdenExplorer"
+description = "GUI-independent core of minos, a Linux file explorer modelled on EdenExplorer"
 license = "MIT"
 
 [lib]
-name = "finder_core"
+name = "minos_core"
 path = "src/lib.rs"
 
 [[bin]]
-name = "finder"
+name = "minos"
 path = "src/main.rs"
 
 [dependencies]

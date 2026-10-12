@@ -69,7 +69,7 @@ Desktop" in its power menu (SUPER + ESCAPE) comes back.
 - **Firewall**: `sudo ufw status` says active, incoming denied, outgoing allowed (Settings >
   Firewall manages it).
 - **Snapshots**: `sudo snapper list` shows "Fresh Labyrinth OS install" (kept for good); after rebooting, look for a snapshots submenu in the GRUB menu (grub-btrfs adds it once a snapshot exists; the first one appears after snapper's timer runs, or create one with `sudo snapper create`).
-- Vivaldi opens (it is the default browser; Firefox is installed as the backup), Finder opens and
+- Vivaldi opens (it is the default browser; Firefox is installed as the backup), Minos opens and
   previews files, sound and the network work, and wireless keyboards do not drop keys.
 
 If anything fails, note what is on the screen (a photo works) and tell me.
@@ -95,7 +95,7 @@ The Windows shortcuts work on both desktops:
 
 | Keys | Does |
 |---|---|
-| Win + E | Finder (Explorer) |
+| Win + E | Minos (Explorer) |
 | Win + R | Run box (type an app or command) |
 | Win + I | Settings |
 | Win + L | Lock |

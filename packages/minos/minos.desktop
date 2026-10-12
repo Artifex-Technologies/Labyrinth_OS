@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=Finder
+Name=Minos
 GenericName=File Manager
 Comment=Browse files, with tabs, split view and Proton Drive link status
-Exec=finder %U
+Exec=minos %U
 Icon=system-file-manager
 Terminal=false
 Type=Application
 Categories=Utility;FileTools;FileManager;
 MimeType=inode/directory;
-StartupWMClass=finder
+StartupWMClass=minos

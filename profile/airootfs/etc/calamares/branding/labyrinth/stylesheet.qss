@@ -1,4 +1,4 @@
-/* Labyrinth installer: same palette as Finder and Settings. */
+/* Labyrinth installer: same palette as Minos and Settings. */
 QWidget { background-color: #0e0f14; color: #e6e7ee; font-size: 13px; }
 #mainApp, #welcomeWidget, #page_welcome { background-color: #0e0f14; }
 #sidebarApp { background-color: #101116; }

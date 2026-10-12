@@ -68,7 +68,7 @@ Steam and Proton are set up for your NVIDIA card."
             font.pixelSize: 22
             text: "Your files
 
-Finder previews almost anything and opens ZIP, 7z and RAR like folders."
+Minos previews almost anything and opens ZIP, 7z and RAR like folders."
         }
     }
 }

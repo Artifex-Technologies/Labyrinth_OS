@@ -50,7 +50,7 @@ pub struct State {
     pub gallery_size: usize,
     /// The right-hand preview pane.
     pub preview: bool,
-    /// Use the system's accent color (KDE Plasma) for Finder's highlights. On by default.
+    /// Use the system's accent color (KDE Plasma) for Minos's highlights. On by default.
     pub follow_accent: bool,
     /// The system accent last read; not saved. Set by the app while it runs.
     #[serde(skip)]
@@ -95,7 +95,7 @@ impl Default for State {
 
 impl State {
     pub fn config_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|d| d.join("finder").join("state.json"))
+        dirs::config_dir().map(|d| d.join("minos").join("state.json"))
     }
 
     pub fn load_from(path: &Path) -> State {
