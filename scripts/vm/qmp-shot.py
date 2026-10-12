@@ -42,7 +42,8 @@ def connect():
     return f
 
 
-KEYMAP = {" ": "spc", "\n": "ret", "/": "slash", ".": "dot", "-": "minus", "_": "shift-minus", ",": "comma", ":": "shift-semicolon"}
+KEYMAP = {" ": "spc", "\n": "ret", "/": "slash", ".": "dot", "-": "minus", "_": "shift-minus", ",": "comma", ":": "shift-semicolon",
+          "+": "shift-equal", "=": "equal", "*": "shift-8", "(": "shift-9", ")": "shift-0", "%": "shift-5", "^": "shift-6", "!": "shift-1"}
 
 
 def send_keys(f, keys):

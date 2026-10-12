@@ -199,3 +199,11 @@ virtio-gpu-pci,id=vga1,xres=1280,yres=1440"` (QEMU 11.1.2 crashes on per-screen 
 screenshots in the guest with `spectacle -b -n -f`). Tests: `bash tests/test_desktop_scripts.sh`,
 `bash tests/test_install_cleanup.sh`, `python3 -m unittest tests.test_displays tests.test_bar_tools
 tests.test_labyrinth_apps tests.test_steam_playall`.
+
+## Rust shell, calculator, installer (2026-10-12)
+- **labyrinth-panel (packages/panel):** Rust top bar + dock (Wayland layer-shell, plasma-window-management for the task list). Opt-in: `labyrinth-panel-mode on|off|status` (Settings → Appearance → "Top bar and dock"). Missing for parity: system tray (StatusNotifier), global menu, quick-settings popover, launcher, notifications, fractional scaling, dock context menus/previews.
+- **panel.conf (packages/labyrinth-conf):** `~/.config/labyrinth/panel.conf` (dock size 32-72, dock/bar opacity 0-100 where 0 = invisible, colour = match theme or plain dark/light). Settings writes it; the panel re-reads it about once a second.
+- **labyrinth-calculator (packages/calculator):** standard pad plus history at >= 600 px, scientific pad at >= 860 px. The equation stays at the top and editable after "="; the result shows below. One decimal point per number. History persists.
+- **Installer:** Calamares kept; branding `stylesheet.qss` uses the Finder/Settings palette. Needs a visual check in a VM install.
+- Not yet verified in a VM: Settings dock controls end-to-end, the installer look, panel on real NVIDIA hardware.
+- Candidates to rewrite next: launcher/KRunner, notification daemon, lock screen, SDDM login, screenshot tool, task manager, volume/brightness OSD, clipboard history.

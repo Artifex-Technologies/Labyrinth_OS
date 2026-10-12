@@ -144,6 +144,8 @@ noto-fonts-emoji
 # Labyrinth's own file explorer, built from packages/pkgbuilds into the local repo
 labyrinth-finder
 labyrinth-settings
+labyrinth-calculator
+labyrinth-panel
 # power modes (Performance / Balanced / Power saver) for Settings and the battery applet
 power-profiles-daemon
 # Finder: archives (7z), PDF and video previews, RAR

@@ -1,0 +1,27 @@
+/* Labyrinth installer: same palette as Finder and Settings. */
+QWidget { background-color: #0e0f14; color: #e6e7ee; font-size: 13px; }
+#mainApp, #welcomeWidget, #page_welcome { background-color: #0e0f14; }
+#sidebarApp { background-color: #101116; }
+#sidebarApp QLabel { padding: 8px 14px; margin: 2px 8px; border-radius: 8px; }
+QLabel { background: transparent; }
+QPushButton { background-color: #1b1c25; color: #e6e7ee; border: 1px solid #262735; border-radius: 8px; padding: 7px 18px; min-height: 20px; }
+QPushButton:hover { background-color: #242536; }
+QPushButton:pressed { background-color: #2d2e44; }
+QPushButton:disabled { color: #6b6c78; background-color: #15161d; }
+QPushButton:default, #nextButton { background-color: #7c4fe0; border-color: #7c4fe0; color: #ffffff; }
+#nextButton:hover { background-color: #8d63ea; }
+#nextButton:disabled { background-color: #2a2147; border-color: #2a2147; color: #8a84a8; }
+QLineEdit, QComboBox, QSpinBox, QPlainTextEdit, QTextEdit, QTextBrowser { background-color: #15161d; color: #e6e7ee; border: 1px solid #262735; border-radius: 8px; padding: 6px 8px; selection-background-color: #7c4fe0; }
+QLineEdit:focus, QComboBox:focus { border-color: #7c4fe0; }
+QComboBox QAbstractItemView, QListView, QTreeView, QTableView { background-color: #15161d; alternate-background-color: #101116; border: 1px solid #262735; border-radius: 8px; outline: 0; selection-background-color: #3a2a6b; selection-color: #ffffff; }
+QHeaderView::section { background-color: #101116; color: #9a9bab; border: none; padding: 6px; }
+QCheckBox::indicator, QRadioButton::indicator { width: 16px; height: 16px; border: 1px solid #3a3b4d; background: #15161d; }
+QCheckBox::indicator { border-radius: 4px; }
+QRadioButton::indicator { border-radius: 9px; }
+QCheckBox::indicator:checked, QRadioButton::indicator:checked { background-color: #7c4fe0; border-color: #7c4fe0; }
+QProgressBar { background-color: #1b1c25; border: none; border-radius: 6px; text-align: center; min-height: 12px; }
+QProgressBar::chunk { background-color: #7c4fe0; border-radius: 6px; }
+QScrollBar:vertical { background: transparent; width: 10px; }
+QScrollBar::handle:vertical { background: #2b2c3d; border-radius: 5px; min-height: 24px; }
+QScrollBar::add-line, QScrollBar::sub-line { height: 0; width: 0; }
+QToolTip { background-color: #1b1c25; color: #e6e7ee; border: 1px solid #262735; }

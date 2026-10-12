@@ -125,7 +125,8 @@ def enable(output):
     reload_scripts()
     plasma(REMOVE_BAR)
     pos = output_geometry(output)
-    if pos:
+    # labyrinth-panel draws its own slim bar on the tiling screen; Plasma's would double it.
+    if pos and not os.path.exists(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "labyrinth", "panel-on")):
         plasma(ADD_BAR % {"x": pos[0], "y": pos[1]})
     print(f"labyrinth-tiling: {output} tiles; other screens float ({', '.join(others) or 'none'})")
 

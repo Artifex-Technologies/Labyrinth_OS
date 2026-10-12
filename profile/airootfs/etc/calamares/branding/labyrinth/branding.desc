@@ -29,10 +29,13 @@ images:
     productWelcome:      "welcome.png"
 
 style:
-   SidebarBackground:        "#170d26"
-   SidebarText:              "#e8e0f5"
-   SidebarTextCurrent:       "#170d26"
-   SidebarBackgroundCurrent: "#c9b2f5"
+   SidebarBackground:        "#101116"
+   SidebarText:              "#c9cad3"
+   SidebarTextCurrent:       "#ffffff"
+   SidebarBackgroundCurrent: "#3a2a6b"
+
+# Finder/Settings look: dark panels, purple accent, rounded controls.
+stylesheet:              "stylesheet.qss"
 
 slideshow:               "show.qml"
 slideshowAPI: 2

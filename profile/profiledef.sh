@@ -37,6 +37,7 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-tiling"]="0:0:755"
   ["/usr/local/bin/labyrinth-kwin-cache"]="0:0:755"
   ["/usr/local/bin/systemsettings"]="0:0:755"
+  ["/usr/local/bin/labyrinth-panel-mode"]="0:0:755"
   ["/usr/local/bin/labyrinth-hide-kde-settings"]="0:0:755"
   ["/home/live/Desktop/install-labyrinth.desktop"]="1000:1000:755"
   ["/usr/local/bin/labyrinth-plasma-setup"]="0:0:755"

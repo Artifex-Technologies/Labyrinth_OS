@@ -1,0 +1,49 @@
+#!/bin/sh
+# Switch the macOS-style desktop between Labyrinth's own top bar and dock (Rust, labyrinth-panel)
+# and Plasma's panels.
+#
+#   labyrinth-panel-mode on       use labyrinth-panel (Plasma's panels are removed)
+#   labyrinth-panel-mode off      back to Plasma's panels
+#   labyrinth-panel-mode status
+#
+# (pkill matches the full path: the script itself is called labyrinth-panel-mode, and process names
+# are cut at 15 characters, so `pkill -x labyrinth-panel` would kill the script too.)
+# The choice is kept in ~/.config/labyrinth/panel-on and the panel starts at login (autostart).
+# labyrinth-panel has no system tray, quick settings or global menu yet, so Plasma's panels stay the
+# default until it does.
+set -u
+conf=${XDG_CONFIG_HOME:-$HOME/.config}
+flag=$conf/labyrinth/panel-on
+auto=$conf/autostart/labyrinth-panel.desktop
+layout=/usr/share/labyrinth/plasma/layout.js
+plasma() { busctl --user call org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell evaluateScript s "$1" >/dev/null 2>&1; }
+
+case "${1:-status}" in
+  on)
+    command -v labyrinth-panel >/dev/null || { echo "labyrinth-panel is not installed" >&2; exit 1; }
+    mkdir -p "$conf/labyrinth" "$conf/autostart"
+    : >"$flag"
+    cat >"$auto" <<'D'
+[Desktop Entry]
+Type=Application
+Name=Labyrinth Panel
+Exec=/usr/bin/labyrinth-panel
+X-KDE-autostart-phase=2
+D
+    plasma 'panels().forEach(function (p) { p.remove(); });'
+    pkill -f '^/usr/bin/labyrinth-panel$' 2>/dev/null
+    setsid -f /usr/bin/labyrinth-panel >/dev/null 2>&1
+    echo "labyrinth-panel on"
+    ;;
+  off)
+    rm -f "$flag" "$auto"
+    pkill -f '^/usr/bin/labyrinth-panel$' 2>/dev/null
+    plasma 'panels().forEach(function (p) { p.remove(); });'
+    [ -r "$layout" ] && plasma "$(cat "$layout")"
+    echo "Plasma panels on"
+    ;;
+  status)
+    if [ -e "$flag" ]; then echo "labyrinth-panel"; else echo "plasma"; fi
+    ;;
+  *) echo "usage: labyrinth-panel-mode on|off|status" >&2; exit 2 ;;
+esac
