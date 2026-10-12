@@ -227,3 +227,6 @@ Storage lists the physical disks (`lsblk`), with one usage bar each; selecting a
 
 ## Installer (2026-10-12)
 Title bar: the installer runs as root and does not read the user's colour scheme, so KWin drew it grey. The live image ships `LabyrinthInstaller.colors` and a KWin window rule (`~/.config/kwinrulesrc`) that gives the Calamares window that scheme, so the title bar blends in. The slideshow gets a dark background and says Plasma, not Hyprland.
+
+## Boot menu (2026-10-12)
+GRUB uses grub-evodevo (MIT, vendored in `usr/share/labyrinth/grub-evodevo`) through `labyrinth-grub-theme`: black background, Labyrinth purple, 1920x1080, an emblem per system. `data/Labyrinth` is the logo as a 24x24 emblem, sized like the CachyOS one. The installer's boot step (2e) runs it last and puts the old menu back if the result has no entries. `os-prober` is installed and enabled for dual boot. Verified in a VM install: the menu shows "Labyrinth Linux" with the emblem, Advanced options, UEFI Firmware Settings (gear) and the other firmware boot entries; the entry boots to the login screen. Not tested with a real Windows disk, on real hardware, or at other GRUB resolutions (it asks for 1920x1080 and falls back to auto).

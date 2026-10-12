@@ -9,6 +9,10 @@
 | ![Minos, the file explorer](assets/screenshots/minos.png) | ![Settings, Appearance](assets/screenshots/settings.png) |
 | *Minos: Storage lists the disk; select it for its partitions.* | *Settings > Appearance: dock position, distance from the edge, size, colour.* |
 
+![The boot menu](assets/screenshots/boot-menu.png)
+
+*The boot menu: Labyrinth's emblem, the UEFI firmware setting, and any other system found on the disks (Windows, another Linux). Theme: [grub-evodevo](https://github.com/ftonneau/grub-evodevo), MIT.*
+
 ![Calculator](assets/screenshots/calculator.png)
 
 *Calculator: editable equation at the top, history on the right, scientific pad when wide.*
