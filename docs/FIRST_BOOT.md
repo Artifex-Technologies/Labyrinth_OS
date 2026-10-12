@@ -39,7 +39,7 @@ without installing:
 
 - Does the desktop appear on the screen at its full resolution and refresh rate? Is the network up?
 - Open a window (the terminal icon in the dock). Its menus (File, Edit, View...) should appear in the
-  top bar. Press F12 for the drop-down terminal. Tap the Windows (SUPER) key for the launcher.
+  top bar. Press F12 for the drop-down terminal (Ghostty, with tabs). Tap the Windows (SUPER) key for the launcher.
 - If you see "ERROR: no root file system image found" and a `[rootfs ~]#` prompt, power off and
   boot the stick again. This happened on the first boot of a fresh ISO in the VM and not on the
   second; if it happens every time on real hardware, tell me what the screen says.
@@ -66,7 +66,7 @@ Desktop" in its power menu (SUPER + ESCAPE) comes back.
 - **Hibernate** (power button in the bar, then Hibernate; or `systemctl hibernate`): the machine
   powers off. Turn it on: it should come back to the same windows. This is the one thing the VM
   could not prove (the VM reset right after resuming), so please report exactly what happens.
-- **Firewall**: `sudo ufw status` says active, incoming denied, outgoing allowed (System Settings >
+- **Firewall**: `sudo ufw status` says active, incoming denied, outgoing allowed (Settings >
   Firewall manages it).
 - **Snapshots**: `sudo snapper list` shows "Fresh Labyrinth OS install" (kept for good); after rebooting, look for a snapshots submenu in the GRUB menu (grub-btrfs adds it once a snapshot exists; the first one appears after snapper's timer runs, or create one with `sudo snapper create`).
 - Vivaldi opens (it is the default browser; Firefox is installed as the backup), Finder opens and
@@ -86,7 +86,7 @@ From a terminal: `labyrinth-sarina`, `labyrinth-sarina gui`, `labyrinth-sarina m
 On first login each monitor is set to its native shape at the highest refresh rate it offers at 60 Hz
 or more. Your Acer ultrawide and the LG DualUp are recognised by name and get the layout from
 `/usr/share/labyrinth/displays.json` (Acer 3440x1440 at 144 Hz, LG at 125% placed to its right). It is
-done once per monitor; anything you change later in System Settings is kept. To redo it:
+done once per monitor; anything you change later in Settings is kept. To redo it:
 `rm ~/.config/labyrinth/displays-kde.json` and log in again.
 
 ## 8. Coming from Windows
@@ -113,6 +113,10 @@ meaning: Win + Arrows moves focus, Win + Shift + Arrows swaps tiles, Win + 1..9 
 Win + W closes the window, Win + Space opens the launcher, Win + T floats a window. On the Acer they
 keep the Windows meaning (snap, dock apps, overview). Win + Shift + Alt + Left/Right throws a window
 to the other monitor. Turn it off with `labyrinth-tiling off`; DESKTOP.md has the full table.
+
+**Settings** (Win + I, or the gear in the dock) is Labyrinth's own: Wi-Fi, Bluetooth, displays, sound,
+appearance (dark/light, accent colour, wallpaper), power, firewall, date and time, apps, shortcuts.
+KDE's System Settings is hidden; Plasma's "Configure..." links open the matching page here.
 
 In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in
 the Windows layout (`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.
