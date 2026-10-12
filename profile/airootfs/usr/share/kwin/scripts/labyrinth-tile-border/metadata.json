@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Id": "labyrinth-tile-border",
+        "Name": "Active tile border",
+        "Description": "A thin accent-coloured border around the focused window on the tiling screen, as in Omarchy.",
+        "Authors": [{ "Name": "Labyrinth OS" }],
+        "License": "MIT",
+        "Version": "1.0",
+        "EnabledByDefault": true
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml",
+    "KPackageStructure": "KWin/Script"
+}

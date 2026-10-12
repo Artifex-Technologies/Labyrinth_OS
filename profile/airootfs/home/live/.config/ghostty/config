@@ -1,0 +1,48 @@
+# Labyrinth's Ghostty settings (the terminal that replaced Konsole and Yakuake on 2026-10-11).
+# Reference: `ghostty +show-config --default --docs`, or /usr/share/ghostty/doc/ghostty.5.md
+
+# One row at the top: tabs and the window buttons share the title bar, like GNOME apps, Vivaldi
+# and Spotify. Ghostty draws it itself (client-side), so Plasma adds no title bar of its own.
+window-decoration = client
+gtk-titlebar-style = tabs
+window-show-tab-bar = always
+gtk-wide-tabs = false
+gtk-toolbar-style = flat
+# The window buttons as macOS traffic lights, in Windows order (the order comes from GTK's
+# decoration layout, minimize,maximize,close on the right, set for the whole desktop).
+gtk-custom-css = labyrinth.css
+
+# Labyrinth's purple, carried over from the old Konsole colour scheme.
+window-theme = ghostty
+background = #170d26
+foreground = #e8e0f5
+background-opacity = 0.94
+cursor-color = #c9b2f5
+selection-background = #7c54d6
+selection-foreground = #ffffff
+palette = 0=#281c3c
+palette = 1=#eb6478
+palette = 2=#78d296
+palette = 3=#f0c86e
+palette = 4=#7c8cff
+palette = 5=#c9b2f5
+palette = 6=#6ed2dc
+palette = 7=#e8e0f5
+palette = 8=#605080
+palette = 9=#ff8296
+palette = 10=#96ebaf
+palette = 11=#ffe18c
+palette = 12=#9baaff
+palette = 13=#e0d0ff
+palette = 14=#91e8f0
+palette = 15=#ffffff
+window-padding-x = 8
+window-padding-y = 6
+confirm-close-surface = false
+
+# The drop-down terminal (Yakuake's job before): F12 from anywhere, slides from the top, keeps its
+# tabs; Ctrl+Shift+T adds a tab in it like in a window.
+quick-terminal-position = top
+quick-terminal-size = 45%,100%
+quick-terminal-autohide = true
+keybind = global:f12=toggle_quick_terminal

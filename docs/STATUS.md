@@ -156,6 +156,27 @@ Done on 2026-10-11 and verified in the VM (screenshots), unless marked otherwise
   test removed; already-built local packages are skipped (scripts/build-local-packages.sh).
 - Daedalus CAD (separate repo) builds on Arch: 39 tests pass, `flatten` numbers hand-checked.
 
+Later on 2026-10-11 (in the working tree, VM-tested unless noted; not yet in a copied ISO):
+- Window frames: Klassy replaces WhiteSur's aurorae (traffic lights, title bar in the app's colour,
+  no chin, invisible resize edges); Kvantum WhiteSurDark so KDE toolbars are dark. Finder draws its
+  own title bar (chrome.rs). Konsole + Yakuake replaced by Ghostty (tabs in the title bar,
+  traffic-light CSS, F12 drop-down pre-approved in kglobalshortcutsrc, systemd drop-in fixing
+  "lacks handler for reload signal USR2" on systemd 262). Krohnkite floats portal/polkit dialogs.
+- **Tile border (working):** four strips drawn as Plasma OSD dialogs around the focused tile
+  (`labyrinth-tile-border`). The earlier failures were a stale QML cache: KWin keeps compiled script
+  QML in ~/.cache/kwin/qmlcache across logins. `labyrinth-kwin-cache` (user service) now clears it
+  whenever Labyrinth's KWin scripts change.
+- **Top bar and dock** keep the translucent look with a purple tint (whitesur-kde-theme pkgrel 2,
+  `labyrinth-plasma-colors`).
+- **Labyrinth Settings (packages/settings + packages/labyrinth-ui):** Rust/egui, GNOME-style pages
+  (network, Bluetooth, displays incl. the tiling-screen switch, sound, appearance, power, firewall,
+  date and time, apps, shortcuts, about). KDE System Settings/Info Center and their ~72 entries are
+  hidden (`labyrinth-hide-kde-settings`), `systemsettings MODULE` redirects to the matching page
+  (`/usr/local/bin/systemsettings`), a few deep options open a single `kcmshell6` panel.
+  Untested on real hardware: Wi-Fi/Bluetooth pages (the VM has neither), power profiles.
+- Owner decisions: Ghostty stays (own terminal on hold); Settings app first. Open question put to
+  the owner: replace Plasma's shell (top bar and dock) with our own Rust panel; keep KWin for now.
+
 Still to do, most important first:
 1. **Commit and push** today's work (ask first; the owner has not said to commit yet).
 2. **Real hardware on the main PC** (i9-9900K, RTX 2080 Ti, Acer X34 GS + LG DualUp): boot the live

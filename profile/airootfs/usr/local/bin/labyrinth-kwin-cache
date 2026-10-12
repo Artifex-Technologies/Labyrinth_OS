@@ -1,0 +1,13 @@
+#!/bin/sh
+# KWin keeps compiled QML for its scripts in ~/.cache/kwin/qmlcache and does not notice when a
+# script's source changes, so after an update it kept running the old version of Labyrinth's
+# scripts (found while testing labyrinth-tile-border, 2026-10-11). Run before KWin starts: when
+# Labyrinth's KWin scripts differ from last time, drop the cache.
+set -u
+cache=${XDG_CACHE_HOME:-$HOME/.cache}
+stamp=$cache/labyrinth/kwin-scripts.sum
+sum=$(cat /usr/share/kwin/scripts/labyrinth-*/contents/*/* 2>/dev/null | sha256sum | cut -d' ' -f1)
+if [ "$(cat "$stamp" 2>/dev/null)" != "$sum" ]; then
+  rm -rf "$cache/kwin/qmlcache"
+  mkdir -p "$(dirname "$stamp")" && printf '%s\n' "$sum" >"$stamp"
+fi

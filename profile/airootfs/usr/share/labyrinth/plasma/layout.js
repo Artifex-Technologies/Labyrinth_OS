@@ -46,9 +46,9 @@ tasks.currentConfigGroup = ["General"];
 tasks.writeConfig("launchers", [
     "applications:finder.desktop",
     "applications:vivaldi-stable.desktop",
-    "applications:org.kde.konsole.desktop",
+    "applications:com.mitchellh.ghostty.desktop",
     "applications:obsidian.desktop",
     "applications:spotify-launcher.desktop",
     "applications:steam.desktop",
-    "applications:systemsettings.desktop"
+    "applications:labyrinth-settings.desktop"
 ]);

@@ -6,14 +6,16 @@
 pkgname=whitesur-kde-theme
 pkgver=r2026.08.07
 _commit=cf4df59ce91004f7ea39358b1b8ff917d5c329f7
-pkgrel=1
+pkgrel=2
 pkgdesc='WhiteSur macOS Big Sur theme for KDE Plasma (aurorae, plasma theme, kvantum, wallpapers, sddm)'
 arch=('any')
 url='https://github.com/vinceliuice/WhiteSur-kde'
 license=('GPL-3.0-or-later')
 depends=('plasma-workspace' 'kvantum')
-source=("WhiteSur-kde-$_commit.tar.gz::https://github.com/vinceliuice/WhiteSur-kde/archive/$_commit.tar.gz")
-sha256sums=('afc06ef1c21ec316f7a7c51b36bee650d0394cf60ed8302802b3c16c0cc9ba5e')
+source=("WhiteSur-kde-$_commit.tar.gz::https://github.com/vinceliuice/WhiteSur-kde/archive/$_commit.tar.gz"
+        'labyrinth-plasma-colors')
+sha256sums=('afc06ef1c21ec316f7a7c51b36bee650d0394cf60ed8302802b3c16c0cc9ba5e'
+            'f174c032185a984f7353f47de83d8ceb8e522b17b33161ca680bbbe0db498140')
 
 build() {
   # Upstream's script installs to $HOME as a normal user (and to /usr/share as root, which is
@@ -45,5 +47,7 @@ logo=labyrinth-logo.svg
 type=image
 background=background.jpeg
 '     > "$pkgdir/usr/share/sddm/themes/WhiteSur/theme.conf.user"
+  # Labyrinth: the Plasma style's colours with a purple hue in the top bar, dock and popups.
+  install -Dm644 "$srcdir/labyrinth-plasma-colors" "$pkgdir/usr/share/plasma/desktoptheme/WhiteSur-dark/colors"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

@@ -116,10 +116,6 @@ function desktop(n) {
           function () { var w = active(); if (w) { w.desktops = [desktop(n)]; } }, null);
 });
 
-// Win + Return: a terminal on either screen (Omarchy's key; Konsole's own Ctrl+Alt+T stays).
-function terminal() { invoke("org_kde_konsole_desktop", "_launch"); }
-route("Return", "Terminal", "Meta+Return", terminal, terminal);
-
 // Single keys that mean something else in each world.
 route("W", "Overview / close window", "Meta+W",
       function () { var w = active(); if (w && w.closeable) { w.closeWindow(); } },

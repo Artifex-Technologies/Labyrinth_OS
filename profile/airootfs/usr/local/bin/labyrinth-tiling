@@ -101,7 +101,7 @@ if (target >= 0) {
 
 
 def reload_scripts():
-    for s in ("krohnkite", "labyrinth-screen-keys"):
+    for s in ("krohnkite", "labyrinth-screen-keys", "labyrinth-tile-border"):
         subprocess.run(["qdbus6", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting.unloadScript", s],
                        capture_output=True)
     # Reconfigure loads the enabled scripts again, which then read their new settings.
@@ -112,12 +112,15 @@ def enable(output):
     others = [c for c in connectors() if c != output]
     kwrite("Windows", "PerOutputVirtualDesktops", "true")
     kwrite("Script-labyrinth-screen-keys", "tilingOutputs", output)
+    kwrite("Script-labyrinth-tile-border", "tilingOutputs", output)
     k = "Script-krohnkite"
     kwrite(k, "ignoreScreen", ",".join(others))
     kwrite(k, "noTileBorder", "true")
     for side in ("Left", "Right", "Top", "Bottom", "Between"):
         kwrite(k, "screenGap" + side, GAP)
     kwrite(k, "layoutPerDesktop", "true")
+    # Prompts and password dialogs float instead of being tiled (KDE's portal and polkit agent).
+    kwrite(k, "floatingClass", "xdg-desktop-portal-kde,org.kde.polkit-kde-authentication-agent-1,polkit-kde-authentication-agent-1,org.kde.kdialog,kdialog")
     kwrite("Plugins", "krohnkiteEnabled", "true")
     reload_scripts()
     plasma(REMOVE_BAR)
@@ -130,6 +133,7 @@ def enable(output):
 def disable():
     kwrite("Plugins", "krohnkiteEnabled", "false")
     kwrite("Script-labyrinth-screen-keys", "tilingOutputs", "")
+    kwrite("Script-labyrinth-tile-border", "tilingOutputs", "")
     kwrite("Windows", "PerOutputVirtualDesktops", "false")
     reload_scripts()
     plasma(REMOVE_BAR)

@@ -4,14 +4,22 @@ _launch=Meta+E
 [services][org.kde.krunner.desktop]
 _launch=Alt+Space\tAlt+F2\tSearch\tMeta+R
 
-[services][systemsettings.desktop]
+[services][labyrinth-settings.desktop]
 _launch=Meta+I
 
 [services][org.kde.plasma-systemmonitor.desktop]
 _launch=Ctrl+Shift+Esc\tCtrl+Esc
 
+[services][com.mitchellh.ghostty.desktop]
+_launch=Meta+Return\tCtrl+Alt+T
+
 [services][org.kde.spectacle.desktop]
 RectangularRegionScreenShot=Meta+Shift+S\tMeta+Shift+Print
+
+# Ghostty's F12 drop-down terminal, registered ahead so KDE does not ask for permission at first use.
+[com.mitchellh.ghostty]
+F12=F12,F12,toggle_quick_terminal
+_k_friendly_name=Ghostty
 
 [kwin]
 Window Fullscreen=Meta+F,none,Make Window Fullscreen

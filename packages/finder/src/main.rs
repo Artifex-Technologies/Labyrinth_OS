@@ -5,10 +5,10 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::{Duration, Instant};
 
 mod icons;
-mod theme;
 
 use eframe::egui::{self, pos2, vec2, Align, Align2, Color32, CornerRadius, FontId, Layout, Rect, RichText, Sense, UiBuilder};
 use icons::Icon;
+use labyrinth_ui::{chrome, theme};
 use theme::{palette, palette_for, Palette};
 use egui_extras::{Column, TableBuilder};
 use finder_core::archive::{self, Format};
@@ -1715,6 +1715,7 @@ impl eframe::App for App {
         }
 
         let mut actions: Vec<Action> = vec![];
+        chrome::resize_edges(&ctx);
 
         // Keyboard shortcuts, only when no text field has focus.
         if !ctx.egui_wants_keyboard_input() {
@@ -1779,13 +1780,7 @@ impl eframe::App for App {
             ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(!full));
         }
 
-        egui::Panel::left("sidebar")
-            .default_size(230.0)
-            .frame(egui::Frame::new().fill(pal.sidebar).inner_margin(egui::Margin::symmetric(8, 6)))
-            .show(ui, |ui| {
-                self.sidebar(ui, &pal, &mut actions);
-            });
-
+        // Above the sidebar too, so it runs the full width like a title bar.
         egui::Panel::top("strip")
             .frame(egui::Frame::new().fill(pal.strip).inner_margin(egui::Margin::symmetric(8, 4)))
             .show(ui, |ui| {
@@ -1837,7 +1832,17 @@ impl eframe::App for App {
                     }
                     ui.add_space(6.0);
                     ui.label(RichText::new(&self.status).color(pal.dim));
+                    // The strip is the title bar: empty space moves the window, buttons at the end.
+                    chrome::drag_area(ui, ui.available_width() - chrome::controls_width());
+                    chrome::window_controls(ui, &pal);
                 });
+            });
+
+        egui::Panel::left("sidebar")
+            .default_size(230.0)
+            .frame(egui::Frame::new().fill(pal.sidebar).inner_margin(egui::Margin::symmetric(8, 6)))
+            .show(ui, |ui| {
+                self.sidebar(ui, &pal, &mut actions);
             });
 
         if self.st.preview {
@@ -1961,6 +1966,7 @@ impl eframe::App for App {
             }
         }
 
+        chrome::outline(&ctx, &pal);
         self.apply(&ctx, actions);
         self.sync_state();
         if self.dirty && self.last_saved.elapsed() > Duration::from_secs(1) {
@@ -1984,6 +1990,8 @@ fn main() -> eframe::Result {
             .with_inner_size([1200.0, 760.0])
             .with_min_inner_size([640.0, 400.0])
             .with_title("Finder")
+            // Finder draws its own title bar (chrome.rs): no grey system title bar or frame.
+            .with_decorations(false)
             // Wayland/X11 application id: matches finder.desktop so docks and the
             // bar can find the icon. Must be a plain name; "Finder" was not.
             .with_app_id("finder"),

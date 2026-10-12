@@ -61,6 +61,10 @@ ln -sf /dev/null "$sysd/systemd-firstboot.service"
 ln -sf /etc/systemd/system/pacman-init.service "$sysd/multi-user.target.wants/pacman-init.service"
 mkdir -p "$sysd/getty.target.wants"
 ln -sf /usr/lib/systemd/system/serial-getty@.service "$sysd/getty.target.wants/serial-getty@ttyS0.service"
+# User services: drop KWin's stale compiled-script cache before KWin starts (labyrinth-kwin-cache).
+usd="$profile_build_dir/airootfs/etc/systemd/user/plasma-workspace.target.wants"
+mkdir -p "$usd"
+ln -sf /usr/lib/systemd/user/labyrinth-kwin-cache.service "$usd/labyrinth-kwin-cache.service"
 
 echo "==> Running mkarchiso"
 mkdir -p "$out_dir"

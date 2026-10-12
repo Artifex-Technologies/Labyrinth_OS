@@ -1,0 +1,20 @@
+#!/bin/sh
+# Labyrinth Settings replaces KDE's System Settings. Plasma still runs `systemsettings MODULE` from
+# its tray icons and menus ("Configure display settings", the network and sound applets...); this
+# wrapper comes first in PATH and sends those to the matching Labyrinth Settings page. Modules
+# Labyrinth Settings does not cover yet open on their own with kcmshell6, never the whole KDE app.
+# The real one stays at /usr/bin/systemsettings (plasma-desktop depends on it).
+case "${1:-}" in
+  "")                                     exec labyrinth-settings ;;
+  kcm_kscreen)                            exec labyrinth-settings displays ;;
+  kcm_pulseaudio)                         exec labyrinth-settings sound ;;
+  kcm_networkmanagement|kcm_wifi)         exec labyrinth-settings network ;;
+  kcm_bluetooth)                          exec labyrinth-settings bluetooth ;;
+  kcm_powerdevilprofilesconfig|kcm_energyinfo) exec labyrinth-settings power ;;
+  kcm_clock)                              exec labyrinth-settings datetime ;;
+  kcm_lookandfeel|kcm_colors|kcm_wallpaper|kcm_accentcolor) exec labyrinth-settings appearance ;;
+  kcm_firewall)                           exec labyrinth-settings firewall ;;
+  kcm_about-distro)                       exec labyrinth-settings about ;;
+  kcm_*)                                  exec kcmshell6 "$@" ;;
+  *)                                      exec labyrinth-settings ;;
+esac

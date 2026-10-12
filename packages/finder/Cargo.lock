@@ -1140,6 +1140,7 @@ dependencies = [
  "eframe",
  "egui_extras",
  "image",
+ "labyrinth-ui",
  "lofty",
  "notify",
  "serde",
@@ -1829,6 +1830,14 @@ dependencies = [
  "euclid",
  "polycool",
  "smallvec",
+]
+
+[[package]]
+name = "labyrinth-ui"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "eframe",
 ]
 
 [[package]]

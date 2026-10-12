@@ -80,8 +80,7 @@ kde-gtk-config
 xdg-desktop-portal-kde
 breeze
 breeze-gtk
-systemsettings
-kinfocenter
+# (KDE System Settings comes with plasma-desktop but is hidden; Labyrinth Settings replaces it)
 kdeplasma-addons
 plasma-browser-integration
 plasma-systemmonitor
@@ -90,12 +89,14 @@ kscreenlocker
 kwallet-pam
 # tiling for one screen of the macOS-style desktop (labyrinth-tiling; ours, packages/pkgbuilds)
 kwin-scripts-krohnkite
+# window title bars for KDE apps: traffic lights, matches the app, no border (ours, packages/pkgbuilds)
+klassy
 # firewall: incoming blocked, outgoing allowed (like Windows); System Settings > Firewall
 ufw
 plasma-firewall
 kio-extras
-konsole
-yakuake
+# terminal: Ghostty (GPU, tabs in the title bar, F12 drop-down); replaced Konsole and Yakuake
+ghostty
 spectacle
 appmenu-gtk-module
 kvantum
@@ -142,6 +143,9 @@ btop
 noto-fonts-emoji
 # Labyrinth's own file explorer, built from packages/pkgbuilds into the local repo
 labyrinth-finder
+labyrinth-settings
+# power modes (Performance / Balanced / Power saver) for Settings and the battery applet
+power-profiles-daemon
 # Finder: archives (7z), PDF and video previews, RAR
 7zip
 poppler
