@@ -1,9 +1,6 @@
 # Labyrinth OS
 
 ## Screenshots
-
-![The desktop](assets/screenshots/desktop.png)
-
 *The desktop: transparent top bar with the Labyrinth button, workspaces, and one date/time pill; the dock sits on the edge of the screen.*
 
 | | |
