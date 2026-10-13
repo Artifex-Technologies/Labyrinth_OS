@@ -16,6 +16,8 @@ conf=${XDG_CONFIG_HOME:-$HOME/.config}
 flag=$conf/labyrinth/panel-on
 auto=$conf/autostart/labyrinth-panel.desktop
 layout=/usr/share/labyrinth/plasma/layout.js
+# The Super key on its own: our start menu while the panel is on, Plasma's launcher otherwise.
+meta() { kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$1" && { qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true; }; }
 plasma() { busctl --user call org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell evaluateScript s "$1" >/dev/null 2>&1; }
 
 case "${1:-status}" in
@@ -35,6 +37,7 @@ D
     # Let KWin drop Plasma's panels (and the space they reserved) before the dock is placed, or it sits above it.
     sleep 2
     setsid -f /usr/bin/labyrinth-panel >/dev/null 2>&1
+    meta "org.labyrinth.Panel,/Panel,org.labyrinth.Panel,ToggleStart"
     echo "labyrinth-panel on"
     ;;
   off)
@@ -42,6 +45,7 @@ D
     pkill -f '^/usr/bin/labyrinth-panel$' 2>/dev/null
     plasma 'panels().forEach(function (p) { p.remove(); });'
     [ -r "$layout" ] && plasma "$(cat "$layout")"
+    meta "org.kde.plasmashell,/PlasmaShell,org.kde.PlasmaShell,activateLauncherMenu"
     echo "Plasma panels on"
     ;;
   status)
