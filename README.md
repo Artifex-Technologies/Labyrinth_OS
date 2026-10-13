@@ -2,8 +2,14 @@
 
 ## Screenshots
 
+![The desktop](assets/screenshots/desktop.png)
+
+*The desktop: transparent top bar with the Labyrinth button, workspaces, and one date/time pill; the dock sits on the edge of the screen.*
+
 | | |
 | --- | --- |
+| ![The start menu](assets/screenshots/start-menu.png) | ![The calendar](assets/screenshots/calendar.png) |
+| *The start menu (Folders theme): search, favourites, apps by folder, and a power menu.* | *The calendar: scroll the wheel for other months.* |
 | ![Installer welcome](assets/screenshots/installer-welcome.png) | ![Installer, your details](assets/screenshots/installer-users.png) |
 | *The installer: the same dark look as the apps; the computer's name is asked here.* | *Name, login and computer name.* |
 | ![Minos, the file explorer](assets/screenshots/minos.png) | ![Settings, Appearance](assets/screenshots/settings.png) |
