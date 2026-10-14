@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Clipboard history
+Comment=Open the notch on what you copied
+Exec=busctl --user call org.labyrinth.Panel /Panel org.labyrinth.Panel ShowClipboard
+Icon=edit-paste
+NoDisplay=true

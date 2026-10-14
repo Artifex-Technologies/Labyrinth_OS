@@ -17,6 +17,7 @@ choose, so someone else's install need not carry what you use. The list is
 | `proton-pass` | Proton's official desktop app, repackaged from their RPM, pinned and hash-checked | Built on the machine with makepkg |
 | `creative` | Krita, Darktable, Kdenlive, OBS Studio, Ardour | |
 | `virtualization` | QEMU, libvirt, UEFI firmware, dnsmasq, nftables (for Limbo) | |
+| `dev` | Node.js, npm, jq, the GitHub CLI, pip, fd, bubblewrap and socat: what Claude Code and most command-line development want (git is in the base system) | See [CLAUDE_CODE.md](CLAUDE_CODE.md); on in every preset except `minimal` |
 | `local-ai` | Ollama for Sarina (CUDA on NVIDIA, Vulkan otherwise) | Not in the image (~6 GB with CUDA); Sarina offers to install it on first use. Competes with games for GPU memory |
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +

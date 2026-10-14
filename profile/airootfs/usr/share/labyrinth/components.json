@@ -144,16 +144,35 @@
       "proprietary": false,
       "pkgbuild": "sarina-git",
       "notes": "Needs a model server. Install Ollama (the local-ai component, or the plain 'ollama' package on a machine without an NVIDIA card), pull a model, then: sarina chat --interactive. The web console is 'sarina gui'."
+    },
+    {
+      "id": "dev",
+      "name": "Developer tools",
+      "description": "What Claude Code and most command-line development want on the PATH: Node.js and npm (MCP servers run with npx), jq, the GitHub CLI, pip, and bubblewrap and socat (Claude Code's sandbox). Git itself is in the base system.",
+      "proprietary": false,
+      "packages": [
+        "nodejs",
+        "npm",
+        "jq",
+        "github-cli",
+        "python-pip",
+        "fd",
+        "bubblewrap",
+        "socat"
+      ],
+      "notes": "Claude Code itself is installed per user: curl -fsSL https://claude.ai/install.sh | bash (see docs/CLAUDE_CODE.md)"
     }
   ],
   "presets": {
     "minimal": [],
     "gaming": [
-      "steam"
+      "steam",
+      "dev"
     ],
     "creative": [
       "creative",
-      "obsidian"
+      "obsidian",
+      "dev"
     ],
     "everything": [
       "steam",
@@ -167,7 +186,8 @@
       "vscode",
       "containers",
       "flatpak",
-      "sarina"
+      "sarina",
+      "dev"
     ]
   }
 }

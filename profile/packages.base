@@ -41,6 +41,8 @@ glmark2
 iperf3
 vulkan-tools
 python
+# git: Claude Code and every project need it
+git
 # installer: Calamares is built from packages/pkgbuilds/calamares into the local repo
 calamares
 rsync

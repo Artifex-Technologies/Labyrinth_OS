@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Ask Sarina
+Comment=Record a question for Sarina; press again to send it
+Exec=busctl --user call org.labyrinth.Panel /Panel org.labyrinth.Panel AskSarina
+Icon=audio-input-microphone
+NoDisplay=true

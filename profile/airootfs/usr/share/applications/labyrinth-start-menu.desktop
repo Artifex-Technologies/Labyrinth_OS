@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Start menu
+Comment=Open the start menu and its search
+Exec=busctl --user call org.labyrinth.Panel /Panel org.labyrinth.Panel ToggleStart
+Icon=system-search
+NoDisplay=true

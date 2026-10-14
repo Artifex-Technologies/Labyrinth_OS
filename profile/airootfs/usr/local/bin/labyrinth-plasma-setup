@@ -19,6 +19,9 @@ if command -v plasma-apply-lookandfeel >/dev/null; then
 fi
 # Icons: MacTahoe in dark, plus the per-app overrides of the Labyrinth theme (labyrinth-icon).
 kwriteconfig6 --file kdeglobals --group Icons --key Theme Labyrinth
+# The Minos icon autostart can run before this sets the pack and then sees the wrong one (a plain folder
+# from another pack ends up in hicolor); run it again now that the pack is Labyrinth.
+command -v labyrinth-minos-icon >/dev/null && labyrinth-minos-icon >/dev/null 2>&1 || true
 # Title bars: Klassy (packages/pkgbuilds/klassy) with macOS traffic lights on the right in Windows
 # order (minimize, maximize, close), the same side as apps that draw their own (Vivaldi, Spotify,
 # Steam, Minos). Its title bar takes the app's colour, so title bar and toolbar are one header, and
@@ -51,9 +54,17 @@ kwriteconfig6 --file kdeglobals --group General --key AccentColorFromWallpaper f
 # Brand purple (#3A1F5D family). The UI accent is Minos's own violet (124,84,214), a lighter tint, so selections stay visible on dark windows and the desktop matches Minos.
 kwriteconfig6 --file kdeglobals --group General --key AccentColor "124,84,214"
 kwriteconfig6 --file kdeglobals --group General --key LastUsedCustomAccentColor "124,84,214"
+# Lock screen: the same near-black purple as the login screen and the notch, with the clock on it.
+kwriteconfig6 --file kscreenlockerrc --group Greeter --key WallpaperPlugin org.kde.color
+kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.color --group General --key Color 12,12,17
 qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1
 
-if [[ -r $LAYOUT ]]; then
+# The top bar, the notch (Fylgja), the dock and the start menu are Labyrinth's own panel: on from the
+# first login (Settings > Appearance, or labyrinth-panel-mode off, goes back to Plasma's panels). Only
+# if it is not installed are Plasma's panels set up from the layout.
+if [[ -x /usr/bin/labyrinth-panel ]]; then
+  labyrinth-panel-mode on >/dev/null 2>&1
+elif [[ -r $LAYOUT ]]; then
   busctl --user call org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell evaluateScript s "$(cat "$LAYOUT")" >/dev/null 2>&1
 fi
 

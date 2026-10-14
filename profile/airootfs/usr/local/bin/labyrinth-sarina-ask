@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# labyrinth-sarina-ask FILE.wav: give Sarina a spoken question and print her answer as text.
+#
+# The panel's Fylgja (the notch) records the question when you press Super+S, runs this with the
+# recording, shows what it prints, and deletes the recording afterwards. A non-zero exit shows the
+# printed line as the reason there is no answer. Nothing here sends the recording anywhere but to the
+# local `sarina` program.
+#
+# PROPOSED interface, not yet checked against Sarina (her repository was not available when this was
+# written): `sarina ask --audio FILE` prints the answer on stdout. Adjust the last line when her side
+# is known; see docs/SARINA_VOICE.md.
+set -u
+
+wav=${1:-}
+[[ -f $wav ]] || { echo "There is no recording to send."; exit 1; }
+
+command -v sarina >/dev/null 2>&1 || { echo "Sarina is not installed on this computer yet."; exit 1; }
+
+# Her model server (Ollama) has to be running already; opening Sarina from the launcher starts it.
+# This script does not start it or download anything.
+if ! curl -fsS -m 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+  echo "Sarina's model server is not running. Open Sarina from the launcher once to start it."
+  exit 1
+fi
+
+export OPENAI_BASE_URL=http://127.0.0.1:11434/v1
+export OPENAI_API_KEY=${OPENAI_API_KEY:-local-token}
+exec sarina ask --audio "$wav"

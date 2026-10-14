@@ -5,7 +5,7 @@ The OptiPlex has two 256 GB drives (one M.2, one SATA), 8 GB RAM and Intel graph
 
 ## What you need
 
-- The ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.11-x86_64.iso` (about 6 GB;
+- The ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.13-x86_64.iso` (about 6 GB;
   `SHA256SUMS` next to it).
 - A USB stick of **8 GB or more** (16 GB to be safe). Everything on it is erased.
 - A DisplayPort or HDMI cable and a screen for the OptiPlex, a keyboard and a mouse.

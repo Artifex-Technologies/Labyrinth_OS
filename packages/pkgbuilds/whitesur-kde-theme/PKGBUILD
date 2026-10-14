@@ -40,11 +40,12 @@ package() {
   cp -a sddm/WhiteSur-6.2 "$pkgdir/usr/share/sddm/themes/WhiteSur"
   # The theme names background.jpeg, which upstream keeps in sddm/images and installs separately.
   install -Dm644 sddm/images/background-dark.jpeg "$pkgdir/usr/share/sddm/themes/WhiteSur/background.jpeg"
-  # Login screen settings: show a logo (Labyrinth adds labyrinth-logo.svg to this folder).
+  # Login screen settings: Labyrinth's near-black purple, with a logo (Labyrinth adds labyrinth-logo.svg to this folder).
   printf '[General]
 showlogo=show
 logo=labyrinth-logo.svg
-type=image
+type=color
+color=#0c0c11
 background=background.jpeg
 '     > "$pkgdir/usr/share/sddm/themes/WhiteSur/theme.conf.user"
   # Labyrinth: the Plasma style's colours with a purple hue in the top bar, dock and popups.

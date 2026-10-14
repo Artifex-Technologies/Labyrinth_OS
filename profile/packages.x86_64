@@ -37,6 +37,7 @@ glmark2
 iperf3
 vulkan-tools
 python
+git
 calamares
 rsync
 squashfs-tools
@@ -175,3 +176,12 @@ distrobox
 flatpak
 # component: sarina
 sarina-git
+# component: dev
+nodejs
+npm
+jq
+github-cli
+python-pip
+fd
+bubblewrap
+socat

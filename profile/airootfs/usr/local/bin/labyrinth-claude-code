@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Install, update or check Claude Code for this user.
+#   labyrinth-claude-code            install it (or say it is already there), then show what it needs
+#   labyrinth-claude-code update     update to the newest version
+#   labyrinth-claude-code status     what is installed and what is missing
+# Claude Code is Anthropic's own program, installed with their installer into ~/.local/bin. It needs the
+# network, and the first run (claude) opens the browser to sign in. Nothing here sends anything else.
+set -u
+export PATH="$HOME/.local/bin:$PATH"
+
+status() {
+  if command -v claude >/dev/null 2>&1; then
+    echo "claude:   $(claude --version 2>/dev/null | head -n1) ($(command -v claude))"
+  else
+    echo "claude:   not installed"
+  fi
+  for c in git rg node npm gh jq ssh; do
+    if command -v "$c" >/dev/null 2>&1; then printf '%-9s %s\n' "$c:" "$(command -v "$c")"; else printf '%-9s %s\n' "$c:" "missing"; fi
+  done
+  echo "(git is needed; node and npm for MCP servers; gh for GitHub; the others are conveniences)"
+}
+
+case ${1:-install} in
+  status) status ;;
+  update) command -v claude >/dev/null 2>&1 && claude update || { echo "Claude Code is not installed yet: run labyrinth-claude-code"; exit 1; } ;;
+  install)
+    if command -v claude >/dev/null 2>&1; then
+      echo "Claude Code is already installed."
+    else
+      curl -fsSL https://claude.ai/install.sh | bash || { echo "The installer did not finish. Check the network and try again."; exit 1; }
+    fi
+    status
+    echo
+    echo "Next: open a terminal in your project and run: claude   (it opens the browser to sign in the first time)"
+    ;;
+  *) echo "usage: labyrinth-claude-code [install|update|status]"; exit 2 ;;
+esac

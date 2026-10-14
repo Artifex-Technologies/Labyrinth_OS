@@ -9,8 +9,8 @@
 # (pkill matches the full path: the script itself is called labyrinth-panel-mode, and process names
 # are cut at 15 characters, so `pkill -x labyrinth-panel` would kill the script too.)
 # The choice is kept in ~/.config/labyrinth/panel-on and the panel starts at login (autostart).
-# labyrinth-panel has no system tray, quick settings or global menu yet, so Plasma's panels stay the
-# default until it does.
+# labyrinth-panel is the default from the first login (labyrinth-plasma-setup turns it on). It has no
+# system tray, quick settings or global menu yet; `off` brings Plasma's panels back for those.
 set -u
 conf=${XDG_CONFIG_HOME:-$HOME/.config}
 flag=$conf/labyrinth/panel-on

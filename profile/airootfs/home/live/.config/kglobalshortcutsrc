@@ -1,8 +1,12 @@
 [services][minos.desktop]
 _launch=Meta+E
 
+# Alt+Space, Alt+F2 and Meta+R open the start menu's search; KRunner (still installed, Plasma needs it) has no keys.
+[services][labyrinth-start-menu.desktop]
+_launch=Alt+Space\tAlt+F2\tMeta+R
+
 [services][org.kde.krunner.desktop]
-_launch=Alt+Space\tAlt+F2\tSearch\tMeta+R
+_launch=none
 
 [services][labyrinth-settings.desktop]
 _launch=Meta+I
@@ -15,6 +19,17 @@ _launch=Meta+Return\tCtrl+Alt+T
 
 [services][org.kde.spectacle.desktop]
 RectangularRegionScreenShot=Meta+Shift+S\tMeta+Shift+Print
+
+# The notch (Fylgja): the clipboard history, and recording a question for Sarina (press again to send).
+[services][labyrinth-clipboard.desktop]
+_launch=Meta+V
+
+[services][labyrinth-sarina-ask.desktop]
+_launch=Meta+S
+
+# Plasma's own clipboard popup would also answer to Meta+V.
+[klipper]
+show-on-mouse-pos=none,Meta+V,Show Clipboard Items at Mouse Position
 
 # Ghostty's F12 drop-down terminal, registered ahead so KDE does not ask for permission at first use.
 [com.mitchellh.ghostty]

@@ -1,0 +1,7 @@
+module org.kde.plasma.workspace.osd
+plugin plasmashell_osd
+classname org_kde_plasma_workspace_osdPlugin
+typeinfo plasmashell_osd.qmltypes
+depends QtQuick
+Osd 254.0 Osd.qml
+OsdItem 254.0 OsdItem.qml
