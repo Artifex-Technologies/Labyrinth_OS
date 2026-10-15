@@ -119,3 +119,13 @@ explanation. Re-run **Verify now** (sidebar, Cloud) to refresh them. Seen workin
 on the real `.obsidian` folder of the book vault (Windows). Note that folder holds
 three `workspace (# Edit conflict …).json` files: Proton Drive's conflict copies
 from Obsidian's constantly-rewritten workspace file.
+
+## Connecting from Minos (built)
+
+In Minos, **Cloud → Proton Drive (click to connect)** opens a sign-in form (email, password,
+2FA code if you use one, mailbox password only if you set a separate one). It creates the rclone
+remote `proton` (type `protondrive`; passwords are scrambled with `rclone obscure`, read from
+stdin), copies `/usr/share/labyrinth/proton-drive.service` to `~/.config/systemd/user/`, and runs
+`systemctl --user enable --now proton-drive`. Once signed in, a click on a not-mounted entry just
+starts the mount. A wrong sign-in deletes the half-made remote. The 2FA code only has to be fresh
+for this one sign-in. **Not yet tested against a real Proton account.**
