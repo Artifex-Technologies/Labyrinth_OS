@@ -26,7 +26,20 @@ Item {
     readonly property bool shown: !!win && win.normalWindow && !win.desktopWindow && !win.fullScreen && !win.minimized
         && !!win.output && tilingOutputs.indexOf(win.output.name) >= 0
         && win.frameGeometry.width > 0
-    readonly property rect g: shown ? win.frameGeometry : Qt.rect(0, 0, 1, 1)
+    readonly property rect live: shown ? win.frameGeometry : Qt.rect(0, 0, 1, 1)
+
+    // The strips are torn down while the window is moving, resizing or being retiled and built again
+    // once its geometry has held still for a moment. Resized in place, they kept their old extent and
+    // left long stray lines across the screen (seen on the fractionally scaled tiling screen).
+    property rect g: Qt.rect(0, 0, 1, 1)
+    property bool settled: false
+    onLiveChanged: { settled = false; settle.restart(); }
+    onShownChanged: { settled = false; settle.restart(); }
+    Timer {
+        id: settle
+        interval: 120
+        onTriggered: { root.g = root.live; root.settled = root.shown; }
+    }
 
     // Four thin strips around the window, in the gap Krohnkite leaves, so nothing covers the app.
     component Strip: PlasmaCore.Dialog {
@@ -37,7 +50,7 @@ Item {
         location: PlasmaCore.Types.Floating
         backgroundHints: PlasmaCore.Dialog.NoBackground
         outputOnly: true
-        visible: root.shown
+        visible: root.settled
         // The dialog takes its size from the item's implicit size; plain width/height left it 1x1.
         mainItem: Rectangle {
             implicitWidth: stripWidth
@@ -48,12 +61,17 @@ Item {
         }
     }
 
-    Strip { x: root.g.x - root.thickness; y: root.g.y - root.thickness
-            stripWidth: root.g.width + 2 * root.thickness; stripHeight: root.thickness }
-    Strip { x: root.g.x - root.thickness; y: root.g.y + root.g.height
-            stripWidth: root.g.width + 2 * root.thickness; stripHeight: root.thickness }
-    Strip { x: root.g.x - root.thickness; y: root.g.y
-            stripWidth: root.thickness; stripHeight: root.g.height }
-    Strip { x: root.g.x + root.g.width; y: root.g.y
-            stripWidth: root.thickness; stripHeight: root.g.height }
+    Loader {
+        active: root.settled
+        sourceComponent: Item {
+        Strip { x: root.g.x - root.thickness; y: root.g.y - root.thickness
+                stripWidth: root.g.width + 2 * root.thickness; stripHeight: root.thickness }
+        Strip { x: root.g.x - root.thickness; y: root.g.y + root.g.height
+                stripWidth: root.g.width + 2 * root.thickness; stripHeight: root.thickness }
+        Strip { x: root.g.x - root.thickness; y: root.g.y
+                stripWidth: root.thickness; stripHeight: root.g.height }
+        Strip { x: root.g.x + root.g.width; y: root.g.y
+                stripWidth: root.thickness; stripHeight: root.g.height }
+        }
+    }
 }
