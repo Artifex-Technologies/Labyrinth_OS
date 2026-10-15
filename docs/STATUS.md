@@ -280,3 +280,8 @@ ISO labyrinth-2026.10.13-x86_64.iso (built 2026-10-13 15:45, 6.09 GB, sha256 b9f
 - Selecting an app opens its settings: Network, Location, Clear Data (needs sudo, so it asks for the password), Clear Cache, file access (everything, or chosen folders), permission to see other apps (all or chosen), storage used, average internet use (up and down), average running time, and whether it runs at startup.
 - Network is a plain switch (click the name to turn it off). With Developer options on it gains a drop-down at its left to allow only Ethernet and/or Wi-Fi, so the app can send data only while a chosen channel is up.
 - When Limbo is installed, a further option sandboxes the app.
+
+## Super key and start menu keyboard (2026-10-14)
+
+- **Super on its own** now opens the start menu on KWin 6.7. KWin no longer reads `kwinrc [ModifierOnlyShortcuts]`; a bare Super tap is handed to the global shortcut `plasmashell: activate application launcher` (still bound to `Meta`), and `kglobalacceld` announces it on the session bus (`org.kde.kglobalaccel.Component.globalShortcutPressed`). `labyrinth-panel` listens for that signal and toggles the menu. Verified with simulated key presses (ydotool, uinput): Super opens it with the search box active. `labyrinth-panel-mode`'s `kwinrc` line is now harmless but no longer what does the work.
+- **Keyboard in the Folders start menu:** Tab goes Search → list → power choices → Search. Up/Down move in each; Right (or Enter) on a folder goes into its apps, Left comes back; Enter opens the selected app or power choice; typing from anywhere returns to the search box; with search results, Up/Down pick a result. Verified with simulated keys and screenshots. Not done for the Windows start-menu theme.
