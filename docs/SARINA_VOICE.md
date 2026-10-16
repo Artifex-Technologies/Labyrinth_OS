@@ -39,6 +39,12 @@ Without whisper.cpp and a model, Super+S says "Listening is not set up yet..." o
 `ggml-base.en.bin` (or `ggml-small.en.bin` for better accuracy) from the whisper.cpp model list into
 `~/.local/share/labyrinth/stt/`. Then Super+S once, speaking, and check the "Heard:" line.
 
+**Speed (measured 2026-10-16):** whisper.cpp base.en transcribes in about 0.8 s (3 s of audio); Sarina's answer is the rest: about 2 s
+once the model is loaded, plus about 2 s more if Ollama had unloaded it. Pressing Super+S now also runs `labyrinth-sarina-warm`, which
+loads the model while you are still speaking (it unloads again 10 minutes later, so it does not hold the graphics card's memory
+while gaming). So a short question is about 3 s from Send to answer. Further options if it must be faster: a smaller model for
+voice only (qwen3:4b), `ggml-tiny.en.bin` (less accurate, ~0.3 s), or showing "Heard: ..." on the card while she thinks.
+
 **Speaking the answer back** is not built: `piper` (the program) is installed but there is no voice model, and Sarina's own
 `voice-chat` uses a Python piper. A later step: `piper --model VOICE.onnx --output-raw | pw-play` for the answer, behind a setting,
 off by default.
