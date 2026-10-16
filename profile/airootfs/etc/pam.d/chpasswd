@@ -1,0 +1,6 @@
+#%PAM-1.0
+auth		sufficient	pam_rootok.so
+account		required	pam_permit.so
+password	include		system-auth
+# gnome-keyring's login keyring follows the login password when it is changed through chpasswd
+-password	optional	pam_gnome_keyring.so	use_authtok
