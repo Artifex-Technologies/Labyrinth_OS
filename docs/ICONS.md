@@ -36,7 +36,14 @@ are also the system's default Minos icon, `hicolor/scalable/apps/minos.svg`) and
 `tile-light.svg`. `@LINE@` marks the lines, which take the accent colour. To use the bare logo on the
 Labyrinth pack too: `echo plain > ~/.config/labyrinth/minos-icon-shape`.
 
-## Adding another pack
+## Choosing and installing a pack (Settings)
+
+**Settings > Appearance > Icons** lists every icon pack on the system and in `~/.local/share/icons`, with a few sample icons
+each. "Use" applies it to the whole desktop (KDE, the panel and Minos follow). "Install an icon pack" takes a folder, an
+archive (.tar.gz, .tar.xz, .tar.bz2, .zip) or an https link and puts the pack in your own icons folder, so no password is
+needed; "Remove" deletes a pack you installed (never a system one).
+
+## Adding another pack by hand
 
 Install it as a normal icon theme and choose it in KDE. To give it a Minos icon of its own, add
 `minos.svg` to its `apps/scalable` folder (or `apps/<size>/minos.png`).
