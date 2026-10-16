@@ -52,3 +52,5 @@ Heimdall's /v1/review verified: allows ordinary memory text, denies injection ph
 `sk-...` key through, so the credential detector now knows common provider formats (Heimdall commit). Voice: `labyrinth-sarina-ask`
 called a command that does not exist (`sarina ask --audio`); rewritten as whisper.cpp -> labyrinth-ask-sarina, with an honest
 "not set up yet" message; STT model and a spoken reply are not installed/built (owner decision, a download). No audio was recorded or played.
+
+Full run 2026-10-16 07:18: 13 of 13 cases pass (docs/sarina-evals/2026-10-16-0718.md), after the lessons, the doc fix for socket groups and Heimdall's unicode/credential fixes. The checks are keyword checks: read the answers too (see the decompile-explain slip).
