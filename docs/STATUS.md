@@ -314,6 +314,12 @@ upgrade was done); Heimdall's file-integrity detector raised alerts for that, ex
 (`/var/lib/limbo/images/decompile.qcow2`, sha in `/etc/limbo/validation/decompile.json`). Sarina is read-only until the owner decides.
 Nothing from Sarina, Heimdall or Limbo has been pushed.
 
+### 2026-10-16 Full upgrade, Wireshark, connection log
+`pacman -Syu` done (no kernel change; all services healthy). wireshark-qt/-cli and tcpdump installed by hand (not in the ISO;
+use sudo). Heimdall has a per-process connection log (see Heimdall docs/ARCHITECTURE.md "Connection log"): installed as
+/usr/bin/heimdalld with drop-in /etc/systemd/system/heimdall.service.d/connwatch.conf; `labyrinth-ecosystem-setup` writes the same
+drop-in. See it with `curl -s 127.0.0.1:8930/v1/alerts?n=200` (detector connection-watch). Not yet: an owner-facing view in Settings.
+
 ### Resume here (next things, in order)
 
 1. Owner: read TEAM.md; decide whether Sarina may also run with `--write` on the repos, and whether to push Limbo / Sarina /
