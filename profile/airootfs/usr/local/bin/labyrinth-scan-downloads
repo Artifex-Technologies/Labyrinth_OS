@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
-"""labyrinth-scan-downloads: scan new and changed files in your Downloads folder (and any folders listed in ~/.config/labyrinth/scan-folders)
-for malware with Heimdall's scanner (ClamAV), and tell you with a notification if something is found.
+"""labyrinth-scan-downloads: look for malware in the places files arrive from outside, and deal with what is certain.
 
-Runs from a user timer every few minutes (labyrinth-scan.timer). Unchanged files are skipped, so most runs take a moment.
-It never moves or deletes anything: it reports. To stop it looking at something, put a folder, a file or a pattern (one per line) in
-~/.config/labyrinth/scan-exclude, for example:
+Watched (when they exist): Downloads, Desktop, removable drives (/run/media/you), the caches mail programs unpack attachments into
+(Thunderbird, Evolution, Geary), and any folders listed in ~/.config/labyrinth/scan-folders. A scan uses Heimdall's scanner (ClamAV).
+Unchanged files are skipped, so a scan takes a moment.
+
+What happens to a find (set `action` in ~/.config/labyrinth/scan.conf):
+  action = quarantine   (default) when the signature is a definite malware (not "possibly unwanted" or a heuristic guess) and the file
+                        is yours, in one of the places above: it is MOVED to quarantine (labyrinth-quarantine) and you get a
+                        notification with Restore / Delete. Anything less certain, or not yours: a warning, nothing is moved.
+  action = notify       never move anything; always a warning
+Nothing is ever deleted without you. "Restore" puts the file back and remembers it, so the same file is not caught again.
+
+To stop it looking at something, put a folder, file or pattern (one per line) in ~/.config/labyrinth/scan-exclude, e.g.:
     ~/Downloads/big-isos
     *.iso
 
   labyrinth-scan-downloads            one scan now
+  labyrinth-scan-downloads --watch    keep running: scan a folder a few seconds after new files land in it (labyrinth-scan-watch.service)
   labyrinth-scan-downloads --off      stop the timer;   --on  start it again
 Needs: ClamAV (clamscan) with its signatures (freshclam), and Heimdall's `heimdalld` with `scan-files`.
 """
+import ctypes
 import json
 import os
+import select
+import struct
 import subprocess
 import sys
 import time
@@ -22,6 +34,23 @@ HOME = os.path.expanduser("~")
 CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "labyrinth")
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local", "state"), "labyrinth")
 HEIMDALLD = os.environ.get("HEIMDALLD", "heimdalld")
+HERE = os.path.dirname(os.path.abspath(__file__))
+QUARANTINE = os.environ.get("LABYRINTH_QUARANTINE") or (os.path.join(HERE, "labyrinth-quarantine") if os.path.exists(os.path.join(HERE, "labyrinth-quarantine")) else "labyrinth-quarantine")
+RUN_MEDIA = os.environ.get("LABYRINTH_RUN_MEDIA") or "/run/media/" + (os.environ.get("USER") or os.path.basename(HOME))
+SYNC = bool(os.environ.get("LABYRINTH_SCAN_SYNC"))  # tests: wait for the notification instead of leaving it to a child process
+
+# Places files arrive from outside. Mail programs unpack an attachment you open into one of the cache folders.
+def inbound():
+    cands = [os.path.join(HOME, "Downloads"), os.path.join(HOME, "Desktop"), RUN_MEDIA,
+             os.path.join(HOME, ".cache", "thunderbird"), os.path.join(HOME, ".cache", "evolution"), os.path.join(HOME, ".cache", "geary")]
+    cands += lines(os.path.join(CONF, "scan-folders"))
+    seen, out = set(), []
+    for c in cands:
+        c = os.path.realpath(c)
+        if os.path.isdir(c) and c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
 
 
 def lines(path):
@@ -30,6 +59,14 @@ def lines(path):
             return [os.path.expanduser(l.strip()) for l in f if l.strip() and not l.startswith("#")]
     except OSError:
         return []
+
+
+def settings():
+    out = {"action": "quarantine"}
+    for l in lines(os.path.join(CONF, "scan.conf")):
+        k, _, v = l.partition("=")
+        out[k.strip()] = v.strip()
+    return out
 
 
 def log(text):
@@ -49,6 +86,25 @@ def parse(stdout):
     return out
 
 
+def confident(sig):
+    """True for a definite malware signature. False for what ClamAV itself calls possibly unwanted software, heuristic guesses,
+    phishing-page hints, and signatures that match documents that merely contain something odd."""
+    s = sig.lower()
+    return not (s.startswith(("pua.", "heuristics.", "win.test.")) or "heuristic" in s or ".phish" in s or s.startswith(("phishing.", "html.phish")) or "encrypted" in s or "exceeds" in s or "limit" in s)
+
+
+def quarantinable(path, roots):
+    """Only a regular file you own, inside one of the watched places, is ever moved."""
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return False
+    if not os.path.isfile(path) or os.path.islink(path) or st.st_uid != os.getuid():
+        return False
+    real = os.path.realpath(path)
+    return any(real == r or real.startswith(r.rstrip("/") + "/") for r in roots)
+
+
 def notified():
     try:
         with open(os.path.join(STATE, "scan-notified.json")) as f:
@@ -57,9 +113,74 @@ def notified():
         return set()
 
 
-def run_scan():
-    folders = [os.path.join(HOME, "Downloads")] + lines(os.path.join(CONF, "scan-folders"))
-    folders = [f for f in folders if os.path.isdir(f)]
+def sha_allowed(path):
+    p = subprocess.run([QUARANTINE, "allowed", sha_of(path)], capture_output=True)
+    return p.returncode == 0
+
+
+def sha_of(path):
+    import hashlib
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+    except OSError:
+        return ""
+    return h.hexdigest()
+
+
+def tell(args, wait):
+    cmd = ["notify-send", "-a", "Malware scan"] + args
+    if wait:
+        return subprocess.run(["timeout", "600"] + cmd, capture_output=True, text=True).stdout.strip()
+    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    return ""
+
+
+def prompt_quarantined(qid, name, sig):
+    """The notification of a quarantined file, with Restore / Delete. Runs in a child process: notify-send waits for the answer."""
+    if os.environ.get("LABYRINTH_SCAN_PROMPT") == "child" or SYNC:
+        ans = tell(["-u", "critical", "-i", "dialog-warning", "-A", "restore=Restore", "-A", "delete=Delete",
+                    "Malware quarantined", "%s (%s) was moved to quarantine. Nothing was deleted." % (name, sig)], wait=True)
+        if ans == "restore":
+            subprocess.run([QUARANTINE, "restore", qid], capture_output=True)
+        elif ans == "delete":
+            subprocess.run([QUARANTINE, "delete", qid], capture_output=True)
+        return
+    env = dict(os.environ, LABYRINTH_SCAN_PROMPT="child")
+    subprocess.Popen([sys.executable, os.path.abspath(__file__), "--prompt", qid, name, sig], env=env, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def handle(found, roots):
+    """Quarantine what is certain, warn about the rest. Returns how many files were found."""
+    act = settings().get("action", "quarantine")
+    seen = notified()
+    new = set()
+    for path, sig in found:
+        name = os.path.basename(path)
+        if os.path.exists(path) and sha_allowed(path):
+            continue  # you said "keep this" for exactly this content
+        if act == "quarantine" and confident(sig) and quarantinable(path, roots):
+            p = subprocess.run([QUARANTINE, "add", path, "--signature", sig, ], capture_output=True, text=True)
+            if p.returncode == 0:
+                qid = p.stdout.strip()
+                log("QUARANTINED %s: %s (id %s)" % (path, sig, qid))
+                prompt_quarantined(qid, name, sig)
+                continue
+            log("could not quarantine %s: %s" % (path, p.stderr.strip()))
+        if path in seen:
+            continue
+        log("INFECTED %s: %s" % (path, sig))
+        tell(["-u", "critical", "-i", "dialog-warning", "Possible malware found", "%s\n(%s) was not moved or deleted. Check it before opening it." % (name, sig)], wait=SYNC)
+        new.add(path)
+    if new:
+        with open(os.path.join(STATE, "scan-notified.json"), "w") as f:
+            json.dump(sorted(seen | new), f)
+    return len(found)
+
+
+def scan(folders):
     if not folders:
         return 0
     args = [HEIMDALLD, "scan-files", "--state", os.path.join(STATE, "scan-state.json")]
@@ -74,27 +195,88 @@ def run_scan():
     if p.returncode == 2:
         log("scan did not run: %s" % (p.stderr.strip().splitlines() or ["unknown error"])[0])
         return 0
-    found = parse(p.stdout)
-    seen = notified()
-    new = [(f, s) for f, s in found if f not in seen]
-    for path, sig in new:
-        log("INFECTED %s: %s" % (path, sig))
-        subprocess.run(["notify-send", "-a", "Malware scan", "-u", "critical", "-i", "dialog-warning", "Possible malware found", "%s\n(%s) was not moved or deleted. Check it before opening it." % (os.path.basename(path), sig)], capture_output=True)
-    if new:
-        with open(os.path.join(STATE, "scan-notified.json"), "w") as f:
-            json.dump(sorted(seen | {f for f, _ in new}), f)
+    n = handle(parse(p.stdout), inbound())
     summary = [l for l in p.stdout.splitlines() if l.startswith("scanned ")]
     if summary and not summary[-1].startswith("scanned 0 files"):
         log(summary[-1])
-    return 1 if found else 0
+    return 1 if n else 0
+
+
+# ---- watching: scan a folder a few seconds after files stop arriving in it
+
+IN_CLOSE_WRITE, IN_MOVED_TO, IN_CREATE, IN_ISDIR = 0x8, 0x80, 0x100, 0x40000000
+EVENT = struct.Struct("iIII")
+
+
+def watch():
+    libc = ctypes.CDLL("libc.so.6", use_errno=True)
+    fd = libc.inotify_init1(os.O_NONBLOCK | os.O_CLOEXEC)
+    if fd < 0:
+        log("watch: inotify is not available")
+        return 1
+    dirs = {}
+
+    def add(path, depth=0):
+        wd = libc.inotify_add_watch(fd, path.encode(), IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE)
+        if wd >= 0:
+            dirs[wd] = path
+        if depth < 4 and len(dirs) < 4000:
+            try:
+                for e in os.scandir(path):
+                    if e.is_dir(follow_symlinks=False):
+                        add(e.path, depth + 1)
+            except OSError:
+                pass
+
+    def rewatch():
+        roots = inbound()
+        for r in roots:
+            if r not in dirs.values():
+                add(r)
+        return roots
+
+    roots = rewatch()
+    log("watching %d folder(s) for new files" % len(roots))
+    pending, last_roots = {}, time.time()
+    while True:
+        r, _, _ = select.select([fd], [], [], 2.0)
+        now = time.time()
+        if r:
+            data = os.read(fd, 65536)
+            off = 0
+            while off < len(data):
+                wd, mask, _, ln = EVENT.unpack_from(data, off)
+                name = data[off + EVENT.size: off + EVENT.size + ln].split(b"\0", 1)[0].decode(errors="replace")
+                off += EVENT.size + ln
+                base = dirs.get(wd)
+                if not base:
+                    continue
+                if mask & IN_ISDIR:
+                    if mask & (IN_CREATE | IN_MOVED_TO):
+                        add(os.path.join(base, name))
+                    continue
+                top = next((x for x in roots if base == x or base.startswith(x + "/")), base)
+                pending[top] = now
+        for top, t in list(pending.items()):
+            if now - t >= 4.0:  # quiet for 4 seconds: the download or unpacking is finished
+                del pending[top]
+                scan([top])
+        if now - last_roots > 300:  # a drive was plugged in, a folder was made
+            last_roots = now
+            roots = rewatch()
 
 
 def main(argv):
     if "--off" in argv:
-        return subprocess.run(["systemctl", "--user", "disable", "--now", "labyrinth-scan.timer"]).returncode
+        return subprocess.run(["systemctl", "--user", "disable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service"]).returncode
     if "--on" in argv:
-        return subprocess.run(["systemctl", "--user", "enable", "--now", "labyrinth-scan.timer"]).returncode
-    return run_scan()
+        return subprocess.run(["systemctl", "--user", "enable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service"]).returncode
+    if "--prompt" in argv and len(argv) >= 5:
+        prompt_quarantined(argv[argv.index("--prompt") + 1], argv[argv.index("--prompt") + 2], argv[argv.index("--prompt") + 3])
+        return 0
+    if "--watch" in argv:
+        return watch()
+    return scan(inbound())
 
 
 if __name__ == "__main__":

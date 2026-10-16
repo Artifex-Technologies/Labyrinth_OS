@@ -25,7 +25,7 @@ class Scan(unittest.TestCase):
         # heimdalld: records its arguments, reports one infected file and exits 1 like the real one
         self.heim = stub(self.d, "heimdalld", 'echo "heimdalld $*" >> %s\necho "INFECTED /home/u/Downloads/bad.exe: Test.Virus"\necho "scanned 2 files in 1s: 1 infected, 0 could not be scanned"\nexit 1' % self.log)
         stub(self.d, "notify-send", 'echo "notify $*" >> %s' % self.log)
-        self.env = {"PATH": self.d + ":/usr/bin:/bin", "HOME": self.home, "HEIMDALLD": self.heim}
+        self.env = {"PATH": self.d + ":/usr/bin:/bin", "HOME": self.home, "HEIMDALLD": self.heim, "LABYRINTH_RUN_MEDIA": os.path.join(self.d, "no-media"), "LABYRINTH_SCAN_SYNC": "1"}
 
     def run_it(self, heim=None):
         env = dict(self.env)

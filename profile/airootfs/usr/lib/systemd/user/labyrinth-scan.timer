@@ -1,9 +1,9 @@
 [Unit]
-Description=Look for malware in new downloads every few minutes
+Description=Look for malware in new downloads every ten minutes, as a safety net for the live watcher
 
 [Timer]
 OnBootSec=4min
-OnUnitActiveSec=5min
+OnUnitActiveSec=10min
 RandomizedDelaySec=30s
 
 [Install]

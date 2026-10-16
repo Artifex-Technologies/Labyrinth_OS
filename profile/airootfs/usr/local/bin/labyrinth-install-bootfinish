@@ -66,7 +66,7 @@ fi
 
 # 2a'''. Malware scan of new downloads (user timer) and ClamAV's signature updates.
 if [[ -e /usr/lib/systemd/user/labyrinth-scan.timer ]]; then
-  systemctl --global enable labyrinth-scan.timer >/dev/null 2>&1 && say "enabled the downloads malware scan" || warn "could not enable the downloads malware scan"
+  systemctl --global enable labyrinth-scan.timer labyrinth-scan-watch.service >/dev/null 2>&1 && say "enabled the malware scan (watcher and timer)" || warn "could not enable the downloads malware scan"
 fi
 if [[ -e /usr/lib/systemd/system/clamav-freshclam.service ]]; then
   systemctl enable clamav-freshclam.service >/dev/null 2>&1 && say "enabled ClamAV signature updates" || warn "could not enable ClamAV signature updates"
