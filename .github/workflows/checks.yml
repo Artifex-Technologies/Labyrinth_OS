@@ -1,0 +1,36 @@
+# Runs the checks that need no root and no hardware, on every push and pull request.
+# Not yet run on GitHub (written 2026-10-16): if the first run fails on a missing tool, add it to the pacman line below.
+name: checks
+on:
+  push:
+  pull_request:
+jobs:
+  quick:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Tools
+        run: pacman -Syu --noconfirm --needed git python base-devel systemd shellcheck nftables libnotify
+      - uses: actions/checkout@v4
+      - name: Let git trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Release checks (quick: no Rust tests or audit)
+        run: |
+          useradd -m ci
+          chown -R ci "$GITHUB_WORKSPACE"
+          su ci -c "cd '$GITHUB_WORKSPACE' && scripts/release-check.sh quick"
+  rust:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Tools
+        run: pacman -Syu --noconfirm --needed git rust base-devel pkgconf wayland libxkbcommon fontconfig libpam dbus
+      - uses: actions/checkout@v4
+      - name: Audit and test every crate
+        run: |
+          cargo install cargo-audit --locked
+          for d in packages/*/; do
+            [ -f "$d/Cargo.toml" ] || continue
+            (cd "$d" && cargo test --quiet) || exit 1
+            (cd "$d" && ~/.cargo/bin/cargo-audit audit -D warnings --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0192) || exit 1
+          done
