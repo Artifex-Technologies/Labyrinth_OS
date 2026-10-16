@@ -167,6 +167,8 @@ libvirt
 edk2-ovmf
 dnsmasq
 nftables
+# component: limbo
+limbo-git
 # component: vscode
 visual-studio-code-bin
 # component: containers
@@ -176,6 +178,8 @@ distrobox
 flatpak
 # component: sarina
 sarina-git
+# component: heimdall
+heimdall-git
 # component: dev
 nodejs
 npm

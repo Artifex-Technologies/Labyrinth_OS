@@ -108,6 +108,14 @@
       ]
     },
     {
+      "id": "limbo",
+      "name": "Limbo (sandboxed apps and VMs)",
+      "description": "Limbo runs Windows and Linux guest apps as sandboxed windows with a firewall per guest, quarantine and reports. Built here with makepkg from the Limbo repository; needs the Virtual machines component for its runtime.",
+      "proprietary": false,
+      "pkgbuild": "limbo-git",
+      "notes": "Check what is missing with: limbo doctor. Then: sudo limbo plan or up with a manifest (examples are in /usr/share/doc/limbo-git/examples). Windows guests need your own Windows ISO and license."
+    },
+    {
       "id": "local-ai",
       "name": "Local AI runtime",
       "description": "Ollama, the model server Sarina uses: ollama-cuda on NVIDIA (about 6 GB with CUDA), ollama-vulkan otherwise. Not in the image; Sarina offers to install it the first time it is needed. Models compete with games for GPU memory.",
@@ -144,6 +152,14 @@
       "proprietary": false,
       "pkgbuild": "sarina-git",
       "notes": "Needs a model server. Install Ollama (the local-ai component, or the plain 'ollama' package on a machine without an NVIDIA card), pull a model, then: sarina chat --interactive. The web console is 'sarina gui'."
+    },
+    {
+      "id": "heimdall",
+      "name": "Heimdall (security agent for Sarina)",
+      "description": "Heimdall, a separate program that watches what Sarina writes to disk for prompt injection, leaked credentials, invisible-Unicode smuggling and permission escalation. Built here with makepkg from the Heimdall repository. Installed but not started.",
+      "proprietary": false,
+      "pkgbuild": "heimdall-git",
+      "notes": "Not enabled by default. Copy /etc/heimdall/config.json.example to config.json, set what it watches, then: sudo systemctl enable --now heimdall."
     },
     {
       "id": "dev",
@@ -183,10 +199,12 @@
       "proton-pass",
       "creative",
       "virtualization",
+      "limbo",
       "vscode",
       "containers",
       "flatpak",
       "sarina",
+      "heimdall",
       "dev"
     ]
   }
