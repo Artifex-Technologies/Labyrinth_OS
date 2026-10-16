@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# labyrinth-agent-setup [--owner USER] [--agent NAME]: give the engineering agent (Claude) its own account, so what it does
+# can be told apart from what the owner does. Run as root; idempotent. Undo the rules with --remove.
+#
+#   * the account (default `claude-agent`): a normal user whose password is locked, so nobody can log in as it with one;
+#   * /etc/sudoers.d/50-labyrinth-agent: the owner may run commands AS the agent without a password (that is how the agent is
+#     started from the owner's session), and the agent may run a fixed list of administration commands as root without a
+#     password: the package manager, services, logs, the Labyrinth tools, Heimdall's maintenance window, Limbo, install.
+#     Be clear about what that list is: pacman, systemd-run and install are, in effect, root. The point is NOT containment but
+#     attribution and review: every use is logged by sudo under the agent's name, and its terminal input and output are
+#     recorded for replay (`sudoreplay`, folder /var/log/sudo-io/AGENT);
+#   * Heimdall is told who may open a maintenance window (maintenance_actors in /etc/heimdall/config.json);
+#   * /usr/local/bin/claude-sudo CMD...: shorthand for `sudo -u AGENT sudo -n CMD...` (privileged, but as the agent).
+# The agent is never exempt from Heimdall's content checks (prompt injection, credentials, hidden characters).
+set -euo pipefail
+OWNER=${SUDO_USER:-}; AGENT=claude-agent; REMOVE=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --owner) OWNER=$2; shift 2 ;;
+    --agent) AGENT=$2; shift 2 ;;
+    --remove) REMOVE=1; shift ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    *) echo "unknown option $1" >&2; exit 2 ;;
+  esac
+done
+[[ $EUID -eq 0 ]] || { echo "run as root: sudo labyrinth-agent-setup" >&2; exit 1; }
+[[ $AGENT =~ ^[a-z][a-z0-9-]{1,30}$ ]] || { echo "bad account name" >&2; exit 2; }
+SUDOERS=/etc/sudoers.d/50-labyrinth-agent
+
+if [[ $REMOVE -eq 1 ]]; then
+  rm -f "$SUDOERS" /usr/local/bin/claude-sudo
+  echo "removed the sudo rules; the account $AGENT and its home are left (userdel -r $AGENT deletes them)"
+  exit 0
+fi
+[[ -n $OWNER ]] || { echo "say who the owner is: --owner USER" >&2; exit 2; }
+id "$OWNER" >/dev/null 2>&1 || { echo "no such user: $OWNER" >&2; exit 2; }
+
+if ! id "$AGENT" >/dev/null 2>&1; then
+  useradd -m -s /bin/bash -c "Claude, the engineering agent (audited account)" "$AGENT"
+fi
+passwd -l "$AGENT" >/dev/null
+install -d -m750 -o root -g root /var/log/sudo-io
+
+tmp=$(mktemp)
+cat >"$tmp" <<RULES
+# Written by labyrinth-agent-setup. See that script for what this means.
+Cmnd_Alias AGENT_PKG   = /usr/bin/pacman
+Cmnd_Alias AGENT_SVC   = /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/loginctl, /usr/bin/systemd-run
+Cmnd_Alias AGENT_ECO   = /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *
+Cmnd_Alias AGENT_LAB   = /usr/local/bin/labyrinth-*
+Cmnd_Alias AGENT_FILES = /usr/bin/install, /usr/bin/mkdir, /usr/bin/chown, /usr/bin/chmod
+Defaults:$AGENT !requiretty, log_input, log_output, iolog_dir=/var/log/sudo-io/$AGENT
+$AGENT ALL=(root) NOPASSWD: AGENT_PKG, AGENT_SVC, AGENT_ECO, AGENT_LAB, AGENT_FILES
+$OWNER ALL=($AGENT) NOPASSWD: ALL
+RULES
+visudo -cf "$tmp" >/dev/null || { echo "the sudoers file did not validate; nothing changed" >&2; rm -f "$tmp"; exit 1; }
+install -m440 -o root -g root "$tmp" "$SUDOERS"; rm -f "$tmp"
+
+cat >/usr/local/bin/claude-sudo <<SH
+#!/bin/sh
+# claude-sudo CMD...: run CMD as root through the audited agent account ($AGENT).
+exec sudo -n -u $AGENT sudo -n "\$@"
+SH
+chmod 755 /usr/local/bin/claude-sudo
+
+# Heimdall: who may open a maintenance window
+if [[ -f /etc/heimdall/config.json ]] && command -v python3 >/dev/null; then
+  OWNER=$OWNER AGENT=$AGENT python3 - <<'PY'
+import json, os
+p = "/etc/heimdall/config.json"
+c = json.load(open(p))
+a = c.get("maintenance_actors", [])
+for u in (os.environ["OWNER"], os.environ["AGENT"]):
+    if u not in a:
+        a.append(u)
+c["maintenance_actors"] = a
+json.dump(c, open(p, "w"), indent=2)
+PY
+  systemctl try-restart heimdall.service >/dev/null 2>&1 || true
+fi
+echo "done: account $AGENT (locked password), rules in $SUDOERS, helper claude-sudo, I/O logs in /var/log/sudo-io/$AGENT"
