@@ -5,6 +5,7 @@
 #   scripts/release-check.sh          all checks
 #   scripts/release-check.sh quick    skip the Rust tests and the dependency audit
 set -u
+export PATH="$HOME/.cargo/bin:$PATH"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 quick=0; [[ ${1:-} == quick ]] && quick=1
