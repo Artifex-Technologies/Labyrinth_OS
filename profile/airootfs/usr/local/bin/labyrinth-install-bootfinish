@@ -26,7 +26,7 @@ fi
 say "grub.cfg looks usable ($(grep -c '^[[:space:]]*menuentry ' "$cfg") entries)"
 
 # 2a. Services. `systemctl enable` works in a chroot (it only creates symlinks).
-for unit in NetworkManager.service fstrim.timer ratbagd.service labyrinth-appnet.service; do
+for unit in NetworkManager.service fstrim.timer ratbagd.service labyrinth-appnet.service labyrinth-powerlimit.service; do
   systemctl enable "$unit" >/dev/null 2>&1 && say "enabled $unit" || warn "could not enable $unit"
 done
 
