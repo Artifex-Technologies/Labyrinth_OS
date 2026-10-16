@@ -33,9 +33,9 @@ terminal command `sarina voice-chat`, which needs a Python speech library). It n
    Heimdall watches. She is asked for at most three short plain sentences (the card is small). The card shows what she
    heard (`Heard: "..."`) above her answer, so a misheard question is obvious. Markdown and `<think>` blocks are removed.
 
-Until whisper.cpp and a model are installed, Super+S says "Listening is not set up yet..." on the card instead of an obscure error.
+Without whisper.cpp and a model, Super+S says "Listening is not set up yet..." on the card instead of an obscure error.
 
-**To set it up (not done yet; ask the owner, the model is a ~150 MB download):** `sudo pacman -S whisper-cpp`, then put
+**Set up on this machine 2026-10-16:** whisper-cpp installed, `ggml-base.en.bin` (checksum verified) in `~/.local/share/labyrinth/stt/`. Tested only with a silent file (no sound): the pipeline runs end to end in ~6 s; on silence whisper says "you", which the script now treats as no speech. Not tested: a real voice, the microphone, or the card. **To set it up elsewhere:** `sudo pacman -S whisper-cpp`, then put
 `ggml-base.en.bin` (or `ggml-small.en.bin` for better accuracy) from the whisper.cpp model list into
 `~/.local/share/labyrinth/stt/`. Then Super+S once, speaking, and check the "Heard:" line.
 

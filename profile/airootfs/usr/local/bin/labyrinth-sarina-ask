@@ -31,13 +31,16 @@ if [[ -z $model ]]; then
     [[ -f $f ]] && { model=$f; break; }
   done
 fi
-if ! command -v whisper-cli >/dev/null 2>&1 || [[ -z $model || ! -f $model ]]; then
+if ! command -v "${LABYRINTH_WHISPER:-whisper-cli}" >/dev/null 2>&1 || [[ -z $model || ! -f $model ]]; then
   echo "Listening is not set up yet: it needs whisper-cpp and a speech model (see docs/SARINA_VOICE.md)."
   exit 1
 fi
-heard=$(whisper-cli -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
 # whisper writes things like [BLANK_AUDIO] or (silence) when there is no speech
 clean=$(printf '%s' "$heard" | sed -E 's/\[[^]]*\]//g; s/\([^)]*\)//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
+# on silence or noise whisper tends to "hear" a stock phrase; those are not questions
+lower=$(printf '%s' "$clean" | tr 'A-Z' 'a-z' | sed -E 's/[[:punct:]]//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
+case $lower in you|thank\ you|thanks|thanks\ for\ watching|bye|okay|ok|uh|um|hmm|"") clean="" ;; esac
 [[ -n $clean ]] || { echo "I did not catch that. Try again, a little closer to the microphone."; exit 1; }
 
 # ---- 2. ask Sarina

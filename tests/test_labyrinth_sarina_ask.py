@@ -25,7 +25,7 @@ class SarinaAsk(unittest.TestCase):
             stub(d, "whisper-cli", whisper)
         wav = os.path.join(d, "q.wav")
         open(wav, "wb").write(b"RIFF")
-        env = {"PATH": d + ":/usr/bin:/bin", "HOME": d}
+        env = {"PATH": d + ":/usr/bin:/bin", "HOME": d, "LABYRINTH_WHISPER": os.path.join(d, "whisper-cli")}
         if model:
             m = os.path.join(d, "ggml-test.bin")
             open(m, "wb").write(b"x")
@@ -53,6 +53,12 @@ class SarinaAsk(unittest.TestCase):
         r = self.run_it(whisper="echo ' [BLANK_AUDIO] '")
         self.assertEqual(r.returncode, 1)
         self.assertIn("did not catch", r.stdout)
+
+    def test_stock_phrase_on_silence_is_not_a_question(self):
+        for heard in ("you", "Thank you.", "Thanks for watching!"):
+            r = self.run_it(whisper="echo '%s'" % heard)
+            self.assertEqual(r.returncode, 1, heard)
+            self.assertIn("did not catch", r.stdout)
 
     def test_answer_shows_what_was_heard_and_is_plain(self):
         r = self.run_it(whisper="echo ' What time is it? '")
