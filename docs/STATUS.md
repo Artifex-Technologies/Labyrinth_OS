@@ -308,6 +308,12 @@ Built and installed on this machine, all committed in the repos here (nothing pu
 - Limbo: `limbo setup` creates its groups from a plain binary; the guest bridge is opened in UFW (`docs/HOST-FIREWALL.md`
   in the Limbo repo); both committed in `~/Documents/Github/Limbo` (not pushed).
 
+### Sarina/Limbo/Heimdall state (2026-10-16, manual installs)
+/usr/bin/sarina and /usr/bin/heimdalld were replaced with locally built binaries (the pacman mirror DB was stale, so no full
+upgrade was done); Heimdall's file-integrity detector raised alerts for that, expected. Decompile image patched in place
+(`/var/lib/limbo/images/decompile.qcow2`, sha in `/etc/limbo/validation/decompile.json`). Sarina is read-only until the owner decides.
+Nothing from Sarina, Heimdall or Limbo has been pushed.
+
 ### Resume here (next things, in order)
 
 1. Owner: read TEAM.md; decide whether Sarina may also run with `--write` on the repos, and whether to push Limbo / Sarina /

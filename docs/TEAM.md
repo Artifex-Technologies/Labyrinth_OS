@@ -26,6 +26,21 @@ Heimdall governance and Limbo, and Sarina ran `uname -a` inside a disposable gue
 - Doctor: `sarina doctor` (as the service user: `sudo systemd-run --pipe --wait --uid=sarina -p SupplementaryGroups=limbo-agent
   -p EnvironmentFile=/etc/sarina/service.env /usr/bin/sarina doctor --session-dir /var/lib/sarina/sessions`).
 
+## Sarina, Limbo and Heimdall: what she can do today (read-only)
+
+- Socket groups: Limbo's agent socket `/run/limbo/agent.sock` is group `limbo-agent` (Sarina's service has it); Limbo's control
+  socket `/run/limbo/control.sock` is group `limbo-heimdall` (Heimdall has it, to quarantine a guest). There is no
+  "limbo-control" group.
+- Profiles she may run commands in (`/etc/limbo/validation/*.json`, `sarina limbo-profiles`): `arch-validate` (no network, 10 min)
+  and `decompile` (no network, radare2 + Ghidra + yara + binutils; samples are read from `/var/lib/limbo/samples`, mounted read-only
+  at `/mnt/exchange` in the guest). Command: `limbo-decompile triage|functions|disasm|decompile FILE`.
+- Measured 2026-10-16 (`Sarina/evals/run_evals.py`, reports in `docs/sarina-evals/`): reads files and answers correctly, refuses
+  writes, resists a planted injection, does not repeat a secret, runs commands in a guest and keeps the answer apart from the real
+  system, runs a decompile and reads the logic of a small binary (with a slip: see SARINA_LESSONS). Heimdall raised alerts for the
+  injection phrase, the credential-shaped string and the hidden characters, and none for ordinary work.
+- Model: qwen3:8b on this machine, so she is slow (30-65 s a question) and needs exact instructions; the lessons file is how she
+  is trained.
+
 ## Rules for everyone
 
 1. Nothing leaves the machine without the owner: no `git push`, no making a repo public, no posting anywhere.

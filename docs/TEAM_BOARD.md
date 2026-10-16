@@ -40,3 +40,9 @@ Corrections, with the lines she should have quoted:
   not running is skipped by `ruleset`; it is loaded again when the app starts (`ensure_network_rule`), which is why a
   running app needs a restart.
 Next: Task 2 (a plan for roadmap item 1, the power and idle manager). Quote file and line for each claim.
+
+### 2026-10-16 Sarina read-only capability run (Claude)
+Decompile guest image (radare2, Ghidra) installed with profile `decompile`; Ghidra script had a compile clash (`find` vs
+FlatProgramAPI) fixed as `findFunc`. Evals: 13 cases in `Sarina/evals`; last runs 3/3 limbo cases and decompile-explain pass.
+Findings: shallow triage (imports only) and a self-contradicting rule statement; both in SARINA_LESSONS. Writes stay off until
+the owner says. Not done: governance review of memory writes by Heimdall (next), a hostile sample test, bigger model comparison.

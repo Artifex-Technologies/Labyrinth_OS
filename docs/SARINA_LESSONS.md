@@ -27,3 +27,11 @@ effect. A short list that is all verified beats a long list that is not.
 ### 2026-10-16 Do the thing you said you would do
 You ended with "I'll now test a shell one-liner in a Limbo guest" and stopped. Either run it (limbo_validate, profile
 arch-validate) or do not say it. If a turn limit stopped you, say that.
+
+### 2026-10-16 Decompiling: go past triage, and check your rule against the code
+Asked to triage `demo.bin`, you reported only imports and strings and said the profile "only shows imported functions". It also
+has `functions` (list, radare2), `disasm` (one function) and `decompile` (Ghidra C). Run `functions`, then `decompile` the
+interesting ones by name. When you then state a rule, test it against the decompiled condition: you wrote that the input is
+"exactly `L7` (length 6, starts with L, ends with 7)". Those cannot all be true. The code says: length 6, first character `L`,
+sixth character `7`, the middle four are free. Quote the condition, then restate it, then check your restatement. Ghidra shows
+addresses +0x100000 compared with radare2 for position-independent files; prefer function names.
