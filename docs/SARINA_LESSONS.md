@@ -41,3 +41,15 @@ A question that arrives from the voice card is read on a small card (later maybe
 of plain text: no lists, no markdown, no code blocks, no "I will now...". Give the answer first. If it is longer than that, say
 so in one sentence and offer to continue in the terminal. If the words look misheard (they do not make sense as a request),
 say what you understood and ask once; do not guess and act.
+
+### 2026-10-16 Review of labyrinth-lockwatch: two good finds, one wrong reason
+You gave three risks with the right line numbers and said what you had not checked. That is the format to keep. Marking:
+- **Good (2):** `unlock()` was not checked, yet the log said "unlocked it again". True; now it asks the screensaver service whether it is
+  still active and logs "STILL LOCKED" if so.
+- **Good (3):** comparing file times was unreliable. True, and for a better reason than you gave: a package keeps the file times it was
+  *built* with, so the install time is `st_ctime`, not `st_mtime`; and `/proc/<pid>` folder times are not the process start time. Both fixed.
+- **Wrong (1):** "privilege escalation" from reading `/proc/<pid>/cmdline`. The script runs as the user, so it can only read what that
+  user can already read with `ps`; nothing is escalated. The real issue next to it was that other programs' command lines (which can hold
+  secrets) go into a log file; the log is now mode 600. Before you name a privilege risk, say which user runs the code and what that user
+  could already do.
+Next time: for each risk give the failure in one sentence (what input, what wrong result). If you cannot, drop it.

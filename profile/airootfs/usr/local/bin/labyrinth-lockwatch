@@ -31,7 +31,9 @@ RULES = [
 
 def note(text):
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
-    with open(LOG, "a") as f:
+    # command lines of other programs can contain secrets: keep the log private to this user
+    fd = os.open(LOG, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "a") as f:
         f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text))
 
 
@@ -48,18 +50,27 @@ def who(name):
 
 
 def greeter_broken():
-    """True when the screen locker's greeter was installed after the running KWin started."""
+    """True when the screen locker's greeter was installed after the running KWin started.
+
+    Two details that matter: a package keeps the file times it was BUILT with, so the install time is the inode change time
+    (st_ctime), not st_mtime; and a process's start time is now minus its elapsed seconds (ps), not the time of its /proc folder."""
     try:
         pid = subprocess.run(["pgrep", "-x", "kwin_wayland"], capture_output=True, text=True).stdout.split()[0]
-        started = os.stat("/proc/%s" % pid).st_mtime
-        return os.stat("/usr/lib/kscreenlocker_greet").st_mtime > started
+        elapsed = int(subprocess.run(["ps", "-o", "etimes=", "-p", pid], capture_output=True, text=True).stdout.strip())
+        started = time.time() - elapsed
+        return os.stat("/usr/lib/kscreenlocker_greet").st_ctime > started
     except Exception:  # noqa: BLE001
         return False
 
 
 def unlock():
+    """Unlock this session; True only if the screensaver service reports it is no longer active."""
     sid = os.environ.get("XDG_SESSION_ID", "")
     subprocess.run(["loginctl", "unlock-session"] + ([sid] if sid else []), capture_output=True, timeout=10)
+    time.sleep(1)
+    out = subprocess.run(["busctl", "--user", "call", "org.freedesktop.ScreenSaver", "/ScreenSaver", "org.freedesktop.ScreenSaver", "GetActive"],
+                         capture_output=True, text=True, timeout=5).stdout
+    return out.split()[-1:] == ["false"]
 
 
 def main():
@@ -73,8 +84,8 @@ def main():
         if rescue and last == "ActiveChanged" and line.strip() == "boolean true":
             if greeter_broken():
                 time.sleep(2)
-                unlock()
-                note("RESCUE: the screen locked while the lock screen cannot work (KWin older than the screen locker): unlocked it again")
+                ok = unlock()
+                note("RESCUE: the screen locked while the lock screen cannot work (KWin older than the screen locker): " + ("unlocked it again" if ok else "tried to unlock it, but it is STILL LOCKED (run: loginctl unlock-session)"))
             last = ""
             continue
         m = pat.match(line)
