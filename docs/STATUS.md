@@ -287,3 +287,35 @@ ISO labyrinth-2026.10.13-x86_64.iso (built 2026-10-13 15:45, 6.09 GB, sha256 b9f
 - **Keyboard in the Folders start menu:** Tab goes Search → list → power choices → Search. Up/Down move in each; Right (or Enter) on a folder goes into its apps, Left comes back; Enter opens the selected app or power choice; typing from anywhere returns to the search box; with search results, Up/Down pick a result. Verified with simulated keys and screenshots. Not done for the Windows start-menu theme.
 
 See also [DESKTOP_ROADMAP.md](DESKTOP_ROADMAP.md): the decision to keep CachyOS as the base and replace KDE piece by piece, in order.
+
+## 2026-10-16 (overnight session, owner asleep; Claude Code worked on its own judgment)
+
+Built and installed on this machine, all committed in the repos here (nothing pushed):
+
+- **Settings > Apps** rebuilt: installed apps with sorting, restart / close / remove, a page per app (network, open at login,
+  storage, privacy sandbox), Developer options (About logo, five clicks with the ` key held), per-mode CPU and GPU limits.
+  Details, helpers, limits and what is not done: [APPS_SETTINGS.md](APPS_SETTINGS.md). Helpers: `labyrinth-launch`,
+  `labyrinth-appnet`, `labyrinth-powerlimit`, with polkit policies, units and tests (`tests/test_labyrinth_*.py`).
+- **Panel**: the dock and start menu now start apps through `labyrinth-launch`.
+- **Settings**: Lock the screen after (Power), pages refresh every 4 s, icon packs list / install / Labyrinth Brands maker.
+- **Sarina, Heimdall and Limbo are running together**: Ollama + `qwen3:8b`, Sarina's service, Heimdall (watching her sessions,
+  five files, four ports, Limbo's log), Limbo's control API, a Limbo validation profile (disposable guest, no network). Sarina
+  answered, and ran `uname -a` inside a Limbo guest in 21 s. How to use and check it, the rules, and the board where Claude and
+  Sarina talk: [TEAM.md](TEAM.md), [TEAM_BOARD.md](TEAM_BOARD.md), [SARINA_LESSONS.md](SARINA_LESSONS.md).
+  `labyrinth-ecosystem-setup` redoes the wiring on another machine. Sarina has a skill, `labyrinth-engineer`.
+- **Copied from ProtonDrive** (add-only): Heimdall, Labyrinth_OS, Limbo, Sarina, Argus_App, Argus_Firmware, Chymaera_OS,
+  Daedalus_CAD and the extras folder; summaries in `~/proton-sync/`. `github-recovery-codes.txt` was left on ProtonDrive.
+- Limbo: `limbo setup` creates its groups from a plain binary; the guest bridge is opened in UFW (`docs/HOST-FIREWALL.md`
+  in the Limbo repo); both committed in `~/Documents/Github/Limbo` (not pushed).
+
+### Resume here (next things, in order)
+
+1. Owner: read TEAM.md; decide whether Sarina may also run with `--write` on the repos, and whether to push Limbo / Sarina /
+   Heimdall / Labyrinth_OS and make Daedalus public (MPL-2.0 file is in place, repo still private).
+2. Sarina's Task 2 (board): a plan for roadmap item 1, our own power and idle manager. Claude reviews it.
+3. Roadmap item 1 itself (replace PowerDevil), then the notification service and the portals backend (Minos as file chooser).
+4. Settings > Apps: right-click "App settings" in the dock (`labyrinth-settings apps:ID` already works), Flatpak overrides for
+   location / other apps, a running-time logger.
+5. Check the sandbox on an Electron app (Vivaldi, VS Code) before offering it to more than the owner.
+6. Daedalus: drive the viewer by hand, then milestone 2 (drawing tools), keymaps for SketchUp and Fusion.
+7. Secret scanning + push protection on the public repos (needs the owner's yes); the GitGuardian email is unexplained.
