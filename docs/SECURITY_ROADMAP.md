@@ -54,3 +54,13 @@ Goal: end users install apps that were checked, are open source, and do not sell
 1. Notification action buttons. 2. Network capture of a first run in Limbo (internet-only guest, capture on the host bridge) for the
 vetting template, using PdfCraft. 3. ClamAV + folder scanning + quarantine with the exceptions list. 4. The "ask" network mode.
 5. The curated repository and the front end.
+
+## Status 2026-10-16 (later)
+- **Malware scan of Downloads: built** (`labyrinth-scan-downloads` + `labyrinth-scan.timer`, user units, enabled by the installer's first boot step): every 5 minutes it asks
+  `heimdalld scan-files` to scan new and changed files in ~/Downloads (and the folders in `~/.config/labyrinth/scan-folders`), skipping what is in
+  `~/.config/labyrinth/scan-exclude` (a folder, file or pattern per line, `~` allowed), and raises a critical notification once per infected file. It never moves or deletes.
+  Tested with stand-ins (4 tests) and for real with the EICAR test file. ClamAV and `gnome-keyring` are now in the ISO package list; `clamav-freshclam` is enabled at first boot.
+  Needs the NEW `heimdalld` (the one on this machine is older and has no `scan-files`; the script then logs "scan did not run" and stays quiet).
+- **Settings > Security: built** (recent alerts with a level filter, who connected where, a "Scan now" button for Downloads). It also showed the baseline-drift noise
+  (CPU load of 0.3 flagged as unusual); fixed in Heimdall (only upward outliers above load 0.75 per CPU or memory 70%).
+- **Not built:** quarantine and "restore / delete / always allow" buttons on the malware notification; the "ask" network mode (see section 2); exclusions edited in Settings.

@@ -53,6 +53,7 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-selfcheck"]="0:0:755"
   ["/usr/local/bin/labyrinth-mount-open"]="0:0:755"
   ["/usr/local/bin/labyrinth-panelctl"]="0:0:755"
+  ["/usr/local/bin/labyrinth-scan-downloads"]="0:0:755"
   ["/usr/local/bin/labyrinth-mediakey"]="0:0:755"
   ["/usr/local/bin/labyrinth-keyring-migrate"]="0:0:755"
   ["/usr/local/bin/labyrinth-lockwatch"]="0:0:755"

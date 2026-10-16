@@ -61,6 +61,14 @@ if [[ -e /usr/lib/systemd/user/labyrinth-appusage.service ]]; then
   systemctl --global enable labyrinth-appusage.service >/dev/null 2>&1 && say "enabled app usage counting" || warn "could not enable app usage counting"
 fi
 
+# 2a'''. Malware scan of new downloads (user timer) and ClamAV's signature updates.
+if [[ -e /usr/lib/systemd/user/labyrinth-scan.timer ]]; then
+  systemctl --global enable labyrinth-scan.timer >/dev/null 2>&1 && say "enabled the downloads malware scan" || warn "could not enable the downloads malware scan"
+fi
+if [[ -e /usr/lib/systemd/system/clamav-freshclam.service ]]; then
+  systemctl enable clamav-freshclam.service >/dev/null 2>&1 && say "enabled ClamAV signature updates" || warn "could not enable ClamAV signature updates"
+fi
+
 # 2b. zram swap for everyday memory pressure. Hibernate uses the disk swap file from 2b'.
 install -d /etc/systemd
 cat >/etc/systemd/zram-generator.conf <<'EOF'

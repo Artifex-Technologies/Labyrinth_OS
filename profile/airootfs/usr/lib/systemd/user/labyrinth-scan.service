@@ -1,0 +1,8 @@
+[Unit]
+Description=Malware scan of new files in Downloads (Heimdall's scanner, ClamAV)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/labyrinth-scan-downloads
+Nice=19
+IOSchedulingClass=idle

@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""labyrinth-scan-downloads: scan new and changed files in your Downloads folder (and any folders listed in ~/.config/labyrinth/scan-folders)
+for malware with Heimdall's scanner (ClamAV), and tell you with a notification if something is found.
+
+Runs from a user timer every few minutes (labyrinth-scan.timer). Unchanged files are skipped, so most runs take a moment.
+It never moves or deletes anything: it reports. To stop it looking at something, put a folder, a file or a pattern (one per line) in
+~/.config/labyrinth/scan-exclude, for example:
+    ~/Downloads/big-isos
+    *.iso
+
+  labyrinth-scan-downloads            one scan now
+  labyrinth-scan-downloads --off      stop the timer;   --on  start it again
+Needs: ClamAV (clamscan) with its signatures (freshclam), and Heimdall's `heimdalld` with `scan-files`.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config"), "labyrinth")
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local", "state"), "labyrinth")
+HEIMDALLD = os.environ.get("HEIMDALLD", "heimdalld")
+
+
+def lines(path):
+    try:
+        with open(path) as f:
+            return [os.path.expanduser(l.strip()) for l in f if l.strip() and not l.startswith("#")]
+    except OSError:
+        return []
+
+
+def log(text):
+    os.makedirs(STATE, exist_ok=True)
+    fd = os.open(os.path.join(STATE, "scan.log"), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "a") as f:
+        f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text))
+
+
+def parse(stdout):
+    """The INFECTED lines of `heimdalld scan-files`: (path, signature) pairs."""
+    out = []
+    for l in stdout.splitlines():
+        if l.startswith("INFECTED "):
+            path, _, sig = l[len("INFECTED "):].rpartition(": ")
+            out.append((path, sig))
+    return out
+
+
+def notified():
+    try:
+        with open(os.path.join(STATE, "scan-notified.json")) as f:
+            return set(json.load(f))
+    except (OSError, ValueError):
+        return set()
+
+
+def run_scan():
+    folders = [os.path.join(HOME, "Downloads")] + lines(os.path.join(CONF, "scan-folders"))
+    folders = [f for f in folders if os.path.isdir(f)]
+    if not folders:
+        return 0
+    args = [HEIMDALLD, "scan-files", "--state", os.path.join(STATE, "scan-state.json")]
+    for e in lines(os.path.join(CONF, "scan-exclude")):
+        args += ["--exclude", e]
+    os.makedirs(STATE, exist_ok=True)
+    try:
+        p = subprocess.run(args + folders, capture_output=True, text=True, timeout=1800)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        log("scan did not run: %s" % e)
+        return 0
+    if p.returncode == 2:
+        log("scan did not run: %s" % (p.stderr.strip().splitlines() or ["unknown error"])[0])
+        return 0
+    found = parse(p.stdout)
+    seen = notified()
+    new = [(f, s) for f, s in found if f not in seen]
+    for path, sig in new:
+        log("INFECTED %s: %s" % (path, sig))
+        subprocess.run(["notify-send", "-a", "Malware scan", "-u", "critical", "-i", "dialog-warning", "Possible malware found", "%s\n(%s) was not moved or deleted. Check it before opening it." % (os.path.basename(path), sig)], capture_output=True)
+    if new:
+        with open(os.path.join(STATE, "scan-notified.json"), "w") as f:
+            json.dump(sorted(seen | {f for f, _ in new}), f)
+    summary = [l for l in p.stdout.splitlines() if l.startswith("scanned ")]
+    if summary and not summary[-1].startswith("scanned 0 files"):
+        log(summary[-1])
+    return 1 if found else 0
+
+
+def main(argv):
+    if "--off" in argv:
+        return subprocess.run(["systemctl", "--user", "disable", "--now", "labyrinth-scan.timer"]).returncode
+    if "--on" in argv:
+        return subprocess.run(["systemctl", "--user", "enable", "--now", "labyrinth-scan.timer"]).returncode
+    return run_scan()
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

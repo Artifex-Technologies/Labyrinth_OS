@@ -127,6 +127,11 @@ labyrinth-minos
 labyrinth-settings
 labyrinth-calculator
 labyrinth-panel
+labyrinth-idle
+labyrinth-keyring-sync
+gnome-keyring
+clamav
+python-dbus
 power-profiles-daemon
 7zip
 poppler
