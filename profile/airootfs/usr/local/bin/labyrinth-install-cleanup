@@ -49,6 +49,11 @@ for f in "${live_only[@]}"; do rm -f -- "$R$f"; done
 rm -rf -- "$R/home/live"
 say "removed live-only configuration"
 
+# The serial-port login prompt is for testing the live medium. A desktop has no serial port, and left on it fails and restarts
+# every 10 seconds, thousands of times a day (found 2026-10-15: restart counter above 4800). Off and masked on the installed system.
+rm -f -- "$R/etc/systemd/system/getty.target.wants/serial-getty@ttyS0.service"
+ln -sf /dev/null "$R/etc/systemd/system/serial-getty@ttyS0.service"
+
 # The live account must not exist on the installed system. Normally it is only created at live
 # boot (sysusers.d), but a package hook that ran after the live files were copied into the image
 # creates it too; remove it either way, so the user created by the installer gets uid 1000.
