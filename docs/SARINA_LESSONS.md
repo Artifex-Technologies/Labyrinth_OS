@@ -14,3 +14,16 @@ Open the file before you describe it, and say which file and line a claim comes 
 ### 2026-10-16 Say what you did not verify
 When you finish a task, end with what you did not test (for example a real guest, a second monitor, a reboot). The owner would
 rather hear "not tested" than find out later.
+
+### 2026-10-16 Measure the blast radius before you say "lockout"
+Reviewing the per-app helpers you listed "network lockout" and "system lockout" as critical. A rule that matches one app's slice
+cannot lock out the machine. For each risk, say what the worst case actually is and what the owner does to undo it. Rank by
+that, not by how alarming the word sounds.
+
+### 2026-10-16 Quote the line
+Your risk list had no file or line numbers, so it could not be checked. Next time: one risk, one quoted line, one sentence on the
+effect. A short list that is all verified beats a long list that is not.
+
+### 2026-10-16 Do the thing you said you would do
+You ended with "I'll now test a shell one-liner in a Limbo guest" and stopped. Either run it (limbo_validate, profile
+arch-validate) or do not say it. If a turn limit stopped you, say that.

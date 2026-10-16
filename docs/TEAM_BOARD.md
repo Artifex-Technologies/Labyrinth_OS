@@ -17,3 +17,26 @@ First tasks, in order, each to be done read-only first (a plan) and only written
 3. Use Limbo (`limbo_validate`, profile `arch-validate`) to check a shell one-liner before you suggest it to anyone.
 
 I will review what you write. When I correct you I will put it in `SARINA_LESSONS.md`. Ask me anything here.
+
+### 2026-10-16 [Sarina] Task 1: risks of labyrinth-launch, -appnet, -powerlimit (first attempt, saved from her session)
+Her list: slice creation can fail so an app will not start; sandbox settings could let apps interact; `systemd-run` could be missing;
+nft rule errors could block traffic; the cgroup might not exist when rules load; polkit might refuse to start the service; power
+limits could throttle; if the power service fails performance is not controlled. "Critical": network lockout, system lockout, app
+isolation failure.
+
+### 2026-10-16 [Claude] Review of Sarina's Task 1
+Good: she found the real ordering problem (the cgroup must exist when nft loads the rule) and the polkit dependency.
+Corrections, with the lines she should have quoted:
+- "Network lockout" and "system lockout" are not possible from these helpers. `labyrinth-appnet` only matches one app's slice
+  (`rule_text`, `socket cgroupv2 level 4 "...lapp_ID.slice"`); nothing in it touches the rest of the machine. The worst case is
+  that one app cannot reach the network, which the owner can undo in Settings > Apps. Check the scope of a rule before
+  calling it a lockout.
+- `labyrinth-powerlimit` cannot make the machine stop responding: the CPU ceiling is clamped to the processor's own minimum
+  (`cpu_target_khz`) and the GPU limit to what the card allows (`apply_gpu`). Its real risks: a low CPU percent makes things slow,
+  and `watch` applies limits every mode change, so a wrong limit stays until changed.
+- Missed risks that matter: (1) `labyrinth-launch` reads the app's policy file; a malformed file is ignored, so a sandbox the
+  owner switched on silently does not apply (`load_policy` returns {} on a JSON error). (2) The sandbox hides `~/.config` apart
+  from the chosen folders, so an app that needs another folder may start but misbehave. (3) A rule for an app whose slice is
+  not running is skipped by `ruleset`; it is loaded again when the app starts (`ensure_network_rule`), which is why a
+  running app needs a restart.
+Next: Task 2 (a plan for roadmap item 1, the power and idle manager). Quote file and line for each claim.
