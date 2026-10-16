@@ -152,6 +152,11 @@ labyrinth-minos
 labyrinth-settings
 labyrinth-calculator
 labyrinth-panel
+labyrinth-idle
+labyrinth-keyring-sync
+gnome-keyring
+clamav
+python-dbus
 # power modes (Performance / Balanced / Power saver) for Settings and the battery applet
 power-profiles-daemon
 # Minos: archives (7z), PDF and video previews, RAR

@@ -82,6 +82,16 @@
       "notes": "The browser extension installs from your browser's store."
     },
     {
+      "id": "proton-vpn",
+      "name": "Proton VPN",
+      "description": "Proton's official Linux VPN app (GTK) and its split-tunnelling daemon, from Arch's extra repository. Needs a Proton account. Keeps its login in the system keyring (gnome-keyring, already part of Labyrinth).",
+      "proprietary": false,
+      "packages": [
+        "proton-vpn-gtk-app"
+      ],
+      "notes": "Open Proton VPN from the start menu and sign in. Split tunnelling needs systemd-resolved (not enabled by default: `sudo systemctl enable --now systemd-resolved`, which changes how DNS is set up). Proton says Arch support is community-maintained. Apps set to Ask or Block in Settings > Apps still follow those rules inside the tunnel."
+    },
+    {
       "id": "creative",
       "name": "Creative apps",
       "description": "Krita, Darktable (photo), Kdenlive, OBS Studio (video), Ardour (music).",
@@ -197,6 +207,7 @@
       "weather",
       "proton-drive",
       "proton-pass",
+      "proton-vpn",
       "creative",
       "virtualization",
       "limbo",

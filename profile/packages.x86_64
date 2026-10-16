@@ -160,6 +160,8 @@ rclone
 fuse3
 # component: proton-pass
 proton-pass
+# component: proton-vpn
+proton-vpn-gtk-app
 # component: creative
 krita
 darktable

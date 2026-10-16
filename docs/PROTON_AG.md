@@ -1,4 +1,4 @@
-# Proton AG services: Proton Drive and Proton Pass
+# Proton AG services: Proton VPN, Proton Drive and Proton Pass
 
 Not related to Valve's Proton game layer: see [PROTON_GAMES.md](PROTON_GAMES.md).
 
@@ -109,3 +109,19 @@ right-click the file and choose **Retry sync** to try at once. These come from r
 (`$XDG_RUNTIME_DIR/rclone-proton.sock`, readable only by you), which the mount unit now starts with `--rc`. An older unit without it
 still shows a changed, not yet uploaded file as syncing but cannot show failures or retry: copy the new unit and
 `systemctl --user restart proton-drive`.
+
+## Proton VPN
+
+Unlike Drive and Pass, Proton VPN is in Arch's own `extra` repository (checked 2026-10-16: `proton-vpn-gtk-app` 4.18.6, plus
+`proton-vpn-daemon` for split tunnelling and a command-line `proton-vpn-cli`). Proton's [Arch page](https://protonvpn.com/support/official-linux-vpn-arch)
+says the Arch package is community-maintained while they work towards official support, so nothing needs packaging here: it is the
+optional software component `proton-vpn` (Settings > Apps > Optional software, or `labyrinth-apps install proton-vpn`), and part of the
+"everything" preset.
+
+- It stores your login in the system keyring. Labyrinth already uses gnome-keyring, which Proton lists as the supported one.
+- Split tunnelling needs `systemd-resolved`, which is off here (it changes how DNS is set up), so that feature stays off until you enable it.
+- It connects through NetworkManager (WireGuard). Heimdall's connection log will show traffic going to the VPN server instead of the real
+  destinations while it is on; per-app Block and Ask rules (Settings > Apps) still apply to each app inside the tunnel.
+- Not installed or tried on this machine yet (it needs `pacman`, so your password): run the install, open Proton VPN and sign in.
+  One report (a forum post, not Proton) mentions a kill-switch problem with the AUR build; the kill switch should be tested once after
+  installing: connect, then pull the network and check nothing leaks.
