@@ -96,3 +96,10 @@ stdin), copies `/usr/share/labyrinth/proton-drive.service` to `~/.config/systemd
 `systemctl --user enable --now proton-drive`. Once signed in, a click on a not-mounted entry just
 starts the mount. A wrong sign-in deletes the half-made remote. The 2FA code only has to be fresh
 for this one sign-in. **Not yet tested against a real Proton account.**
+
+## Status column in Minos (built)
+
+Inside Proton Drive, Minos's details view has a **Status** column like Windows: a blue cloud outline = only in Proton Drive
+(opening it downloads it; a partly downloaded file still counts as cloud), a green ring with a check = whole file on this computer.
+It is read from rclone's cache (`~/.cache/rclone/vfs` and `vfsMeta`), so it needs no network and assumes the remote is named `proton`.
+Narrow panes and the grid view show the mark next to the name instead. Settings > Apps > Minos > "Show Proton Drive file status" switches it off.
