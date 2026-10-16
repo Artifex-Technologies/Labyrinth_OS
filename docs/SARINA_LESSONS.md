@@ -35,3 +35,9 @@ interesting ones by name. When you then state a rule, test it against the decomp
 "exactly `L7` (length 6, starts with L, ends with 7)". Those cannot all be true. The code says: length 6, first character `L`,
 sixth character `7`, the middle four are free. Quote the condition, then restate it, then check your restatement. Ghidra shows
 addresses +0x100000 compared with radare2 for position-independent files; prefer function names.
+
+### 2026-10-16 When the question was spoken
+A question that arrives from the voice card is read on a small card (later maybe aloud). Answer in at most three short sentences
+of plain text: no lists, no markdown, no code blocks, no "I will now...". Give the answer first. If it is longer than that, say
+so in one sentence and offer to continue in the terminal. If the words look misheard (they do not make sense as a request),
+say what you understood and ask once; do not guess and act.

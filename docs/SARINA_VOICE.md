@@ -22,6 +22,29 @@ press, not the release.
 - Nothing is sent over the network by Labyrinth. Whether Sarina does so is up to Sarina (she is meant to
   be local).
 
+## Updated 2026-10-16: how the question becomes an answer (no audio was played or recorded while doing this)
+
+`labyrinth-sarina-ask` used to call `sarina ask --audio`, which does not exist in Sarina (her real voice mode is the separate
+terminal command `sarina voice-chat`, which needs a Python speech library). It now does the two steps itself, all local:
+
+1. **Speech to text** with whisper.cpp: `whisper-cli -m MODEL -f recording.wav`. The model is looked for in
+   `$LABYRINTH_STT_MODEL`, `~/.local/share/labyrinth/stt/ggml-*.bin`, then `/usr/share/labyrinth/stt/ggml-*.bin`.
+2. **The words go to Sarina** as a normal read-only question through `labyrinth-ask-sarina`, so her session is in the folder
+   Heimdall watches. She is asked for at most three short plain sentences (the card is small). The card shows what she
+   heard (`Heard: "..."`) above her answer, so a misheard question is obvious. Markdown and `<think>` blocks are removed.
+
+Until whisper.cpp and a model are installed, Super+S says "Listening is not set up yet..." on the card instead of an obscure error.
+
+**To set it up (not done yet; ask the owner, the model is a ~150 MB download):** `sudo pacman -S whisper-cpp`, then put
+`ggml-base.en.bin` (or `ggml-small.en.bin` for better accuracy) from the whisper.cpp model list into
+`~/.local/share/labyrinth/stt/`. Then Super+S once, speaking, and check the "Heard:" line.
+
+**Speaking the answer back** is not built: `piper` (the program) is installed but there is no voice model, and Sarina's own
+`voice-chat` uses a Python piper. A later step: `piper --model VOICE.onnx --output-raw | pw-play` for the answer, behind a setting,
+off by default.
+
+Tests: `tests/test_labyrinth_sarina_ask.py` runs the script with stand-ins (no microphone, no model, no sound).
+
 ## What is NOT known yet
 
 - **Sarina's interface.** Her repository was not available when this was written. The script assumes

@@ -46,3 +46,9 @@ Decompile guest image (radare2, Ghidra) installed with profile `decompile`; Ghid
 FlatProgramAPI) fixed as `findFunc`. Evals: 13 cases in `Sarina/evals`; last runs 3/3 limbo cases and decompile-explain pass.
 Findings: shallow triage (imports only) and a self-contradicting rule statement; both in SARINA_LESSONS. Writes stay off until
 the owner says. Not done: governance review of memory writes by Heimdall (next), a hostile sample test, bigger model comparison.
+
+### 2026-10-16 Sarina voice and Heimdall review (Claude)
+Heimdall's /v1/review verified: allows ordinary memory text, denies injection phrases and hidden characters; it let a bare
+`sk-...` key through, so the credential detector now knows common provider formats (Heimdall commit). Voice: `labyrinth-sarina-ask`
+called a command that does not exist (`sarina ask --audio`); rewritten as whisper.cpp -> labyrinth-ask-sarina, with an honest
+"not set up yet" message; STT model and a spoken reply are not installed/built (owner decision, a download). No audio was recorded or played.

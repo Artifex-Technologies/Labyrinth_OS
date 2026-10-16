@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# labyrinth-sarina-ask FILE.wav: give Sarina a spoken question and print her answer as text.
+# labyrinth-sarina-ask FILE.wav: give Sarina a spoken question and print what she answers, as plain text.
 #
-# The panel's Fylgja (the notch) records the question when you press Super+S, runs this with the
-# recording, shows what it prints, and deletes the recording afterwards. A non-zero exit shows the
-# printed line as the reason there is no answer. Nothing here sends the recording anywhere but to the
-# local `sarina` program.
+# The panel's Fylgja (the notch) records the question when you press Super+S, runs this with the recording, shows what
+# it prints, and deletes the recording afterwards. A non-zero exit shows the printed line as the reason there is no answer.
 #
-# PROPOSED interface, not yet checked against Sarina (her repository was not available when this was
-# written): `sarina ask --audio FILE` prints the answer on stdout. Adjust the last line when her side
-# is known; see docs/SARINA_VOICE.md.
+# Two steps, both local (nothing leaves the computer):
+#   1. speech to text: whisper.cpp (`whisper-cli`) with a model file. It looks for the model in
+#      $LABYRINTH_STT_MODEL, then ~/.local/share/labyrinth/stt/ggml-*.bin, then /usr/share/labyrinth/stt/ggml-*.bin.
+#   2. the words go to Sarina as a normal question (labyrinth-ask-sarina), read-only, so her session is watched by
+#      Heimdall like any other. She is asked for a short plain-text answer, because it is shown on a small card.
+# Setup (once): pacman -S whisper-cpp, and put a model (for example ggml-base.en.bin) in one of the folders above.
+# See docs/SARINA_VOICE.md.
 set -u
 
 wav=${1:-}
@@ -16,13 +18,32 @@ wav=${1:-}
 
 command -v sarina >/dev/null 2>&1 || { echo "Sarina is not installed on this computer yet."; exit 1; }
 
-# Her model server (Ollama) has to be running already; opening Sarina from the launcher starts it.
-# This script does not start it or download anything.
+# Her model server (Ollama) has to be running already; this script does not start it or download anything.
 if ! curl -fsS -m 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
-  echo "Sarina's model server is not running. Open Sarina from the launcher once to start it."
+  echo "Sarina's model server is not running."
   exit 1
 fi
 
-export OPENAI_BASE_URL=http://127.0.0.1:11434/v1
-export OPENAI_API_KEY=${OPENAI_API_KEY:-local-token}
-exec sarina ask --audio "$wav"
+# ---- 1. speech to text
+model=${LABYRINTH_STT_MODEL:-}
+if [[ -z $model ]]; then
+  for f in "${XDG_DATA_HOME:-$HOME/.local/share}"/labyrinth/stt/ggml-*.bin /usr/share/labyrinth/stt/ggml-*.bin; do
+    [[ -f $f ]] && { model=$f; break; }
+  done
+fi
+if ! command -v whisper-cli >/dev/null 2>&1 || [[ -z $model || ! -f $model ]]; then
+  echo "Listening is not set up yet: it needs whisper-cpp and a speech model (see docs/SARINA_VOICE.md)."
+  exit 1
+fi
+heard=$(whisper-cli -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+# whisper writes things like [BLANK_AUDIO] or (silence) when there is no speech
+clean=$(printf '%s' "$heard" | sed -E 's/\[[^]]*\]//g; s/\([^)]*\)//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
+[[ -n $clean ]] || { echo "I did not catch that. Try again, a little closer to the microphone."; exit 1; }
+
+# ---- 2. ask Sarina
+prompt="This question was spoken to you from the desktop and your answer appears on a small card (it may later be read aloud). Answer in at most three short sentences of plain text: no lists, no markdown, no code blocks. If you need to look something up, read files only. If it needs more than that, say so in one sentence. The question: $clean"
+answer=$(labyrinth-ask-sarina --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
+# the answer without a <think> block, markdown emphasis, or empty lines at the ends
+answer=$(printf '%s' "$answer" | sed -E ':a;N;$!ba;s/<think>.*<\/think>//g' | sed -E 's/\*\*//g; s/`//g; s/^#+ *//' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+[[ -n $answer ]] || { echo "Sarina had no answer."; exit 1; }
+printf 'Heard: "%s"\n\n%s\n' "$clean" "$answer"
