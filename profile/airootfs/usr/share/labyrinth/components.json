@@ -92,6 +92,19 @@
       "notes": "Open Proton VPN from the start menu and sign in. Split tunnelling needs systemd-resolved (not enabled by default: `sudo systemctl enable --now systemd-resolved`, which changes how DNS is set up). Proton says Arch support is community-maintained. Apps set to Ask or Block in Settings > Apps still follow those rules inside the tunnel."
     },
     {
+      "id": "accessibility",
+      "name": "Screen reader and speech",
+      "description": "Orca (screen reader), Speech Dispatcher with eSpeak NG (the voice), and Braille support (brltty). Settings, Minos and the admin password box expose themselves to screen readers; the top bar, dock, start menu and lock screen do not yet (see docs/ACCESSIBILITY.md).",
+      "proprietary": false,
+      "packages": [
+        "orca",
+        "speech-dispatcher",
+        "espeak-ng",
+        "brltty"
+      ],
+      "notes": "Start Orca with Super+Alt+S (or `orca` in a terminal). It reads what programs tell the accessibility bus (AT-SPI)."
+    },
+    {
       "id": "creative",
       "name": "Creative apps",
       "description": "Krita, Darktable (photo), Kdenlive, OBS Studio (video), Ardour (music).",
@@ -208,6 +221,7 @@
       "proton-drive",
       "proton-pass",
       "proton-vpn",
+      "accessibility",
       "creative",
       "virtualization",
       "limbo",

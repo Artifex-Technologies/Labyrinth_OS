@@ -162,6 +162,11 @@ fuse3
 proton-pass
 # component: proton-vpn
 proton-vpn-gtk-app
+# component: accessibility
+orca
+speech-dispatcher
+espeak-ng
+brltty
 # component: creative
 krita
 darktable
