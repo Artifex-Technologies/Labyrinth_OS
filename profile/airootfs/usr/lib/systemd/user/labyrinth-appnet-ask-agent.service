@@ -1,0 +1,11 @@
+[Unit]
+Description=Labyrinth: notifications that ask whether an app may reach a destination
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/labyrinth-appnet-ask-agent
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

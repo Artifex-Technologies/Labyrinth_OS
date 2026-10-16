@@ -9,6 +9,8 @@ Modes:
   block      the app cannot send anything off this computer (loopback still works)
   ethernet   it may send only over a wired connection
   wifi       it may send only over Wi-Fi
+  ask        every destination is held until you allow it (see labyrinth-appnet-ask): loopback is free, a destination you
+             allowed is free, anything else is dropped and logged so a prompt can ask about it
   allow      no limit (removes the rule)
 
 Commands:
@@ -31,11 +33,13 @@ import os
 import re
 import subprocess
 import sys
+import zlib
 
 STATE = os.environ.get("LABYRINTH_APPNET_STATE", "/etc/labyrinth/app-network.json")
 CGROUP_ROOT = os.environ.get("LABYRINTH_CGROUP_ROOT", "/sys/fs/cgroup")
 TABLE = "labyrinth_apps"
-MODES = ("allow", "block", "ethernet", "wifi")
+MODES = ("allow", "block", "ethernet", "wifi", "ask")
+ASK_STATE = os.environ.get("LABYRINTH_ASK_STATE", "/var/lib/labyrinth/app-ask.json")
 WIRED = ("en*", "eth*")
 WIRELESS = ("wl*",)
 
@@ -73,6 +77,60 @@ def save_state(rules, path=None):
     os.replace(tmp, path)
 
 
+def set_name(uid, app_id, family):
+    """Name of the nftables set holding the destinations allowed for an app in ask mode (family 4 or 6)."""
+    clean = re.sub(r"[^A-Za-z0-9_]", "_", app_id)[:60]
+    return "ask_%d_%s_%08x_%d" % (uid, clean, zlib.crc32(app_id.encode()), family)
+
+
+def load_ask(path=None):
+    """What you decided for apps in ask mode: {uid: {app: {"allow": {ip: name}, "deny": {ip: name}}}}."""
+    try:
+        with open(path or ASK_STATE, encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for uid, apps in (d.items() if isinstance(d, dict) else []):
+        for app, v in (apps.items() if isinstance(apps, dict) else []):
+            if not valid_app(app) or not isinstance(v, dict):
+                continue
+            entry = {k: {ip: str(n) for ip, n in (v.get(k) or {}).items() if valid_ip(ip)} for k in ("allow", "deny")}
+            out.setdefault(str(uid), {})[app] = entry
+    return out
+
+
+def save_ask(ask, path=None):
+    path = path or ASK_STATE
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(ask, f, indent=1, sort_keys=True)
+    os.chmod(tmp, 0o600)  # what each person allowed is theirs: it is read through labyrinth-appnet-ask, which checks who asks
+    os.replace(tmp, path)
+
+
+def valid_ip(text):
+    import ipaddress
+    try:
+        ipaddress.ip_address(text)
+        return True
+    except ValueError:
+        return False
+
+
+def ask_rules(uid, app_id):
+    """Rules for ask mode: loopback and allowed destinations pass; the rest is logged (rate limited, with the user id) and dropped."""
+    path = cgroup_path(uid, app_id)
+    m = 'socket cgroupv2 level %d "%s"' % (path.count("/") + 1, path)
+    note = 'comment "%s: ask"' % re.sub(r"[^A-Za-z0-9._+-]", "_", app_id)
+    return [m + ' oifname "lo" accept ' + note,
+            m + " ip daddr @%s accept %s" % (set_name(uid, app_id, 4), note),
+            m + " ip6 daddr @%s accept %s" % (set_name(uid, app_id, 6), note),
+            m + ' limit rate 4/second burst 8 packets log prefix "labask:%s " flags skuid %s' % (app_id, note),
+            m + " drop " + note]
+
+
 def rule_text(uid, app_id, mode):
     """The nftables rule for one app and mode (None for allow)."""
     path = cgroup_path(uid, app_id)
@@ -83,6 +141,8 @@ def rule_text(uid, app_id, mode):
         # no DNS through the local resolver either, then nothing but loopback
         return [match + " ip daddr 127.0.0.53 meta l4proto { tcp, udp } th dport 53 drop " + note,
                 match + ' oifname != "lo" drop ' + note]
+    if mode == "ask":
+        return ask_rules(uid, app_id)
     if mode in ("ethernet", "wifi"):
         names = WIRED if mode == "ethernet" else WIRELESS
         allowed = " ".join('oifname != "%s"' % n for n in ("lo",) + names)
@@ -90,18 +150,26 @@ def rule_text(uid, app_id, mode):
     return None
 
 
-def ruleset(rules, exists=None):
-    """The whole nftables script. `exists(path)` says whether a slice's cgroup is there (default: look in /sys/fs/cgroup)."""
+def ruleset(rules, exists=None, ask=None):
+    """The whole nftables script. `exists(path)` says whether a slice's cgroup is there (default: look in /sys/fs/cgroup);
+    `ask` holds the destinations you allowed for apps in ask mode (default: read from the state file)."""
     exists = exists or (lambda p: os.path.isdir(os.path.join(CGROUP_ROOT, p)))
-    lines = ["table inet %s" % TABLE, "delete table inet %s" % TABLE, "table inet %s {" % TABLE, "  chain output {",
-             "    type filter hook output priority -5; policy accept;"]
+    ask = load_ask() if ask is None else ask
+    sets, body = [], []
     for uid in sorted(rules, key=int):
         for app_id in sorted(rules[uid]):
             if not exists(cgroup_path(int(uid), app_id)):
                 continue
-            for r in rule_text(int(uid), app_id, rules[uid][app_id]) or []:
-                lines.append("    " + r)
-    lines += ["  }", "}", ""]
+            mode = rules[uid][app_id]
+            if mode == "ask":
+                allowed = ask.get(uid, {}).get(app_id, {}).get("allow", {})
+                for fam, kind in ((4, "ipv4_addr"), (6, "ipv6_addr")):
+                    ips = sorted(ip for ip in allowed if (":" in ip) == (fam == 6))
+                    sets.append("  set %s { type %s; flags timeout;%s }" % (set_name(int(uid), app_id, fam), kind, (" elements = { %s };" % ", ".join(ips)) if ips else ""))
+            for r in rule_text(int(uid), app_id, mode) or []:
+                body.append("    " + r)
+    lines = ["table inet %s" % TABLE, "delete table inet %s" % TABLE, "table inet %s {" % TABLE] + sets
+    lines += ["  chain output {", "    type filter hook output priority -5; policy accept;"] + body + ["  }", "}", ""]
     return "\n".join(lines)
 
 

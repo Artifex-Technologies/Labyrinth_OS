@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""labyrinth-appnet-ask: the "ask" half of Settings > Apps > Network (root service, one per machine).
+
+An app whose network setting is "Ask" may only reach loopback and the destinations you allowed. Anything else is dropped by
+nftables (rules from labyrinth-appnet) after a rate-limited log line. This service reads those lines from the kernel log,
+turns each NEW destination of an app into one question, hands it to the person's session (labyrinth-appnet-ask-agent,
+a notification with Allow / Allow all / Deny), and applies the answer:
+
+  Allow       the destination (an address, any port) is added to the app's allowed set at once and remembered
+  Deny        remembered, never asked about again, stays dropped
+  Allow all   the app goes back to "any connection"
+  (nothing)   asked again after a minute, the next time the app tries
+
+One question per app and destination, never per connection. Apps that are not in ask mode are never touched, so system
+components (updates, time sync, Heimdall) are not asked about.
+
+Talking to it: a unix socket, /run/labyrinth/appnet-ask.sock, open to every local user. The kernel says who is on the other end
+(SO_PEERCRED), and a person only sees and answers questions about their own apps. JSON lines.
+  client -> {"op":"subscribe"}                       then receive {"type":"ask","id":N,"app":..,"ip":..,"port":..,"proto":..}
+  client -> {"op":"decide","id":N,"verdict":"allow"|"deny"|"allow-all"|"ignore","name":"host name, if known"}
+  client -> {"op":"list"}                            answer {"type":"list","apps":{app:{"allow":{ip:name},"deny":{ip:name}}}}
+  client -> {"op":"forget","app":..,"ip":..}         the destination is asked about again next time
+An answer can only be given to a question that was actually asked (a program cannot pre-approve addresses it has not tried).
+
+Honest limits: the person's own programs can answer the questions too (same as OpenSnitch or Little Snitch); destinations are
+addresses, not names, so a big content network can look like many; IPv4 and IPv6 only.
+"""
+import asyncio
+import importlib.machinery
+import importlib.util
+import json
+import os
+import re
+import socket
+import struct
+import subprocess
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SOCKET = os.environ.get("LABYRINTH_ASK_SOCKET", "/run/labyrinth/appnet-ask.sock")
+NFT = os.environ.get("LABYRINTH_NFT", "nft")
+LOG_CMD = os.environ.get("LABYRINTH_ASK_LOGCMD", "journalctl -k -f -n 0 -o cat").split()
+COOLDOWN = float(os.environ.get("LABYRINTH_ASK_COOLDOWN", "60"))
+
+
+def load_appnet():
+    path = os.path.join(HERE, "labyrinth-appnet")
+    loader = importlib.machinery.SourceFileLoader("labyrinth_appnet", path)
+    spec = importlib.util.spec_from_loader("labyrinth_appnet", loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+LINE = re.compile(r"labask:(?P<app>[A-Za-z0-9._+-]+) .*?DST=(?P<dst>[0-9A-Fa-f:.]+) .*?PROTO=(?P<proto>\w+)(?: .*?DPT=(?P<dpt>\d+))?.* UID=(?P<uid>\d+)")
+
+
+def parse_log(msg):
+    """One kernel log line from the ask rule -> {"uid","app","ip","port","proto"}, or None for anything else."""
+    m = LINE.search(msg)
+    if not m:
+        return None
+    return {"uid": m["uid"], "app": m["app"], "ip": m["dst"], "port": int(m["dpt"]) if m["dpt"] else 0, "proto": m["proto"]}
+
+
+class Engine:
+    """The questions and answers. No I/O except through `nft` (a function that runs an nft command) and the state files."""
+
+    def __init__(self, appnet, nft, now=time.monotonic):
+        self.an, self.nft, self.now = appnet, nft, now
+        self.pending = {}      # id -> question (with "uid")
+        self.by_key = {}       # (uid, app, ip) -> id
+        self.cooldown = {}     # (uid, app, ip) -> time it may be asked about again
+        self.next_id = 1
+
+    def state(self):
+        return self.an.load_ask()
+
+    def asked(self, ev):
+        """A dropped connection. Returns the new question to show, or None (already decided, already pending, cooling down, not ask mode)."""
+        uid, app, ip = ev["uid"], ev["app"], ev["ip"]
+        key = (uid, app, ip)
+        if self.an.load_state().get(uid, {}).get(app) != "ask":
+            return None
+        known = self.state().get(uid, {}).get(app, {})
+        if ip in known.get("allow", {}) or ip in known.get("deny", {}) or key in self.by_key:
+            return None
+        if self.cooldown.get(key, 0) > self.now():
+            return None
+        q = {"type": "ask", "id": self.next_id, "uid": uid, "app": app, "ip": ip, "port": ev["port"], "proto": ev["proto"]}
+        self.next_id += 1
+        self.pending[q["id"]] = q
+        self.by_key[key] = q["id"]
+        return q
+
+    def questions_for(self, uid):
+        return [q for q in self.pending.values() if q["uid"] == uid]
+
+    def decide(self, uid, qid, verdict, name=""):
+        """Apply an answer from person `uid`. Returns (ok, message)."""
+        q = self.pending.get(qid)
+        if not q or q["uid"] != uid:
+            return False, "no such question"
+        app, ip = q["app"], q["ip"]
+        key = (uid, app, ip)
+        name = re.sub(r"[^A-Za-z0-9._-]", "", name or "")[:120]
+        del self.pending[qid]
+        self.by_key.pop(key, None)
+        if verdict == "ignore":
+            self.cooldown[key] = self.now() + COOLDOWN
+            return True, "ok"
+        ask = self.state()
+        mine = ask.setdefault(uid, {}).setdefault(app, {"allow": {}, "deny": {}})
+        if verdict == "allow":
+            mine["allow"][ip] = name
+            mine["deny"].pop(ip, None)
+            self.an.save_ask(ask)
+            self.add_element(int(uid), app, ip)
+        elif verdict == "deny":
+            mine["deny"][ip] = name
+            mine["allow"].pop(ip, None)
+            self.an.save_ask(ask)
+        elif verdict == "allow-all":
+            rules = self.an.load_state()
+            rules.get(uid, {}).pop(app, None)
+            if not rules.get(uid):
+                rules.pop(uid, None)
+            self.an.save_state(rules)
+            self.an.apply(rules)
+        else:
+            return False, "unknown verdict"
+        return True, "ok"
+
+    def add_element(self, uid, app, ip):
+        fam = 6 if ":" in ip else 4
+        self.nft(["add", "element", "inet", self.an.TABLE, self.an.set_name(uid, app, fam), "{", ip, "}"])
+
+    def listing(self, uid):
+        mine = self.state().get(uid, {})
+        modes = self.an.load_state().get(uid, {})
+        return {app: v for app, v in mine.items() if modes.get(app) == "ask" or v["allow"] or v["deny"]}
+
+    def forget(self, uid, app, ip):
+        ask = self.state()
+        v = ask.get(uid, {}).get(app)
+        if not v or not self.an.valid_ip(ip):
+            return False
+        gone = v["allow"].pop(ip, None) is not None
+        gone |= v["deny"].pop(ip, None) is not None
+        if gone:
+            self.an.save_ask(ask)
+            fam = 6 if ":" in ip else 4
+            self.nft(["delete", "element", "inet", self.an.TABLE, self.an.set_name(int(uid), app, fam), "{", ip, "}"])
+        return gone
+
+
+def run_nft(args):
+    subprocess.run([NFT] + args, capture_output=True, timeout=10)
+
+
+class Server:
+    def __init__(self, engine):
+        self.e = engine
+        self.subs = {}  # uid -> [writer]
+
+    async def push(self, q):
+        for w in list(self.subs.get(q["uid"], [])):
+            try:
+                w.write((json.dumps({k: v for k, v in q.items() if k != "uid"}) + "\n").encode())
+                await w.drain()
+            except (ConnectionError, OSError):
+                self.subs[q["uid"]].remove(w)
+
+    async def handle(self, reader, writer):
+        sock = writer.get_extra_info("socket")
+        pid, uid, gid = struct.unpack("3i", sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i")))
+        uid = str(uid)
+
+        def reply(obj):
+            writer.write((json.dumps(obj) + "\n").encode())
+
+        try:
+            while True:
+                line = await reader.readline()
+                if not line:
+                    break
+                try:
+                    req = json.loads(line)
+                    op = req.get("op")
+                except ValueError:
+                    continue
+                if op == "subscribe":
+                    self.subs.setdefault(uid, []).append(writer)
+                    for q in self.e.questions_for(uid):
+                        await self.push(q)
+                elif op == "decide":
+                    ok, msg = self.e.decide(uid, req.get("id"), req.get("verdict"), req.get("name", ""))
+                    reply({"type": "result", "ok": ok, "message": msg})
+                elif op == "list":
+                    reply({"type": "list", "apps": self.e.listing(uid)})
+                elif op == "forget":
+                    reply({"type": "result", "ok": self.e.forget(uid, str(req.get("app")), str(req.get("ip"))), "message": ""})
+                await writer.drain()
+        except (ConnectionError, OSError):
+            pass
+        finally:
+            if writer in self.subs.get(uid, []):
+                self.subs[uid].remove(writer)
+            writer.close()
+
+    async def watch_log(self):
+        proc = await asyncio.create_subprocess_exec(*LOG_CMD, stdout=asyncio.subprocess.PIPE)
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            ev = parse_log(line.decode("utf-8", "replace"))
+            if ev:
+                q = self.e.asked(ev)
+                if q:
+                    await self.push(q)
+
+
+async def serve():
+    eng = Engine(load_appnet(), run_nft)
+    srv = Server(eng)
+    os.makedirs(os.path.dirname(SOCKET), exist_ok=True)
+    try:
+        os.unlink(SOCKET)
+    except FileNotFoundError:
+        pass
+    server = await asyncio.start_unix_server(srv.handle, SOCKET)
+    os.chmod(SOCKET, 0o666)
+    await asyncio.gather(server.serve_forever(), srv.watch_log())
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        print(__doc__)
+        sys.exit(0)
+    asyncio.run(serve())

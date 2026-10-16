@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""labyrinth-appnet-ask-agent: shows the questions of labyrinth-appnet-ask as notifications (a user service, started at login).
+
+For an app set to "Ask" in Settings > Apps, a first connection to a new destination arrives here as one notification:
+  "<App> wants to connect to <name or address>"   [Allow] [Allow all] [Deny]
+Allow: this destination, from now on. Allow all: this app may use the network freely again. Deny: never ask about this
+destination again (change it later in Settings > Apps). Closing the notification without answering asks again in a minute,
+when the app next tries.
+
+  labyrinth-appnet-ask-agent          run (reconnects by itself if the service restarts)
+"""
+import json
+import os
+import socket
+import subprocess
+import sys
+import threading
+import time
+
+SOCKET = os.environ.get("LABYRINTH_ASK_SOCKET", "/run/labyrinth/appnet-ask.sock")
+NOTIFY = os.environ.get("LABYRINTH_NOTIFY", "notify-send")
+TIMEOUT = int(os.environ.get("LABYRINTH_ASK_TIMEOUT", "300"))
+ACTIONS = {"allow": "Allow", "all": "Allow all", "deny": "Deny"}
+VERDICT = {"allow": "allow", "all": "allow-all", "deny": "deny"}
+
+
+def app_title(app_id):
+    """A readable name for an app id ("com.mitchellh.ghostty" -> "Ghostty")."""
+    last = app_id.split(".")[-1] if app_id.count(".") >= 2 else app_id
+    return last.replace("-", " ").replace("_", " ").strip().title() or app_id
+
+
+def reverse_name(ip, wait=1.5):
+    """The host name of an address, if the resolver answers quickly; "" otherwise."""
+    out = []
+
+    def work():
+        try:
+            out.append(socket.gethostbyaddr(ip)[0])
+        except (OSError, UnicodeError):
+            pass
+
+    t = threading.Thread(target=work, daemon=True)
+    t.start()
+    t.join(wait)
+    return out[0] if out else ""
+
+
+def message(q, name):
+    where = name or q["ip"]
+    port = " port %d" % q["port"] if q.get("port") else ""
+    detail = "%s%s (%s)" % (q["ip"], port, q["proto"]) if name else "%s%s" % (q["proto"], port)
+    return "%s wants to connect to %s" % (app_title(q["app"]), where), detail
+
+
+def ask_user(q, name):
+    """Show the notification and return the chosen key ("allow" / "all" / "deny") or "" if closed or timed out."""
+    title, body = message(q, name)
+    cmd = [NOTIFY, "-a", "Firewall", "-u", "normal", "-t", "0", "-i", "network-error"]
+    for k, label in ACTIONS.items():
+        cmd += ["-A", "%s=%s" % (k, label)]
+    cmd += [title, body]
+    try:
+        p = subprocess.run(["timeout", str(TIMEOUT)] + cmd, capture_output=True, text=True)
+    except OSError:
+        return ""
+    return p.stdout.strip() if p.stdout.strip() in ACTIONS else ""
+
+
+def answer(sock_path, q, name, key):
+    verdict = VERDICT.get(key, "ignore")
+    try:
+        with socket.socket(socket.AF_UNIX) as s:
+            s.connect(sock_path)
+            s.sendall((json.dumps({"op": "decide", "id": q["id"], "verdict": verdict, "name": name}) + "\n").encode())
+            s.settimeout(5)
+            s.recv(4096)
+    except OSError:
+        pass
+
+
+def handle(q):
+    name = reverse_name(q["ip"])
+    answer(SOCKET, q, name, ask_user(q, name))
+
+
+def main():
+    while True:
+        seen = set()  # ids restart from 1 when the service does
+        try:
+            with socket.socket(socket.AF_UNIX) as s:
+                s.connect(SOCKET)
+                s.sendall(b'{"op":"subscribe"}\n')
+                for line in s.makefile("r"):
+                    try:
+                        q = json.loads(line)
+                    except ValueError:
+                        continue
+                    if q.get("type") == "ask" and q["id"] not in seen:
+                        seen.add(q["id"])
+                        threading.Thread(target=handle, args=(q,), daemon=True).start()
+        except OSError:
+            pass
+        time.sleep(5)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        print(__doc__)
+        sys.exit(0)
+    main()

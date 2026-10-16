@@ -63,4 +63,4 @@ vetting template, using PdfCraft. 3. ClamAV + folder scanning + quarantine with 
   Needs the NEW `heimdalld` (the one on this machine is older and has no `scan-files`; the script then logs "scan did not run" and stays quiet).
 - **Settings > Security: built** (recent alerts with a level filter, who connected where, a "Scan now" button for Downloads). It also showed the baseline-drift noise
   (CPU load of 0.3 flagged as unusual); fixed in Heimdall (only upward outliers above load 0.75 per CPU or memory 70%).
-- **Not built:** quarantine and "restore / delete / always allow" buttons on the malware notification; the "ask" network mode (see section 2); exclusions edited in Settings.
+- **Not built:** quarantine and "restore / delete / always allow" buttons on the malware notification; the "ask" network mode (BUILT on 2026-10-16, see APPS_SETTINGS.md; not installed on this machine yet); exclusions edited in Settings.

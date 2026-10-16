@@ -1,0 +1,22 @@
+[Unit]
+Description=Labyrinth: ask before an app reaches a new destination (Settings > Apps > Network > Ask)
+Documentation=file:///usr/local/bin/labyrinth-appnet-ask
+After=labyrinth-appnet.service
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/bin/labyrinth-appnet-ask
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=labyrinth
+StateDirectory=labyrinth
+# It needs the firewall (nft), the kernel log and its two state files, nothing else.
+ProtectSystem=strict
+ReadWritePaths=/etc/labyrinth /var/lib/labyrinth /run/labyrinth
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectKernelModules=yes
+ProtectControlGroups=read-only
+
+[Install]
+WantedBy=multi-user.target
