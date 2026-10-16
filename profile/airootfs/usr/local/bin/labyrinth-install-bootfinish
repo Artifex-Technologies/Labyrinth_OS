@@ -26,7 +26,7 @@ fi
 say "grub.cfg looks usable ($(grep -c '^[[:space:]]*menuentry ' "$cfg") entries)"
 
 # 2a. Services. `systemctl enable` works in a chroot (it only creates symlinks).
-for unit in NetworkManager.service fstrim.timer ratbagd.service; do
+for unit in NetworkManager.service fstrim.timer ratbagd.service labyrinth-appnet.service; do
   systemctl enable "$unit" >/dev/null 2>&1 && say "enabled $unit" || warn "could not enable $unit"
 done
 
@@ -51,6 +51,11 @@ fi
 #      component is in this image (it exits quietly until a location is set).
 if [[ -e /usr/lib/systemd/user/labyrinth-weather-record.timer ]]; then
   systemctl --global enable labyrinth-weather-record.timer >/dev/null 2>&1 && say "enabled weather recording timer" || warn "could not enable the weather recording timer"
+fi
+
+# 2a''. Per-app network rules: the user service that keeps the slices alive and loads the rules at login.
+if [[ -e /usr/lib/systemd/user/labyrinth-appnet-prepare.service ]]; then
+  systemctl --global enable labyrinth-appnet-prepare.service >/dev/null 2>&1 && say "enabled per-app network rules" || warn "could not enable the per-app network rules"
 fi
 
 # 2b. zram swap for everyday memory pressure. Hibernate uses the disk swap file from 2b'.

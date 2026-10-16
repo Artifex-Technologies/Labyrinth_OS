@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""labyrinth-appnet: network rules for single apps (Settings > Apps).
+
+An app started with labyrinth-launch runs in its own systemd slice. This program keeps one nftables table,
+`inet labyrinth_apps`, with a rule for each app that has a limit; the rule matches that app's slice (cgroup), so it
+covers the app and everything it starts, and nothing else.
+
+Modes:
+  block      the app cannot send anything off this computer (loopback still works)
+  ethernet   it may send only over a wired connection
+  wifi       it may send only over Wi-Fi
+  allow      no limit (removes the rule)
+
+Commands:
+  labyrinth-appnet set APP MODE   change one app (run it with pkexec: needs root; the person who asked is the owner)
+  labyrinth-appnet apply          load every rule (run as root at boot and at login by labyrinth-appnet.service)
+  labyrinth-appnet get            print the rules as JSON
+  labyrinth-appnet prepare        as the user, at login: start the slices of apps that have a rule, then ask for `apply`
+  labyrinth-appnet ruleset        print the nftables ruleset that `apply` would load (needs no root)
+
+Rules live in /etc/labyrinth/app-network.json: {"rules": {"1000": {"firefox": "block", ...}}} (readable by all, written
+by root only). The nftables rule needs the slice's cgroup to exist when it is loaded, which is why `prepare` keeps
+the slices alive, and `apply` skips an app whose slice is not running (nothing of it is running, so nothing to limit).
+
+Honest limits: this matches programs the launcher started (dock, start menu, Settings); something started another way
+is not in the app's slice. A blocked app can still ask the system's DNS resolver to look up names, which is why
+lookups to the local resolver are refused too.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+
+STATE = os.environ.get("LABYRINTH_APPNET_STATE", "/etc/labyrinth/app-network.json")
+CGROUP_ROOT = os.environ.get("LABYRINTH_CGROUP_ROOT", "/sys/fs/cgroup")
+TABLE = "labyrinth_apps"
+MODES = ("allow", "block", "ethernet", "wifi")
+WIRED = ("en*", "eth*")
+WIRELESS = ("wl*",)
+
+
+def slice_name(app_id):
+    """Same as labyrinth-launch: no dash, so the slice sits directly under the user manager."""
+    return "lapp_" + re.sub(r"[^A-Za-z0-9_]", "_", app_id) + ".slice"
+
+
+def cgroup_path(uid, app_id):
+    return "user.slice/user-%d.slice/user@%d.service/%s" % (uid, uid, slice_name(app_id))
+
+
+def valid_app(app_id):
+    return bool(re.fullmatch(r"[A-Za-z0-9._+-]{1,120}", app_id)) and not app_id.startswith(".")
+
+
+def load_state(path=None):
+    try:
+        with open(path or STATE, encoding="utf-8") as f:
+            d = json.load(f)
+        rules = d.get("rules", {}) if isinstance(d, dict) else {}
+        return {str(u): {a: m for a, m in apps.items() if m in MODES and m != "allow" and valid_app(a)} for u, apps in rules.items() if isinstance(apps, dict)}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(rules, path=None):
+    path = path or STATE
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"rules": rules}, f, indent=1, sort_keys=True)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, path)
+
+
+def rule_text(uid, app_id, mode):
+    """The nftables rule for one app and mode (None for allow)."""
+    path = cgroup_path(uid, app_id)
+    level = path.count("/") + 1
+    match = 'socket cgroupv2 level %d "%s"' % (level, path)
+    note = 'comment "%s: %s"' % (re.sub(r"[^A-Za-z0-9._+-]", "_", app_id), mode)
+    if mode == "block":
+        # no DNS through the local resolver either, then nothing but loopback
+        return [match + " ip daddr 127.0.0.53 meta l4proto { tcp, udp } th dport 53 drop " + note,
+                match + ' oifname != "lo" drop ' + note]
+    if mode in ("ethernet", "wifi"):
+        names = WIRED if mode == "ethernet" else WIRELESS
+        allowed = " ".join('oifname != "%s"' % n for n in ("lo",) + names)
+        return [match + " " + allowed + " drop " + note]
+    return None
+
+
+def ruleset(rules, exists=None):
+    """The whole nftables script. `exists(path)` says whether a slice's cgroup is there (default: look in /sys/fs/cgroup)."""
+    exists = exists or (lambda p: os.path.isdir(os.path.join(CGROUP_ROOT, p)))
+    lines = ["table inet %s" % TABLE, "delete table inet %s" % TABLE, "table inet %s {" % TABLE, "  chain output {",
+             "    type filter hook output priority -5; policy accept;"]
+    for uid in sorted(rules, key=int):
+        for app_id in sorted(rules[uid]):
+            if not exists(cgroup_path(int(uid), app_id)):
+                continue
+            for r in rule_text(int(uid), app_id, rules[uid][app_id]) or []:
+                lines.append("    " + r)
+    lines += ["  }", "}", ""]
+    return "\n".join(lines)
+
+
+def apply(rules=None):
+    rules = load_state() if rules is None else rules
+    script = ruleset(rules)
+    p = subprocess.run(["nft", "-f", "-"], input=script, text=True, capture_output=True)
+    if p.returncode != 0:
+        print(p.stderr.strip() or "nft failed", file=sys.stderr)
+    return p.returncode
+
+
+def cmd_set(app_id, mode):
+    if os.geteuid() != 0:
+        print("labyrinth-appnet: set needs root (run it with pkexec)", file=sys.stderr)
+        return 1
+    if not valid_app(app_id) or mode not in MODES:
+        print("labyrinth-appnet: bad app id or mode", file=sys.stderr)
+        return 2
+    uid = os.environ.get("PKEXEC_UID") or os.environ.get("SUDO_UID")
+    if uid is None or not uid.isdigit():
+        print("labyrinth-appnet: cannot tell whose app this is (no PKEXEC_UID)", file=sys.stderr)
+        return 1
+    rules = load_state()
+    mine = rules.setdefault(uid, {})
+    if mode == "allow":
+        mine.pop(app_id, None)
+    else:
+        mine[app_id] = mode
+    if not mine:
+        rules.pop(uid, None)
+    save_state(rules)
+    return apply(rules)
+
+
+def cmd_prepare():
+    """At login: make sure the slices of apps with a rule exist (a rule cannot be loaded for a cgroup that is not
+    there), then ask the system service to load the rules."""
+    uid = str(os.getuid())
+    for app_id in load_state().get(uid, {}):
+        subprocess.run(["systemctl", "--user", "start", slice_name(app_id)], capture_output=True)
+    subprocess.run(["systemctl", "start", "labyrinth-appnet.service"], capture_output=True)
+    return 0
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0 if len(argv) >= 2 else 2
+    c = argv[1]
+    if c == "set" and len(argv) == 4:
+        return cmd_set(argv[2], argv[3])
+    if c == "apply":
+        return apply()
+    if c == "get":
+        print(json.dumps({"rules": load_state()}))
+        return 0
+    if c == "prepare":
+        return cmd_prepare()
+    if c == "ruleset":
+        print(ruleset(load_state()))
+        return 0
+    print("labyrinth-appnet: unknown command (see --help)", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

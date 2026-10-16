@@ -1,0 +1,11 @@
+[Unit]
+Description=Labyrinth per-app network rules
+Documentation=man:nft(8)
+After=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/labyrinth-appnet apply
+
+[Install]
+WantedBy=multi-user.target

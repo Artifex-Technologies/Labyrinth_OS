@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""labyrinth-launch ID [FILE-OR-URL ...]   start an app the Labyrinth way.
+
+Used by the dock, the start menu and Settings (Apps) so that each app runs in a systemd scope of its own, inside a
+slice named after it. That is what makes per-app controls possible:
+
+  * network: the firewall helper (labyrinth-appnet) matches the app's slice, so one app can be cut off, or limited to
+    Ethernet or Wi-Fi, without touching the others;
+  * a launch is counted (~/.local/share/labyrinth/app-usage.json), which is what "sort by usage" in Settings uses;
+  * the optional sandbox (bubblewrap): which folders the app can see, and whether it can see other programs.
+
+The app's settings are in ~/.config/labyrinth/apps/ID.json (written by Settings; every key is optional):
+
+    {"sandbox": false, "files": "all" | "folders", "folders": ["/home/me/Documents"], "see_others": true}
+
+Without that file the app starts as it always did, only inside its scope. ID is the desktop file's name without .desktop.
+"""
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+
+
+def data_home():
+    return os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local", "share")
+
+
+def config_home():
+    return os.environ.get("XDG_CONFIG_HOME") or os.path.join(HOME, ".config")
+
+
+def desktop_dirs():
+    dirs = [os.path.join(data_home(), "applications")]
+    for d in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":"):
+        if d:
+            dirs.append(os.path.join(d, "applications"))
+    dirs += [os.path.join(data_home(), "flatpak", "exports", "share", "applications"), "/var/lib/flatpak/exports/share/applications"]
+    seen, out = set(), []
+    for d in dirs:
+        if d not in seen:
+            seen.add(d)
+            out.append(d)
+    return out
+
+
+def find_desktop(app_id):
+    """The .desktop file for an id (also looks inside sub-folders, where the name has a dash for a slash)."""
+    app_id = app_id[:-8] if app_id.endswith(".desktop") else app_id
+    for d in desktop_dirs():
+        p = os.path.join(d, app_id + ".desktop")
+        if os.path.isfile(p):
+            return p
+        p = os.path.join(d, app_id.replace("-", "/", 1) + ".desktop")
+        if "-" in app_id and os.path.isfile(p):
+            return p
+    return None
+
+
+def parse_desktop(path):
+    """The [Desktop Entry] keys of a .desktop file, as a dict (first value wins; localised names are skipped)."""
+    out, inside = {}, False
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("["):
+                inside = line == "[Desktop Entry]"
+            elif inside and "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                k = k.strip()
+                if "[" not in k and k not in out:
+                    out[k] = v.strip()
+    return out
+
+
+def expand_exec(exec_line, files=(), name="", icon="", path=""):
+    """The Exec line as an argument list, with the field codes of the Desktop Entry spec filled in."""
+    try:
+        parts = shlex.split(exec_line)
+    except ValueError:
+        parts = exec_line.split()
+    out = []
+    for p in parts:
+        if p in ("%F", "%U"):
+            out += list(files)
+        elif p in ("%f", "%u"):
+            out += list(files[:1])
+        elif p == "%i":
+            if icon:
+                out += ["--icon", icon]
+        else:
+            # %c and %k inside an argument; %% is a literal percent; the other codes are dropped
+            p = p.replace("%%", "\0").replace("%c", name).replace("%k", path)
+            p = re.sub(r"%[fFuUdDnNvm]", "", p).replace("\0", "%")
+            if p:
+                out.append(p)
+    return out
+
+
+def slice_name(app_id):
+    """The systemd slice an app runs in. No dash in the name: a dash would make it a child of another slice, and the
+    firewall helper needs the exact path. The helper (labyrinth-appnet) builds the same name."""
+    return "lapp_" + re.sub(r"[^A-Za-z0-9_]", "_", app_id) + ".slice"
+
+
+def policy_path(app_id):
+    return os.path.join(config_home(), "labyrinth", "apps", app_id + ".json")
+
+
+def load_policy(app_id):
+    try:
+        with open(policy_path(app_id), encoding="utf-8") as f:
+            p = json.load(f)
+        return p if isinstance(p, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def count_launch(app_id, now=None):
+    """Remember that the app was started (how many times, and when last)."""
+    path = os.path.join(data_home(), "labyrinth", "app-usage.json")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        try:
+            with open(path, encoding="utf-8") as f:
+                usage = json.load(f)
+        except (OSError, ValueError):
+            usage = {}
+        e = usage.get(app_id) or {}
+        e["launches"] = int(e.get("launches", 0)) + 1
+        e["last"] = int(now if now is not None else time.time())
+        usage[app_id] = e
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(usage, f)
+        os.replace(tmp, path)
+    except OSError:
+        pass
+
+
+def app_dirs_of(entry, app_id):
+    """The folders in the home folder that belong to the app, by the usual names (its id, name, program, window class)."""
+    names = {app_id, entry.get("Name", ""), entry.get("StartupWMClass", "")}
+    try:
+        names.add(os.path.basename(shlex.split(entry.get("Exec", ""))[0]))
+    except (ValueError, IndexError):
+        pass
+    names = {n for n in names if n and "/" not in n and not n.startswith(".")}
+    names |= {n.lower() for n in names}
+    out = []
+    bases = [os.path.join(config_home()), os.path.join(HOME, ".cache"), data_home()]
+    for b in bases:
+        for n in sorted(names):
+            p = os.path.join(b, n)
+            if os.path.isdir(p) and p not in out:
+                out.append(p)
+    flat = os.path.join(HOME, ".var", "app", app_id)
+    if os.path.isdir(flat):
+        out.append(flat)
+    return out
+
+
+def bwrap_args(app_id, entry, policy, env=None):
+    """bubblewrap arguments for the app's policy: its own view of the home folder, and optionally of other programs."""
+    env = env if env is not None else os.environ
+    run = env.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid())
+    a = ["bwrap", "--die-with-parent", "--new-session", "--unshare-ipc"]
+    if policy.get("see_others") is False:
+        a += ["--unshare-pid", "--proc", "/proc"]
+    else:
+        a += ["--ro-bind", "/proc", "/proc"]
+    for d in ("/usr", "/etc", "/opt", "/sys"):
+        if os.path.exists(d):
+            a += ["--ro-bind", d, d]
+    for link in ("/bin", "/sbin", "/lib", "/lib64"):
+        if os.path.islink(link):
+            a += ["--symlink", os.readlink(link), link]
+    a += ["--dev", "/dev"]
+    for d in ("/dev/dri", "/dev/snd", "/dev/input", "/dev/shm"):
+        if os.path.exists(d):
+            a += ["--dev-bind", d, d]
+    for n in sorted(os.listdir("/dev")):
+        if n.startswith("nvidia") or n in ("video0", "video1"):
+            a += ["--dev-bind", "/dev/" + n, "/dev/" + n]
+    a += ["--tmpfs", "/tmp", "--tmpfs", run]
+    for sock in ("wayland-0", "wayland-1", "pipewire-0", "pulse", "bus"):
+        p = os.path.join(run, sock)
+        if os.path.exists(p):
+            a += ["--bind", p, p]
+    # the home folder
+    a += ["--setenv", "HOME", HOME]
+    if policy.get("files", "all") == "folders":
+        a += ["--tmpfs", HOME]
+        for d in app_dirs_of(entry, app_id):
+            a += ["--bind", d, d]
+        for d in policy.get("folders", []):
+            if os.path.isdir(d) and os.path.realpath(d).startswith(HOME):
+                a += ["--bind", d, d]
+        for ro in (os.path.join(config_home(), "kdeglobals"), os.path.join(config_home(), "gtk-3.0"), os.path.join(config_home(), "gtk-4.0"),
+                   os.path.join(data_home(), "icons"), os.path.join(data_home(), "fonts"), os.path.join(config_home(), "labyrinth")):
+            if os.path.exists(ro):
+                a += ["--ro-bind", ro, ro]
+    else:
+        a += ["--bind", HOME, HOME]
+    return a
+
+
+def build_command(app_id, files=(), env=None):
+    """(argument list, working directory) that starts the app, or None if there is no such app."""
+    path = find_desktop(app_id)
+    if not path:
+        return None
+    entry = parse_desktop(path)
+    argv = expand_exec(entry.get("Exec", ""), list(files), entry.get("Name", ""), entry.get("Icon", ""), path)
+    if not argv:
+        return None
+    if entry.get("Terminal", "").lower() == "true":
+        argv = ["ghostty", "-e"] + argv if shutil.which("ghostty") else ["xterm", "-e"] + argv
+    policy = load_policy(app_id)
+    if policy.get("sandbox") and shutil.which("bwrap"):
+        argv = bwrap_args(app_id, entry, policy, env) + ["--"] + argv
+    wrapped = ["systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=" + slice_name(app_id),
+               "--unit=lapp_%s_%d" % (re.sub(r"[^A-Za-z0-9_]", "_", app_id), int(time.time() * 1000) % 100000000)] + argv
+    return wrapped, entry.get("Path") or None
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0 if len(argv) >= 2 else 2
+    app_id, files = argv[1], argv[2:]
+    built = build_command(app_id, files)
+    if not built:
+        print("labyrinth-launch: no app called %r" % app_id, file=sys.stderr)
+        return 1
+    cmd, cwd = built
+    if not shutil.which("systemd-run"):
+        cmd = cmd[cmd.index("--") + 1:] if "--" in cmd else [c for c in cmd if not c.startswith(("systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=", "--unit="))]
+    count_launch(app_id)
+    subprocess.Popen(cmd, cwd=cwd if cwd and os.path.isdir(cwd) else None, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

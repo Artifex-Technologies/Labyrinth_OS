@@ -1,0 +1,9 @@
+[Unit]
+Description=Start the slices of apps with a network rule, then load the rules
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/labyrinth-appnet prepare
+
+[Install]
+WantedBy=default.target
