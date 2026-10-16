@@ -66,5 +66,18 @@ class LaunchTests(unittest.TestCase):
                 self.assertEqual(cmd[cmd.index("--") + 1:], ["demo", "--open"])  # after the sandbox's own arguments: the app's command
 
 
+    def test_network_rule_is_read_for_this_user_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "r.json")
+            me, other = str(os.getuid()), str(os.getuid() + 1)
+            with open(p, "w") as f:
+                json.dump({"rules": {me: {"a": "block", "b": "bogus", "c": "wifi"}, other: {"d": "block"}}}, f)
+            self.assertEqual(launch.network_rule("a", p), "block")
+            self.assertEqual(launch.network_rule("c", p), "wifi")
+            self.assertIsNone(launch.network_rule("b", p))
+            self.assertIsNone(launch.network_rule("d", p))
+            self.assertIsNone(launch.network_rule("a", os.path.join(d, "none.json")))
+
+
 if __name__ == "__main__":
     unittest.main()
