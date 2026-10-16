@@ -3,6 +3,7 @@
 # The panel runs it when Super+S starts recording. The model stays loaded for 10 minutes after, then Ollama unloads it as usual
 # (so it does not hold the graphics card's memory while gaming). Sends nothing but the model's name to the local server.
 conf=${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env
-model=$(sed -n 's/^OPENAI_MODEL=//p' "$conf" 2>/dev/null | head -n1)
+model=${LABYRINTH_VOICE_MODEL:-$(sed -n 's/^VOICE_MODEL=//p' "$conf" 2>/dev/null | head -n1)}
+[ -n "$model" ] || model=$(sed -n 's/^OPENAI_MODEL=//p' "$conf" 2>/dev/null | head -n1)
 curl -fsS -m 30 http://127.0.0.1:11434/api/generate -d "{\"model\":\"${model:-qwen3:8b}\",\"prompt\":\"\",\"keep_alive\":\"10m\"}" >/dev/null 2>&1
 exit 0

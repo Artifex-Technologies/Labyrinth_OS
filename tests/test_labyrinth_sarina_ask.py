@@ -16,7 +16,7 @@ def stub(d, name, body):
 
 
 class SarinaAsk(unittest.TestCase):
-    def run_it(self, whisper=None, model=True, ask="echo '**Sure.** It is `ok`.'", ollama=True):
+    def run_it(self, whisper=None, model=True, ask="echo '**Sure.** It is `ok`.'", ollama=True, home_conf=None):
         d = tempfile.mkdtemp()
         stub(d, "sarina", "exit 0")
         stub(d, "curl", "exit 0" if ollama else "exit 7")
@@ -25,6 +25,9 @@ class SarinaAsk(unittest.TestCase):
             stub(d, "whisper-cli", whisper)
         wav = os.path.join(d, "q.wav")
         open(wav, "wb").write(b"RIFF")
+        if home_conf:
+            os.makedirs(os.path.join(d, ".config", "labyrinth"))
+            open(os.path.join(d, ".config", "labyrinth", "sarina.env"), "w").write(home_conf)
         env = {"PATH": d + ":/usr/bin:/bin", "HOME": d, "LABYRINTH_WHISPER": os.path.join(d, "whisper-cli")}
         if model:
             m = os.path.join(d, "ggml-test.bin")
@@ -66,6 +69,22 @@ class SarinaAsk(unittest.TestCase):
         self.assertIn('Heard: "What time is it?"', r.stdout)
         self.assertIn("Sure. It is ok.", r.stdout)
         self.assertNotIn("**", r.stdout)
+
+    def test_voice_model_is_used_when_set(self):
+        d = tempfile.mkdtemp()
+        os.makedirs(os.path.join(d, ".config", "labyrinth"))
+        open(os.path.join(d, ".config", "labyrinth", "sarina.env"), "w").write("OPENAI_MODEL=big\nVOICE_MODEL=small\n")
+        r = self.run_it(whisper="echo hello", ask='echo "model=$OPENAI_MODEL"')
+        self.assertIn("model=", r.stdout)  # no VOICE_MODEL in that run's HOME: the usual model (unset here)
+        # with the file in HOME
+        import shutil
+        shutil.rmtree(d)
+        r = self.run_it(whisper="echo hello", ask='echo "model=$OPENAI_MODEL"', home_conf="OPENAI_MODEL=big\nVOICE_MODEL=small\n")
+        self.assertIn("model=small", r.stdout)
+
+    def test_heard_line_comes_first(self):
+        r = self.run_it(whisper="echo hello there")
+        self.assertTrue(r.stdout.startswith('Heard: "hello there"\n'), r.stdout)
 
     def test_think_block_removed(self):
         r = self.run_it(whisper="echo hello", ask="printf '<think>\\nhmm\\n</think>\\n\\nFine.\\n'")

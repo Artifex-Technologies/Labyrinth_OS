@@ -43,10 +43,17 @@ lower=$(printf '%s' "$clean" | tr 'A-Z' 'a-z' | sed -E 's/[[:punct:]]//g; s/^[[:
 case $lower in you|thank\ you|thanks|thanks\ for\ watching|bye|okay|ok|uh|um|hmm|"") clean="" ;; esac
 [[ -n $clean ]] || { echo "I did not catch that. Try again, a little closer to the microphone."; exit 1; }
 
+# What was understood is printed at once (the card shows it while Sarina works on the answer).
+printf 'Heard: "%s"\n' "$clean"
+
 # ---- 2. ask Sarina
+# A smaller model answers voice questions (faster): VOICE_MODEL in ~/.config/labyrinth/sarina.env or $LABYRINTH_VOICE_MODEL;
+# without one, her usual model is used.
+vm=${LABYRINTH_VOICE_MODEL:-$(sed -n 's/^VOICE_MODEL=//p' "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env" 2>/dev/null | head -n1)}
+[[ -n $vm ]] && export OPENAI_MODEL=$vm
 prompt="This question was spoken to you from the desktop and your answer appears on a small card (it may later be read aloud). Answer in at most three short sentences of plain text: no lists, no markdown, no code blocks. If you need to look something up, read files only. If it needs more than that, say so in one sentence. The question: $clean"
 answer=$(labyrinth-ask-sarina --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
 # the answer without a <think> block, markdown emphasis, or empty lines at the ends
 answer=$(printf '%s' "$answer" | sed -E ':a;N;$!ba;s/<think>.*<\/think>//g' | sed -E 's/\*\*//g; s/`//g; s/^#+ *//' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
 [[ -n $answer ]] || { echo "Sarina had no answer."; exit 1; }
-printf 'Heard: "%s"\n\n%s\n' "$clean" "$answer"
+printf '\n%s\n' "$answer"
