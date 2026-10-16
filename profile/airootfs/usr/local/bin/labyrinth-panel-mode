@@ -16,6 +16,12 @@ conf=${XDG_CONFIG_HOME:-$HOME/.config}
 flag=$conf/labyrinth/panel-on
 auto=$conf/autostart/labyrinth-panel.desktop
 layout=/usr/share/labyrinth/plasma/layout.js
+# Notifications: with the panel on, its own service (inside labyrinth-panel) is the notification server. mako and Plasma
+# each ship a D-Bus activation file for org.freedesktop.Notifications, so whichever one an early notification woke would
+# hold the name; this per-user file comes first and starts the panel instead. Plasma's own server only exists while its
+# panels do (they are removed below), and mako is only for the Hyprland session.
+reload_bus() { dbus-send --session --dest=org.freedesktop.DBus --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ReloadConfig >/dev/null 2>&1 || true; }
+svc=${XDG_DATA_HOME:-$HOME/.local/share}/dbus-1/services/org.freedesktop.Notifications.service
 # The Super key on its own: our start menu while the panel is on, Plasma's launcher otherwise.
 meta() { kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$1" && { qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true; }; }
 plasma() { busctl --user call org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell evaluateScript s "$1" >/dev/null 2>&1; }
@@ -25,6 +31,9 @@ case "${1:-status}" in
     command -v labyrinth-panel >/dev/null || { echo "labyrinth-panel is not installed" >&2; exit 1; }
     mkdir -p "$conf/labyrinth" "$conf/autostart"
     : >"$flag"
+    mkdir -p "$(dirname "$svc")"
+    printf '[D-BUS Service]\nName=org.freedesktop.Notifications\nExec=/usr/local/bin/labyrinth-notify-activate\n' >"$svc"
+    reload_bus
     cat >"$auto" <<'D'
 [Desktop Entry]
 Type=Application
@@ -41,7 +50,8 @@ D
     echo "labyrinth-panel on"
     ;;
   off)
-    rm -f "$flag" "$auto"
+    rm -f "$flag" "$auto" "$svc"
+    reload_bus
     pkill -f '^/usr/bin/labyrinth-panel$' 2>/dev/null
     plasma 'panels().forEach(function (p) { p.remove(); });'
     [ -r "$layout" ] && plasma "$(cat "$layout")"

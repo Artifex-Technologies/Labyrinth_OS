@@ -48,6 +48,7 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-kwin-cache"]="0:0:755"
   ["/usr/local/bin/systemsettings"]="0:0:755"
   ["/usr/local/bin/labyrinth-panel-mode"]="0:0:755"
+  ["/usr/local/bin/labyrinth-notify-activate"]="0:0:755"
   ["/usr/local/bin/labyrinth-icon"]="0:0:755"
   ["/usr/local/bin/labyrinth-icns"]="0:0:755"
   ["/usr/local/bin/labyrinth-grub-theme"]="0:0:755"
