@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# labyrinth-ecosystem-setup: wire up Ollama, Sarina, Heimdall and Limbo so they work together. Run as root:
+#   sudo labyrinth-ecosystem-setup [--model qwen3:8b] [--no-limbo-profile]
+#
+# Idempotent: it creates what is missing and leaves what exists alone (your edited config files are never overwritten).
+# What it does, and why:
+#   * Ollama: context window 16384 (Sarina needs at least 8192), service enabled.
+#   * Sarina: /etc/sarina/service.env with a fresh random token, the local model, and the Limbo and Heimdall endpoints;
+#     her service gets the limbo-agent group; the sessions folder is made readable to Heimdall (and writable by the
+#     wheel group, so an administrator can ask her things from a terminal and still have Heimdall watch the session).
+#   * Heimdall: /etc/heimdall/config.json pointing at Sarina's sessions and Limbo's event log; the limbo-heimdall group.
+#   * Limbo: its control service enabled; a validation profile "arch-validate" (a disposable guest with NO network and a time
+#     limit) if a base image exists at /var/lib/limbo/images/arch-cloudimg.qcow2. The profile is what Sarina may run
+#     commands in. Delete /etc/limbo/validation/arch-validate.json to take that away.
+# It never pulls a model: `ollama pull qwen3:8b` (5 GB) is a separate step it prints at the end if the model is missing.
+set -euo pipefail
+
+MODEL="qwen3:8b"; PROFILE=1
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --model) MODEL="$2"; shift 2 ;;
+    --no-limbo-profile) PROFILE=0; shift ;;
+    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    *) echo "unknown option $1" >&2; exit 2 ;;
+  esac
+done
+[[ $EUID -eq 0 ]] || { echo "run as root: sudo labyrinth-ecosystem-setup" >&2; exit 1; }
+say() { echo "==> $*"; }
+have_unit() { systemctl cat "$1" >/dev/null 2>&1; }
+
+# Ollama
+if have_unit ollama.service; then
+  install -d /etc/systemd/system/ollama.service.d
+  [[ -f /etc/systemd/system/ollama.service.d/labyrinth.conf ]] || cat > /etc/systemd/system/ollama.service.d/labyrinth.conf <<'EOF'
+# Sarina needs at least 8k tokens of context (16k recommended); Ollama's default is 4k.
+[Service]
+Environment=OLLAMA_CONTEXT_LENGTH=16384
+EOF
+  say "ollama: context 16384"
+else
+  say "ollama is not installed (pacman -S ollama, or ollama-cuda on an NVIDIA machine): skipping"
+fi
+
+# Sarina
+if have_unit sarina-service.service; then
+  install -d -m750 -o root -g sarina /etc/sarina
+  if [[ ! -f /etc/sarina/service.env ]]; then
+    cat > /etc/sarina/service.env <<EOF
+# Written by labyrinth-ecosystem-setup. Sarina's service: a local Ollama model, an access token, Limbo and Heimdall.
+SARINA_SERVICE_TOKEN=$(openssl rand -hex 24)
+OPENAI_BASE_URL=http://127.0.0.1:11434/v1
+OPENAI_API_KEY=local-token
+OPENAI_MODEL=$MODEL
+SARINA_LIMBO_SOCKET=/run/limbo/agent.sock
+HEIMDALL_REVIEW_URL=http://127.0.0.1:8930/v1/review
+EOF
+    chown root:sarina /etc/sarina/service.env; chmod 640 /etc/sarina/service.env
+    say "sarina: wrote /etc/sarina/service.env (new token)"
+  fi
+  install -d /etc/systemd/system/sarina-service.service.d
+  [[ -f /etc/systemd/system/sarina-service.service.d/ecosystem.conf ]] || cat > /etc/systemd/system/sarina-service.service.d/ecosystem.conf <<'EOF'
+# Sarina talks to Limbo's agent socket (group limbo-agent) and asks Heimdall to review memory writes.
+[Service]
+SupplementaryGroups=limbo-agent
+EOF
+  install -d -m755 -o sarina -g sarina /var/lib/sarina/sessions
+  if command -v setfacl >/dev/null; then
+    setfacl -m u:heimdall:rX,g:wheel:rwx /var/lib/sarina/sessions 2>/dev/null || true
+    setfacl -d -m u:heimdall:rX,u:sarina:rwx,g:wheel:rwx /var/lib/sarina/sessions 2>/dev/null || true
+  fi
+fi
+
+# Heimdall
+if have_unit heimdall.service; then
+  install -d /etc/heimdall /etc/systemd/system/heimdall.service.d
+  if [[ ! -f /etc/heimdall/config.json ]]; then
+    cat > /etc/heimdall/config.json <<'EOF'
+{
+  "agent_session_dir": "/var/lib/sarina/sessions",
+  "poll_interval_seconds": 5,
+  "alert_log_path": "/var/lib/heimdall/alerts.jsonl",
+  "ring_size": 500,
+  "api_addr": "127.0.0.1:8930",
+  "burst_window_seconds": 300,
+  "burst_threshold": 20,
+  "burst_cooldown_seconds": 300,
+  "fim_paths": ["/usr/bin/sarina", "/usr/bin/limbo", "/usr/bin/heimdalld", "/usr/lib/systemd/system/sarina-service.service", "/etc/systemd/system/sarina-service.service.d/ecosystem.conf"],
+  "fim_poll_interval_seconds": 30,
+  "fim_state_path": "/var/lib/heimdall/fim-state.json",
+  "telemetry_interval_seconds": 30,
+  "resource_mem_threshold_percent": 90,
+  "resource_load_threshold_per_cpu": 1.5,
+  "net_ports": [8765, 8899, 11434, 8930],
+  "net_poll_interval_seconds": 15,
+  "limbo_event_log": "/var/lib/limbo/state/events.jsonl",
+  "limbo_state_path": "/var/lib/heimdall/limbo-offset",
+  "limbo_poll_interval_seconds": 5,
+  "limbo_control_socket": "/run/limbo/control.sock",
+  "limbo_auto_quarantine": true,
+  "limbo_quarantine_delay_seconds": 15,
+  "limbo_backlog_threshold": 4,
+  "sarina_url": "http://127.0.0.1:8899",
+  "sarina_cwd": "/var/lib/heimdall",
+  "baseline_min_samples": 20,
+  "baseline_z_threshold": 3.0
+}
+EOF
+    say "heimdall: wrote /etc/heimdall/config.json"
+  fi
+  [[ -f /etc/systemd/system/heimdall.service.d/limbo.conf ]] || cat > /etc/systemd/system/heimdall.service.d/limbo.conf <<'EOF'
+# Heimdall may restrict a Limbo guest and read its audit log; the group is the whole access control.
+[Service]
+SupplementaryGroups=limbo-heimdall
+ReadOnlyPaths=/var/lib/limbo/state
+EOF
+fi
+
+# Limbo
+if have_unit limbo.service && [[ $PROFILE -eq 1 ]]; then
+  IMG=/var/lib/limbo/images/arch-cloudimg.qcow2
+  if [[ -f $IMG && ! -f /etc/limbo/validation/arch-validate.json ]]; then
+    install -d -m755 /etc/limbo/validation; install -d -m700 /etc/limbo/keys
+    [[ -f /etc/limbo/keys/validation ]] || ssh-keygen -q -t ed25519 -N "" -C validation@labyrinth -f /etc/limbo/keys/validation
+    chmod 600 /etc/limbo/keys/validation
+    cat > /etc/limbo/validation/arch-validate.json <<EOF
+{
+  "manifest": {
+    "name": "validate", "os": "linux",
+    "image": {"path": "$IMG", "sha256": "$(sha256sum "$IMG" | cut -d' ' -f1)"},
+    "cpus": 2, "memory_mb": 2048,
+    "network": {"mode": "none"},
+    "disposable": true,
+    "access": {"user": "analyst", "sudo": true},
+    "app": {"name": "validate", "exec": "true"},
+    "provision": {"ssh_public_key": "$(cat /etc/limbo/keys/validation.pub)"}
+  },
+  "ssh_identity": "/etc/limbo/keys/validation",
+  "max_seconds": 600,
+  "max_output_bytes": 65536
+}
+EOF
+    chmod 644 /etc/limbo/validation/arch-validate.json
+    say "limbo: wrote the validation profile arch-validate (disposable guest, no network)"
+  elif [[ ! -f $IMG ]]; then
+    say "limbo: no base image at $IMG, so no validation profile (see Limbo's docs for the Arch cloud image)"
+  fi
+fi
+
+systemctl daemon-reload
+for u in ollama limbo heimdall sarina-service; do
+  if have_unit "$u.service"; then systemctl enable --now "$u.service" >/dev/null 2>&1 && say "enabled and started $u" || echo "warning: could not start $u" >&2; fi
+done
+if command -v ollama >/dev/null && ! ollama list 2>/dev/null | grep -q "^$MODEL"; then
+  echo
+  echo "The model $MODEL is not on this machine yet. Pull it (5 GB):  ollama pull $MODEL"
+fi
+say "done. Check it with: curl -s 127.0.0.1:8930/healthz ; labyrinth-ask-sarina 'hello'"
