@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""labyrinth-lockwatch: find out what locks the screen. Run it in the background; it appends one line to
+~/.local/state/labyrinth/lockwatch.log each time anything asks the screen locker or the screensaver service to lock or
+unlock, or the lock becomes active or inactive, with the program (pid and command line) that sent the request.
+
+  labyrinth-lockwatch &        (or: setsid -f labyrinth-lockwatch)
+  tail -f ~/.local/state/labyrinth/lockwatch.log
+
+With --rescue it also unlocks the session again when the lock screen cannot work: after an upgrade of the screen locker
+while KWin is still the old version, the lock screen's password box fails to start ("Unknown option 'ksldfd'", "Greeter
+process exit unregular") and the screen would stay locked with nothing to type into. It only does that while that mismatch
+exists (the locker program is newer than the running KWin) and it logs every time. Logging out and in (or a reboot) ends the mismatch.
+Without --rescue it only listens on the session bus and changes nothing."""
+import os
+import re
+import subprocess
+import sys
+import time
+
+LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "labyrinth", "lockwatch.log")
+RULES = [
+    "type='method_call',interface='org.freedesktop.ScreenSaver'",
+    "type='method_call',interface='org.kde.screensaver'",
+    "type='method_call',interface='org.freedesktop.login1.Session',member='Lock'",
+    "type='signal',interface='org.freedesktop.ScreenSaver',member='ActiveChanged'",
+    "type='signal',interface='org.kde.screensaver',member='ActiveChanged'",
+    "type='signal',interface='org.freedesktop.login1.Session',member='Lock'",
+    "type='signal',interface='org.freedesktop.login1.Session',member='Unlock'",
+]
+
+
+def note(text):
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    with open(LOG, "a") as f:
+        f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), text))
+
+
+def who(name):
+    """The pid and command line behind a bus name, when it still exists."""
+    try:
+        out = subprocess.run(["busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus",
+                              "GetConnectionUnixProcessID", "s", name], capture_output=True, text=True, timeout=3).stdout
+        pid = int(out.split()[-1])
+        with open("/proc/%d/cmdline" % pid, "rb") as f:
+            return "pid %d: %s" % (pid, f.read().replace(b"\0", b" ").decode(errors="replace").strip()[:200])
+    except Exception:  # noqa: BLE001
+        return "(program already gone)"
+
+
+def greeter_broken():
+    """True when the screen locker's greeter was installed after the running KWin started."""
+    try:
+        pid = subprocess.run(["pgrep", "-x", "kwin_wayland"], capture_output=True, text=True).stdout.split()[0]
+        started = os.stat("/proc/%s" % pid).st_mtime
+        return os.stat("/usr/lib/kscreenlocker_greet").st_mtime > started
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def unlock():
+    sid = os.environ.get("XDG_SESSION_ID", "")
+    subprocess.run(["loginctl", "unlock-session"] + ([sid] if sid else []), capture_output=True, timeout=10)
+
+
+def main():
+    rescue = "--rescue" in sys.argv[1:]
+    note("lockwatch started" + (" (rescue on: unlocks while the lock screen cannot work)" if rescue else ""))
+    last = ""
+    cmd = ["dbus-monitor", "--session"] + RULES
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    pat = re.compile(r"^(method call|signal) .*sender=(\S+) .*interface=(\S+); member=(\S+)")
+    for line in p.stdout:
+        if rescue and last == "ActiveChanged" and line.strip() == "boolean true":
+            if greeter_broken():
+                time.sleep(2)
+                unlock()
+                note("RESCUE: the screen locked while the lock screen cannot work (KWin older than the screen locker): unlocked it again")
+            last = ""
+            continue
+        m = pat.match(line)
+        if not m:
+            continue
+        last = m.group(4)
+        kind, sender, iface, member = m.groups()
+        if member in ("GetActive", "GetActiveTime", "GetSessionIdleTime", "Inhibit", "UnInhibit", "SimulateUserActivity", "Introspect", "Get", "GetAll"):
+            continue
+        note("%s %s.%s from %s %s" % (kind, iface, member, sender, who(sender) if kind == "method call" else ""))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""labyrinth-selfcheck: is the desktop in a sane state? Run it after an upgrade (or when something looks off).
+
+  labyrinth-selfcheck            print a list of checks: ok, warn or FAIL, with what to do
+  labyrinth-selfcheck --quiet    print only warnings and failures; exit status 1 on any FAIL, 2 on a warning
+
+What it looks at (read-only, nothing is changed):
+  * the session needs a log out: KWin or the panel stack started before the Plasma packages were last upgraded
+    (the lock screen then fails to start, and other things drift: this really happened on 2026-10-16)
+  * the running kernel is not the newest installed one (reboot)
+  * kscreen reports the screen(s) in the form the panel reads, and the panel is running
+  * who owns the notification service (should be the Labyrinth panel)
+  * Labyrinth's services (Ollama, Limbo, Heimdall, Sarina, per-app network and power limits) and failed units
+  * Heimdall answers, and its file-integrity watch covers the binaries installed from the AUR
+"""
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+OK, WARN, FAIL = "ok", "warn", "FAIL"
+
+
+def run(cmd, timeout=10):
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return p.returncode, p.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return 127, ""
+
+
+def last_upgrade_epoch(package, log="/var/log/pacman.log"):
+    """When pacman last installed or upgraded `package` (epoch seconds), or None."""
+    best = None
+    try:
+        with open(log, errors="replace") as f:
+            for line in f:
+                m = re.match(r"\[(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)([+-]\d{4})\] \[ALPM\] (upgraded|installed|reinstalled) " + re.escape(package) + r" ", line)
+                if m:
+                    best = time.mktime(time.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S"))
+    except OSError:
+        return None
+    return best
+
+
+def process_start_epoch(name):
+    rc, out = run(["pgrep", "-x", name])
+    pids = out.split()
+    if rc != 0 or not pids:
+        return None
+    try:
+        return os.stat("/proc/%s" % pids[0]).st_mtime
+    except OSError:
+        return None
+
+
+def stale_session(started, upgraded, slack=60):
+    """The program started before its package was upgraded (more than `slack` seconds before)."""
+    return started is not None and upgraded is not None and started + slack < upgraded
+
+
+def output_in_use(o):
+    """Same rule as the panel: Plasma 6.8 dropped the `enabled` key."""
+    if "enabled" in o:
+        return bool(o["enabled"])
+    return bool(o.get("connected")) and bool(o.get("currentModeId"))
+
+
+def newest_kernel_module_dir(base="/usr/lib/modules"):
+    """The newest installed kernel's version string per `pacman`-style naming (one per flavour, compared by flavour)."""
+    return sorted(os.listdir(base)) if os.path.isdir(base) else []
+
+
+def checks():
+    out = []
+
+    def add(status, name, detail=""):
+        out.append((status, name, detail))
+
+    # the session predates the Plasma upgrade
+    started = process_start_epoch("kwin_wayland")
+    stale = []
+    for pkg in ("kwin", "kscreenlocker", "plasma-workspace"):
+        if stale_session(started, last_upgrade_epoch(pkg)):
+            stale.append(pkg)
+    if stale:
+        add(FAIL, "session older than its Plasma packages", "%s upgraded after KWin started: the lock screen will not work. Log out and in (or reboot)." % ", ".join(stale))
+    elif started is None:
+        add(WARN, "KWin", "kwin_wayland is not running (a Wayland session was expected)")
+    else:
+        add(OK, "session matches the installed Plasma packages")
+
+    # kernel
+    rel = os.uname().release
+    mods = [m for m in newest_kernel_module_dir() if m.endswith(rel.split("-")[-1])]
+    if mods and rel not in mods:
+        add(WARN, "running kernel is not installed any more", "running %s; installed: %s. Reboot." % (rel, ", ".join(mods)))
+    elif mods and sorted(mods)[-1] != rel:
+        add(WARN, "a newer kernel is installed", "running %s, installed %s. Reboot when convenient." % (rel, sorted(mods)[-1]))
+    else:
+        add(OK, "kernel", rel)
+
+    # screens and the panel
+    rc, js = run(["kscreen-doctor", "-j"])
+    try:
+        outs = [o for o in json.loads(js)["outputs"] if output_in_use(o)]
+    except (ValueError, KeyError):
+        outs = []
+    if not outs:
+        add(FAIL, "no screen found in kscreen-doctor -j", "the panel would place the dock as if the screen were 1920x1080")
+    else:
+        add(OK, "screens", ", ".join("%s %sx%s" % (o.get("name"), o.get("size", {}).get("width"), o.get("size", {}).get("height")) for o in outs))
+    rc, _ = run(["pgrep", "-f", "^/usr/bin/labyrinth-panel$"])
+    add(OK if rc == 0 else FAIL, "labyrinth-panel running", "" if rc == 0 else "start it: labyrinth-panel-mode on")
+
+    # notification service owner
+    rc, o = run(["busctl", "--user", "list", "--no-legend"])
+    owner = [l.split()[2] for l in o.splitlines() if l.startswith("org.freedesktop.Notifications ")]
+    if owner and owner[0] == "labyrinth-panel":
+        add(OK, "notifications are served by the Labyrinth panel")
+    elif owner:
+        add(WARN, "notifications are served by %s, not the Labyrinth panel" % owner[0], "stop it (systemctl --user stop mako) and the panel takes over within 10 s")
+    else:
+        add(WARN, "nobody serves notifications", "restart the panel")
+
+    # services
+    for unit in ("ollama", "limbo", "heimdall", "sarina-service", "labyrinth-powerlimit"):
+        rc, st = run(["systemctl", "is-active", unit + ".service"])
+        if st.strip() == "active":
+            add(OK, unit)
+        elif run(["systemctl", "cat", unit + ".service"])[0] != 0:
+            add(OK, unit, "not installed here")
+        else:
+            add(WARN, unit, "is %s" % (st.strip() or "unknown"))
+    rc, failed = run(["systemctl", "--failed", "--no-legend", "--plain"])
+    names = [l.split()[0] for l in failed.splitlines() if l.strip()]
+    add(OK if not names else WARN, "no failed system units" if not names else "failed units", ", ".join(names))
+
+    # heimdall
+    rc, body = run(["curl", "-s", "-m", "3", "http://127.0.0.1:8930/healthz"])
+    add(OK if "ok" in body else WARN, "Heimdall answers", "" if "ok" in body else "no answer on 127.0.0.1:8930")
+    try:
+        with open("/etc/heimdall/config.json") as f:
+            fim = set(json.load(f).get("fim_paths", []))
+    except (OSError, ValueError):
+        fim = None
+    if fim is not None:
+        rc, foreign = run(["pacman", "-Qmq"])
+        missing = []
+        for pkg in foreign.split():
+            if pkg.endswith("craft-bin"):
+                exe = "/usr/bin/" + pkg[: -len("-bin")]
+                if os.path.exists(exe) and exe not in fim:
+                    missing.append(exe)
+        add(OK if not missing else WARN, "Heimdall watches the AUR apps' binaries" if not missing else "not in Heimdall's file-integrity list", ", ".join(missing))
+    return out
+
+
+def main(argv):
+    quiet = "--quiet" in argv
+    results = checks()
+    worst = 0
+    for status, name, detail in results:
+        if status == FAIL:
+            worst = max(worst, 1)
+        elif status == WARN:
+            worst = max(worst, 2) if worst == 0 else worst
+        if quiet and status == OK:
+            continue
+        print("%-5s %s%s" % (status, name, (": " + detail) if detail else ""))
+    if not quiet and worst == 0:
+        print("everything looks fine")
+    return worst
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -328,6 +328,11 @@ Appearance > Notifications. Live here: mako stopped, new panel and settings inst
 images were checked (offscreen tests write list/toast/pane PNGs: `NOTIFY_PNG_DIR=/tmp cargo test`); **please look at the pop-up
 position with your dock and the pane on the real screen**. Theme option (macOS vs Windows look) is on the later list.
 
+### 2026-10-16 After the full upgrade: what broke and what was added
+- **Plasma 6.7.5 -> 6.8.0 was installed while the session (KWin 6.7.5, started 2026-10-14) kept running.** Effects seen: `kscreen-doctor -j` lost its `enabled` key (the panel placed the dock as if the screen were 1920x1080 and dropped the screen layout; fixed in panel, settings, labyrinth-displays, labyrinth-tiling), and the lock screen cannot start ("kscreenlocker_greet: Unknown option 'ksldfd'", "Greeter process exit unregular"), so a lock leaves the screen locked with no password box. **A log out and in (or reboot) is still needed.**
+- **What locks the screen is still unknown** (Autolock is off, display-off and sleep are off in PowerDevil; it happened before the upgrade too, 05:03 and 07:09). `labyrinth-lockwatch` (autostarted for the owner) logs every lock/unlock request with the program that sent it to `~/.local/state/labyrinth/lockwatch.log`; with `--rescue` it unlocks again only while the lock screen cannot work (logged as RESCUE). Read the log after the next lock.
+- `labyrinth-selfcheck`: checks the session against the Plasma packages, the kernel, screens, the panel, who serves notifications, services, Heimdall and its integrity list for the AUR apps. A pacman hook (`90-labyrinth-relogin.hook`) tells you to log out after a Plasma upgrade. Run it after every upgrade.
+
 ### Resume here (next things, in order)
 
 1. Owner: read TEAM.md; decide whether Sarina may also run with `--write` on the repos, and whether to push Limbo / Sarina /
