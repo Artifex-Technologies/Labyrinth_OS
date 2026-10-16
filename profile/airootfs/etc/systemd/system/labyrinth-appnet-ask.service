@@ -16,7 +16,7 @@ ProtectHome=yes
 PrivateTmp=yes
 NoNewPrivileges=yes
 ProtectKernelModules=yes
-ProtectControlGroups=read-only
+ProtectControlGroups=yes
 
 [Install]
 WantedBy=multi-user.target
