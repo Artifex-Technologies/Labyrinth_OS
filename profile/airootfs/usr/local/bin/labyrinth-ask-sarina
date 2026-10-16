@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""labyrinth-ask-sarina [--cwd DIR] [--write] [--shell] QUESTION...
+
+Ask Sarina (the local agent) one thing, from a script or from Claude Code, and print her answer. She runs as you, in DIR
+(default: the current folder), and can only read unless you pass --write or --shell for that one question.
+
+Her sessions go to /var/lib/sarina/sessions, the folder Heimdall watches, so what she does here is watched like everything
+else. The model and server come from ~/.config/labyrinth/sarina.env (KEY=value lines), then the environment.
+"""
+import argparse
+import os
+import subprocess
+import sys
+
+SESSIONS = os.environ.get("SARINA_SESSION_DIR", "/var/lib/sarina/sessions")
+
+
+def env_file():
+    out = {}
+    try:
+        with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "labyrinth", "sarina.env")) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    out[k.strip()] = v.strip()
+    except OSError:
+        pass
+    return out
+
+
+def command(question, cwd, write=False, shell=False):
+    cmd = ["sarina", "chat", question, "--cwd", os.path.abspath(cwd), "--session-dir", SESSIONS]
+    if write:
+        cmd.append("--allow-write")
+    if shell:
+        cmd.append("--allow-shell")
+    return cmd
+
+
+def main(argv):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--cwd", default=os.getcwd())
+    ap.add_argument("--write", action="store_true", help="let her write files for this question")
+    ap.add_argument("--shell", action="store_true", help="let her run shell commands for this question")
+    ap.add_argument("question", nargs="+")
+    a = ap.parse_args(argv[1:])
+    env = dict(os.environ)
+    for k, v in env_file().items():
+        env.setdefault(k, v)
+    return subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell), env=env).returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
