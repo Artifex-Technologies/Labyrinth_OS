@@ -86,7 +86,8 @@ author's machine every day. Not finished: it is built for one machine first, and
 ## Documents
 
 - [DESKTOP.md](docs/DESKTOP.md): the Hyprland desktop, bar, what came from Omacosy
-- [COMPONENTS.md](docs/COMPONENTS.md): optional software (Spotify, Obsidian, Steam, Proton ...)
+- [COMPONENTS.md](docs/COMPONENTS.md): optional software (Spotify, Obsidian, Steam, Proton Drive/Pass ...)
 - [WEATHER.md](docs/WEATHER.md): the multi-model weather engine
 - [INSTALLER.md](docs/INSTALLER.md): Calamares install, disk layout, Secure Boot
-- [PROTON.md](docs/PROTON.md): Proton (games), Proton Drive, Proton Pass
+- [PROTON_GAMES.md](docs/PROTON_GAMES.md): Valve's Proton (Windows games in Steam)
+- [PROTON_AG.md](docs/PROTON_AG.md): Proton AG's services, Proton Drive and Proton Pass
