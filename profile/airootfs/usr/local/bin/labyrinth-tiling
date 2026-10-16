@@ -53,7 +53,7 @@ def output_geometry(name):
     try:
         out = subprocess.run(["kscreen-doctor", "-j"], capture_output=True, text=True, timeout=10).stdout
         for o in json.loads(out).get("outputs", []):
-            if o.get("name") == name and o.get("enabled"):
+            if o.get("name") == name and o.get("enabled", bool(o.get("connected") and o.get("currentModeId"))):
                 return o["pos"]["x"], o["pos"]["y"]
     except Exception:
         pass

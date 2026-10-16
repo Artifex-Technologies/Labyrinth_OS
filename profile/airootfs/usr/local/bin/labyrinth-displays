@@ -256,7 +256,8 @@ def kde_plan(outputs, seen, rules=None, models=None):
     args, keys, notes = [], [], []
     new = []
     for o in outputs:
-        if not (o.get("connected") and o.get("enabled")):
+        # Plasma 6.8 no longer has an "enabled" key: connected with a current mode means in use
+        if not (o.get("connected") and o.get("enabled", bool(o.get("currentModeId")))):
             continue
         key = o["name"] + "|" + ",".join(sorted(_mode_strings(o)))
         if seen.get(key):
