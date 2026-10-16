@@ -29,6 +29,7 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-appnet"]="0:0:755"
   ["/usr/local/bin/labyrinth-powerlimit"]="0:0:755"
   ["/usr/local/bin/labyrinth-ask-sarina"]="0:0:755"
+  ["/usr/local/bin/labyrinth-appusage"]="0:0:755"
   ["/usr/local/bin/labyrinth-ecosystem-setup"]="0:0:755"
   ["/usr/local/bin/labyrinth-floats"]="0:0:755"
   ["/usr/local/bin/labyrinth-keys"]="0:0:755"

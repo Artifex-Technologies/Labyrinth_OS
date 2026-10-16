@@ -57,6 +57,9 @@ fi
 if [[ -e /usr/lib/systemd/user/labyrinth-appnet-prepare.service ]]; then
   systemctl --global enable labyrinth-appnet-prepare.service >/dev/null 2>&1 && say "enabled per-app network rules" || warn "could not enable the per-app network rules"
 fi
+if [[ -e /usr/lib/systemd/user/labyrinth-appusage.service ]]; then
+  systemctl --global enable labyrinth-appusage.service >/dev/null 2>&1 && say "enabled app usage counting" || warn "could not enable app usage counting"
+fi
 
 # 2b. zram swap for everyday memory pressure. Hibernate uses the disk swap file from 2b'.
 install -d /etc/systemd

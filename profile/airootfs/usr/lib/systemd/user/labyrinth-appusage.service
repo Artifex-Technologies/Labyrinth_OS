@@ -1,0 +1,10 @@
+[Unit]
+Description=Count how long each app has been running (Settings > Apps, sort by usage)
+
+[Service]
+ExecStart=/usr/local/bin/labyrinth-appusage
+Restart=on-failure
+Nice=15
+
+[Install]
+WantedBy=default.target
