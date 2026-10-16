@@ -320,6 +320,14 @@ use sudo). Heimdall has a per-process connection log (see Heimdall docs/ARCHITEC
 /usr/bin/heimdalld with drop-in /etc/systemd/system/heimdall.service.d/connwatch.conf; `labyrinth-ecosystem-setup` writes the same
 drop-in. See it with `curl -s 127.0.0.1:8930/v1/alerts?n=200` (detector connection-watch). Not yet: an owner-facing view in Settings.
 
+### 2026-10-16 Notification Center
+Built into the panel (docs/NOTIFICATIONS.md): our own org.freedesktop.Notifications service, grouped list (groups by newest, click to
+open out, click one to go to the app and send it its default action), bottom-right pop-ups, Fylgja's Apps section replaced by
+Notifications, optional right-hand pane that opens with the calendar, Clear all, Heimdall alerts as notifications, Settings >
+Appearance > Notifications. Live here: mako stopped, new panel and settings installed. The screen was locked so only rendered
+images were checked (offscreen tests write list/toast/pane PNGs: `NOTIFY_PNG_DIR=/tmp cargo test`); **please look at the pop-up
+position with your dock and the pane on the real screen**. Theme option (macOS vs Windows look) is on the later list.
+
 ### Resume here (next things, in order)
 
 1. Owner: read TEAM.md; decide whether Sarina may also run with `--write` on the repos, and whether to push Limbo / Sarina /
