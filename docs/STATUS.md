@@ -361,3 +361,4 @@ Plasma upgrade; keep Breeze as the default and test any other theme in a VM afte
 - **Wallpaper:** `own_wallpaper = yes`, so the panel draws labyrinth-purple.png. plasmashell was stopped for this session as a test; not yet made permanent.
 - baloo (file indexer) disabled: it was crash-looping.
 - CI: the release check no longer fails on systemd units in a runner without a user manager (and skips D-Bus service files).
+- plasmashell is masked for the user (`systemctl --user unmask plasma-plasmashell.service` brings it back).

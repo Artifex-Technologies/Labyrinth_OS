@@ -43,6 +43,14 @@ class SelfCheck(unittest.TestCase):
         self.assertTrue(sc.output_in_use({"connected": True, "currentModeId": "6"}))  # Plasma 6.8
         self.assertFalse(sc.output_in_use({"connected": False}))
 
+    def test_login_theme_that_cannot_load_is_flagged(self):
+        conf = "[Theme]\nCurrent=WhiteSur\n"
+        qml = "import components\nVirtualKeyboardLoader {}"
+        self.assertIn("WhiteSur", sc.sddm_theme_problem(conf, qml, False))
+        self.assertIsNone(sc.sddm_theme_problem(conf, qml, True))
+        self.assertIsNone(sc.sddm_theme_problem("[Theme]\nCurrent=breeze\n", qml, False))
+        self.assertIsNone(sc.sddm_theme_problem(conf, "no such import", False))
+
 
 if __name__ == "__main__":
     unittest.main()

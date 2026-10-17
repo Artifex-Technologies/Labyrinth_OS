@@ -74,6 +74,26 @@ def newest_kernel_module_dir(base="/usr/lib/modules"):
     return sorted(os.listdir(base)) if os.path.isdir(base) else []
 
 
+def sddm_theme_problem(conf_text, main_qml_text, breeze_has_keyboard_loader):
+    """A login theme that cannot load blocks every login: the WhiteSur theme imports a Breeze component Plasma 6.8 removed.
+    Returns a sentence, or None when the theme should load."""
+    current = ""
+    for line in conf_text.splitlines():
+        if line.strip().startswith("Current="):
+            current = line.split("=", 1)[1].strip()
+    if current and current != "breeze" and "VirtualKeyboardLoader" in main_qml_text and not breeze_has_keyboard_loader:
+        return "the login theme %s needs Breeze's VirtualKeyboardLoader, which this Plasma no longer has; set Current=breeze in /etc/sddm.conf.d/theme.conf" % current
+    return None
+
+
+def read_text(path):
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
 def checks():
     out = []
 
@@ -115,6 +135,13 @@ def checks():
         add(OK, "screens", ", ".join("%s %sx%s" % (o.get("name"), o.get("size", {}).get("width"), o.get("size", {}).get("height")) for o in outs))
     rc, _ = run(["pgrep", "-f", "^/usr/bin/labyrinth-panel$"])
     add(OK if rc == 0 else FAIL, "labyrinth-panel running", "" if rc == 0 else "start it: labyrinth-panel-mode on")
+
+    # the login theme (a broken one blocks every login)
+    sddm_conf = read_text("/etc/sddm.conf.d/theme.conf")
+    cur = [l.split("=", 1)[1].strip() for l in sddm_conf.splitlines() if l.strip().startswith("Current=")]
+    qml = read_text("/usr/share/sddm/themes/%s/Main.qml" % cur[0]) if cur else ""
+    bad = sddm_theme_problem(sddm_conf, qml, os.path.exists("/usr/share/sddm/themes/breeze/components/VirtualKeyboardLoader.qml"))
+    add(FAIL if bad else OK, "login screen theme", bad or (cur[0] if cur else "default"))
 
     # notification service owner
     rc, o = run(["busctl", "--user", "list", "--no-legend"])
