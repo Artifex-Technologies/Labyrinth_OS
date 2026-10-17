@@ -191,6 +191,14 @@
       "notes": "Needs a model server. Install Ollama (the local-ai component, or the plain 'ollama' package on a machine without an NVIDIA card), pull a model, then: sarina chat --interactive. The web console is 'sarina gui'."
     },
     {
+      "id": "daedalus-cad",
+      "name": "Daedalus CAD",
+      "description": "Daedalus CAD, a SketchUp-style modeler in Rust: 3D push/pull modeling, a solid inspector and sheet-metal flat patterns (DXF with cut and bend layers). Built here with makepkg from the Daedalus_CAD repository.",
+      "proprietary": false,
+      "pkgbuild": "daedalus-cad-git",
+      "notes": "Early software: push/pull, undo and the inspector work; many tools are still planned. Opens STL, OBJ, DXF and DAE."
+    },
+    {
       "id": "heimdall",
       "name": "Heimdall (security agent for Sarina)",
       "description": "Heimdall, a separate program that watches what Sarina writes to disk for prompt injection, leaked credentials, invisible-Unicode smuggling and permission escalation. Built here with makepkg from the Heimdall repository. Installed but not started.",

@@ -73,6 +73,7 @@ EXTRA = {"proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "pro
 # Labyrinth's own glyphs: file -> [(folder in the pack, icon name)]
 NATIVE = {
     "sarina": [("apps", n) for n in ("sarina", "labyrinth-sarina")],
+    "daedalus": [("apps", "daedalus-cad")],
     "heimdall": [("apps", "heimdall")],
     "limbo": [("apps", "limbo")],
     "marketplace": [("apps", n) for n in ("labyrinth-market", "applications-all")],

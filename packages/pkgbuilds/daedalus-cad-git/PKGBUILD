@@ -1,0 +1,54 @@
+# Maintainer: Labyrinth OS
+#
+# Daedalus CAD: a SketchUp-style modeler in Rust (3D push/pull modeling, solid inspector, sheet-metal flat patterns), built from the
+# Daedalus_CAD repository. The source is the public repository; until that is public (or to build a local checkout) point
+# DAEDALUS_SRC at it, for instance: DAEDALUS_SRC=file://$HOME/Documents/Github/Daedalus_CAD makepkg -si
+pkgname=daedalus-cad-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc='Daedalus CAD: SketchUp-style 3D modeling, solid inspector and sheet-metal flat patterns (Rust)'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Daedalus_CAD'
+license=('MPL-2.0')
+depends=('vulkan-icd-loader' 'libxkbcommon' 'wayland' 'libx11' 'libxcursor' 'libxrandr' 'libxi' 'mesa')
+makedepends=('cargo' 'git')
+provides=('daedalus-cad')
+conflicts=('daedalus-cad')
+options=('!lto')
+source=("daedalus-cad::git+${DAEDALUS_SRC:-https://github.com/Artifex-Technologies/Daedalus_CAD.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/daedalus-cad"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/daedalus-cad"
+  cargo build --release --locked -p daedalus-viewer -p daedalus-app --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/daedalus-cad"
+  cargo test --release --locked --workspace --target-dir "$srcdir/target"
+}
+
+package() {
+  install -Dm755 "$srcdir/target/release/daedalus-viewer" "$pkgdir/usr/bin/daedalus-cad"
+  install -Dm755 "$srcdir/target/release/daedalus-app" "$pkgdir/usr/bin/daedalus-cad-cli"
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/daedalus-cad.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Daedalus CAD
+GenericName=3D Modeler
+Comment=SketchUp-style 3D modeling, solid inspector and sheet-metal flat patterns
+Exec=daedalus-cad %f
+Icon=daedalus-cad
+Terminal=false
+Categories=Graphics;3DGraphics;Engineering;
+MimeType=model/stl;model/obj;
+Keywords=cad;3d;model;sheet metal;sketchup;
+StartupWMClass=daedalus-viewer
+DESKTOP
+  install -Dm644 "$srcdir/daedalus-cad/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

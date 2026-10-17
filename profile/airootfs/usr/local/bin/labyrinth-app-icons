@@ -15,7 +15,7 @@ import sys
 
 SRC = os.environ.get("LABYRINTH_BRAND_ICONS", "/usr/share/labyrinth/brand-icons") + "/native/"
 # icon name, glyph file, hue turn (degrees), saturation scale
-APPS = [("labyrinth-market", "marketplace", 0, 1.0), ("sarina", "sarina", 38, 1.0), ("heimdall", "heimdall", -38, 0.95), ("limbo", "limbo", 0, 0.16)]
+APPS = [("labyrinth-market", "marketplace", 0, 1.0), ("sarina", "sarina", 38, 1.0), ("heimdall", "heimdall", -38, 0.95), ("limbo", "limbo", 0, 0.16), ("daedalus-cad", "daedalus", 75, 0.95)]
 
 
 def read_accent():
@@ -44,7 +44,7 @@ def icon_svg(path_d, accent, turn, sat_scale):
     shadow_opacity = ".28"
     if s < 0.18 and v > 0.85:
         # a white (or near-white) accent: light silver tiles with a dark glyph, one shade lighter or darker per app
-        shade = {0: 0.0, 38: 0.05, -38: 0.10}.get(turn, 0.0) if sat_scale > 0.5 else 0.30
+        shade = {0: 0.0, 38: 0.05, -38: 0.10, 75: 0.15}.get(turn, 0.0) if sat_scale > 0.5 else 0.30
         top = hexcol(0, 0, 0.97 - shade * 0.5)
         bottom = hexcol(0, 0, 0.80 - shade)
         glyph = "#20202c"
