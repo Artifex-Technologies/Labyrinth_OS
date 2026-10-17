@@ -63,18 +63,19 @@ route("Left", "Snap left / focus left", "Meta+Left",
       function () { krohnkite("FocusLeft"); }, function () { workspace.slotWindowQuickTileLeft(); });
 route("Right", "Snap right / focus right", "Meta+Right",
       function () { krohnkite("FocusRight"); }, function () { workspace.slotWindowQuickTileRight(); });
-route("Up", "Maximize / focus up", "Meta+Up",
+route("Up", "Full screen / focus up", "Meta+Up",
       function () { krohnkite("FocusUp"); },
-      function () { var w = active(); if (w && w.maximizable) { w.setMaximize(true, true); } });
-route("Down", "Restore or minimize / focus down", "Meta+Down",
+      function () {
+          var w = active();
+          if (w && w.fullScreenable) { w.fullScreen = true; } else if (w && w.maximizable) { w.setMaximize(true, true); }
+      });
+route("Down", "Leave full screen, or hide the window / focus down", "Meta+Down",
       function () { krohnkite("FocusDown"); },
       function () {
           var w = active();
           if (!w) { return; }
-          var a = workspace.clientArea(KWin.MaximizeArea, w);
-          var g = w.frameGeometry;
-          if (g.width >= a.width && g.height >= a.height) {
-              w.setMaximize(false, false);
+          if (w.fullScreen) {
+              w.fullScreen = false;
           } else if (w.minimizable) {
               w.minimized = true;
           }
