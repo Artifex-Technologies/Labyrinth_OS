@@ -61,11 +61,13 @@ def main(text):
             if not path or not os.path.dirname(os.path.abspath(path)) == os.path.abspath(RUN):
                 continue  # only files the service made in our private folder
             try:
+                time.sleep(min(int(msg.get("pause_before_ms", 0) or 0), 1500) / 1000)
                 levels = envelope(path)
                 with open(env, "w") as e:
                     e.write("%d\n%s\n" % (int(time.time() * 1000) + 120, " ".join(map(str, levels))))
                 subprocess.run([PLAYER, path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 said = True
+                time.sleep(min(int(msg.get("pause_after_ms", 0) or 0), 1500) / 1000)
             finally:
                 try:
                     os.unlink(path)

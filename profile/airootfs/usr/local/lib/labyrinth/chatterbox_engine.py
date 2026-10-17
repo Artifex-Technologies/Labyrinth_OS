@@ -86,11 +86,21 @@ class Chatterbox:
         self.voice = None
 
     def set_voice(self, reference_wav):
-        """Works out the conditioning for the voice to copy (about 10 seconds of clean speech); done once, then every sentence reuses it."""
-        cond_emb, prompt_token, speaker_embeddings, speaker_features = self.enc.run(None, {"audio_values": load_audio(reference_wav)})
-        self.voice = (cond_emb, prompt_token, speaker_embeddings, speaker_features)
+        """Works out the conditioning for the voice to copy (about 10 seconds of clean speech); done once, then every sentence reuses it.
+        The half-precision speech encoder gives NaN in some of its features (the whole sentence then comes out as noise), so this one step runs in full precision on the
+        processor (a few seconds, once) when the full-precision file is there; whatever NaN remains is zeroed."""
+        audio = load_audio(reference_wav)
+        enc = self.enc
+        full = os.path.join(self.dir, "onnx", "speech_encoder.onnx")
+        if self.dtype != "fp32" and os.path.exists(full):
+            enc = ort.InferenceSession(full, providers=["CPUExecutionProvider"])
+        cond_emb, prompt_token, speaker_embeddings, speaker_features = enc.run(None, {"audio_values": audio})
+        self.voice = (np.nan_to_num(cond_emb), prompt_token, np.nan_to_num(speaker_embeddings), np.nan_to_num(speaker_features))
+        if enc is not self.enc:
+            del enc
+        self.enc = None  # not needed again: frees the graphics card memory it held
 
-    def speak(self, text, rng, max_tokens=700, repetition_penalty=1.2):
+    def speak(self, text, rng, max_tokens=700, repetition_penalty=1.2, temperature=0.8):
         """One sentence (or short passage) to a float32 waveform at 24 kHz."""
         assert self.voice is not None, "set_voice first"
         cond_emb, prompt_token, speaker_embeddings, speaker_features = self.voice
@@ -110,7 +120,7 @@ class Chatterbox:
             sc = np.take_along_axis(logits, tokens, axis=1)
             sc = np.where(sc < 0, sc * repetition_penalty, sc / repetition_penalty)
             np.put_along_axis(logits, tokens, sc, axis=1)
-            ids = np.array([[sample(logits[0], rng)]], dtype=np.int64)
+            ids = np.array([[sample(logits[0], rng, temperature=temperature)]], dtype=np.int64)
             tokens = np.concatenate((tokens, ids), axis=-1)
             if int(ids[0, 0]) == STOP:
                 break

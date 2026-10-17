@@ -64,12 +64,58 @@ def respell(text, table=None):
 EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F900-\U0001F9FF\U00002B00-\U00002BFF\uFE0F\u200d]")
 
 
+# How a sentence is delivered. She may start a sentence with [joking], [unsure], [urgent], [gentle] or [serious] (the voice prompt tells her to do so sparingly):
+# the voice changes how steady or lively it is, may add a small sound (a chuckle after a joke, a hesitation when unsure, a soft sigh before comfort), and
+# the pause around it changes. Anything else in [brackets] is dropped, so she can never make the voice cough or laugh by accident.
+DELIVERY = {
+    #            temperature, pause before (ms), pause after (ms)
+    "joking": (0.92, 0, 150),
+    "unsure": (0.85, 0, 120),
+    "urgent": (0.72, 0, 0),
+    "gentle": (0.62, 100, 500),
+    "serious": (0.55, 350, 250),
+}
+DEFAULT_DELIVERY = (0.8, 0, 0)
+TAG_RE = re.compile(r"\[(joking|unsure|urgent|gentle|serious)\]", re.IGNORECASE)
+MARK_RE = re.compile(r"^\s*«(\w+)»\s*")
+
+
+def mark_delivery(text):
+    """[joking] -> «joking», so the tag survives cleaning and sentence splitting."""
+    return TAG_RE.sub(lambda m: " «" + m.group(1).lower() + "» ", text)
+
+
+def take_delivery(sentence):
+    """(delivery name or "", the sentence without its tag(s))."""
+    name = ""
+    m = MARK_RE.match(sentence)
+    if m:
+        name = m.group(1)
+        sentence = sentence[m.end():]
+    return name, re.sub(r"\s*«\w+»\s*", " ", sentence).strip()
+
+
+def dress(sentence, name, rng):
+    """The words as the model should say them for this delivery: small sounds and hesitations, chosen by chance so she does not do it every time."""
+    s = sentence
+    if name == "joking" and s and s[-1] in ".!?" and rng.random() < 0.6:
+        s = s + " [chuckle]"
+    elif name == "unsure" and rng.random() < 0.7:
+        s = rng.choice(["Hmm... ", "Um... ", "Well... "]) + s[0].lower() + s[1:] if s else s
+    elif name == "urgent":
+        s = s.rstrip(".") + ("!" if not s.endswith(("!", "?")) else "")
+    elif name == "gentle" and rng.random() < 0.35:
+        s = "[sigh] " + s
+    return s
+
+
 def clean(text):
     """Plain words: no [tags] (the model would act them out: [chuckle], [cough]), no markup, one space between words."""
     text = EMOJI.sub("", text)
     text = re.sub(r"\[[^\]]*\]|<[^>]*>", " ", text)
     text = re.sub(r"[*`#_]+", "", text)
-    return respell(re.sub(r"\s+", " ", text).strip())
+    text = re.sub(r"\s+", " ", text).strip()
+    return respell(re.sub(r"\s+([.,!?;:])", r"\1", text))
 
 
 def split_sentences(text, min_len=28, max_len=240):
@@ -77,12 +123,15 @@ def split_sentences(text, min_len=28, max_len=240):
     parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", text) if p.strip()]
     out, cur = [], ""
     for p in parts:
+        if MARK_RE.match(p) and cur:  # a new delivery starts here: never joined to what came before
+            out.append(cur)
+            cur = ""
         cur = (cur + " " + p).strip() if cur else p
         if len(cur) >= min_len:
             out.append(cur)
             cur = ""
     if cur:
-        if out and len(cur) < min_len:
+        if out and len(cur) < min_len and not MARK_RE.match(cur):
             out[-1] = out[-1] + " " + cur
         else:
             out.append(cur)
@@ -128,10 +177,15 @@ class Voice:
         with self.lock:
             self.last = time.time()
             self.load()
-            for s in split_sentences(clean(text)):
+            for s in split_sentences(clean(mark_delivery(text))):
+                name, plain = take_delivery(s)
+                if not plain:
+                    continue
+                temperature, before, after = DELIVERY.get(name, DEFAULT_DELIVERY)
+                spoken = dress(plain, name, rng)
                 for attempt in range(3):
                     try:
-                        wav = self.engine.speak(s, rng)
+                        wav = self.engine.speak(spoken, rng, temperature=temperature)
                         break
                     except ValueError:
                         if attempt == 2:
@@ -140,7 +194,7 @@ class Voice:
                 self.counter += 1
                 path = os.path.join(RUN, "voiced-%d-%d.wav" % (os.getpid(), self.counter))
                 sf.write(path, wav, 24000, subtype="PCM_16")
-                if not send({"wav": path, "text": s}):
+                if not send({"wav": path, "text": plain, "pause_before_ms": before, "pause_after_ms": after}):
                     try:
                         os.unlink(path)
                     except OSError:
