@@ -351,3 +351,13 @@ SDDM's WhiteSur theme (`whitesur-kde-theme` r2026.08.07) failed with "VirtualKey
 SDDM component that Plasma 6.8's Breeze theme no longer has. The login box still showed but the page was an error. Fix: `Current=breeze` in
 `/etc/sddm.conf.d/theme.conf` (repo: `profile/airootfs/etc/sddm.conf.d/theme.conf`). Lesson: a login theme from outside Plasma can break on any
 Plasma upgrade; keep Breeze as the default and test any other theme in a VM after each upgrade. `labyrinth-selfcheck` should check the SDDM theme (todo).
+
+## 2026-10-17: Minos, dock, polkit, portal
+- **Minos:** drive discovery moved off the startup path (a 2.3 s stall); keyboard use (arrows, Enter, type-to-find, tab keys: docs/MINOS_KEYS.md); Settings for where a window or tab opens; a see-through option (switch and slider, live); Ctrl+F opens search; `minos --pick open|save|dir` is a file-chooser mode (paths printed, exit 1 on cancel).
+- **Dock:** one dot per window (active lit, capped at the icon width, last two merge into an oval); resting on an app for 1 s lists its windows (titles, not thumbnails); right-click gives New window / Close / Keep in dock.
+- **Keys:** Super+Up full screen, Super+Down leaves full screen or hides (labyrinth-screen-keys).
+- **polkit agent (`labyrinth-polkit`):** now the live agent (KDE's is disabled in ~/.config/autostart). The agent has no window; each request starts `labyrinth-polkit --dialog` (a Wayland window cannot be hidden, so the first design left a black rectangle). Enter authenticates. Verified with `pkexec true` and the owner's password.
+- **File chooser portal (`labyrinth-portal`):** the backend answers `org.freedesktop.impl.portal.FileChooser` by running Minos in pick mode; selected through /etc/xdg-desktop-portal/kde-portals.conf. The frontend reaches it and the backend starts Minos (checked by hand); NOT yet checked end to end from a real app (Obsidian showed GTK's own dialog before it was switched on).
+- **Wallpaper:** `own_wallpaper = yes`, so the panel draws labyrinth-purple.png. plasmashell was stopped for this session as a test; not yet made permanent.
+- baloo (file indexer) disabled: it was crash-looping.
+- CI: the release check no longer fails on systemd units in a runner without a user manager (and skips D-Bus service files).

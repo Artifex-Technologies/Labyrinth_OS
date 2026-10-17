@@ -33,9 +33,9 @@ else warn "shellcheck is not installed (sudo pacman -S shellcheck)"; fi
 
 # systemd units
 unit_bad=0
-for u in $(find profile -name '*.service' -o -name '*.timer'); do
+for u in $(find profile \( -name '*.service' -o -name '*.timer' \) -not -path '*/dbus-1/*'); do
   case "$u" in */user/*) mode=--user;; *) mode=--system;; esac
-  out=$(systemd-analyze verify $mode "$u" 2>&1 | grep -v -E "Can.t show|'\(man\)'|Failed to (create|load)|not-found|No such file|Unit .* not found|Cannot find|manager.*not|Transport|Failed to connect|is not executable|Command .* (is not|not found)|Failed to prepare") || true
+  out=$(systemd-analyze verify $mode "$u" 2>&1 | grep -v -E "Can.t show|'\(man\)'|Failed to (create|load)|not-found|No such file|Unit .* not found|Cannot find|manager.*not|Transport|Failed to connect|is not executable|Command .* (is not|not found)|Failed to prepare|Failed to lookup|Failed to initialize") || true
   [[ -z $out ]] || { fail "unit $u"; unit_bad=1; echo "$out" | head -5 | sed 's/^/      /'; }
 done
 ((unit_bad)) || pass "systemd units verify"
