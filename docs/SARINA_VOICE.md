@@ -115,3 +115,24 @@ browsers about 0.9 GB. Flash attention plus an 8-bit key/value cache (`OLLAMA_FL
 `/etc/systemd/system/ollama.service.d/labyrinth-vram.conf`, installed and Ollama restarted) brought it to 6188 MiB: **1.08 GB freed, speed 90 to 88
 tokens/s** (a 2 % difference, same ten-line test). A smaller context (8k) would free about 0.5 GB more; the voice answer model is unloaded 10
 minutes after the last question. A bigger card is not needed for a voice model of about 350M parameters: it should fit in what is left (about 4 GB).
+
+## Chatterbox Turbo, first test (2026-10-16)
+
+Chosen as the next voice: MIT licence, copies a voice from about 10 seconds of audio, English. Resemble publishes it as four ONNX graphs
+(`ResembleAI/chatterbox-turbo-ONNX`: speech encoder, token embeddings, an autoregressive language model with a KV cache, and a conditional
+decoder, in fp32/fp16/q8/q4/q4f16; fp16 is about 1.7 GB, q4f16 about 0.6 GB in total), so it needs no PyTorch: `scripts/voice/chatterbox_onnx_test.py`
+runs it with onnxruntime. Files are in `~/.local/share/labyrinth/tts/chatterbox/` (fp32 downloaded, 3.1 GB), a separate venv `cb-venv`, and three reference
+clips cut from the owner's real recordings (`refs/ref1-3.wav`, 9 s each, 24 kHz).
+
+Things the short ONNX example in the model card does not tell you (found while testing):
+- Encode the text WITHOUT special tokens and add exactly one `<|endoftext|>` (50256): the embedding graph reads the last token of its first input as the speech-start slot. Two of them, or none, breaks it.
+- Always taking the most likely token (the example's `argmax`) makes the voice stall and leave long silences (19 s of audio for 7 s of words). Sampling with
+  temperature 0.8, top-k 1000, top-p 0.95 (Chatterbox's own defaults) plus the repetition penalty 1.2 gives sensible lengths (about 8.6 s for the test sentence).
+- Cut the digital silence at the end.
+
+Speed on the CPU in fp32 (no GPU build of onnxruntime installed): about 1.4x real time (7 to 9 s to make 7 to 9 s of speech), plus 6 s to load. Not usable
+for conversation yet; the GPU or the quantised graphs should be several times faster. Samples to compare (not heard by the assistant): `~/Desktop/Sarina-voice-samples/chatterbox-*.wav`.
+
+**Go or Rust?** Not for the model itself: the Python is only a short driver (tokenize, loop over the language model, sample, run the decoder); the model is the ONNX files.
+That driver is about 150 lines and ports to Go on top of `go/voice` (same onnxruntime, plus a GPT-2 style tokenizer and the sampling loop), which is the
+plan once the voice is chosen. Rewriting the network itself in Go or Rust would be weeks of work for no gain over onnxruntime.
