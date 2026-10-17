@@ -66,7 +66,7 @@ ALIASES = {
     "orgqbittorrentqbittorrent": "qbittorrent", "libreofficestartcenter": "libreoffice",
     "libreofficewriter": "libreoffice", "libreofficecalc": "libreoffice", "libreofficeimpress": "libreoffice",
     "bitwardendesktop": "bitwarden", "heroicgameslauncher": "heroicgameslauncher", "githubdesktop": "github",
-    "sketchup": "sketchup", "obsidian": "obsidian", "steam": "steam", "steamicon": "steam",
+    "sketchup": "sketchup", "obsidian": "obsidian", "vscode": "visualstudiocode", "code": "visualstudiocode", "comvisualstudiocode": "visualstudiocode", "commicrosoftvscode": "visualstudiocode", "visualstudiocodebin": "visualstudiocode", "visualstudiocode": "visualstudiocode", "steam": "steam", "steamicon": "steam",
 }
 # Names the Marketplace and Labyrinth's own components use, which no installed desktop file would ask for: icon name -> logo
 EXTRA = {"proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "protonmail"}
