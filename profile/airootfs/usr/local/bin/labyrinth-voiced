@@ -99,7 +99,14 @@ class Voice:
             self.last = time.time()
             self.load()
             for s in split_sentences(clean(text)):
-                wav = self.engine.speak(s, rng)
+                for attempt in range(3):
+                    try:
+                        wav = self.engine.speak(s, rng)
+                        break
+                    except ValueError:
+                        if attempt == 2:
+                            raise
+                        print("voiced: invalid audio for a sentence, trying again", file=sys.stderr, flush=True)
                 self.counter += 1
                 path = os.path.join(RUN, "voiced-%d-%d.wav" % (os.getpid(), self.counter))
                 sf.write(path, wav, 24000, subtype="PCM_16")

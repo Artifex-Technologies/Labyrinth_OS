@@ -61,7 +61,7 @@ def suffix(dtype):
 
 
 class Chatterbox:
-    def __init__(self, directory, dtype="fp16", gpu=True):
+    def __init__(self, directory, dtype="fp16", gpu=True, decoder_dtype="fp32"):
         self.dir, self.dtype = os.path.expanduser(directory), dtype
         providers = ["CPUExecutionProvider"]
         if gpu:
@@ -72,10 +72,13 @@ class Chatterbox:
         self.providers = [p if isinstance(p, str) else p[0] for p in providers]
         t = time.time()
 
-        def session(name):
-            return ort.InferenceSession(os.path.join(self.dir, "onnx", name + suffix(dtype) + ".onnx"), providers=providers)
+        def session(name, dt=None):
+            return ort.InferenceSession(os.path.join(self.dir, "onnx", name + suffix(dt or dtype) + ".onnx"), providers=providers)
 
-        self.enc, self.emb, self.lm, self.dec = session("speech_encoder"), session("embed_tokens"), session("language_model"), session("conditional_decoder")
+        # The decoder in half precision overflows for some sentences (the audio comes out as NaN, which plays as a loud pop), so it stays in
+        # full precision (about 0.4 GB more) while the rest runs in the smaller type.
+        self.enc, self.emb, self.lm = session("speech_encoder"), session("embed_tokens"), session("language_model")
+        self.dec = session("conditional_decoder", decoder_dtype if dtype != "fp32" else dtype)
         self.tok = Tokenizer.from_file(os.path.join(self.dir, "tokenizer.json"))
         self.kv_names = [x.name for x in self.lm.get_inputs() if "past_key_values" in x.name]
         self.kv_dtype = [np.float16 if x.type == "tensor(float16)" else np.float32 for x in self.lm.get_inputs() if "past_key_values" in x.name]
@@ -118,4 +121,10 @@ class Chatterbox:
         speech = tokens[:, 1:-1]
         speech = np.concatenate([prompt_token, speech, np.full((1, 3), SILENCE, dtype=np.int64)], axis=1)
         wav = self.dec.run(None, dict(speech_tokens=speech, speaker_embeddings=speaker_embeddings, speaker_features=speaker_features))[0].squeeze(axis=0)
+        wav = np.asarray(wav, dtype=np.float32)
+        if not np.all(np.isfinite(wav)):
+            raise ValueError("the voice produced invalid audio")  # the caller tries again with another random draw
+        peak = float(np.max(np.abs(wav))) if wav.size else 0.0
+        if peak > 0.95:
+            wav = wav * (0.95 / peak)  # the decoder can overshoot full scale: scale down instead of letting it clip (clipping crackles)
         return trim_silence(wav)
