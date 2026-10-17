@@ -87,6 +87,15 @@ class Import(unittest.TestCase):
         apps = [("firefox", {"firefox", "firefoxwebbrowser"}), ("spotify-client", {"spotifyclient", "spotify"}), ("unrelated", {"unrelated"})]
         self.assertEqual(ii.match(items, pngs, apps), {"firefox": "ic_browser", "spotify-client": "spotify"})
 
+    def test_generic_names_are_not_guessed(self):
+        # two Android apps both called settings: the program called Settings gets the picture literally named "settings"
+        items = [("ComponentInfo{com.android.settings/x.A}", "ic_phone"), ("ComponentInfo{com.samsung.settings/x.A}", "ic_other"), ("ComponentInfo{a.b/x.A}", "settings")]
+        pngs = {"ic_phone": (192, b""), "ic_other": (192, b""), "settings": (192, b"")}
+        self.assertEqual(ii.match(items, pngs, [("preferences-system", {"preferencessystem", "settings"})]), {"preferences-system": "settings"})
+        # with no picture of that name, the ambiguous package name is left alone
+        items2 = items[:2]
+        self.assertEqual(ii.match(items2, {k: v for k, v in pngs.items() if k != "settings"}, [("preferences-system", {"settings"})]), {})
+
     def test_build_writes_a_theme(self):
         xml = '<resources><item component="ComponentInfo{org.videolan.vlc/x.Y}" drawable="vlc"/></resources>'
         with tempfile.TemporaryDirectory() as tmp:

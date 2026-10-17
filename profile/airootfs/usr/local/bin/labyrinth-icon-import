@@ -178,19 +178,30 @@ def android_keys(component, drawable):
 
 
 def match(items, pngs, apps):
-    """{linux icon name: picture name}: the first appfilter picture whose names fit the program, preferring exact name hits."""
-    chosen = {}
-    by_key = {}
+    """{linux icon name: picture name}. A program gets a picture when one of its own names (icon name, command, window
+    class, desktop file, display name) is the same as the picture's name; failing that, when it is the same as the pack's
+    package or class name for exactly one picture. A name that several pictures claim (generic ones like "settings")
+    is never guessed."""
+    by_name = {}      # normalised picture name -> picture
+    by_pkg = {}       # normalised package / class name -> set of pictures
     for comp, drawable in items:
         if drawable not in pngs:
             continue
-        for k in android_keys(comp, drawable):
-            by_key.setdefault(k, drawable)
+        by_name.setdefault(norm(drawable), drawable)
+        for k in android_keys(comp, drawable) - {norm(drawable)}:
+            by_pkg.setdefault(k, set()).add(drawable)
+    chosen = {}
     for icon, keys in apps:
-        for k in sorted(keys, key=lambda x: (x != norm(icon), -len(x))):
-            if len(k) >= 3 and k in by_key:
-                chosen[icon] = by_key[k]
+        order = sorted(keys, key=lambda x: (x != norm(icon), -len(x)))
+        for k in order:
+            if len(k) >= 3 and k in by_name:
+                chosen[icon] = by_name[k]
                 break
+        else:
+            for k in order:
+                if len(k) >= 4 and len(by_pkg.get(k, ())) == 1:
+                    chosen[icon] = next(iter(by_pkg[k]))
+                    break
     return chosen
 
 
@@ -212,6 +223,9 @@ def build(pack, name, out_root):
     print("The pack lists %d app(s), %d of them with a usable PNG picture (%d PNG pictures in all)." % (len(items), with_png, len(pngs)))
     print("%d installed program(s) looked at, %d matched." % (len(apps), len(chosen)))
     theme = os.path.join(out_root, name)
+    if os.path.isdir(theme) and os.path.isfile(os.path.join(theme, "index.theme")):
+        import shutil
+        shutil.rmtree(theme)   # a fresh import replaces the old one
     sizes = set()
     for icon, draw in chosen.items():
         if not safe_icon_name(icon):
