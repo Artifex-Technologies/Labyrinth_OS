@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""labyrinth-sarina-speak-voiced TEXT: say TEXT with the voice service (labyrinth-voiced), sentence by sentence.
+
+Called by labyrinth-sarina-speak. Each sentence arrives as a wav file while the next is still being made: this plays it, writes the loudness of
+the speech for the panel's voice island (speech.env: when playing starts, then one number 0 to 100 per 50 ms), and deletes it.
+Exit 0 if something was said; 1 if the service could not be reached or sent nothing (the caller then falls back to the Piper voice).
+"""
+import array
+import json
+import math
+import os
+import socket
+import subprocess
+import sys
+import time
+import wave
+
+RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")
+SOCK = os.environ.get("LABYRINTH_VOICED_SOCKET", os.path.join(RUN, "voiced.sock"))
+PLAYER = os.environ.get("LABYRINTH_PLAYER", "pw-play")
+
+
+def envelope(path):
+    """Loudness per 50 ms, relative to the loudest moment (0 to 100; a pause is flat)."""
+    w = wave.open(path)
+    rate, n = w.getframerate(), w.getnframes()
+    data = array.array("h")
+    data.frombytes(w.readframes(n))
+    step = max(1, rate // 20)
+    rms = []
+    for i in range(0, len(data), step):
+        chunk = data[i:i + step]
+        rms.append(math.sqrt(sum(v * v for v in chunk) / len(chunk)) / 32768.0 if chunk else 0.0)
+    peak = max(rms) if rms else 0.0
+    return [int(min(1.0, (r / peak) ** 0.9) * 100) if peak > 1e-4 and r > 0.04 * peak else 0 for r in rms]
+
+
+def main(text):
+    try:
+        s = socket.socket(socket.AF_UNIX)
+        s.settimeout(60)  # the first sentence may wait for the models to load
+        s.connect(SOCK)
+        f = s.makefile("rwb")
+        f.write((json.dumps({"op": "speak", "text": text}) + "\n").encode())
+        f.flush()
+    except OSError:
+        return 1
+    said = False
+    env = os.path.join(RUN, "speech.env")
+    try:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            msg = json.loads(line)
+            if msg.get("done") or msg.get("error"):
+                if msg.get("error"):
+                    print("voiced:", msg["error"], file=sys.stderr)
+                break
+            path = msg.get("wav", "")
+            if not path or not os.path.dirname(os.path.abspath(path)) == os.path.abspath(RUN):
+                continue  # only files the service made in our private folder
+            try:
+                levels = envelope(path)
+                with open(env, "w") as e:
+                    e.write("%d\n%s\n" % (int(time.time() * 1000) + 120, " ".join(map(str, levels))))
+                subprocess.run([PLAYER, path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                said = True
+            finally:
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
+    except (OSError, ValueError):
+        pass
+    finally:
+        try:
+            s.close()
+        except OSError:
+            pass
+        try:
+            os.unlink(env)
+        except OSError:
+            pass
+    return 0 if said else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(" ".join(sys.argv[1:])) if len(sys.argv) > 1 else 2)

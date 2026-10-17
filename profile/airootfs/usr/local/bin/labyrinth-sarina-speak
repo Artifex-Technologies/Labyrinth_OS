@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # labyrinth-sarina-speak [TEXT]: say Sarina's answer aloud, with a local neural voice (Piper). Text comes from the arguments or standard input.
 #
+# With the voice service running (labyrinth-voiced, Chatterbox) it speaks with that; otherwise with Piper below.
 # Used by the panel after a spoken question (Super+S) when "Sarina speaks her answers" is on (Settings > Sound). Nothing leaves the computer.
 # Piper runs from a private Python environment: ~/.local/share/labyrinth/tts/venv (or $LABYRINTH_TTS_DIR), voices in its voices/ folder.
 # The voice is the one line in ~/.config/labyrinth/sarina-voice (Settings > Sound; default en_US-amy-medium). Without Piper or the voice it prints why and exits 1.
@@ -39,6 +40,19 @@ text="${args[*]:-}"
 # plain speech: no markdown marks, no think blocks, one line, a sensible length
 text=$(printf '%s' "$text" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | tr '\n' ' ' | sed -E 's/[*`#_]+//g; s/\[([^]]*)\]\([^)]*\)/\1/g; s/  +/ /g; s/^ +//; s/ +$//' | cut -c1-700)
 [[ -n $text ]] || exit 0
+
+# The Chatterbox voice (labyrinth-voiced) when its service is up: it makes speech a sentence at a time and this plays them as they arrive.
+# Not for --to (that writes a file with Piper), and LABYRINTH_SARINA_ENGINE=piper forces the old voice. If it fails before saying anything, Piper speaks.
+if [[ -z $to && ${LABYRINTH_SARINA_ENGINE:-} != piper && -S ${LABYRINTH_VOICED_SOCKET:-$run/voiced.sock} ]]; then
+  mkdir -p "$run" && chmod 700 "$run"
+  stop
+  echo $$ > "$pidfile"
+  if "$(dirname "$(readlink -f "$0")")/labyrinth-sarina-speak-voiced" "$text"; then
+    rm -f "$pidfile"
+    exit 0
+  fi
+  rm -f "$pidfile"
+fi
 
 voice=${LABYRINTH_SARINA_VOICE:-$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina-voice" 2>/dev/null)}
 voice=${voice:-en_US-amy-medium}

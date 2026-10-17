@@ -5,5 +5,10 @@
 conf=${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env
 model=${LABYRINTH_VOICE_MODEL:-$(sed -n 's/^VOICE_MODEL=//p' "$conf" 2>/dev/null | head -n1)}
 [ -n "$model" ] || model=$(sed -n 's/^OPENAI_MODEL=//p' "$conf" 2>/dev/null | head -n1)
+# her voice too (labyrinth-voiced, if it is running): its models load while the question is being said, in the background
+if [ -S "${XDG_RUNTIME_DIR:-/tmp}/labyrinth-sarina/voiced.sock" ]; then
+  python3 -c 'import json,socket,os,sys
+s=socket.socket(socket.AF_UNIX); s.settimeout(5); s.connect(os.path.join(os.environ.get("XDG_RUNTIME_DIR","/tmp"),"labyrinth-sarina","voiced.sock")); s.sendall(b"{\"op\":\"warm\"}\n"); s.recv(200)' >/dev/null 2>&1 &
+fi
 curl -fsS -m 30 http://127.0.0.1:11434/api/generate -d "{\"model\":\"${model:-qwen3:8b}\",\"prompt\":\"\",\"keep_alive\":\"10m\"}" >/dev/null 2>&1
 exit 0

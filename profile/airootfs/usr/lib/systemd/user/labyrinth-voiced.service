@@ -1,0 +1,11 @@
+[Unit]
+Description=Sarina's voice (Chatterbox Turbo), loaded when she first speaks
+
+[Service]
+ExecStart=%h/.local/share/labyrinth/tts/gpu-venv/bin/python /usr/local/bin/labyrinth-voiced
+Restart=on-failure
+RestartSec=10
+Nice=5
+
+[Install]
+WantedBy=default.target

@@ -70,7 +70,11 @@ def main(argv):
         return 2
     ref, text, out = argv[1], argv[2], argv[3]
     dtype = argv[argv.index("--dtype") + 1] if "--dtype" in argv else "fp32"
-    providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if "--gpu" in argv else ["CPUExecutionProvider"]
+    providers = ["CPUExecutionProvider"]
+    if "--gpu" in argv:
+        if hasattr(ort, "preload_dlls"):
+            ort.preload_dlls()  # the CUDA and cuDNN libraries that came with onnxruntime-gpu
+        providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
     seed = int(argv[argv.index("--seed") + 1]) if "--seed" in argv else 1
     rng = np.random.default_rng(seed)
     t0 = time.time()
