@@ -144,6 +144,6 @@ and she tried that as a real path ("invalid", then offered to create the folder)
 Heimdall, ..."`; add more, one comma-separated line, in `~/.config/labyrinth/stt-words`); a spoken question may now use read tools and her vault tools only (`labyrinth-ask-sarina --voice`:
 `read_file, list_dir, glob_search, grep_search, vault_search, vault_read, vault_write`, with write permission but no other write tool), and the prompt tells her never to use a path
 from the spoken words (vault tools take a name inside the vault, like `Inbox/Voice test`); the vault tools explain that when a path is refused.
-**Pronunciation:** the voice reads letters, so names are respelled before speaking: `Zlothra` becomes `Zlawthruh` (the owner's "Zlaw-thr-uh", Sloth + Mothra), `Fylgja` `Filyah`, `Chymaera` `Kymeeruh`, `Heimdall` `Haymdawl`. Add or change entries
+**Pronunciation:** the voice reads letters, so names are respelled before speaking: `Sarina` becomes `Suhreenuh` (suh-REE-nuh), `Zlothra` becomes `Zlawthruh` (the owner's "Zlaw-thr-uh", Sloth + Mothra), `Fylgja` `Filyah`, `Chymaera` `Kymeeruh`, `Heimdall` `Haymdawl`. Add or change entries
 in `~/.config/labyrinth/pronunciations` (`word = how to spell it so it is said right`). Tested with a copy of the vault: a spoken, misheard path is now turned into a note
 `Inbox/Voice test.md` (committed to git). Not tested: the pronunciation by ear.

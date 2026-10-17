@@ -37,7 +37,7 @@ REFERENCE = os.environ.get("LABYRINTH_VOICE_REFERENCE", os.path.join(DIR, "voice
 
 # How names are said: the model reads letters, so "Zlothra" needs spelling the way it sounds. The owner can add or change entries in
 # ~/.config/labyrinth/pronunciations (lines "word = how to spell it so it is said right").
-PRONUNCIATIONS = {"zlothra": "Zlawthruh", "fylgja": "Filyah", "chymaera": "Kymeeruh", "heimdall": "Haymdawl"}
+PRONUNCIATIONS = {"sarina": "Suhreenuh", "zlothra": "Zlawthruh", "fylgja": "Filyah", "chymaera": "Kymeeruh", "heimdall": "Haymdawl"}
 
 
 def pronunciations():
