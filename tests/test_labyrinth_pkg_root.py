@@ -28,7 +28,7 @@ class Refusals(unittest.TestCase):
         self.assertEqual(run([GOOD, "pacman", "-S", "krita"], uid="").returncode, 2)
 
     def test_options_outside_the_short_list_are_refused(self):
-        for bad in ("--root", "--config", "--hookdir", "--sysroot", "-Syu", "--overwrite", "--dbpath"):
+        for bad in ("--root", "--config", "--hookdir", "--sysroot", "-Sy", "--overwrite", "--dbpath"):
             r = run([GOOD, "pacman", "-S", bad, "krita"])
             self.assertEqual(r.returncode, 2, bad)
             self.assertIn("not allowed", r.stderr)
@@ -36,6 +36,11 @@ class Refusals(unittest.TestCase):
     def test_odd_package_names_are_refused(self):
         for bad in ("krita;ls", "$(id)", "a b", "`x`"):
             self.assertEqual(run([GOOD, "pacman", "-S", bad]).returncode, 2, bad)
+
+    def test_ignore_takes_a_plain_list_and_syu_is_allowed(self):
+        self.assertEqual(run([GOOD, "pacman", "-Syu", "--ignore", "a b"]).returncode, 2)
+        self.assertEqual(run([GOOD, "pacman", "-Syu", "--ignore", "x;y"]).returncode, 2)
+        self.assertEqual(run([GOOD, "pacman", "-Syu", "--ignore"]).returncode, 2)
 
     def test_only_install_and_remove(self):
         self.assertEqual(run([GOOD, "pacman", "--needed", "krita"]).returncode, 2)
