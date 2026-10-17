@@ -147,3 +147,16 @@ from the spoken words (vault tools take a name inside the vault, like `Inbox/Voi
 **Pronunciation:** the voice reads letters, so names are respelled before speaking: `Sarina` becomes `Suhreenuh` (suh-REE-nuh), `Zlothra` becomes `Zlawthruh` (the owner's "Zlaw-thr-uh", Sloth + Mothra), `Fylgja` `Filyah`, `Chymaera` `Kymeeruh`, `Heimdall` `Haymdawl`. Add or change entries
 in `~/.config/labyrinth/pronunciations` (`word = how to spell it so it is said right`). Tested with a copy of the vault: a spoken, misheard path is now turned into a note
 `Inbox/Voice test.md` (committed to git). Not tested: the pronunciation by ear.
+
+## Tap to start a conversation, hold for one question (2026-10-17)
+
+- **Tap Super+S** (key held less than half a second): she listens until you stop talking (about a second of quiet after speech; a plain energy detector in
+  `packages/panel/src/convo.rs` that learns the room's noise in the first moments, tested with synthetic levels), then thinks and answers aloud, then listens again.
+  The turns share one Sarina session (`labyrinth-ask-sarina --conversation ID` resumes it), so "and what about the other one?" works.
+  **Tap again** while it is listening and the conversation ends. It also ends by itself after 12 seconds of nobody saying anything, or after two turns in a row with
+  nothing to hear. Pressing the key while she talks stops her and listens at once.
+- **Hold Super+S** (half a second or more): one question, sent when you let go; no listening afterwards, as before.
+- With her voice off (Settings > Sound), a tap is one question that ends when you stop talking (there is no spoken back and forth).
+- While she answers the microphone is off (no echo of her voice in your next question). Interrupting by voice (barge-in) is not built.
+- **Not tested by a person:** the whole flow in use (the panel code is built and installed, the end-of-speech detector is unit tested, the session continuity was tested with a
+  two-turn exchange). If the detector ends your sentences too early or too late, the numbers are at the top of `convo.rs` (`END_SILENCE_MS`).

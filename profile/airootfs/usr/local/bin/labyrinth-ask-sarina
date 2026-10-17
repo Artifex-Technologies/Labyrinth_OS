@@ -33,8 +33,10 @@ def env_file():
 VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write"
 
 
-def command(question, cwd, write=False, shell=False, voice=False):
-    cmd = ["sarina", "chat", question, "--cwd", os.path.abspath(cwd), "--session-dir", SESSIONS]
+def command(question, cwd, write=False, shell=False, voice=False, resume=None):
+    # `sarina resume ID "question"` continues a saved session (a conversation's later turns); otherwise a new one
+    cmd = ["sarina", "resume", resume, question] if resume else ["sarina", "chat", question]
+    cmd += ["--cwd", os.path.abspath(cwd), "--session-dir", SESSIONS]
     if voice:
         # a misheard word must never become a write anywhere else: only these tools exist for the question
         cmd += ["--tools", VOICE_TOOLS, "--allow-write"]
@@ -50,13 +52,40 @@ def main(argv):
     ap.add_argument("--cwd", default=os.getcwd())
     ap.add_argument("--write", action="store_true", help="let her write files for this question")
     ap.add_argument("--shell", action="store_true", help="let her run shell commands for this question")
+    ap.add_argument("--conversation", default="", help="a conversation id: its turns share one session (kept in $XDG_RUNTIME_DIR/labyrinth-sarina)")
     ap.add_argument("--voice", action="store_true", help="a spoken question: reading tools and her vault only (the vault is the one place it may write)")
     ap.add_argument("question", nargs="+")
     a = ap.parse_args(argv[1:])
     env = dict(os.environ)
     for k, v in env_file().items():
         env.setdefault(k, v)
-    return subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice), env=env).returncode
+    state, resume, before = None, None, set()
+    if a.conversation and all(c.isalnum() or c in "-_" for c in a.conversation):
+        run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")
+        os.makedirs(run, mode=0o700, exist_ok=True)
+        state = os.path.join(run, "conv-%s.session" % a.conversation)
+        try:
+            with open(state) as f:
+                sid = f.read().strip()
+            if sid and all(c.isalnum() for c in sid):
+                resume = sid
+        except OSError:
+            pass
+        if not resume:
+            try:
+                before = set(os.listdir(SESSIONS))
+            except OSError:
+                before = set()
+    rc = subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice, resume), env=env).returncode
+    if state and not resume:
+        try:  # the session this first turn made: the later turns resume it
+            new = [n for n in os.listdir(SESSIONS) if n.endswith(".json") and n not in before]
+            if len(new) == 1:
+                with open(state, "w") as f:
+                    f.write(new[0][:-5])
+        except OSError:
+            pass
+    return rc
 
 
 if __name__ == "__main__":
