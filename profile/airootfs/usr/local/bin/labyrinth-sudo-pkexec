@@ -1,0 +1,12 @@
+#!/bin/sh
+# A stand-in for `sudo` that asks through Labyrinth's own password box (polkit) instead of a terminal prompt. The Marketplace gives it to
+# `yay --sudo` and to labyrinth-apps (LABYRINTH_SUDO) so installs can run without a terminal. `sudo -v` and other flags do nothing here.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --) shift; break ;;
+    -*) shift ;;
+    *) break ;;
+  esac
+done
+[ $# -eq 0 ] && exit 0
+exec pkexec "$@"

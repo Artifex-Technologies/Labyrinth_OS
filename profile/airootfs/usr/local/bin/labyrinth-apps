@@ -69,7 +69,8 @@ def resolve(ids, presets, comps):
 
 
 def sudo(cmd):
-    return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else ["sudo"] + cmd
+    # LABYRINTH_SUDO: another program that gains administrator rights (the Marketplace uses its password-box one, no terminal)
+    return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else [os.environ.get("LABYRINTH_SUDO") or "sudo"] + cmd
 
 
 def plan_install(chosen, comps, installed):
