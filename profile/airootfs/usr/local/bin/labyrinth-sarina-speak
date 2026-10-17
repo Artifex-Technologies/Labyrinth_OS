@@ -55,5 +55,29 @@ if [[ -n $to ]]; then cp "$wav" "$to"; exit 0; fi
 
 stop                      # one voice at a time
 echo $$ > "$pidfile"
+# The loudness of the speech, one number (0 to 100) per 50 ms, for the panel's voice island to follow. First line: when playing starts
+# (milliseconds since 1970), second line: the numbers. A missing file only means the wave is drawn without following her.
+env=$run/speech.env
+if [[ -z ${LABYRINTH_NO_ENVELOPE:-} ]]; then
+  levels=$("$py" - "$wav" <<'PY' 2>/dev/null
+import array, math, sys, wave
+w = wave.open(sys.argv[1])
+rate, n = w.getframerate(), w.getnframes()
+data = array.array("h"); data.frombytes(w.readframes(n))
+step = max(1, rate // 20)
+rms = []
+for i in range(0, len(data), step):
+    chunk = data[i:i + step]
+    rms.append(math.sqrt(sum(v * v for v in chunk) / len(chunk)) / 32768.0 if chunk else 0.0)
+peak = max(rms) if rms else 0.0
+# relative to her loudest moment, so quiet and loud voices both move the whole wave; a pause is flat
+out = [str(int(min(1.0, (r / peak) ** 0.9) * 100)) if peak > 1e-4 and r > 0.04 * peak else "0" for r in rms]
+print(" ".join(out))
+PY
+)
+  if [[ -n $levels ]]; then
+    printf '%s\n%s\n' "$(( $(date +%s%3N) + 120 ))" "$levels" > "$env"
+  fi
+fi
 "${LABYRINTH_PLAYER:-pw-play}" "$wav" >/dev/null 2>&1
-rm -f "$pidfile"
+rm -f "$pidfile" "$env"

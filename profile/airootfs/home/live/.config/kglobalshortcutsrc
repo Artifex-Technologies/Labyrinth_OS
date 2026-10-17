@@ -24,9 +24,6 @@ RectangularRegionScreenShot=Meta+Shift+S\tMeta+Shift+Print
 [services][labyrinth-clipboard.desktop]
 _launch=Meta+V
 
-[services][labyrinth-sarina-ask.desktop]
-_launch=Meta+S
-
 # Plasma's own clipboard popup would also answer to Meta+V.
 [klipper]
 show-on-mouse-pos=none,Meta+V,Show Clipboard Items at Mouse Position

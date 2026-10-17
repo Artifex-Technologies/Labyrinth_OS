@@ -89,3 +89,21 @@ She stops when you press Super+S again, Esc, or click outside the card.
   by us (Hugging Face serves them over HTTPS); the sha256 of the three at download time: amy 469c630d..., see `sha256sum` on the files.
 - **Not built:** speaking while she is still writing (it waits for the whole answer), a different voice for warnings, speaking typed questions
   (it is only for spoken ones, on purpose: she does not talk at you when you typed).
+
+
+## Hold to talk, and the voice island (2026-10-16)
+
+- **Hold Super+S, talk, let go.** No card opens and there is no Send button. The panel registers the shortcut itself with KDE's global-shortcut
+  daemon (`org.kde.KGlobalAccel`, component `labyrinth-panel`, action `ask-sarina`; change it in System Settings > Shortcuts) because only
+  registered actions report the key coming UP (`globalShortcutReleased`). A tap shorter than a third of a second is not a question: it just stops her talking.
+  The old desktop-file shortcut (`labyrinth-sarina-ask.desktop`) is unregistered at startup. The D-Bus call `AskSarina` still works as a press-to-start,
+  press-to-send fallback.
+- **The island:** while you talk, while she thinks, and while she answers, the notch grows downwards into a black pill with a glowing wave in it
+  (`packages/panel/src/voicewave.rs`, the iOS 9 Siri wave: sine curves squeezed at the ends, added together so crossings glow). The wave follows
+  the microphone (the newest 120 ms of the recording as it is written) and, while she speaks, her voice: `labyrinth-sarina-speak` writes the
+  loudness of the speech to `$XDG_RUNTIME_DIR/labyrinth-sarina/speech.env` (one number per 50 ms) just before it plays, and the panel reads it by the clock.
+  Colours: copper (like the ribbon picture), Siri, or Labyrinth, in Settings > Sound > Sarina's voice.
+- **No answer card.** She answers aloud. If speaking is off, the answer is a notification; failures ("I did not catch that") are a notification and are
+  said aloud too.
+- **Tested:** the wave and levels (unit tests and pictures), the key press and release through the real shortcut daemon (a synthetic Super+S held for
+  1.3 s showed the island, released it, and the island went away after the answer path). **Not tested by a person:** talking, hearing the answer, how the wave feels.

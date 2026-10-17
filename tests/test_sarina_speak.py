@@ -28,7 +28,7 @@ class Speak(unittest.TestCase):
         make(self.piper, 'cat > %s; echo "$4" > %s.model; echo wav > "$6"' % (self.said, self.said))
         self.player = os.path.join(self.d, "player")
         make(self.player, 'echo "played $1" >> %s' % self.played)
-        self.env = {"PATH": "/usr/bin:/bin", "HOME": self.d, "XDG_RUNTIME_DIR": self.d, "LABYRINTH_TTS_DIR": self.tts, "LABYRINTH_TTS_PYTHON": self.piper, "LABYRINTH_PLAYER": self.player}
+        self.env = {"PATH": "/usr/bin:/bin", "HOME": self.d, "XDG_RUNTIME_DIR": self.d, "LABYRINTH_TTS_DIR": self.tts, "LABYRINTH_TTS_PYTHON": self.piper, "LABYRINTH_PLAYER": self.player, "LABYRINTH_NO_ENVELOPE": "1"}
 
     def run_it(self, *args, stdin="", env=None):
         return subprocess.run(["bash", SCRIPT, *args], input=stdin, capture_output=True, text=True, env=dict(self.env, **(env or {})))
