@@ -30,6 +30,27 @@ import sys
 SRC = os.environ.get("LABYRINTH_BRAND_ICONS", "/usr/share/labyrinth/brand-icons")
 PURPLE = "7c54d6"
 
+
+def accent_hex():
+    """The desktop's accent color (kdeglobals), as rrggbb; Labyrinth purple if it is not set."""
+    base = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    try:
+        section = ""
+        for line in open(os.path.join(base, "kdeglobals"), encoding="utf-8", errors="replace"):
+            line = line.strip()
+            if line.startswith("["):
+                section = line
+            elif section == "[General]" and line.startswith("AccentColor="):
+                r, g, b = [int(x) for x in line.split("=", 1)[1].split(",")]
+                return "%02x%02x%02x" % (r, g, b)
+    except (OSError, ValueError):
+        pass
+    return PURPLE
+
+
+def conf_path():
+    return os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "labyrinth", "brand-pack.json")
+
 # desktop icon names (normalised: lower case, letters and digits only) that are not the logo's own name
 ALIASES = {
     "vivaldistable": "vivaldi", "googlechrome": "googlechrome", "googlechromestable": "googlechrome",
@@ -48,7 +69,7 @@ ALIASES = {
     "sketchup": "sketchup", "obsidian": "obsidian", "steam": "steam", "steamicon": "steam",
 }
 # Names the Marketplace and Labyrinth's own components use, which no installed desktop file would ask for: icon name -> logo
-EXTRA = {"proton-drive": "protondrive", "proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "protonmail"}
+EXTRA = {"proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "protonmail"}
 # Labyrinth's own glyphs: file -> [(folder in the pack, icon name)]
 NATIVE = {
     "sarina": [("apps", n) for n in ("sarina", "labyrinth-sarina")],
@@ -108,7 +129,7 @@ def inner(svg_text):
     return [float(v) for v in vb], body
 
 
-def make(shape, style, svg_text, brand):
+def make(shape, style, svg_text, brand, purple=PURPLE):
     """One icon: the logo (single colour) on the tile the shape and style ask for."""
     vb, body = inner(svg_text)
     size = GLYPH_SIZE[shape] * 1024
@@ -117,13 +138,13 @@ def make(shape, style, svg_text, brand):
     x, y = (1024 - w) / 2, (1024 - h) / 2
     dark_brand = luminance(brand) < 0.14
     if style == "purple":
-        tile, glyph = "1b1b22", PURPLE
+        tile, glyph = "1b1b22", purple
     elif style == "dark":
         tile, glyph = "1b1b22", ("ffffff" if dark_brand else brand)
     else:
         tile, glyph = (("2b2b36" if dark_brand else brand), "ffffff")
     if shape == "glyph":
-        glyph = PURPLE if style == "purple" else ("ffffff" if dark_brand else brand)
+        glyph = purple if style == "purple" else ("ffffff" if dark_brand else brand)
         tilesvg = ""
     else:
         tilesvg = SHAPES[shape].format(fill="#" + tile)
@@ -177,7 +198,16 @@ def main():
     ap.add_argument("--style", choices=["brand", "dark", "purple"], default="brand")
     ap.add_argument("--name", default="Labyrinth Brands")
     ap.add_argument("--out", help="folder to write (default ~/.local/share/icons/NAME)")
+    ap.add_argument("--rebuild", action="store_true", help="build again with the shape, style and name of the last build (used when the accent changes)")
     a = ap.parse_args()
+    if a.rebuild:
+        try:
+            last = json.load(open(conf_path()))
+        except (OSError, ValueError):
+            print("No earlier build to repeat.")
+            return 0
+        a.shape, a.style, a.name = last.get("shape", a.shape), last.get("style", a.style), last.get("name", a.name)
+    accent = accent_hex()
 
     colors = json.load(open(os.path.join(SRC, "colors.json")))
     slugs = set(colors)
@@ -193,7 +223,7 @@ def main():
     # Labyrinth's own apps
     for key, names in NATIVE.items():
         svg = open(os.path.join(SRC, "native", key + ".svg"), encoding="utf-8").read()
-        icon = make(a.shape, a.style, svg, PURPLE)
+        icon = make(a.shape, a.style, svg, accent, accent)
         for ctx, n in names:
             open(os.path.join(out, ctx, "scalable", n + ".svg"), "w", encoding="utf-8").write(icon)
             written += 1
@@ -205,20 +235,27 @@ def main():
             continue
         seen.add(icon_name)
         svg = open(os.path.join(SRC, "icons", slug + ".svg"), encoding="utf-8").read()
-        open(os.path.join(apps, icon_name + ".svg"), "w", encoding="utf-8").write(make(a.shape, a.style, svg, colors[slug].lower()))
+        open(os.path.join(apps, icon_name + ".svg"), "w", encoding="utf-8").write(make(a.shape, a.style, svg, colors[slug].lower(), accent))
         written += 1
     for icon_name, slug in EXTRA.items():
         if icon_name in seen or slug not in slugs:
             continue
         seen.add(icon_name)
         svg = open(os.path.join(SRC, "icons", slug + ".svg"), encoding="utf-8").read()
-        open(os.path.join(apps, icon_name + ".svg"), "w", encoding="utf-8").write(make(a.shape, a.style, svg, colors[slug].lower()))
+        open(os.path.join(apps, icon_name + ".svg"), "w", encoding="utf-8").write(make(a.shape, a.style, svg, colors[slug].lower(), accent))
         written += 1
     dirs = ",".join(f"{c}/scalable" for c in CONTEXTS)
     sections = "".join(f"{NL}[{c}/scalable]{NL}Size=128{NL}MinSize=8{NL}MaxSize=1024{NL}Type=Scalable{NL}Context={x}{NL}" for c, x in CONTEXTS.items())
     text = f"[Icon Theme]{NL}Name={a.name}{NL}Comment=App logos from Simple Icons ({a.shape}, {a.style}) and Labyrinth's own glyphs; the rest comes from the packs behind it{NL}Inherits=hicolor{NL}Directories={dirs}{NL}{sections}"
     open(os.path.join(out, "index.theme"), "w", encoding="utf-8").write(text)
     subprocess.run(["gtk-update-icon-cache", "-qf", out], stderr=subprocess.DEVNULL, check=False)
+    if not a.out:
+        # remembered, so the pack can be rebuilt in the new accent color when it changes (--rebuild)
+        try:
+            os.makedirs(os.path.dirname(conf_path()), exist_ok=True)
+            json.dump({"shape": a.shape, "style": a.style, "name": a.name}, open(conf_path(), "w"))
+        except OSError:
+            pass
     print(f"{a.name}: {written} icons ({a.shape}, {a.style}) in {out}")
 
 

@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""labyrinth-app-icons: colour Labyrinth's own app icons (Marketplace, Sarina, Heimdall, Limbo) from the desktop's accent color.
+
+  labyrinth-app-icons              use the accent from the desktop's settings (kdeglobals)
+  labyrinth-app-icons R,G,B        use this one (Settings passes the new accent as it changes it)
+
+Writes accent-tinted icons into the user's copy of the Labyrinth icon pack (~/.local/share/icons/Labyrinth), which comes before the
+system's, so the dock, Minos, Settings and the Marketplace pick them up. Each app gets a different shade of the accent (a hue turned
+one way or the other), so they still tell apart. Run at each login and by Settings when the accent changes.
+"""
+import colorsys
+import os
+import re
+import sys
+
+SRC = os.environ.get("LABYRINTH_BRAND_ICONS", "/usr/share/labyrinth/brand-icons") + "/native/"
+# icon name, glyph file, hue turn (degrees), saturation scale
+APPS = [("labyrinth-market", "marketplace", 0, 1.0), ("sarina", "sarina", 38, 1.0), ("heimdall", "heimdall", -38, 0.95), ("limbo", "limbo", 0, 0.16)]
+
+
+def read_accent():
+    base = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    try:
+        section = ""
+        for line in open(os.path.join(base, "kdeglobals"), encoding="utf-8", errors="replace"):
+            line = line.strip()
+            if line.startswith("["):
+                section = line
+            elif section == "[General]" and line.startswith("AccentColor="):
+                return tuple(int(x) for x in line.split("=", 1)[1].split(","))
+    except (OSError, ValueError):
+        pass
+    return (124, 84, 214)
+
+
+def hexcol(h, s, v):
+    r, g, b = colorsys.hsv_to_rgb(h % 1.0, max(0.0, min(1.0, s)), max(0.0, min(1.0, v)))
+    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+
+
+def icon_svg(path_d, accent, turn, sat_scale):
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in accent))
+    h = h + turn / 360.0
+    s = s * sat_scale
+    top = hexcol(h, s * 0.62, min(1.0, v + 0.18))
+    bottom = hexcol(h, s * 1.02, v * 0.72)
+    sc = 0.0344
+    x = (1024 - 19200 * sc) / 2
+    y = x + 19200 * sc
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{top}"/><stop offset="1" stop-color="{bottom}"/></linearGradient>
+<linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".30"/><stop offset=".5" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+</defs>
+<rect x="40" y="40" width="944" height="944" rx="215" fill="url(#g)"/>
+<rect x="40" y="40" width="944" height="944" rx="215" fill="url(#h)"/>
+<rect x="41.5" y="41.5" width="941" height="941" rx="213.5" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="3"/>
+<g transform="translate({x + 6:.1f},{y + 14:.1f}) scale({sc},-{sc})"><path fill="#000000" fill-opacity=".28" d="{path_d}"/></g>
+<g transform="translate({x:.1f},{y:.1f}) scale({sc},-{sc})"><path fill="#ffffff" d="{path_d}"/></g>
+</svg>
+"""
+
+
+def main(argv):
+    accent = read_accent()
+    if argv and re.match(r"^\d+,\d+,\d+$", argv[0]):
+        accent = tuple(int(x) for x in argv[0].split(","))
+    data = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
+    theme = os.path.join(data, "icons", "Labyrinth")
+    out = os.path.join(theme, "apps", "scalable")
+    os.makedirs(out, exist_ok=True)
+    if not os.path.isfile(os.path.join(theme, "index.theme")) and os.path.isfile("/usr/share/icons/Labyrinth/index.theme"):
+        import shutil
+        shutil.copy("/usr/share/icons/Labyrinth/index.theme", os.path.join(theme, "index.theme"))
+    for name, glyph, turn, sat in APPS:
+        try:
+            d = re.search(r'<path d="([^"]+)"', open(SRC + glyph + ".svg", encoding="utf-8").read()).group(1)
+        except (OSError, AttributeError):
+            continue
+        with open(os.path.join(out, name + ".svg"), "w", encoding="utf-8") as f:
+            f.write(icon_svg(d, accent, turn, sat))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -57,6 +57,9 @@ logo() {
 refresh() { gtk-update-icon-cache -qf "$1" 2>/dev/null || true; }
 clear_hicolor() { rm -f "$HI/minos.svg" "$HI_PNG/minos.png"; }
 
+# the Labyrinth pack's copy follows the accent even while another pack is in use, so switching back finds it current
+[[ $pack == Labyrinth || ! -d $THEME ]] || logo "$shape" "$THEME/apps/scalable/minos.svg"
+
 case $pack in
   Labyrinth)
     [[ -e $THEME/index.theme ]] || { mkdir -p "$THEME" && cp /usr/share/icons/Labyrinth/index.theme "$THEME/index.theme"; }
@@ -93,3 +96,6 @@ case $pack in
     refresh "$DATA/icons/hicolor"
     ;;
 esac
+
+# Labyrinth's other app icons (Marketplace, Sarina, Heimdall, Limbo) take the accent too
+command -v labyrinth-app-icons >/dev/null 2>&1 && labyrinth-app-icons ${accent:+"$accent"} || true
