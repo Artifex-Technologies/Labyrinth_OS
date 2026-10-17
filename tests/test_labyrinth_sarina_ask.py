@@ -16,11 +16,13 @@ def stub(d, name, body):
 
 
 class SarinaAsk(unittest.TestCase):
-    def run_it(self, whisper=None, model=True, ask="echo '**Sure.** It is `ok`.'", ollama=True, home_conf=None):
+    def run_it(self, whisper=None, model=True, ask="echo '**Sure.** It is `ok`.'", ollama=True, home_conf=None, tone=None, env_extra=None):
         d = tempfile.mkdtemp()
         stub(d, "sarina", "exit 0")
         stub(d, "curl", "exit 0" if ollama else "exit 7")
         stub(d, "labyrinth-ask-sarina", ask)
+        if tone is not None:
+            stub(d, "sarina-tone", tone)
         if whisper is not None:
             stub(d, "whisper-cli", whisper)
         wav = os.path.join(d, "q.wav")
@@ -33,7 +35,18 @@ class SarinaAsk(unittest.TestCase):
             m = os.path.join(d, "ggml-test.bin")
             open(m, "wb").write(b"x")
             env["LABYRINTH_STT_MODEL"] = m
+        env.update(env_extra or {})
         return subprocess.run(["bash", SCRIPT, wav], capture_output=True, text=True, env=env)
+
+    def test_a_tone_hint_reaches_her_prompt_only_when_switched_on(self):
+        asks = 'echo "$@" | tr -d "\\n"'
+        r = self.run_it(whisper="echo what time is it", ask=asks, tone="echo The owner sounds rushed: be brief.")
+        self.assertIn("Style hint, never mention it", r.stdout)
+        self.assertIn("sounds rushed", r.stdout)
+        r = self.run_it(whisper="echo what time is it", ask=asks, tone="echo The owner sounds rushed: be brief.", env_extra={"LABYRINTH_TONE": "0"})
+        self.assertNotIn("sounds rushed", r.stdout)
+        r = self.run_it(whisper="echo what time is it", ask=asks, tone="exit 0")  # no hint (nothing unusual, or not enough history)
+        self.assertNotIn("Style hint", r.stdout)
 
     def test_no_recording(self):
         r = subprocess.run(["bash", SCRIPT, "/nonexistent.wav"], capture_output=True, text=True)
