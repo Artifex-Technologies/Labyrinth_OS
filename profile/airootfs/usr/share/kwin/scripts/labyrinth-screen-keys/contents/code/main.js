@@ -134,3 +134,10 @@ route("ShiftMinus", "Shrink tile height (tiling screen)", "Meta+Shift+-",
       function () { krohnkite("ShrinkHeight"); }, null);
 route("ShiftEqual", "Grow tile height (tiling screen)", "Meta+Shift+=",
       function () { krohnkite("GrowHeight"); }, null);
+
+// Win + Ctrl + Shift + W: remove the current desktop (its windows move to the one before). The last desktop stays.
+registerShortcut("Labyrinth RemoveDesktop", "Labyrinth: Remove the current desktop", "Meta+Ctrl+Shift+W", function () {
+    if (workspace.desktops.length > 1) {
+        workspace.removeDesktop(workspace.currentDesktop);
+    }
+});
