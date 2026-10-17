@@ -344,3 +344,10 @@ position with your dock and the pane on the real screen**. Theme option (macOS v
 5. Check the sandbox on an Electron app (Vivaldi, VS Code) before offering it to more than the owner.
 6. Daedalus: drive the viewer by hand, then milestone 2 (drawing tools), keymaps for SketchUp and Fusion.
 7. Secret scanning + push protection on the public repos (needs the owner's yes); the GitGuardian email is unexplained.
+
+## 2026-10-16: login screen broke after the Plasma 6.8 upgrade
+
+SDDM's WhiteSur theme (`whitesur-kde-theme` r2026.08.07) failed with "VirtualKeyboardLoader is not a type" (Main.qml line 316): it imports a Breeze
+SDDM component that Plasma 6.8's Breeze theme no longer has. The login box still showed but the page was an error. Fix: `Current=breeze` in
+`/etc/sddm.conf.d/theme.conf` (repo: `profile/airootfs/etc/sddm.conf.d/theme.conf`). Lesson: a login theme from outside Plasma can break on any
+Plasma upgrade; keep Breeze as the default and test any other theme in a VM after each upgrade. `labyrinth-selfcheck` should check the SDDM theme (todo).
