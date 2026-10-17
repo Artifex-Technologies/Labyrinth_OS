@@ -208,6 +208,9 @@ def build(pack, name, out_root):
         raise SystemExit("That file has no appfilter.xml, so there is no list of which app gets which picture.")
     apps = installed_apps()
     chosen = match(items, pngs, apps)
+    with_png = sum(1 for _, d in items if d in pngs)
+    print("The pack lists %d app(s), %d of them with a usable PNG picture (%d PNG pictures in all)." % (len(items), with_png, len(pngs)))
+    print("%d installed program(s) looked at, %d matched." % (len(apps), len(chosen)))
     theme = os.path.join(out_root, name)
     sizes = set()
     for icon, draw in chosen.items():
@@ -220,7 +223,9 @@ def build(pack, name, out_root):
             f.write(b)
         sizes.add(w)
     if not chosen:
-        raise SystemExit("None of the installed programs matched a picture in that pack.")
+        ex_pack = ", ".join(sorted({d for _, d in items})[:8])
+        ex_here = ", ".join(sorted(i for i, _ in apps)[:8])
+        raise SystemExit("None of the installed programs matched a picture in that pack.\n  The pack's picture names look like: %s\n  Installed icon names look like: %s" % (ex_pack, ex_here))
     dirs = ",".join("%dx%d/apps" % (s, s) for s in sorted(sizes))
     parts = "".join("\n[%dx%d/apps]\nSize=%d\nType=Threshold\nContext=Applications\n" % (s, s, s) for s in sorted(sizes))
     with open(os.path.join(theme, "index.theme"), "w", encoding="utf-8") as f:
@@ -253,6 +258,7 @@ def main(argv):
         print("error: that is not a zip/apk file", file=sys.stderr)
         return 1
     print("%s: %d of %d installed programs matched, written to %s" % (name, n, total, theme))
+    print("Choose it in Settings > Appearance > Icons (use the 'Use' button); programs without a match keep their usual icon.")
     return 0
 
 
