@@ -107,3 +107,11 @@ She stops when you press Super+S again, Esc, or click outside the card.
   said aloud too.
 - **Tested:** the wave and levels (unit tests and pictures), the key press and release through the real shortcut daemon (a synthetic Super+S held for
   1.3 s showed the island, released it, and the island went away after the answer path). **Not tested by a person:** talking, hearing the answer, how the wave feels.
+
+## Graphics-card memory (2026-10-16, RTX 2080 Ti, 11 GB)
+
+Measured with `qwen3:8b` at 16k context: the model used 7272 MiB (about 5.2 GB of weights and 2.2 GB of conversation memory), the desktop and
+browsers about 0.9 GB. Flash attention plus an 8-bit key/value cache (`OLLAMA_FLASH_ATTENTION=1`, `OLLAMA_KV_CACHE_TYPE=q8_0`, a drop-in in
+`/etc/systemd/system/ollama.service.d/labyrinth-vram.conf`, installed and Ollama restarted) brought it to 6188 MiB: **1.08 GB freed, speed 90 to 88
+tokens/s** (a 2 % difference, same ten-line test). A smaller context (8k) would free about 0.5 GB more; the voice answer model is unloaded 10
+minutes after the last question. A bigger card is not needed for a voice model of about 350M parameters: it should fit in what is left (about 4 GB).
