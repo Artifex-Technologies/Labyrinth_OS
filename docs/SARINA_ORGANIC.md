@@ -40,3 +40,19 @@ glue is shell and Python today (`labyrinth-sarina-ask`, `labyrinth-sarina-speak`
   The effect on her wording is modest so far.
 - **Not built:** the small "mm / let me check" sounds (with the fast model most answers arrive before they would play), tone-aware listening (needs your yes: it is derived from your voice),
   a wake word, natural variation in the speech.
+
+## Status, 2026-10-17 (later): tone-awareness and delivery
+
+- **Tone-awareness: built** (`Sarina/go/tone`, command `sarina-tone`, tested with synthetic speech). From each spoken question's recording (deleted afterwards) it measures loudness, pitch and
+  pitch movement, speaking pace and pauses, compares them with this speaker's own running averages and, only for a clear difference, gives Sarina a private style hint ("sounds rushed: be
+  brief", "sounds low or tired: gentle, no jokes unless they make one", "animated: matching the energy is fine"). **No recordings are needed**: it learns from ordinary questions, says nothing until it has
+  heard 12 of them, and follows slow changes (the averages move with a floor on the update weight). Kept: one private file (`~/.local/state/labyrinth/tone-baseline.json`, mode 600, a few numbers).
+  Settings > Sound: "Notice how I sound" (on) and "Forget how I sound". She is told never to mention the hint. The hint text does appear in her session file (Heimdall reads those). It reads how a voice differs from
+  its own usual, not emotions; expect it to be wrong sometimes, which is why it only nudges style.
+- **Delivery and small sounds: built.** She may start a sentence with `[joking]`, `[unsure]`, `[urgent]`, `[gentle]` or `[serious]` (the voice prompt and her Persona note say when, and to be sparing).
+  The voice service then changes how steady or lively the voice is (sampling temperature 0.92 / 0.85 / 0.72 / 0.62 / 0.55), the pauses around the sentence, and sometimes adds a small sound: a soft chuckle after a
+  joke (60 %), a hesitation before an unsure sentence ("Hmm...", "Um...", "Well..."), a quiet sigh before comfort (35 %); urgent ends with "!"; serious adds nothing. Any other `[tag]` in her text is dropped, so she cannot
+  make the voice cough or laugh by accident. Tested: the text handling (`tests/test_voiced_text.py`) and valid audio for every style; played once: not judged by the assistant.
+- **Fixed on the way:** the half-precision speech encoder produced NaN features for the reference voice on the graphics card (the whole sentence came out as a pop); the conditioning is now made once in full precision
+  on the processor.
+- Still not built: a wake word, streaming sentences into the voice, a spoken "mm" while she thinks.
