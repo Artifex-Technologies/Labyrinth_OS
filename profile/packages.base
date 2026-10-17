@@ -150,6 +150,9 @@ noto-fonts-emoji
 # Labyrinth's own file explorer, built from packages/pkgbuilds into the local repo
 labyrinth-minos
 labyrinth-settings
+labyrinth-polkit
+labyrinth-portal
+labyrinth-market
 labyrinth-calculator
 labyrinth-panel
 labyrinth-idle
