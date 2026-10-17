@@ -51,6 +51,9 @@ ALIASES = {
 EXTRA = {"proton-drive": "protondrive", "proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "protonmail"}
 # Labyrinth's own glyphs: file -> [(folder in the pack, icon name)]
 NATIVE = {
+    "heimdall": [("apps", "heimdall")],
+    "limbo": [("apps", "limbo")],
+    "marketplace": [("apps", n) for n in ("labyrinth-market", "applications-all")],
     "minos": [("apps", "minos")],
     "settings": [("apps", n) for n in ("labyrinth-settings", "preferences-system", "systemsettings", "org.kde.systemsettings")],
     "calculator": [("apps", n) for n in ("labyrinth-calculator", "accessories-calculator", "org.kde.kcalc", "calculator")],
