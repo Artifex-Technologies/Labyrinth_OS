@@ -49,7 +49,7 @@ was removed. `ggml-tiny.en.bin` was not tried (it mishears more and the speech s
 **The card shows what she heard while she is still working:** the script prints `Heard: "..."` the moment the words are known and the panel
 shows it under "Sarina is thinking…".
 
-**Speaking the answer back** is not built: `piper` (the program) is installed but there is no voice model, and Sarina's own
+**Speaking the answer back: BUILT 2026-10-16** (see the section at the end). The old note follows, kept for history: `piper` (the program) is installed but there is no voice model, and Sarina's own
 `voice-chat` uses a Python piper. A later step: `piper --model VOICE.onnx --output-raw | pw-play` for the answer, behind a setting,
 off by default.
 
@@ -71,3 +71,21 @@ Tests: `tests/test_labyrinth_sarina_ask.py` runs the script with stand-ins (no m
 - With a stand-in for `pw-record`: the Listening card with its seconds, Send, and the hand-over to
   `labyrinth-sarina-ask`; the card showed its "model server is not running" message.
 - NOT tested: real audio, a real answer on the card, a long answer, closing during "thinking".
+
+
+## Sarina speaks her answers (2026-10-16)
+
+After a question you SPOKE (Super+S), the panel runs `labyrinth-sarina-speak` with the answer (not the `Heard:` line): Piper, a local neural
+voice, makes a wav in the private runtime folder and `pw-play` plays it; the wav is deleted. Settings > Sound > "Sarina's voice" has the switch
+(`sarina_speaks` in panel.conf, on by default) and a voice list with "Hear it" (the choice is one line in `~/.config/labyrinth/sarina-voice`).
+She stops when you press Super+S again, Esc, or click outside the card.
+
+- **Set up here:** Piper 1.8.0 in `~/.local/share/labyrinth/tts/venv` (from PyPI, no root) and three voices (en_US-amy-medium default,
+  en_GB-jenny_dioco-medium, en_US-lessac-medium). On another computer: `labyrinth-sarina-voice-setup`. The system package named `piper` in Arch is a
+  gaming-mouse tool, not this; the AUR has `piper-tts` too, but the venv avoids root and AUR builds.
+- **Speed:** about 1.7 s to make a sentence on this machine, so the answer card appears first and the voice follows a moment later.
+- **Tested:** the script and the cleaning of the text with a stand-in for Piper (`tests/test_sarina_speak.py`), and the real voices writing real wav
+  files (no playback). **Not tested:** hearing it, the panel starting it after a real answer, Esc stopping it. Voice downloads were not checksum-verified
+  by us (Hugging Face serves them over HTTPS); the sha256 of the three at download time: amy 469c630d..., see `sha256sum` on the files.
+- **Not built:** speaking while she is still writing (it waits for the whole answer), a different voice for warnings, speaking typed questions
+  (it is only for spoken ones, on purpose: she does not talk at you when you typed).

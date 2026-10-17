@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# labyrinth-sarina-speak [TEXT]: say Sarina's answer aloud, with a local neural voice (Piper). Text comes from the arguments or standard input.
+#
+# Used by the panel after a spoken question (Super+S) when "Sarina speaks her answers" is on (Settings > Sound). Nothing leaves the computer.
+# Piper runs from a private Python environment: ~/.local/share/labyrinth/tts/venv (or $LABYRINTH_TTS_DIR), voices in its voices/ folder.
+# The voice is the one line in ~/.config/labyrinth/sarina-voice (Settings > Sound; default en_US-amy-medium). Without Piper or the voice it prints why and exits 1.
+#
+#   labyrinth-sarina-speak "Hello"          say it
+#   labyrinth-sarina-speak --stop           stop whatever is being said now
+#   labyrinth-sarina-speak --to FILE.wav    write the speech to a file instead of playing it (tests, choosing a voice)
+# Setup: python3 -m venv ~/.local/share/labyrinth/tts/venv && ~/.local/share/labyrinth/tts/venv/bin/pip install piper-tts
+#        ~/.local/share/labyrinth/tts/venv/bin/python -m piper.download_voices --download-dir ~/.local/share/labyrinth/tts/voices en_US-amy-medium
+set -u
+
+dir=${LABYRINTH_TTS_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/labyrinth/tts}
+run=${XDG_RUNTIME_DIR:-/tmp}/labyrinth-sarina
+pidfile=$run/speaking.pid
+
+stop() {
+  [[ -f $pidfile ]] || return 0
+  local p; p=$(cat "$pidfile" 2>/dev/null)
+  if [[ $p =~ ^[0-9]+$ ]] && [[ $(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null) == *labyrinth-sarina-speak* ]]; then
+    pkill -TERM -P "$p" 2>/dev/null; kill -TERM "$p" 2>/dev/null
+  fi
+  rm -f "$pidfile"
+}
+
+to=""
+args=()
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --stop) stop; exit 0 ;;
+    --to) to=${2:-}; shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+text="${args[*]:-}"
+[[ -n $text ]] || text=$(cat)
+# plain speech: no markdown marks, no think blocks, one line, a sensible length
+text=$(printf '%s' "$text" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | tr '\n' ' ' | sed -E 's/[*`#_]+//g; s/\[([^]]*)\]\([^)]*\)/\1/g; s/  +/ /g; s/^ +//; s/ +$//' | cut -c1-700)
+[[ -n $text ]] || exit 0
+
+voice=${LABYRINTH_SARINA_VOICE:-$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina-voice" 2>/dev/null)}
+voice=${voice:-en_US-amy-medium}
+[[ $voice =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "bad voice name"; exit 1; }
+model=$dir/voices/$voice.onnx
+py=${LABYRINTH_TTS_PYTHON:-$dir/venv/bin/python}
+[[ -x $py && -f $model ]] || { echo "Speaking is not set up: Piper or the voice $voice is missing (see docs/SARINA_VOICE.md)."; exit 1; }
+
+mkdir -p "$run" && chmod 700 "$run"
+wav=$(mktemp "$run/speech.XXXXXX.wav")
+trap 'rm -f "$wav"' EXIT
+printf '%s' "$text" | "$py" -m piper -m "$model" -f "$wav" >/dev/null 2>&1 || { echo "The voice could not make that sound."; exit 1; }
+if [[ -n $to ]]; then cp "$wav" "$to"; exit 0; fi
+
+stop                      # one voice at a time
+echo $$ > "$pidfile"
+"${LABYRINTH_PLAYER:-pw-play}" "$wav" >/dev/null 2>&1
+rm -f "$pidfile"
