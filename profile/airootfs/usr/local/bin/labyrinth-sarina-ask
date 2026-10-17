@@ -35,7 +35,9 @@ if ! command -v "${LABYRINTH_WHISPER:-whisper-cli}" >/dev/null 2>&1 || [[ -z $mo
   echo "Listening is not set up yet: it needs whisper-cpp and a speech model (see docs/SARINA_VOICE.md)."
   exit 1
 fi
-heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+# Names it should expect: without them "Zlothra" comes out as "lothra" and "Sarina" as "serina". The owner can add more in ~/.config/labyrinth/stt-words (one line, commas).
+words=$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/stt-words" 2>/dev/null)
+heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
 # whisper writes things like [BLANK_AUDIO] or (silence) when there is no speech
 clean=$(printf '%s' "$heard" | sed -E 's/\[[^]]*\]//g; s/\([^)]*\)//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
 # on silence or noise whisper tends to "hear" a stock phrase; those are not questions
@@ -51,8 +53,8 @@ printf 'Heard: "%s"\n' "$clean"
 # without one, her usual model is used.
 vm=${LABYRINTH_VOICE_MODEL:-$(sed -n 's/^VOICE_MODEL=//p' "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env" 2>/dev/null | head -n1)}
 [[ -n $vm ]] && export OPENAI_MODEL=$vm
-prompt="This question was spoken to you from the desktop and your answer appears on a small card (it may later be read aloud). Answer in at most three short sentences of plain text: no lists, no markdown, no code blocks. If you need to look something up, read files only. If it needs more than that, say so in one sentence. The question: $clean"
-answer=$(labyrinth-ask-sarina --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
+prompt="This question was spoken to you from the desktop and your answer appears on a small card (it may later be read aloud). Answer in at most three short sentences of plain text: no lists, no markdown, no code blocks. If you need to look something up, read files only; your notes are in your vault (vault_search, vault_read), and you may save one with vault_write, giving only a name inside the vault such as Inbox/Voice test and never a full path (search first, link only to notes that exist); read the best match with vault_read before you answer. The words were spoken and typed by a speech program: never use a path or name from them as written, and look in your vault instead. The owner is Zlothra (said Zlaw-thruh); names you may hear: Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo. If it needs more than that, say so in one sentence. The question: $clean"
+answer=$(labyrinth-ask-sarina --voice --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
 # the answer without a <think> block, markdown emphasis, or empty lines at the ends
 answer=$(printf '%s' "$answer" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | sed -E 's/\*\*//g; s/`//g; s/^#+ *//' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
 [[ -n $answer ]] || { echo "Sarina had no answer."; exit 1; }

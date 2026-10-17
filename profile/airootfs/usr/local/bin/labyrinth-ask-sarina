@@ -29,9 +29,16 @@ def env_file():
     return out
 
 
-def command(question, cwd, write=False, shell=False):
+# What a spoken question may use: reading, and her vault (the only place it may write, through the vault's own safety gate).
+VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write"
+
+
+def command(question, cwd, write=False, shell=False, voice=False):
     cmd = ["sarina", "chat", question, "--cwd", os.path.abspath(cwd), "--session-dir", SESSIONS]
-    if write:
+    if voice:
+        # a misheard word must never become a write anywhere else: only these tools exist for the question
+        cmd += ["--tools", VOICE_TOOLS, "--allow-write"]
+    elif write:
         cmd.append("--allow-write")
     if shell:
         cmd.append("--allow-shell")
@@ -43,12 +50,13 @@ def main(argv):
     ap.add_argument("--cwd", default=os.getcwd())
     ap.add_argument("--write", action="store_true", help="let her write files for this question")
     ap.add_argument("--shell", action="store_true", help="let her run shell commands for this question")
+    ap.add_argument("--voice", action="store_true", help="a spoken question: reading tools and her vault only (the vault is the one place it may write)")
     ap.add_argument("question", nargs="+")
     a = ap.parse_args(argv[1:])
     env = dict(os.environ)
     for k, v in env_file().items():
         env.setdefault(k, v)
-    return subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell), env=env).returncode
+    return subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice), env=env).returncode
 
 
 if __name__ == "__main__":

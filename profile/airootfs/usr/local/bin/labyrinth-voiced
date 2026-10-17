@@ -35,11 +35,36 @@ IDLE = float(os.environ.get("LABYRINTH_VOICE_IDLE", "600"))
 REFERENCE = os.environ.get("LABYRINTH_VOICE_REFERENCE", os.path.join(DIR, "voice", "sarina.wav"))
 
 
+# How names are said: the model reads letters, so "Zlothra" needs spelling the way it sounds. The owner can add or change entries in
+# ~/.config/labyrinth/pronunciations (lines "word = how to spell it so it is said right").
+PRONUNCIATIONS = {"zlothra": "Zlawthruh"}
+
+
+def pronunciations():
+    out = dict(PRONUNCIATIONS)
+    try:
+        with open(os.path.expanduser("~/.config/labyrinth/pronunciations")) as f:
+            for line in f:
+                if "=" in line and not line.lstrip().startswith("#"):
+                    k, v = line.split("=", 1)
+                    if k.strip() and v.strip():
+                        out[k.strip().lower()] = v.strip()
+    except OSError:
+        pass
+    return out
+
+
+def respell(text, table=None):
+    for word, spoken in (table if table is not None else pronunciations()).items():
+        text = re.sub(r"(?<![A-Za-z])" + re.escape(word) + r"(?![A-Za-z])", spoken, text, flags=re.IGNORECASE)
+    return text
+
+
 def clean(text):
     """Plain words: no [tags] (the model would act them out: [chuckle], [cough]), no markup, one space between words."""
     text = re.sub(r"\[[^\]]*\]|<[^>]*>", " ", text)
     text = re.sub(r"[*`#_]+", "", text)
-    return re.sub(r"\s+", " ", text).strip()
+    return respell(re.sub(r"\s+", " ", text).strip())
 
 
 def split_sentences(text, min_len=28, max_len=240):
