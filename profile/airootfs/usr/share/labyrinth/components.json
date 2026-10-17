@@ -131,6 +131,20 @@
       ]
     },
     {
+      "id": "reverse-engineering",
+      "name": "Reverse engineering (REA and Ghidra, sandboxed)",
+      "description": "REA (MIT, an MCP/CLI for reverse engineering) with the NSA's Ghidra, run by labyrinth-rea inside a bubblewrap sandbox (no network, no home, read-only files), for Sarina's reverse_engineer tool and for you. Static analysis only; analysing, not running, drivers, firmware and suspicious files.",
+      "proprietary": false,
+      "packages": [
+        "jdk21-openjdk",
+        "nodejs",
+        "npm",
+        "bubblewrap",
+        "binutils"
+      ],
+      "notes": "Then run labyrinth-rea-setup once (downloads REA from npm, pinned, and Ghidra from GitHub with its hash checked; about 700 MB). Put files to examine in ~/Documents/Samples."
+    },
+    {
       "id": "limbo",
       "name": "Limbo (sandboxed apps and VMs)",
       "description": "Limbo runs Windows and Linux guest apps as sandboxed windows with a firewall per guest, quarantine and reports. Built here with makepkg from the Limbo repository; needs the Virtual machines component for its runtime.",
@@ -224,6 +238,7 @@
       "accessibility",
       "creative",
       "virtualization",
+      "reverse-engineering",
       "limbo",
       "vscode",
       "containers",

@@ -179,6 +179,12 @@ libvirt
 edk2-ovmf
 dnsmasq
 nftables
+# component: reverse-engineering
+jdk21-openjdk
+nodejs
+npm
+bubblewrap
+binutils
 # component: limbo
 limbo-git
 # component: vscode
@@ -193,11 +199,8 @@ sarina-git
 # component: heimdall
 heimdall-git
 # component: dev
-nodejs
-npm
 jq
 github-cli
 python-pip
 fd
-bubblewrap
 socat

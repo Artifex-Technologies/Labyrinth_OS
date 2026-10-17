@@ -60,8 +60,13 @@ def respell(text, table=None):
     return text
 
 
+# emoji and pictographs: the voice would try to read them out loud
+EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F900-\U0001F9FF\U00002B00-\U00002BFF\uFE0F\u200d]")
+
+
 def clean(text):
     """Plain words: no [tags] (the model would act them out: [chuckle], [cough]), no markup, one space between words."""
+    text = EMOJI.sub("", text)
     text = re.sub(r"\[[^\]]*\]|<[^>]*>", " ", text)
     text = re.sub(r"[*`#_]+", "", text)
     return respell(re.sub(r"\s+", " ", text).strip())

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# labyrinth-rea [OPTIONS] REA-ARGUMENTS...: REA (reverse engineering for AI agents) inside a sandbox, for analysing files that may be hostile.
+#
+#   labyrinth-rea decompile /samples/driver.sys ...   any REA command; `labyrinth-rea mcp` is the MCP server (for Sarina)
+#   --samples DIR   files to analyse, seen read-only as /samples   (default ~/Documents/Samples; created if missing)
+#   --work DIR      the only writable place (REA's results, Ghidra's cache), seen as /work   (default ~/.local/share/labyrinth/rea-work)
+#   --exec CMD...   run CMD in the sandbox instead of REA (to look around when something fails)
+#   --net           allow network (off by default; REA's browser and Android features need it, analysing a file does not)
+# Also visible read-only as /quarantine: the malware scan's quarantine (~/.local/share/labyrinth/quarantine/*/payload), so what Heimdall caught can be examined in place.
+#
+# What the sandbox is (bubblewrap): no network, no access to your home, your files or the desktop, a private /tmp, read-only system, and it dies with its parent. What it is not:
+# a virtual machine. REA's runtime features (running a program under a debugger) would run the sample on this kernel in that sandbox: for samples that might attack the kernel use
+# Limbo (a disposable guest). Set up with labyrinth-rea-setup (REA, Ghidra) and a JDK 21.
+set -euo pipefail
+apps=${LABYRINTH_APPS:-$HOME/.local/share/labyrinth/apps}
+samples=${LABYRINTH_REA_SAMPLES:-$HOME/Documents/Samples}
+work=${LABYRINTH_REA_WORK:-$HOME/.local/share/labyrinth/rea-work}
+net=0
+exec_cmd=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --samples) samples=$2; shift 2 ;;
+    --work) work=$2; shift 2 ;;
+    --net) net=1; shift ;;
+    --exec) shift; exec_cmd=1; break ;;   # run any command in the sandbox instead of REA (debugging): labyrinth-rea --exec ls /opt
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) break ;;
+  esac
+done
+rea=$apps/rea/node_modules/rea-agents/scripts/rea.mjs
+[[ -f $rea ]] || { echo "labyrinth-rea: REA is not installed: run labyrinth-rea-setup" >&2; exit 1; }
+command -v bwrap >/dev/null || { echo "labyrinth-rea: bubblewrap is needed (pacman -S bubblewrap)" >&2; exit 1; }
+jvm=$(ls -d /usr/lib/jvm/java-2[1-9]-openjdk 2>/dev/null | head -1 || true)
+ghidra=$(ls -d "$apps"/ghidra/ghidra_*_PUBLIC 2>/dev/null | head -1 || true)
+mkdir -p "$work/home" "$work/tmp" "$samples"
+args=(--die-with-parent --new-session --unshare-all
+  --ro-bind /usr /usr --symlink usr/bin /bin --symlink usr/lib /lib --symlink usr/lib64 /lib64 --symlink usr/bin /sbin
+  --ro-bind /etc/ssl /etc/ssl --ro-bind /etc/passwd /etc/passwd --ro-bind /etc/group /etc/group --ro-bind /etc/ld.so.cache /etc/ld.so.cache
+  --proc /proc --dev /dev --bind "$work/tmp" /tmp
+  --ro-bind "$apps/rea" /opt/rea --bind "$work" /work --ro-bind "$samples" /samples
+  --bind "$work/home" "$HOME"   # Ghidra looks up the home folder in /etc/passwd: it gets this empty one under the real name
+  --setenv HOME "$HOME" --setenv PATH /usr/bin:/bin --setenv TMPDIR /tmp --setenv NO_COLOR 1)
+[[ $net -eq 1 ]] && args+=(--share-net --ro-bind /etc/resolv.conf /etc/resolv.conf)
+[[ -n $ghidra ]] && args+=(--ro-bind "$ghidra" /opt/ghidra --setenv GHIDRA_INSTALL_DIR /opt/ghidra)
+[[ -n $jvm ]] && args+=(--setenv JAVA_HOME "$jvm")
+for d in /etc/java* /etc/fonts /etc/ca-certificates; do   # the JDK keeps its configuration in /etc on Arch
+  [[ -d $d ]] && args+=(--ro-bind "$d" "$d")
+done
+q=$HOME/.local/share/labyrinth/quarantine
+[[ -d $q ]] && args+=(--ro-bind "$q" /quarantine)
+[[ $exec_cmd -eq 1 ]] && exec bwrap "${args[@]}" "$@"
+exec bwrap "${args[@]}" node /opt/rea/node_modules/rea-agents/scripts/rea.mjs "$@"

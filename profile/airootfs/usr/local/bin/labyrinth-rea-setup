@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# labyrinth-rea-setup: install REA (reverse engineering for AI agents, MIT, npm package rea-agents) and Ghidra for it, in your home, no root.
+#
+#   labyrinth-rea-setup            install both (about 700 MB download: Ghidra is 570 MB) and check the hash of Ghidra
+#   labyrinth-rea-setup --check    say what is installed
+#
+# REA is pinned (REA_VERSION) and installed with --ignore-scripts, without its optional native add-ons (frida), so nothing from the package runs at install time.
+# `rea setup` (REA's own, which edits your AI tools' configuration files) is NOT run. Ghidra comes from the NSA's GitHub release and its SHA-256 is compared
+# with the one GitHub publishes for the file. It needs a JDK 21 or newer (pacman -S jdk21-openjdk). Use it through labyrinth-rea (sandboxed), not directly.
+set -euo pipefail
+APPS=${LABYRINTH_APPS:-$HOME/.local/share/labyrinth/apps}
+REA_VERSION=${REA_VERSION:-6.5.0}
+GHIDRA_TAG=${GHIDRA_TAG:-Ghidra_12.1.4_build}
+GHIDRA_ZIP=${GHIDRA_ZIP:-ghidra_12.1.4_PUBLIC_20260921.zip}
+GHIDRA_SHA256=${GHIDRA_SHA256:-ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db}
+
+check() {
+  [[ -f $APPS/rea/node_modules/rea-agents/scripts/rea.mjs ]] && echo "REA: $(node "$APPS/rea/node_modules/rea-agents/scripts/rea.mjs" --version 2>/dev/null)" || echo "REA: not installed"
+  [[ -d $APPS/ghidra ]] && echo "Ghidra: $(ls "$APPS/ghidra" | head -1)" || echo "Ghidra: not installed"
+  command -v java >/dev/null && echo "Java: $(java -version 2>&1 | head -1)" || echo "Java: not installed (pacman -S jdk21-openjdk)"
+}
+[[ ${1:-} == --check ]] && { check; exit 0; }
+
+command -v node >/dev/null || { echo "Node.js is needed (pacman -S nodejs npm)"; exit 1; }
+mkdir -p "$APPS/rea" && cd "$APPS/rea"
+[[ -f package.json ]] || npm init -y >/dev/null 2>&1
+npm install "rea-agents@$REA_VERSION" --ignore-scripts --omit=optional --no-audit --no-fund
+
+if [[ ! -d $APPS/ghidra ]]; then
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  curl -fsSL -o "$tmp/g.zip" "https://github.com/NationalSecurityAgency/ghidra/releases/download/$GHIDRA_TAG/$GHIDRA_ZIP"
+  echo "$GHIDRA_SHA256  $tmp/g.zip" | sha256sum -c - || { echo "Ghidra's hash does not match: not installed"; exit 1; }
+  mkdir -p "$APPS/ghidra" && unzip -q "$tmp/g.zip" -d "$APPS/ghidra"
+fi
+check
