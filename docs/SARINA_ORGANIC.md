@@ -1,4 +1,4 @@
-# Making Sarina feel more organic (plan, 2026-10-17: nothing here is built yet)
+# Making Sarina feel more organic (plan 2026-10-17; status at the end)
 
 Prompted by `x4nth055/emotion-recognition-using-speech` (MIT, Python 3.6 era, 2019): classical models (SVM, random forest, MLP, a small Keras RNN) on MFCC, chroma,
 mel, contrast and tonnetz features, trained on three small ACTED datasets (RAVDESS, TESS, EMO-DB). Its own numbers are 77 to 90 % on three to five emotions on a single
@@ -26,3 +26,17 @@ to a computer, the dependencies are years old, and the project looks dormant. So
 ## Go or other
 Signal features (loudness, rate, pauses, pitch by autocorrelation) and the model runner belong in `Sarina/go/voice` (Go, next to the Piper and Chatterbox code). The streaming
 glue is shell and Python today (`labyrinth-sarina-ask`, `labyrinth-sarina-speak`, the voice service) and can move to Go once it is settled.
+
+## Status, 2026-10-17
+
+- **Built: tap/hold conversation** (`SARINA_VOICE.md`): tap Super+S for a back-and-forth that listens until you stop talking and listens again after each answer; hold for one question.
+- **Built, and the biggest speed-up: a non-thinking voice model.** Her usual `qwen3:8b` thinks before it answers (2.8 s to the first word for "what is a heat pump", 4.5 s when it used a
+  vault tool). `qwen3-voice:8b` is the same weights (no extra disk) with Qwen's own "non-thinking" template (the answer starts after an empty think block): first word in 0.3 s, whole answer in
+  0.8 s, and 0.8 s / 1.2 s with a vault tool. The cost: it reasons less, so a retrieval answer can be a little sloppier (it said the lesson was "in file.md"). It is used only for spoken
+  questions (`VOICE_MODEL=` in `~/.config/labyrinth/sarina.env`); typed questions keep the thinking model. The two models do not share a loaded copy: alternating between voice and typed costs a reload.
+- **Streaming her answer into the voice (item 1): measured, not built.** With the fast model the whole answer is written in under a second, so cutting it into sentences saves only about
+  half a second; the first sentence of speech takes about 1.2 s anyway. It becomes worth it for long answers.
+- **Built: a Persona note** (`Persona.md` in her vault, owner-only: she reads it at the start of each spoken question and her vault tools refuse to change it, or `Home.md`).
+  The effect on her wording is modest so far.
+- **Not built:** the small "mm / let me check" sounds (with the fast model most answers arrive before they would play), tone-aware listening (needs your yes: it is derived from your voice),
+  a wake word, natural variation in the speech.

@@ -33,6 +33,20 @@ def env_file():
 VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write"
 
 
+def persona_text():
+    """How she talks, from Persona.md in her vault (the owner's note: she can read it, never change it). Front matter dropped, 2500 characters at most."""
+    vault = os.environ.get("SARINA_VAULT") or env_file().get("SARINA_VAULT", "")
+    try:
+        with open(os.path.join(vault, "Persona.md"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return ""
+    if text.startswith("---\n") and "\n---" in text[4:]:
+        text = text[text.index("\n---", 4) + 4:]
+    text = text.strip()[:2500]
+    return ("How you talk (your Persona note):\n" + text) if text else ""
+
+
 def command(question, cwd, write=False, shell=False, voice=False, resume=None):
     # `sarina resume ID "question"` continues a saved session (a conversation's later turns); otherwise a new one
     cmd = ["sarina", "resume", resume, question] if resume else ["sarina", "chat", question]
@@ -40,6 +54,9 @@ def command(question, cwd, write=False, shell=False, voice=False, resume=None):
     if voice:
         # a misheard word must never become a write anywhere else: only these tools exist for the question
         cmd += ["--tools", VOICE_TOOLS, "--allow-write"]
+        persona = persona_text()
+        if persona:
+            cmd += ["--append-system-prompt", persona]
     elif write:
         cmd.append("--allow-write")
     if shell:
