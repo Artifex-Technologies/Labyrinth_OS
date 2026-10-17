@@ -51,6 +51,7 @@ ALIASES = {
 EXTRA = {"proton-drive": "protondrive", "proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "protonmail"}
 # Labyrinth's own glyphs: file -> [(folder in the pack, icon name)]
 NATIVE = {
+    "sarina": [("apps", n) for n in ("sarina", "labyrinth-sarina")],
     "heimdall": [("apps", "heimdall")],
     "limbo": [("apps", "limbo")],
     "marketplace": [("apps", n) for n in ("labyrinth-market", "applications-all")],
