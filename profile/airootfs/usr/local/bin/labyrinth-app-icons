@@ -40,10 +40,20 @@ def hexcol(h, s, v):
 
 def icon_svg(path_d, accent, turn, sat_scale):
     h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in accent))
-    h = h + turn / 360.0
-    s = s * sat_scale
-    top = hexcol(h, s * 0.62, min(1.0, v + 0.18))
-    bottom = hexcol(h, s * 1.02, v * 0.72)
+    glyph = "#ffffff"
+    shadow_opacity = ".28"
+    if s < 0.18 and v > 0.85:
+        # a white (or near-white) accent: light silver tiles with a dark glyph, one shade lighter or darker per app
+        shade = {0: 0.0, 38: 0.05, -38: 0.10}.get(turn, 0.0) if sat_scale > 0.5 else 0.30
+        top = hexcol(0, 0, 0.97 - shade * 0.5)
+        bottom = hexcol(0, 0, 0.80 - shade)
+        glyph = "#20202c"
+        shadow_opacity = ".0"
+    else:
+        h = h + turn / 360.0
+        s = s * sat_scale
+        top = hexcol(h, s * 0.62, min(1.0, v + 0.18))
+        bottom = hexcol(h, s * 1.02, v * 0.72)
     sc = 0.0344
     x = (1024 - 19200 * sc) / 2
     y = x + 19200 * sc
@@ -55,8 +65,8 @@ def icon_svg(path_d, accent, turn, sat_scale):
 <rect x="40" y="40" width="944" height="944" rx="215" fill="url(#g)"/>
 <rect x="40" y="40" width="944" height="944" rx="215" fill="url(#h)"/>
 <rect x="41.5" y="41.5" width="941" height="941" rx="213.5" fill="none" stroke="#ffffff" stroke-opacity=".22" stroke-width="3"/>
-<g transform="translate({x + 6:.1f},{y + 14:.1f}) scale({sc},-{sc})"><path fill="#000000" fill-opacity=".28" d="{path_d}"/></g>
-<g transform="translate({x:.1f},{y:.1f}) scale({sc},-{sc})"><path fill="#ffffff" d="{path_d}"/></g>
+<g transform="translate({x + 6:.1f},{y + 14:.1f}) scale({sc},-{sc})"><path fill="#000000" fill-opacity="{shadow_opacity}" d="{path_d}"/></g>
+<g transform="translate({x:.1f},{y:.1f}) scale({sc},-{sc})"><path fill="{glyph}" d="{path_d}"/></g>
 </svg>
 """
 
