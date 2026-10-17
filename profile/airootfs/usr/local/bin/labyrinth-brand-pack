@@ -47,6 +47,8 @@ ALIASES = {
     "bitwardendesktop": "bitwarden", "heroicgameslauncher": "heroicgameslauncher", "githubdesktop": "github",
     "sketchup": "sketchup", "obsidian": "obsidian", "steam": "steam", "steamicon": "steam",
 }
+# Names the Marketplace and Labyrinth's own components use, which no installed desktop file would ask for: icon name -> logo
+EXTRA = {"proton-drive": "protondrive", "proton-vpn": "protonvpn", "proton-pass": "proton", "proton-mail": "protonmail"}
 # Labyrinth's own glyphs: file -> [(folder in the pack, icon name)]
 NATIVE = {
     "minos": [("apps", "minos")],
@@ -196,6 +198,13 @@ def main():
     for icon_name, app_name in installed_icon_names():
         slug = find_logo(icon_name, app_name, slugs)
         if not slug or icon_name in seen or any(icon_name == n for v in NATIVE.values() for _, n in v):
+            continue
+        seen.add(icon_name)
+        svg = open(os.path.join(SRC, "icons", slug + ".svg"), encoding="utf-8").read()
+        open(os.path.join(apps, icon_name + ".svg"), "w", encoding="utf-8").write(make(a.shape, a.style, svg, colors[slug].lower()))
+        written += 1
+    for icon_name, slug in EXTRA.items():
+        if icon_name in seen or slug not in slugs:
             continue
         seen.add(icon_name)
         svg = open(os.path.join(SRC, "icons", slug + ".svg"), encoding="utf-8").read()
