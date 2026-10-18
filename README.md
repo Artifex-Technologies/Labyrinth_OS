@@ -15,12 +15,27 @@
 
 ### Settings
 
+Settings is Labyrinth's own app (Rust and egui), one page per area.
+
 | | |
 | --- | --- |
 | ![Settings, Apps](assets/screenshots/settings-apps.png) | ![Settings, one app](assets/screenshots/settings-app-detail.png) |
 | *Settings > Apps: usage, size, restart or close, remove, and a network switch for each app.* | *One app: its network access, startup, storage, and an optional sandbox.* |
 | ![Settings, Security](assets/screenshots/settings-security.png) | ![Settings, Lock screen](assets/screenshots/settings-lock-screen.png) |
 | *Settings > Security: Heimdall, the password log (login and sudo history) and the distress password.* | *Settings > Appearance > Lock screen: pick a design (used once Labyrinth's own lock screen is in service).* |
+
+#### Distress password
+
+A second password that quietly does something else when it is typed where your real one is asked for. The page opens only after you type your
+account password, and nothing is saved until you press Save. See [docs/DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md). (These pictures show
+sample settings.)
+
+| | |
+| --- | --- |
+| ![Distress password, opening the page](assets/screenshots/settings-distress-open.png) | ![Distress password, the settings](assets/screenshots/settings-distress.png) |
+| *Opening the page asks for your account password.* | *Turn it on, set the password, and how many times it must be typed within how long.* |
+| ![Distress password, the two sections](assets/screenshots/settings-distress-sections.png) | ![Distress password, saving the second section](assets/screenshots/settings-distress-save.png) |
+| *Section 1 (no extra password to save) and Section 2 (asks for your password again).* | *Saving Section 2 shows a warning and asks for your password once more.* |
 
 ### The Marketplace
 

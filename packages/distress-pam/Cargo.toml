@@ -1,0 +1,22 @@
+[package]
+name = "pam-labyrinth-distress"
+version = "0.1.0"
+edition = "2021"
+description = "PAM module for Labyrinth's distress password: lets the distress password work at sudo, login and other prompts"
+license = "MIT"
+
+[lib]
+name = "pam_labyrinth_distress"
+crate-type = ["cdylib"]
+
+[features]
+# Test build: helper and settings paths from the environment, no root needed. NEVER in a release build.
+test-paths = []
+
+[dependencies]
+libc = "0.2"
+
+[profile.release]
+opt-level = 2
+lto = "thin"
+strip = true

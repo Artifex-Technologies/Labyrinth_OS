@@ -83,11 +83,21 @@ impl Config {
     }
 }
 
+/// An environment variable, but only in a test build: the helper runs as root, also from PAM, and must never let the
+/// caller's environment point it at other files or switch off what it does.
+pub fn env(name: &str) -> Option<std::ffi::OsString> {
+    if cfg!(feature = "test-paths") {
+        std::env::var_os(name)
+    } else {
+        None
+    }
+}
+
 pub fn dir() -> std::path::PathBuf {
-    std::env::var_os("LABYRINTH_DISTRESS_DIR").map(Into::into).unwrap_or_else(|| "/etc/labyrinth".into())
+    env("LABYRINTH_DISTRESS_DIR").map(Into::into).unwrap_or_else(|| "/etc/labyrinth".into())
 }
 pub fn state_dir() -> std::path::PathBuf {
-    std::env::var_os("LABYRINTH_DISTRESS_STATE").map(Into::into).unwrap_or_else(|| "/var/lib/labyrinth/distress".into())
+    env("LABYRINTH_DISTRESS_STATE").map(Into::into).unwrap_or_else(|| "/var/lib/labyrinth/distress".into())
 }
 
 pub fn load() -> Config {

@@ -9,6 +9,10 @@ license = "MIT"
 name = "labyrinth-distress"
 path = "src/main.rs"
 
+[features]
+# Lets tests point the helper at other folders and switch on a dry run through the environment. NEVER in a release build.
+test-paths = []
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -12,6 +12,7 @@ mod actions;
 mod config;
 mod hash;
 mod pam;
+mod pamconf;
 mod trigger;
 
 use config::{Config, Extra};
@@ -38,7 +39,7 @@ fn account() -> Result<String, String> {
 }
 
 fn verify_account(user: &str, password: &str) -> bool {
-    let service = std::env::var("LABYRINTH_DISTRESS_PAM").unwrap_or_else(|_| "login".into());
+    let service = config::env("LABYRINTH_DISTRESS_PAM").map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "login".into());
     pam::Pam { service }.check(user, password).unwrap_or(false)
 }
 
@@ -128,6 +129,13 @@ fn save(req: &Value) -> Value {
         return fail(&e);
     }
     trigger::store(&[]);
+    // The PAM module line is in the system's auth stack only while the password is on and meant for prompts.
+    let pam = pamconf::run(cfg.enabled && cfg.in_prompts);
+    if !pam["ok"].as_bool().unwrap_or(false) && cfg.in_prompts {
+        let why = pam["error"].as_str().unwrap_or("unknown").to_string();
+        log_event("pam", &format!("could not change the PAM setup: {why}"));
+        return json!({"ok": false, "error": format!("Saved, but terminals and other prompts could not be switched on: {why}")});
+    }
     log_event("saved", &format!("distress password {} (extra: {:?})", if cfg.enabled { "on" } else { "off" }, cfg.extra));
     json!({"ok": true, "config": cfg.public()})
 }
@@ -135,11 +143,29 @@ fn save(req: &Value) -> Value {
 /// Does the typed password fire the distress action? Answers {"result":"no"} for anything else, including a distress password typed
 /// too few times so far: that looks exactly like a wrong password.
 fn check(req: &Value) -> Value {
-    let user = match account() {
-        Ok(u) => u,
-        Err(e) => return fail(&e),
-    };
+    match account() {
+        Ok(user) => check_user(req, &user, false),
+        Err(e) => fail(&e),
+    }
+}
+
+/// From the PAM module (root, environment cleared): the account is named in the request. Only for a direct root caller, never
+/// through pkexec, so nobody can ask about another account. Only when the password is also meant to work in prompts.
+fn check_for(req: &Value) -> Value {
+    if std::env::var_os("PKEXEC_UID").is_some() || (unsafe { libc::geteuid() } != 0 && !cfg!(feature = "test-paths")) {
+        return fail("not allowed");
+    }
+    match req["user"].as_str().filter(|u| !u.is_empty()) {
+        Some(u) => check_user(req, u, true),
+        None => fail("no user"),
+    }
+}
+
+fn check_user(req: &Value, user: &str, prompts_only: bool) -> Value {
     let cfg = config::load();
+    if prompts_only && !cfg.in_prompts {
+        return json!({"ok": true, "result": "no"});
+    }
     let pw = req["password"].as_str().unwrap_or("");
     if !cfg.active(now()) || !hash::verify(pw, &cfg.hash) {
         return json!({"ok": true, "result": "no"});
@@ -150,9 +176,9 @@ fn check(req: &Value) -> Value {
     if !fired {
         return json!({"ok": true, "result": "no"});
     }
-    let dry = std::env::var_os("LABYRINTH_DISTRESS_DRY").is_some();
-    log_event("fired", &format!("the distress password was used for {user}"));
-    let ctx = actions::Ctx::detect(&user);
+    let dry = config::env("LABYRINTH_DISTRESS_DRY").is_some();
+    log_event("fired", &format!("the distress password was used for {user}{}", if prompts_only { " at a password prompt" } else { "" }));
+    let ctx = actions::Ctx::detect(user);
     if cfg.decoy {
         // Locking the real account only makes sense once something can open the decoy session; until then it would just lock you out.
         if std::path::Path::new("/usr/lib/labyrinth/decoy-session").exists() {
@@ -168,7 +194,7 @@ fn check(req: &Value) -> Value {
         use std::os::unix::process::CommandExt;
         if let Ok(exe) = std::env::current_exe() {
             let mut cmd = std::process::Command::new(exe);
-            cmd.arg("run-extra").arg(&user).stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+            cmd.arg("run-extra").arg(user).stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
             unsafe {
                 cmd.pre_exec(|| {
                     libc::setsid();
@@ -184,7 +210,7 @@ fn check(req: &Value) -> Value {
 fn run_extra(user: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));
     let cfg = config::load();
-    let dry = std::env::var_os("LABYRINTH_DISTRESS_DRY").is_some();
+    let dry = config::env("LABYRINTH_DISTRESS_DRY").is_some();
     for l in actions::execute(&actions::extra_steps(&cfg, &actions::Ctx::detect(user)), dry) {
         log_event("action", &l);
     }
@@ -204,6 +230,8 @@ fn main() {
         "open" => open(&req),
         "save" => save(&req),
         "check" => check(&req),
+        "check-for" => check_for(&req),
+        "pam-enable" | "pam-disable" => pamconf::run(cmd == "pam-enable"),
         "plan" => {
             let cfg: Config = serde_json::from_value(req["config"].clone()).unwrap_or_default();
             let ctx = actions::Ctx::detect(&account().unwrap_or_default());

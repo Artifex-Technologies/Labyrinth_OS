@@ -11,18 +11,24 @@ makedepends=('cargo')
 options=('!lto')
 
 _src="$startdir/../../distress"
+_pam="$startdir/../../distress-pam"
 
 build() {
   cd "$_src"
   cargo build --release --locked --target-dir "$srcdir/target"
+  cd "$_pam"
+  cargo build --release --locked --target-dir "$srcdir/target-pam"
 }
 
 check() {
   cd "$_src"
   cargo test --release --locked --target-dir "$srcdir/target"
+  cd "$_pam"
+  cargo test --release --locked --target-dir "$srcdir/target-pam"
 }
 
 package() {
   install -Dm755 "$srcdir/target/release/labyrinth-distress" "$pkgdir/usr/bin/labyrinth-distress"
+  install -Dm755 "$srcdir/target-pam/release/libpam_labyrinth_distress.so" "$pkgdir/usr/lib/security/pam_labyrinth_distress.so"
   install -Dm644 "$startdir/../../../profile/airootfs/usr/share/polkit-1/actions/org.labyrinth.distress.policy" "$pkgdir/usr/share/polkit-1/actions/org.labyrinth.distress.policy"
 }

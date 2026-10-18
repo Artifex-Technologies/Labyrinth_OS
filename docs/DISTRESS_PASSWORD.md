@@ -22,7 +22,14 @@ encryption headers of every internal disk, power off). "Show" lists exactly what
 ## Where it works
 - **Labyrinth's lock screen** (`labyrinth-lock`): asks the helper only after the real password was wrong, and only if the feature is set up.
   Not live until Labyrinth runs on a compositor with session-lock.
-- **Terminals and other prompts**: needs a PAM module, not built yet (the option is shown switched off).
+- **Terminals and other prompts** (sudo, login, su, administrator questions): the PAM module `pam_labyrinth_distress.so`
+  (`packages/distress-pam`). Turn on "Also in terminals and other password prompts"; saving then adds one line to
+  `/etc/pam.d/system-auth` (a copy of the original is kept as `system-auth.labyrinth-original`; turning it off removes the line):
+  `-auth [success=done default=ignore] pam_labyrinth_distress.so`. The leading `-` makes PAM skip it silently if the file is ever
+  missing, so it cannot lock anyone out. It does nothing at all (not even a prompt) until a distress password is set up; it asks the
+  helper only about the typed password; only a "silent login" answers success, everything else is PAM_IGNORE and the password is
+  judged as usual. Tested on a throw-away PAM service (not set up, switched off for prompts, wrong password, right password,
+  several-times rule, Section 2 only); not yet enabled on the live system.
 
 ## Parts
 `packages/distress` (`labyrinth-distress`, root, through pkexec, action `org.labyrinth.distress`): commands `open`, `save`, `check`,
