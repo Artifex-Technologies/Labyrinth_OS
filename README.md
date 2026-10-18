@@ -1,5 +1,9 @@
 # Labyrinth OS
 
+**Labyrinth OS** is the operating system (CachyOS-based, for one specific machine, with the Artifex ecosystem). **Yggdrasil** is its desktop environment: the
+panel and dock, Fylgja, Settings, the Marketplace, Minos, the lock screen, the login screen, the idle manager, the polkit and portal pieces and, in progress, the
+compositor. Yggdrasil is built to be reused: [Chymaera OS](https://github.com/ChymaeraLabs) will use it too. See [docs/YGGDRASIL.md](docs/YGGDRASIL.md).
+
 ## Screenshots
 
 ![The desktop: transparent top bar, the dock, and notification pop-ups at the bottom right](assets/screenshots/desktop.png)
