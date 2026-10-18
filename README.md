@@ -21,7 +21,7 @@ Settings is Labyrinth's own app (Rust and egui), one page per area.
 | --- | --- |
 | ![Settings, Apps](assets/screenshots/settings-apps-list.png) | ![Settings, one app](assets/screenshots/settings-app-page.png) |
 | *Settings > Apps: usage, size, restart or close, remove, and a network switch for each app.* | *One app: its network access, startup, storage, and an optional sandbox.* |
-| ![Settings, Security](assets/screenshots/settings-security-page.png) | ![Settings, Lock screen](assets/screenshots/settings-lock-designs.png) |
+| ![Settings, Security](assets/screenshots/settings-security-page.png) | ![Settings, Lock screen](assets/screenshots/settings-lock-screen-designs.png) |
 | *Settings > Security: Heimdall, the password log (login and sudo history) and the distress password.* | *Settings > Appearance > Lock screen: pick a design (used once Labyrinth's own lock screen is in service).* |
 
 #### Distress password
