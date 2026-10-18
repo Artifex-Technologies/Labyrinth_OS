@@ -1,0 +1,8 @@
+# greetd runs the login screen inside a tiny compositor. Not enabled by default: SDDM is still the login manager.
+# To try it: pacman -S greetd cage; systemctl disable sddm; systemctl enable greetd (see docs/LOGIN_SCREEN.md).
+[terminal]
+vt = 1
+
+[default_session]
+command = "cage -s -- /usr/bin/labyrinth-greeter"
+user = "greeter"
