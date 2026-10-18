@@ -49,7 +49,8 @@ done
 ((miss)) && fail "profiledef.sh lists files that are not in airootfs" || pass "every file listed in profiledef.sh exists"
 
 # PKGBUILDs: they parse, and say what they build
-for d in packages/pkgbuilds/*/; do
+for d in packages/pkgbuilds/*/ ${YGGDRASIL_DIR:-../Yggdrasil}/packages/pkgbuilds/*/; do
+  [[ -d $d ]] || continue
   if (cd "$d" && bash -n PKGBUILD 2>/dev/null && makepkg --printsrcinfo >/dev/null 2>&1); then :; else fail "PKGBUILD does not parse: $d"; fi
 done
 pass "PKGBUILDs parse"

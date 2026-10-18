@@ -9,7 +9,7 @@ choose, so someone else's install need not carry what you use. The list is
 | `steam` | Steam, Valve's Proton, Proton-CachyOS, ProtonUp-Qt, Protontricks, umu, Wine, GameMode, MangoHud, 32-bit NVIDIA/Vulkan | `proton-cachyos` and `protonup-qt` are not in Arch's repos (CachyOS repo or AUR) |
 | `spotify` | `spotify-launcher`, which downloads Spotify's own client | Spotify's [Linux page](https://www.spotify.com/us/download/linux/) offers only Snap and a Debian repo and says Linux is "not a platform that we actively support". `spotify-launcher` is Arch's way to run that same official client without Snap |
 | `obsidian` | Obsidian, from Arch's repo | Proprietary, free for personal use |
-| `weather` | Labyrinth's multi-model weather engine and its hourly recording timer (see [WEATHER.md](WEATHER.md)) | Optional: the bar's weather slot hides itself when it is not installed |
+| `weather` | Labyrinth's multi-model weather engine and its hourly recording timer (see [WEATHER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/WEATHER.md)) | Optional: the bar's weather slot hides itself when it is not installed |
 | `vscode` | Microsoft's official VS Code, repackaged from their tarball, pinned and hash-checked (verified) | Their [Linux docs](https://github.com/microsoft/vscode-docs/blob/main/docs/setup/linux.md) cover Debian, Fedora, Snap and a community AUR package; nothing official for Arch. Arch's `code` is the open-source build with a different marketplace; the two conflict |
 | `containers` | Podman + Distrobox: Fedora/Debian/Ubuntu userlands whose apps show up in the app menu | See below |
 | `flatpak` | Flatpak (Flathub) | See below |

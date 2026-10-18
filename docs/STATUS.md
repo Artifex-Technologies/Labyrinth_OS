@@ -1,5 +1,8 @@
 # Status (updated 2026-10-11)
 
+> **2026-10-18:** the desktop environment (panel, Settings, Minos, Marketplace, lock and login screens, idle manager, polkit, portal, compositor, calculator, weather, keyring sync) moved to its own repository, [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil). Paths such as `packages/panel` in the entries below now live there; the history of those folders was carried over.
+
+
 ## Verified (built and tested on Windows)
 
 `packages/minos` (`cargo test`: 20 pass; `cargo build` clean):
@@ -286,7 +289,7 @@ ISO labyrinth-2026.10.13-x86_64.iso (built 2026-10-13 15:45, 6.09 GB, sha256 b9f
 - **Super on its own** now opens the start menu on KWin 6.7. KWin no longer reads `kwinrc [ModifierOnlyShortcuts]`; a bare Super tap is handed to the global shortcut `plasmashell: activate application launcher` (still bound to `Meta`), and `kglobalacceld` announces it on the session bus (`org.kde.kglobalaccel.Component.globalShortcutPressed`). `labyrinth-panel` listens for that signal and toggles the menu. Verified with simulated key presses (ydotool, uinput): Super opens it with the search box active. `labyrinth-panel-mode`'s `kwinrc` line is now harmless but no longer what does the work.
 - **Keyboard in the Folders start menu:** Tab goes Search → list → power choices → Search. Up/Down move in each; Right (or Enter) on a folder goes into its apps, Left comes back; Enter opens the selected app or power choice; typing from anywhere returns to the search box; with search results, Up/Down pick a result. Verified with simulated keys and screenshots. Not done for the Windows start-menu theme.
 
-See also [DESKTOP_ROADMAP.md](DESKTOP_ROADMAP.md): the decision to keep CachyOS as the base and replace KDE piece by piece, in order.
+See also [DESKTOP_ROADMAP.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/DESKTOP_ROADMAP.md): the decision to keep CachyOS as the base and replace KDE piece by piece, in order.
 
 ## 2026-10-16 (overnight session, owner asleep; Claude Code worked on its own judgment)
 
@@ -294,7 +297,7 @@ Built and installed on this machine, all committed in the repos here (nothing pu
 
 - **Settings > Apps** rebuilt: installed apps with sorting, restart / close / remove, a page per app (network, open at login,
   storage, privacy sandbox), Developer options (About logo, five clicks with the ` key held), per-mode CPU and GPU limits.
-  Details, helpers, limits and what is not done: [APPS_SETTINGS.md](APPS_SETTINGS.md). Helpers: `labyrinth-launch`,
+  Details, helpers, limits and what is not done: [APPS_SETTINGS.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/APPS_SETTINGS.md). Helpers: `labyrinth-launch`,
   `labyrinth-appnet`, `labyrinth-powerlimit`, with polkit policies, units and tests (`tests/test_labyrinth_*.py`).
 - **Panel**: the dock and start menu now start apps through `labyrinth-launch`.
 - **Settings**: Lock the screen after (Power), pages refresh every 4 s, icon packs list / install / Labyrinth Brands maker.
