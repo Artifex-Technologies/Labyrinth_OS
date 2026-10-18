@@ -13,7 +13,7 @@ compositor. Yggdrasil is built to be reused: [Chymaera OS](https://github.com/Ch
 ### Yggdrasil, the desktop
 
 The desktop (panel and dock, Fylgja, Settings, the Marketplace, Minos, the lock and login screens, the idle manager and the compositor) is developed in its own
-repository, [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil) (private while it is being fine-tuned), with its own README, screenshots and docs.
+repository, [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil), with its own README, screenshots and docs.
 Labyrinth builds its packages from a checkout next to this repository (`scripts/build-local-packages.sh`). See [docs/YGGDRASIL.md](docs/YGGDRASIL.md).
 
 ### Distress password
