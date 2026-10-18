@@ -10,3 +10,20 @@ repo/
 profile/airootfs/usr/share/icons/Labyrinth/apps/scalable/*
 !profile/airootfs/usr/share/icons/Labyrinth/apps/scalable/.keep
 !profile/airootfs/usr/share/icons/Labyrinth/apps/scalable/computer.png
+
+# makepkg build output (scripts/build-local-packages.sh): sources, the staging folders and the packages themselves
+packages/pkgbuilds/*/src/
+packages/pkgbuilds/*/pkg/
+packages/pkgbuilds/*/*.pkg.tar.*
+packages/pkgbuilds/*/*.tar.gz
+packages/pkgbuilds/*/*.tar.gz.part
+packages/pkgbuilds/*/*.tar.xz
+packages/pkgbuilds/*/*.zip
+packages/pkgbuilds/*/*.rpm
+packages/pkgbuilds/*/*.deb
+packages/pkgbuilds/*/*.kwinscript
+# bare clones made by git-based recipes
+packages/pkgbuilds/heimdall-git/heimdall/
+packages/pkgbuilds/limbo-git/limbo/
+packages/pkgbuilds/sarina-git/sarina/
+packages/pkgbuilds/daedalus-cad-git/daedalus-cad/
