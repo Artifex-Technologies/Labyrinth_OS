@@ -10,10 +10,31 @@
 | --- | --- |
 | ![The start menu](assets/screenshots/start-menu.png) | ![The calendar](assets/screenshots/calendar.png) |
 | *The start menu (Folders theme): search, favourites, apps by folder, and a power menu.* | *The calendar: scroll the wheel for other months.* |
-| ![Minos, the file explorer](assets/screenshots/minos.png) | ![Notification Center pane](assets/screenshots/notification-center.png) |
-| *Minos, the file explorer: tabs, a places sidebar, a details pane, search, cloud drives, and drag and drop.* | *The optional Notification Center pane: the calendar with your notifications under it, grouped by app.* |
-| ![Settings, Appearance](assets/screenshots/settings.png) | ![Settings, Apps](assets/screenshots/settings-apps.png) |
-| *Settings > Appearance: light or dark, accent colour, icon packs, dock, notifications.* | *Settings > Apps: usage, size, restart or close, remove, and a network switch for each app.* |
+| ![Notification Center pane](assets/screenshots/notification-center.png) | ![Settings, Appearance](assets/screenshots/settings.png) |
+| *The optional Notification Center pane: the calendar with your notifications under it, grouped by app.* | *Settings > Appearance: light or dark, accent colour, icon packs, dock, notifications, lock screen.* |
+
+### Settings
+
+| | |
+| --- | --- |
+| ![Settings, Apps](assets/screenshots/settings-apps.png) | ![Settings, one app](assets/screenshots/settings-app-detail.png) |
+| *Settings > Apps: usage, size, restart or close, remove, and a network switch for each app.* | *One app: its network access, startup, storage, and an optional sandbox.* |
+| ![Settings, Security](assets/screenshots/settings-security.png) | ![Settings, Lock screen](assets/screenshots/settings-lock-screen.png) |
+| *Settings > Security: Heimdall, the password log (login and sudo history) and the distress password.* | *Settings > Appearance > Lock screen: pick a design (used once Labyrinth's own lock screen is in service).* |
+
+### The Marketplace
+
+The Marketplace is the one place for apps: Labyrinth's reviewed catalog, the Arch repositories, the AUR and Flathub behind one search, with
+installs, updates, history and source repositories you can add. See [docs/MARKETPLACE.md](docs/MARKETPLACE.md).
+
+| | |
+| --- | --- |
+| ![Marketplace, Discover](assets/screenshots/marketplace.png) | ![Marketplace, Play](assets/screenshots/marketplace-play.png) |
+| *Discover: featured apps and picks for creating, working and playing.* | *A category: emulation, game stores, games, music and video.* |
+| ![Marketplace, an app](assets/screenshots/marketplace-app.png) | ![Marketplace, Updates](assets/screenshots/marketplace-updates.png) |
+| *An app: screenshots, description, licence, source and where it comes from.* | *Updates: every update with its versions, and Update everything.* |
+| ![Marketplace, search](assets/screenshots/marketplace-search.png) | |
+| *Search across the catalog, repositories and Flathub.* | |
 
 ### Fylgja, the notch
 
@@ -34,6 +55,11 @@ Clipboard (history kept in memory only) and Power. Super+S records a spoken ques
 Minos is Labyrinth's own file explorer (Rust and egui, modelled on EdenExplorer). Tabs, a places sidebar with favourites, storage and cloud
 drives (Proton Drive connects from the sidebar), a details pane, search that can look inside subfolders, copy and move with a progress window,
 inline rename, drag and drop between Minos and other apps, and the Trash. It is meant to become the system's open and save dialog.
+
+| | |
+| --- | --- |
+| ![Minos, the file explorer](assets/screenshots/minos.png) | ![Minos, a folder of pictures](assets/screenshots/minos-pictures.png) |
+| *Tabs, a places sidebar, a details pane, search, cloud drives, and drag and drop.* | *A folder with its details pane: type, size and date for the selected item.* |
 
 ### Installer and boot menu
 
