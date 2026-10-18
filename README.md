@@ -10,7 +10,7 @@
 | --- | --- |
 | ![The start menu](assets/screenshots/start-menu.png) | ![The calendar](assets/screenshots/calendar.png) |
 | *The start menu (Folders theme): search, favourites, apps by folder, and a power menu.* | *The calendar: scroll the wheel for other months.* |
-| ![Notification Center pane](assets/screenshots/notification-center.png) | ![Settings, Appearance](assets/screenshots/settings.png) |
+| ![Notification Center pane](assets/screenshots/notification-center.png) | ![Settings, Appearance](assets/screenshots/settings-appearance.png) |
 | *The optional Notification Center pane: the calendar with your notifications under it, grouped by app.* | *Settings > Appearance: light or dark, accent colour, icon packs, dock, notifications, lock screen.* |
 
 ### Settings
@@ -19,9 +19,9 @@ Settings is Labyrinth's own app (Rust and egui), one page per area.
 
 | | |
 | --- | --- |
-| ![Settings, Apps](assets/screenshots/settings-apps.png) | ![Settings, one app](assets/screenshots/settings-app-detail.png) |
+| ![Settings, Apps](assets/screenshots/settings-apps-list.png) | ![Settings, one app](assets/screenshots/settings-app-page.png) |
 | *Settings > Apps: usage, size, restart or close, remove, and a network switch for each app.* | *One app: its network access, startup, storage, and an optional sandbox.* |
-| ![Settings, Security](assets/screenshots/settings-security.png) | ![Settings, Lock screen](assets/screenshots/settings-lock-screen.png) |
+| ![Settings, Security](assets/screenshots/settings-security-page.png) | ![Settings, Lock screen](assets/screenshots/settings-lock-designs.png) |
 | *Settings > Security: Heimdall, the password log (login and sudo history) and the distress password.* | *Settings > Appearance > Lock screen: pick a design (used once Labyrinth's own lock screen is in service).* |
 
 #### Distress password
@@ -73,7 +73,7 @@ inline rename, drag and drop between Minos and other apps, and the Trash. It is 
 
 | | |
 | --- | --- |
-| ![Minos, the file explorer](assets/screenshots/minos.png) | ![Minos, a folder of pictures](assets/screenshots/minos-pictures.png) |
+| ![Minos, the file explorer](assets/screenshots/minos-explorer.png) | ![Minos, a folder of pictures](assets/screenshots/minos-pictures.png) |
 | *Tabs, a places sidebar, a details pane, search, cloud drives, and drag and drop.* | *A folder with its details pane: type, size and date for the selected item.* |
 
 ### Installer and boot menu
