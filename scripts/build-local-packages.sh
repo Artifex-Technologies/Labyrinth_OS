@@ -33,6 +33,8 @@ local_source=(labyrinth-minos labyrinth-settings labyrinth-calculator labyrinth-
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
   name="$(basename "$dir")"
+  # Packages that are not on the ISO (Daedalus CAD is only in the Marketplace, and its repository is private) are left out unless named.
+  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
   if (( ${#only[@]} )) && [[ " ${only[*]} " != *" $name "* ]]; then continue; fi
   if (( ! ${#only[@]} )) && [[ " ${local_source[*]} " != *" $name "* ]]; then
     built=1
