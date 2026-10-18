@@ -86,7 +86,7 @@ NVIDIA card, no physical keys, one screen).
 
 ## 6. Licences and names
 
-- [ ] Licence files shipped for: WhiteSur (GPL-3), Klassy, Simple Icons (CC0; the logos
+- [ ] Licence files shipped for: Klassy, Simple Icons (CC0; the logos
       remain trademarks of their owners), grub-evodevo (MIT), EdenExplorer (MIT).
 - [ ] **Icons from macosicons.com** and other community icons: their licences are not clear. Do not ship
       them in a public ISO until that is settled; the Artifex icon pack is meant to replace them.

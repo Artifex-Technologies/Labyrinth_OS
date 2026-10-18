@@ -8,7 +8,6 @@
 #   profile/airootfs/usr/share/icons/hicolor/<size>/apps/labyrinthos.png   (white, for dark UIs)
 #   profile/airootfs/usr/share/labyrinth/logo/                    the PNG and SVG set, shipped on the OS
 #   profile/airootfs/etc/calamares/branding/labyrinth/{logo,welcome}.png   installer
-#   profile/airootfs/usr/share/sddm/themes/WhiteSur/labyrinth-logo.svg    login screen
 # Tones: white for dark backgrounds, black for light ones, silver/grey/charcoal for in-between.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -31,7 +30,7 @@ for n in "${!tones[@]}"; do
 done
 
 # Installed copies. The icon is called "labyrinthos", with no dash: icon lookup shortens a name like
-# "labyrinth-os" to "labyrinth", and WhiteSur has an unrelated icon of that name.
+# "labyrinth-os" to "labyrinth", which another icon theme may name differently.
 shipped=$root/profile/airootfs/usr/share/labyrinth/logo
 mkdir -p "$shipped"
 cp "$out"/labyrinth-*.png "$out"/labyrinth-*.svg "$shipped/"
@@ -44,6 +43,4 @@ b=$root/profile/airootfs/etc/calamares/branding/labyrinth
 mkdir -p "$b"
 magick "$out/labyrinth-white.png" -resize 78x78 -background none -gravity center -extent 126x126 "$b/logo.png"   # dark sidebar (room around it so it is not clipped)
 magick "$out/labyrinth-white.png" -resize 190x190 -background none -gravity center -extent 480x190 "$b/welcome.png"   # dark page
-mkdir -p "$root/profile/airootfs/usr/share/sddm/themes/WhiteSur"
-cp "$out/labyrinth-white.svg" "$root/profile/airootfs/usr/share/sddm/themes/WhiteSur/labyrinth-logo.svg"   # login screen
 echo "logo set written to $out and the profile"

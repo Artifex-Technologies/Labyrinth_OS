@@ -1,5 +1,7 @@
 # Status (updated 2026-10-11)
 
+> **2026-10-18:** WhiteSur (KDE theme, GTK theme, cursors) is replaced by **`yggdrasil-theme`** (Yggdrasil repository, docs/THEME.md): Yggdrasil's own colour scheme with Qt's Fusion style, GTK colours on Adwaita, and drawn cursors; no Kvantum or `breeze-gtk` either. The three WhiteSur recipes and the SDDM WhiteSur logo folder are gone.
+
 > **2026-10-18:** the icon pack "Labyrinth Brands" is now **Liki** (in the Yggdrasil repository, shared with Chymaera); MacTahoe, the `Labyrinth` theme and the icon scripts (`labyrinth-brand-pack`, `labyrinth-icon`, `labyrinth-minos-icon`, ...) left this repository (the old command names still work through links in `liki-icon-theme`).
 
 > **2026-10-18:** the desktop environment (panel, Settings, Minos, Marketplace, lock and login screens, idle manager, polkit, portal, compositor, calculator, weather, keyring sync) moved to its own repository, [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil). Paths such as `packages/panel` in the entries below now live there; the history of those folders was carried over.

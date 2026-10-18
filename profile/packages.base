@@ -73,7 +73,7 @@ cachyos-v3-mirrorlist
 archlinux-keyring
 bluez
 bluez-utils
-# desktop 1, macOS-style: KDE Plasma with the WhiteSur look (built into the local repo)
+# desktop 1: KDE Plasma (until Yggdrasil's own compositor replaces KWin) with the Yggdrasil look (yggdrasil-theme, built into the local repo)
 plasma-desktop
 plasma-workspace
 kwin
@@ -85,7 +85,6 @@ bluedevil
 kde-gtk-config
 xdg-desktop-portal-kde
 breeze
-breeze-gtk
 # (KDE System Settings comes with plasma-desktop but is hidden; Labyrinth Settings replaces it)
 kdeplasma-addons
 plasma-browser-integration
@@ -105,11 +104,8 @@ kio-extras
 ghostty
 spectacle
 appmenu-gtk-module
-kvantum
-whitesur-kde-theme
-whitesur-gtk-theme
+yggdrasil-theme
 liki-icon-theme
-whitesur-cursor-theme
 plasma6-applets-window-title
 # desktop 2, Omarchy-style tiling: Hyprland session, bar, launcher, terminal, notifications (no dock)
 nwg-displays
@@ -128,7 +124,6 @@ playerctl
 firefox
 vivaldi
 vivaldi-ffmpeg-codecs
-kvantum
 xdg-utils
 curl
 libnotify
