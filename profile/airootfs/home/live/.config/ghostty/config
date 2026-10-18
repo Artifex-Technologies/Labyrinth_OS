@@ -46,3 +46,8 @@ quick-terminal-position = top
 quick-terminal-size = 45%,100%
 quick-terminal-autohide = true
 keybind = global:f12=toggle_quick_terminal
+
+# Windows-style copy and paste: Ctrl+V pastes. Ctrl+C copies while something is selected and is still "interrupt" (SIGINT) when nothing is,
+# so stopping a running program keeps working. (Ctrl+Shift+C and Ctrl+Shift+V work as well; Ctrl+Shift+A selects all the terminal's text.)
+keybind = ctrl+v=paste_from_clipboard
+keybind = performable:ctrl+c=copy_to_clipboard

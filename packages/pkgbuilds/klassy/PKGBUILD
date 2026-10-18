@@ -7,7 +7,7 @@
 # taken 2026-10-11 from the GitHub tag archive.
 pkgname=klassy
 pkgver=6.7.3
-pkgrel=1
+pkgrel=2
 pkgdesc="Highly customizable Breeze-based window decoration, application style and icons"
 arch=('x86_64')
 url="https://github.com/paulmcauley/klassy"
@@ -31,4 +31,6 @@ build() {
 
 package() {
   DESTDIR="$pkgdir" cmake --install build
+  # Only the window decoration is used (until Yggdrasil's compositor draws its own); the Klassy icon packs are not: Yggdrasil's icons are Liki.
+  rm -rf "$pkgdir"/usr/share/icons/klassy "$pkgdir"/usr/share/icons/klassy-dark
 }
