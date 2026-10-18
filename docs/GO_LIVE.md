@@ -86,7 +86,7 @@ NVIDIA card, no physical keys, one screen).
 
 ## 6. Licences and names
 
-- [ ] Licence files shipped for: MacTahoe (GPL-3), WhiteSur (GPL-3), Klassy, Simple Icons (CC0; the logos
+- [ ] Licence files shipped for: WhiteSur (GPL-3), Klassy, Simple Icons (CC0; the logos
       remain trademarks of their owners), grub-evodevo (MIT), EdenExplorer (MIT).
 - [ ] **Icons from macosicons.com** and other community icons: their licences are not clear. Do not ship
       them in a public ISO until that is settled; the Artifex icon pack is meant to replace them.
@@ -96,7 +96,7 @@ NVIDIA card, no physical keys, one screen).
 ## 7. Performance and size
 
 - [ ] Idle memory and CPU of the panel and Fylgja (Fylgja reads things only while open).
-- [ ] ISO size: MacTahoe (about 195 MB installed) and the 27 MB of 1024 px app PNGs are the first things to
+- [ ] ISO size: (MacTahoe and the 1024 px app PNGs, the first things to trim, are gone: the icon pack is now Liki, in the Yggdrasil repository) the first things to
       cut (see `docs/ICONS.md`).
 - [ ] Boot time, and time to a usable desktop.
 

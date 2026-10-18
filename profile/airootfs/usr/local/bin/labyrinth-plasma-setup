@@ -17,11 +17,11 @@ busctl --user status org.kde.plasmashell >/dev/null 2>&1 || exit 0   # not Plasm
 if command -v plasma-apply-lookandfeel >/dev/null; then
   plasma-apply-lookandfeel -a com.github.vinceliuice.WhiteSur-dark >/dev/null 2>&1
 fi
-# Icons: MacTahoe in dark, plus the per-app overrides of the Labyrinth theme (labyrinth-icon).
-kwriteconfig6 --file kdeglobals --group Icons --key Theme Labyrinth
-# The Minos icon autostart can run before this sets the pack and then sees the wrong one (a plain folder
-# from another pack ends up in hicolor); run it again now that the pack is Labyrinth.
-command -v labyrinth-minos-icon >/dev/null && labyrinth-minos-icon >/dev/null 2>&1 || true
+# Icons: Liki, Yggdrasil's own pack (liki-icon-theme), standing on hicolor only. No KDE, macOS or GNOME icons.
+kwriteconfig6 --file kdeglobals --group Icons --key Theme Liki
+# Liki's per-user part (the logos of the installed apps, in the accent colour) is built now; Minos gets its icon too.
+command -v liki-build >/dev/null && liki-build >/dev/null 2>&1 || true
+command -v liki-minos-icon >/dev/null && liki-minos-icon >/dev/null 2>&1 || true
 # Title bars: Klassy (packages/pkgbuilds/klassy) with macOS traffic lights on the right in Windows
 # order (minimize, maximize, close), the same side as apps that draw their own (Vivaldi, Spotify,
 # Steam, Minos). Its title bar takes the app's colour, so title bar and toolbar are one header, and
