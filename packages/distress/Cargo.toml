@@ -1,0 +1,20 @@
+[package]
+name = "labyrinth-distress"
+version = "0.1.0"
+edition = "2021"
+description = "Labyrinth's distress password: a second password that quietly does something else when it is typed"
+license = "MIT"
+
+[[bin]]
+name = "labyrinth-distress"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+
+[profile.release]
+opt-level = 2
+lto = "thin"
+strip = true

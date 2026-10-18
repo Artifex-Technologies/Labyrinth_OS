@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN" "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Labyrinth OS</vendor>
+  <action id="org.labyrinth.distress">
+    <description>Use the distress password</description>
+    <message>Authentication is required to change the distress password</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <!-- The helper asks for the account password itself on every change, so no second administrator question is needed. -->
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/labyrinth-distress</annotate>
+  </action>
+</policyconfig>

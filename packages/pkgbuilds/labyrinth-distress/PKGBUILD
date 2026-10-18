@@ -1,0 +1,28 @@
+# Labyrinth distress password helper (root, runs through pkexec): built from packages/distress in this repository.
+pkgname=labyrinth-distress
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Labyrinth's distress password: a second password that quietly does something else when it is typed"
+arch=('x86_64')
+url="https://github.com/Artifex-Technologies/Labyrinth_OS"
+license=('MIT')
+depends=('gcc-libs' 'pam' 'libxcrypt' 'polkit')
+makedepends=('cargo')
+options=('!lto')
+
+_src="$startdir/../../distress"
+
+build() {
+  cd "$_src"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$_src"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  install -Dm755 "$srcdir/target/release/labyrinth-distress" "$pkgdir/usr/bin/labyrinth-distress"
+  install -Dm644 "$startdir/../../../profile/airootfs/usr/share/polkit-1/actions/org.labyrinth.distress.policy" "$pkgdir/usr/share/polkit-1/actions/org.labyrinth.distress.policy"
+}
