@@ -34,7 +34,7 @@ sample settings.)
 | --- | --- |
 | ![Distress password, opening the page](assets/screenshots/settings-distress-open.png) | ![Distress password, the settings](assets/screenshots/settings-distress.png) |
 | *Opening the page asks for your account password.* | *Turn it on, set the password, and how many times it must be typed within how long.* |
-| ![Distress password, the two sections](assets/screenshots/settings-distress-sections.png) | ![Distress password, saving the second section](assets/screenshots/settings-distress-save.png) |
+| ![Distress password, the two sections](assets/screenshots/settings-distress-sections.png) | ![Distress password, saving the second section](assets/screenshots/settings-distress-warning.png) |
 | *Section 1 (no extra password to save) and Section 2 (asks for your password again).* | *Saving Section 2 shows a warning and asks for your password once more.* |
 
 ### The Marketplace
