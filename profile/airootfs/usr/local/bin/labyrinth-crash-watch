@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""labyrinth-crash-watch: when one of YOUR programs crashes (systemd-coredump records it), a notification offers to ask Sarina about it.
+
+Off unless you turn it on (the service is installed disabled): systemctl --user enable --now labyrinth-crash-watch
+It only listens for crash records in the system journal for your own user; it reads nothing else, runs nothing as a result of a crash, and
+sends nothing anywhere. Clicking "Ask Sarina" asks her the same way Super+S does (read-only tools: she looks, and tells you what she found and what
+she would try; she does not change anything). One notification per program every ten minutes, so a crash loop does not become a storm.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+
+COREDUMP_ID = "fc2e22bc6ee647b6b90729ab34a250b1"  # systemd's message id for "process dumped core"
+QUIET = 600
+seen = {}
+
+
+def ask(exe, sig, name):
+    q = ("The program %s just crashed (%s). Look into it: call crash_detail on it, say in plain words what the system recorded, which package owns it, "
+         "what you cannot tell, and one or two things I could try (as guesses, with how to check them). Do not change anything." % (name, sig))
+    env = dict(os.environ)
+    try:
+        with open("/usr/share/labyrinth/sarina-voice-rules.txt", encoding="utf-8") as f:
+            env["LABYRINTH_VOICE_RULES"] = f.read().strip()
+    except OSError:
+        pass
+    try:
+        r = subprocess.run(["labyrinth-ask-sarina", "--voice", "--cwd", os.path.expanduser("~"), q], capture_output=True, text=True, timeout=180, env=env)
+        text = (r.stdout or r.stderr).strip() or "She had nothing to say about it."
+    except Exception as e:  # noqa: BLE001
+        text = "Sarina could not look: %s" % e
+    subprocess.run(["notify-send", "-a", "Sarina", "-i", "dialog-information", "About the %s crash" % name, text[:900]], check=False)
+
+
+def notify(exe, sig, name):
+    # notify-send -A blocks until the notification is answered, so it runs in its own thread
+    def go():
+        try:
+            r = subprocess.run(["notify-send", "-a", "Sarina", "-i", "dialog-warning", "-A", "ask=Ask Sarina", "-t", "30000",
+                                "%s crashed" % name, "%s (%s). Want Sarina to take a look?" % (exe, sig)], capture_output=True, text=True, timeout=60)
+        except Exception:  # noqa: BLE001
+            return
+        if r.stdout.strip() == "ask":
+            ask(exe, sig, name)
+    threading.Thread(target=go, daemon=True).start()
+
+
+def main():
+    uid = str(os.getuid())
+    p = subprocess.Popen(["journalctl", "-f", "-n", "0", "-o", "json", "MESSAGE_ID=" + COREDUMP_ID], stdout=subprocess.PIPE, text=True)
+    for line in p.stdout:
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if str(e.get("COREDUMP_UID", "")) != uid:
+            continue
+        exe = re.sub(r"[^\w./+-]", "", str(e.get("COREDUMP_EXE", "a program")))[:100] or "a program"
+        name = os.path.basename(exe) or exe
+        sig = re.sub(r"[^\w]", "", str(e.get("COREDUMP_SIGNAL_NAME", "a signal")))[:20] or "a signal"
+        now = time.time()
+        if now - seen.get(exe, 0) < QUIET:
+            continue
+        seen[exe] = now
+        notify(exe, sig, name)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

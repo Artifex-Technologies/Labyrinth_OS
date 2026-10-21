@@ -1,0 +1,14 @@
+# systemd USER unit (installed disabled): offers to ask Sarina when one of your programs crashes.
+# Turn on:  systemctl --user enable --now labyrinth-crash-watch   (copy this file to ~/.config/systemd/user/ first)
+[Unit]
+Description=Offer to ask Sarina about a crash
+
+[Service]
+ExecStart=/usr/local/bin/labyrinth-crash-watch
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
