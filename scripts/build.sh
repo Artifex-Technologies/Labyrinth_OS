@@ -66,6 +66,11 @@ usd="$profile_build_dir/airootfs/etc/systemd/user/plasma-workspace.target.wants"
 mkdir -p "$usd"
 ln -sf /usr/lib/systemd/user/labyrinth-kwin-cache.service "$usd/labyrinth-kwin-cache.service"
 
+# mkarchiso remembers the steps it finished in the work directory and skips them next time, so a second build in the same folder
+# would reuse the first build's packages and ignore everything changed since. Every build starts from nothing.
+echo "==> Clearing the previous mkarchiso work directory"
+rm -rf --one-file-system "${work_dir:?}/iso"
+
 echo "==> Running mkarchiso"
 mkdir -p "$out_dir"
 mkarchiso -v -w "$work_dir/iso" -o "$out_dir" "$profile_build_dir"

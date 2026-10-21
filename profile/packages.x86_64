@@ -137,6 +137,7 @@ poppler
 ffmpegthumbnailer
 unrar
 swaybg
+edk2-shell
 # component: steam
 steam
 lib32-nvidia-utils
