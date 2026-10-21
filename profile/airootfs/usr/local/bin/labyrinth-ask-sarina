@@ -49,6 +49,38 @@ def persona_text():
     return ("How you talk (your Persona note):\n" + text) if text else ""
 
 
+# A question about how the computer is doing needs the same look every time, so it is made before the model starts, not by a round trip through
+# the model's own tool call (that costs a whole extra turn, a few seconds). The model still has the tool for anything it wants to look at further.
+ROUTES = [
+    (r"\b(crash|crashed|crashes|core dump|segfault|segmentation|aborted|froze|freez|hung|hang)\w*", "crashes"),
+    (r"\b(slow|lag|laggy|sluggish|performance|cpu|processor|memory|ram|swap|busy|fan|hot|temperature|heat|load)\b", "performance"),
+    (r"\b(internet|wi-?fi|network|connection|connect|online|offline|dns|ethernet)\b", "network"),
+    (r"\b(disk|storage|space|full|drive)\b", "disk"),
+    (r"\b(boot|startup|start up|takes? long to (start|boot))\b", "boot"),
+    (r"\b(sound|audio|speaker|microphone|mic|volume)\b", "audio"),
+    (r"\b(error|errors|log|logs|failed|failing|broke|broken|problem|wrong|issue)\b", "services"),
+]
+
+
+def prefetch(question):
+    """What the computer reports about the topics the question touches (at most two), as text to place before the question; empty when it is not about the computer."""
+    topics = []
+    for rx, topic in ROUTES:
+        if re.search(rx, question, re.I) and topic not in topics:
+            topics.append(topic)
+    out = []
+    for t in topics[:2]:
+        try:
+            r = subprocess.run(["sarina", "system-status", t], capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if r.returncode == 0 and r.stdout.strip():
+            out.append("[%s]\n%s" % (t, r.stdout.strip()[:2500]))
+    if not out:
+        return ""
+    return "What the computer reports right now (read-only, already looked up for you; call system_status for anything more):\n\n" + "\n\n".join(out) + "\n\nThe question: "
+
+
 def log_joke(question, answer, env):
     """When she told a joke, keep what it was said in answer to, in her vault (Jokes/YYYY-MM.md), so that she can say later why she said it.
     Done here, not left to the model: a small model forgets or writes the call as text. Plain text only, short, never fails the answer."""
@@ -120,7 +152,10 @@ def main(argv):
                 before = set(os.listdir(SESSIONS))
             except OSError:
                 before = set()
-    cmd = command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
+    question = " ".join(a.question)
+    if a.voice and env.get("SARINA_SYSTEM") == "on":
+        question = prefetch(question) + question
+    cmd = command(question, a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
     if a.voice:
         # a spoken answer is cleaned here: a small model sometimes writes a tool call as text, which must not be read out or shown
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
