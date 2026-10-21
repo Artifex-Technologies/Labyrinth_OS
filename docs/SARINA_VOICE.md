@@ -160,3 +160,7 @@ in `~/.config/labyrinth/pronunciations` (`word = how to spell it so it is said r
 - While she answers the microphone is off (no echo of her voice in your next question). Interrupting by voice (barge-in) is not built.
 - **Not tested by a person:** the whole flow in use (the panel code is built and installed, the end-of-speech detector is unit tested, the session continuity was tested with a
   two-turn exchange). If the detector ends your sentences too early or too late, the numbers are at the top of `convo.rs` (`END_SILENCE_MS`).
+
+## What she can look at (2026-10-20)
+
+Spoken questions use read-only tools: files, her vault, and `system_status` (performance, network, disk, logs, failed services, hardware; fixed commands, nothing changed; on with `SARINA_SYSTEM=on` in `~/.config/labyrinth/sarina.env`). The rules for spoken answers now live in her system prompt once (`LABYRINTH_VOICE_RULES`), not in every question, so a conversation no longer repeats the same paragraph and she is told not to repeat an earlier answer or claim she cannot do what she has not tried.

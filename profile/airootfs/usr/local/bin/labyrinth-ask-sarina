@@ -30,7 +30,7 @@ def env_file():
 
 
 # What a spoken question may use: reading, and her vault (the only place it may write, through the vault's own safety gate).
-VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write"
+VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write,system_status"
 
 
 def persona_text():
@@ -47,14 +47,15 @@ def persona_text():
     return ("How you talk (your Persona note):\n" + text) if text else ""
 
 
-def command(question, cwd, write=False, shell=False, voice=False, resume=None):
+def command(question, cwd, write=False, shell=False, voice=False, resume=None, rules=""):
     # `sarina resume ID "question"` continues a saved session (a conversation's later turns); otherwise a new one
     cmd = ["sarina", "resume", resume, question] if resume else ["sarina", "chat", question]
     cmd += ["--cwd", os.path.abspath(cwd), "--session-dir", SESSIONS]
     if voice:
         # a misheard word must never become a write anywhere else: only these tools exist for the question
         cmd += ["--tools", VOICE_TOOLS, "--allow-write"]
-        persona = persona_text()
+        # the persona and the rules for spoken answers live in the system prompt, once, not repeated in every turn of the conversation
+        persona = "\n\n".join(x for x in (persona_text(), rules) if x)
         if persona:
             cmd += ["--append-system-prompt", persona]
     elif write:
@@ -93,7 +94,7 @@ def main(argv):
                 before = set(os.listdir(SESSIONS))
             except OSError:
                 before = set()
-    rc = subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice, resume), env=env).returncode
+    rc = subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", "")), env=env).returncode
     if state and not resume:
         try:  # the session this first turn made: the later turns resume it
             new = [n for n in os.listdir(SESSIONS) if n.endswith(".json") and n not in before]
