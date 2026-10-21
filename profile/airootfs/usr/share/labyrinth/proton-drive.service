@@ -8,14 +8,19 @@
 Description=Proton Drive mount (rclone)
 After=network-online.target
 Wants=network-online.target
+# a login that fails (a lapsed 2FA, no network yet) must not be retried every few seconds: Proton may lock the account
+StartLimitIntervalSec=600
+StartLimitBurst=3
 
 [Service]
 Type=notify
+ExecStartPre=-/usr/bin/rm -f %t/rclone-proton.sock
 ExecStartPre=/usr/bin/mkdir -p %h/ProtonDrive
 ExecStart=/usr/bin/rclone mount proton: %h/ProtonDrive --vfs-cache-mode full --vfs-cache-max-size 20G --dir-cache-time 5m --rc --rc-addr unix://%t/rclone-proton.sock --rc-no-auth
 ExecStop=/usr/bin/fusermount3 -u %h/ProtonDrive
+ExecStopPost=-/usr/bin/rm -f %t/rclone-proton.sock
 Restart=on-failure
-RestartSec=10
+RestartSec=30
 
 [Install]
 WantedBy=default.target

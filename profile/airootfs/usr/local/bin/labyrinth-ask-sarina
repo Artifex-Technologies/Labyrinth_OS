@@ -8,7 +8,9 @@ Her sessions go to /var/lib/sarina/sessions, the folder Heimdall watches, so wha
 else. The model and server come from ~/.config/labyrinth/sarina.env (KEY=value lines), then the environment.
 """
 import argparse
+import datetime
 import os
+import re
 import subprocess
 import sys
 
@@ -30,7 +32,7 @@ def env_file():
 
 
 # What a spoken question may use: reading, and her vault (the only place it may write, through the vault's own safety gate).
-VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write,system_status"
+VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write,system_status,crash_detail,stage_binary,reverse_engineer"
 
 
 def persona_text():
@@ -45,6 +47,30 @@ def persona_text():
         text = text[text.index("\n---", 4) + 4:]
     text = text.strip()[:2500]
     return ("How you talk (your Persona note):\n" + text) if text else ""
+
+
+def log_joke(question, answer, env):
+    """When she told a joke, keep what it was said in answer to, in her vault (Jokes/YYYY-MM.md), so that she can say later why she said it.
+    Done here, not left to the model: a small model forgets or writes the call as text. Plain text only, short, never fails the answer."""
+    if "[joking]" not in answer and not re.search(r"\b(joke|funny|pun|humou?r)\b", question, re.I):
+        return
+    vault = env.get("SARINA_VAULT", "")
+    if not vault or not os.path.isdir(vault):
+        return
+    clean = lambda t, n: re.sub(r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]", " ", t).strip()[:n]
+    now = datetime.datetime.now()
+    joke = clean(re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", answer), 300)
+    try:
+        d = os.path.join(vault, "Jokes")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, now.strftime("%Y-%m") + ".md")
+        new = not os.path.exists(path)
+        with open(path, "a", encoding="utf-8") as f:
+            if new:
+                f.write("# Jokes " + now.strftime("%Y-%m") + "\n\nEach line: when, what the owner said, what I said. I chose a joke because of what was said just before it.\n\n")
+            f.write("- %s | they said: %s | I said: %s\n" % (now.strftime("%Y-%m-%d %H:%M"), clean(question, 200), joke))
+    except OSError:
+        pass
 
 
 def command(question, cwd, write=False, shell=False, voice=False, resume=None, rules=""):
@@ -94,7 +120,17 @@ def main(argv):
                 before = set(os.listdir(SESSIONS))
             except OSError:
                 before = set()
-    rc = subprocess.run(command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", "")), env=env).returncode
+    cmd = command(" ".join(a.question), a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
+    if a.voice:
+        # a spoken answer is cleaned here: a small model sometimes writes a tool call as text, which must not be read out or shown
+        p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
+        rc = p.returncode
+        answer = re.sub(r"<(\w+)>.*?</\1>", "", p.stdout, flags=re.S)
+        answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
+        print(answer)
+        log_joke(" ".join(a.question), answer, env)
+    else:
+        rc = subprocess.run(cmd, env=env).returncode
     if state and not resume:
         try:  # the session this first turn made: the later turns resume it
             new = [n for n in os.listdir(SESSIONS) if n.endswith(".json") and n not in before]
