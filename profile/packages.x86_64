@@ -5,6 +5,7 @@ base
 base-devel
 linux-firmware
 intel-ucode
+amd-ucode
 btrfs-progs
 snapper
 sbctl
@@ -25,6 +26,8 @@ nvidia-settings
 vulkan-icd-loader
 mesa
 vulkan-intel
+vulkan-radeon
+iio-sensor-proxy
 intel-media-driver
 hyprland
 waybar
@@ -141,6 +144,7 @@ edk2-shell
 # component: steam
 steam
 lib32-nvidia-utils
+lib32-vulkan-radeon
 lib32-vulkan-icd-loader
 gamemode
 mangohud
@@ -204,3 +208,6 @@ github-cli
 python-pip
 fd
 socat
+# component: asus
+asusctl
+rog-control-center

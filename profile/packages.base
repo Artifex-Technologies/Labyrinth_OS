@@ -4,7 +4,9 @@
 base
 base-devel
 linux-firmware
+# processor microcode for both makers (the boot loader loads the one that matches)
 intel-ucode
+amd-ucode
 btrfs-progs
 snapper
 sbctl
@@ -27,6 +29,10 @@ vulkan-icd-loader
 # iGPU: fallback display and passthrough host
 mesa
 vulkan-intel
+# AMD graphics (Radeon, including the integrated Radeon 8060S of Ryzen AI Max): Vulkan for games and apps
+vulkan-radeon
+# screen rotation and light sensors on tablets and 2-in-1s
+iio-sensor-proxy
 intel-media-driver
 # desktop (Omarchy model)
 hyprland
