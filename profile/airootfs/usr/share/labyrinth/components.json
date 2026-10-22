@@ -292,6 +292,25 @@
         "openrazer"
       ],
       "notes": "Log out and in once after installing (the openrazer group). Polychromatic sets lighting; Input Remapper sets the buttons."
+    },
+    {
+      "id": "waydroid",
+      "name": "Android apps (Waydroid)",
+      "description": "Runs Android apps in their own windows next to your other apps: a full Android system in a container, sharing the kernel (no emulator, near-native speed). The Android image (about 1 GB) is downloaded from Waydroid's servers when it is set up.",
+      "proprietary": false,
+      "packages": [
+        "waydroid"
+      ],
+      "enable_system": [
+        "waydroid-container.service"
+      ],
+      "after_install": [
+        [
+          "waydroid",
+          "init"
+        ]
+      ],
+      "notes": "Start 'Waydroid' from the start menu; the first start takes a minute. Install Android apps from an APK (waydroid app install FILE.apk) or an open store such as F-Droid. Google Play needs the image with Google apps: sudo waydroid init -s GAPPS -f. If Android has no internet, the firewall is blocking it: sudo ufw allow in on waydroid0 && sudo ufw route allow in on waydroid0."
     }
   ],
   "presets": {

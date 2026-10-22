@@ -99,6 +99,11 @@ def plan_install(chosen, comps, installed):
         pb = comps[i].get("pkgbuild")
         if pb and pb not in installed:
             steps.append((f"build and install {pb} from its PKGBUILD", ["makepkg", "-si"], pb))
+    for i in chosen:
+        # one-time setup commands of a component (root-owned components.json only), run as administrator after its packages
+        for cmd in comps[i].get("after_install", []):
+            if isinstance(cmd, list) and cmd and all(isinstance(a, str) for a in cmd):
+                steps.append((f"set up {comps[i]['name']}: {' '.join(cmd)}", sudo(cmd), None))
     user = os.environ.get("SUDO_USER") or os.environ.get("USER") or ""
     for i in chosen:
         groups = comps[i].get("add_groups", [])
