@@ -1,0 +1,11 @@
+# Sarina's daily check-up. Off until the owner switches it on in Settings > Sarina's agents.
+[Unit]
+Description=Sarina's daily check-up
+
+[Timer]
+OnCalendar=*-*-* 10:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

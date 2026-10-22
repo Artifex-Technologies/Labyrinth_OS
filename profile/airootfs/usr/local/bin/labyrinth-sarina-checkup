@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""labyrinth-sarina-checkup: once a day, a quiet look at how the computer is doing. Only the owner switches it on (Settings > Sarina's agents,
+or: systemctl --user enable --now labyrinth-sarina-checkup.timer); Sarina cannot schedule anything herself.
+
+What it does, all read-only: new crashes since the last check-up, failed services, nearly full disks, kernel errors. If everything is fine it
+writes one line in her vault (Daily/YYYY-MM-DD.md) and says nothing. If something is wrong it asks Sarina, with her read-only spoken-question
+tools, to explain it in a few sentences, notes that, and shows one notification. It never changes anything, and it waits for another day if
+the graphics card is busy (a game), so it never takes the GPU while you play.
+"""
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "sarina", "checkup.json")
+
+
+def run(argv, timeout=30):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=timeout).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def env_file():
+    out = {}
+    try:
+        with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "labyrinth", "sarina.env")) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    out[k.strip()] = v.strip()
+    except OSError:
+        pass
+    return out
+
+
+def gpu_busy():
+    out = run(["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"], 10).strip().splitlines()
+    try:
+        return int(out[0]) >= 40
+    except (IndexError, ValueError):
+        return False
+
+
+def findings(last):
+    found = []
+    # crashes of this user's programs since the last check-up
+    since = last or (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+    out = run(["coredumpctl", "list", "--no-pager", "--no-legend", "--since=" + since])
+    uid = str(os.getuid())
+    progs = {}
+    for line in out.splitlines():
+        f = line.split()
+        if len(f) >= 10 and f[5] == uid:
+            progs[os.path.basename(f[9])] = progs.get(os.path.basename(f[9]), 0) + 1
+    for p, n in sorted(progs.items()):
+        found.append("%s crashed %d time%s" % (p, n, "" if n == 1 else "s"))
+    for scope in ([], ["--user"]):
+        out = run(["systemctl"] + scope + ["--failed", "--no-legend", "--plain", "--no-pager"])
+        for line in out.splitlines():
+            unit = line.split()[0] if line.split() else ""
+            if unit and not unit.startswith("run-"):
+                found.append("service %s failed%s" % (unit, " (your session)" if scope else ""))
+    out = run(["df", "--output=pcent,target", "-x", "tmpfs", "-x", "devtmpfs", "-x", "efivarfs"])
+    for line in out.splitlines()[1:]:
+        m = re.match(r"\s*(\d+)%\s+(\S+)", line)
+        if m and int(m.group(1)) >= 90:
+            found.append("%s is %s%% full" % (m.group(2), m.group(1)))
+    out = run(["journalctl", "-k", "-p", "err", "--since=" + since, "--no-pager", "-q", "-o", "cat"])
+    n = len([l for l in out.splitlines() if l.strip()])
+    if n >= 5:
+        found.append("%d kernel errors" % n)
+    return found
+
+
+def note(vault, text):
+    if not vault or not os.path.isdir(vault):
+        return
+    d = os.path.join(vault, "Daily")
+    os.makedirs(d, exist_ok=True)
+    today = datetime.date.today().isoformat()
+    p = os.path.join(d, today + ".md")
+    new = not os.path.exists(p)
+    with open(p, "a", encoding="utf-8") as f:
+        if new:
+            f.write("---\ncreated: %s\nsource: labyrinth-sarina-checkup\ntags: [daily]\n---\n\n# %s\n\n" % (today, today))
+        f.write("- %s check-up: %s\n" % (datetime.datetime.now().strftime("%H:%M"), text))
+
+
+def main():
+    if gpu_busy():
+        print("the graphics card is busy; trying again later")
+        return 75  # systemd retries per the unit's Restart
+    st = {}
+    try:
+        with open(STATE) as f:
+            st = json.load(f)
+    except (OSError, ValueError):
+        pass
+    env = dict(os.environ)
+    for k, v in env_file().items():
+        env.setdefault(k, v)
+    vault = env.get("SARINA_VAULT", "")
+    found = findings(st.get("last", ""))
+    if not found:
+        note(vault, "all fine")
+    else:
+        q = ("Daily check-up. The computer reported: %s. Look into these with your tools (crash_detail for a crash, system_status for the rest) "
+             "and tell me in at most three plain sentences what matters and what I could do; do not change anything." % "; ".join(found))
+        try:
+            with open("/usr/share/labyrinth/sarina-voice-rules.txt", encoding="utf-8") as f:
+                env["LABYRINTH_VOICE_RULES"] = f.read().strip()
+        except OSError:
+            pass
+        try:
+            r = subprocess.run(["labyrinth-ask-sarina", "--voice", "--cwd", os.path.expanduser("~"), q], capture_output=True, text=True, timeout=300, env=env)
+            answer = r.stdout.strip() or "(no answer)"
+        except (OSError, subprocess.TimeoutExpired):
+            answer = "(Sarina could not look at it)"
+        note(vault, "; ".join(found) + ". " + answer.replace("\n", " "))
+        subprocess.run(["notify-send", "-a", "Sarina", "-i", "dialog-information", "Daily check-up", ("; ".join(found) + "\n\n" + answer)[:800]], check=False)
+    st["last"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE, "w") as f:
+        json.dump(st, f)
+    print("; ".join(found) or "all fine")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
