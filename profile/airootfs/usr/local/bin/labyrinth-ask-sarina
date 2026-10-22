@@ -82,6 +82,24 @@ def keyword_topics(question):
     return topics
 
 
+def recent_crash(question):
+    """The program of the user's own crash to look at: the one the question names, else the newest of the last day."""
+    try:
+        out = subprocess.run(["coredumpctl", "list", "--no-pager", "--no-legend", "--reverse", "--since=-1d"], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    uid, mine = str(os.getuid()), []
+    for line in out.splitlines():
+        f = line.split()
+        if len(f) >= 10 and f[5] == uid:
+            mine.append(f[9])
+    q = question.lower()
+    for exe in mine:
+        if os.path.basename(exe).lower() in q:
+            return exe
+    return mine[0] if mine else ""
+
+
 def prefetch(question, topics):
     """What the computer reports about the given topics (at most two), as text to place before the question; empty when there are none."""
     topics = [t for t in topics if t not in ("guides", "chat")]
@@ -93,6 +111,15 @@ def prefetch(question, topics):
             continue
         if r.returncode == 0 and r.stdout.strip():
             out.append("[%s]\n%s" % (t, r.stdout.strip()[:2500]))
+    if "crashes" in topics:
+        c = recent_crash(question)
+        if c:
+            try:
+                r = subprocess.run(["sarina", "crash-detail", c], capture_output=True, text=True, timeout=30)
+                if r.returncode == 0 and r.stdout.strip():
+                    out.append("[latest crash of %s]\n%s" % (os.path.basename(c), r.stdout.strip()[-3500:]))
+            except (OSError, subprocess.TimeoutExpired):
+                pass
     if not out:
         return ""
     return "What the computer reports right now (read-only, already looked up for you; call system_status for anything more):\n\n" + "\n\n".join(out) + "\n\nThe question: "
