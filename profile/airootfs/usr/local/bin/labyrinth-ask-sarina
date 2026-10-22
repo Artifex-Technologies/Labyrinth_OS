@@ -135,6 +135,9 @@ def main(argv):
     env = dict(os.environ)
     for k, v in env_file().items():
         env.setdefault(k, v)
+    # Qwen3-style thinking models loop at temperature 0; one reply is capped so a runaway ends instead of timing out
+    env.setdefault("SARINA_TEMPERATURE", "0.6")
+    env.setdefault("SARINA_REQUEST_MAX_TOKENS", "6000")
     state, resume, before = None, None, set()
     if a.conversation and all(c.isalnum() or c in "-_" for c in a.conversation):
         run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")

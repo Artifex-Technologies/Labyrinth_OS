@@ -53,6 +53,8 @@ OPENAI_API_KEY=local-token
 OPENAI_MODEL=$MODEL
 SARINA_LIMBO_SOCKET=/run/limbo/agent.sock
 HEIMDALL_REVIEW_URL=http://127.0.0.1:8930/v1/review
+SARINA_TEMPERATURE=0.6
+SARINA_REQUEST_MAX_TOKENS=6000
 EOF
     chown root:sarina /etc/sarina/service.env; chmod 640 /etc/sarina/service.env
     say "sarina: wrote /etc/sarina/service.env (new token)"
