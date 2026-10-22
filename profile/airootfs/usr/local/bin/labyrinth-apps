@@ -37,7 +37,7 @@ def load(path=None):
 
 def all_packages(c):
     """Names pacman should know the component by (a pkgbuild component installs its own name)."""
-    return list(c.get("packages", [])) + ([c["pkgbuild"]] if c.get("pkgbuild") else [])
+    return list(c.get("packages", [])) + list(c.get("aur", [])) + ([c["pkgbuild"]] if c.get("pkgbuild") else [])
 
 
 def state(c, installed):
@@ -83,10 +83,28 @@ def plan_install(chosen, comps, installed):
                 repo.append(p)
     if repo:
         steps.append((f"install {len(repo)} package(s) with pacman", sudo(["pacman", "-S", "--needed"] + repo), None))
+    aur = []
+    for i in chosen:
+        for p in comps[i].get("aur", []):
+            if p not in installed and p not in aur:
+                aur.append(p)
+    if aur:
+        # yay shows each AUR package's build file and asks before building; it asks for the password itself when it installs
+        cmd = ["yay", "-S", "--needed"]
+        if os.environ.get("LABYRINTH_SUDO"):
+            # from the Marketplace (no terminal, Labyrinth's reviewed catalog): no questions, and the password box instead of sudo
+            cmd += ["--noconfirm", "--sudo", os.environ["LABYRINTH_SUDO"]]
+        steps.append((f"build and install {len(aur)} package(s) from the AUR ({', '.join(aur)})", cmd + aur, None))
     for i in chosen:
         pb = comps[i].get("pkgbuild")
         if pb and pb not in installed:
             steps.append((f"build and install {pb} from its PKGBUILD", ["makepkg", "-si"], pb))
+    user = os.environ.get("SUDO_USER") or os.environ.get("USER") or ""
+    for i in chosen:
+        groups = comps[i].get("add_groups", [])
+        if groups and user:
+            # a device's helper only answers members of its group; it counts from the next login
+            steps.append((f"let {user} use the device ({', '.join(groups)} group; log out and in again)", sudo(["usermod", "-aG", ",".join(groups), user]), None))
     for i in chosen:
         units = comps[i].get("enable_global", [])
         if units:

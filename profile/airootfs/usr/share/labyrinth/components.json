@@ -247,6 +247,75 @@
         "cups.socket",
         "avahi-daemon.service"
       ]
+    },
+    {
+      "id": "asus",
+      "name": "ASUS laptop and tablet tools",
+      "description": "asusctl and ROG Control Center: fan and power profiles, keyboard lighting, battery charge limit on ASUS laptops and tablets (ROG, TUF, Zenbook, ROG Flow). The installer already keeps them on ASUS computers.",
+      "proprietary": false,
+      "packages": [
+        "asusctl",
+        "rog-control-center"
+      ],
+      "notes": "Open ROG Control Center from the start menu."
+    },
+    {
+      "id": "coolercontrol",
+      "name": "CoolerControl",
+      "description": "Fan curves and pump speeds for AIO coolers and fan controllers (Corsair Commander and iCUE coolers, NZXT, Lian Li, EK and many motherboards), driven by the temperatures you pick. Uses liquidctl underneath.",
+      "proprietary": false,
+      "packages": [
+        "coolercontrol",
+        "coolercontrold",
+        "liquidctl"
+      ],
+      "enable_system": [
+        "coolercontrold.service"
+      ],
+      "notes": "Open CoolerControl, pick a device and draw its curve. The settings are kept by the coolercontrold service and apply from start-up, without the app open."
+    },
+    {
+      "id": "openrgb",
+      "name": "OpenRGB",
+      "description": "One app for RGB lighting across makers: Corsair, Razer, ASUS Aura, MSI, Gigabyte, G.Skill memory, and many keyboards, mice and fans.",
+      "proprietary": false,
+      "packages": [
+        "openrgb"
+      ],
+      "notes": "Some motherboard and memory lighting needs the i2c modules; OpenRGB explains it when a device is missing."
+    },
+    {
+      "id": "ckb-next",
+      "name": "Corsair keyboards and mice (ckb-next)",
+      "description": "Lighting, macros and key remapping for Corsair keyboards and mice, the iCUE part for peripherals.",
+      "proprietary": false,
+      "packages": [
+        "ckb-next"
+      ],
+      "enable_system": [
+        "ckb-next-daemon.service"
+      ],
+      "notes": "Open ckb-next; the device appears once the daemon is running."
+    },
+    {
+      "id": "razer",
+      "name": "Razer keyboards and mice",
+      "description": "OpenRazer (the driver) with Polychromatic for lighting, DPI and polling rate, and Input Remapper for the extra mouse buttons: give any button a key, a shortcut or a macro.",
+      "proprietary": false,
+      "packages": [
+        "openrazer-daemon"
+      ],
+      "aur": [
+        "polychromatic",
+        "input-remapper-bin"
+      ],
+      "enable_system": [
+        "input-remapper.service"
+      ],
+      "add_groups": [
+        "openrazer"
+      ],
+      "notes": "Log out and in once after installing (the openrazer group). Polychromatic sets lighting; Input Remapper sets the buttons."
     }
   ],
   "presets": {
