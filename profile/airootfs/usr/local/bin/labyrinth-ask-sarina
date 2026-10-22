@@ -62,12 +62,29 @@ ROUTES = [
 ]
 
 
-def prefetch(question):
-    """What the computer reports about the topics the question touches (at most two), as text to place before the question; empty when it is not about the computer."""
+def route(question, env):
+    """What the question needs looked up, decided by meaning (`sarina route`: the small embedding model compares it with example questions),
+    or None when that is not available (then the keyword rules decide)."""
+    try:
+        r = subprocess.run(["sarina", "route", question], capture_output=True, text=True, timeout=8, env=env)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode != 0:
+        return None
+    return [t for t in r.stdout.strip().split(",") if t]
+
+
+def keyword_topics(question):
     topics = []
     for rx, topic in ROUTES:
         if re.search(rx, question, re.I) and topic not in topics:
             topics.append(topic)
+    return topics
+
+
+def prefetch(question, topics):
+    """What the computer reports about the given topics (at most two), as text to place before the question; empty when there are none."""
+    topics = [t for t in topics if t not in ("guides", "chat")]
     out = []
     for t in topics[:2]:
         try:
@@ -229,9 +246,12 @@ def main(argv):
                 before = set()
     question = " ".join(a.question)
     if a.voice:
-        g = guides(question, env.get("SARINA_VAULT", ""))
+        topics = route(question, env)
+        if topics is None:
+            topics = keyword_topics(question) + ["guides"]
+        g = guides(question, env.get("SARINA_VAULT", "")) if "guides" in topics else ""
         if env.get("SARINA_SYSTEM") == "on":
-            question = prefetch(question) + question
+            question = prefetch(question, topics) + question
         question = g + question
     cmd = command(question, a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
     if a.voice:
