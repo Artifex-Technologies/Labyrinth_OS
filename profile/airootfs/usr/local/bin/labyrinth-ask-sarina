@@ -254,6 +254,8 @@ def main(argv):
     env.setdefault("SARINA_REQUEST_MAX_TOKENS", "6000")
     # her notes are also found by meaning (needs the small nomic-embed-text model in Ollama; without it, keywords only)
     env.setdefault("SARINA_SEMANTIC", "on")
+    # browser profiles, keyrings and key folders are never hers to read (the owner adds personal folders in sarina.env)
+    env.setdefault("SARINA_PRIVATE_DIRS", "~/.mozilla:~/.config/vivaldi:~/.config/chromium:~/.config/google-chrome:~/.local/share/keyrings:~/.password-store:~/.gnupg:~/.ssh")
     state, resume, before = None, None, set()
     if a.conversation and all(c.isalnum() or c in "-_" for c in a.conversation):
         run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")
