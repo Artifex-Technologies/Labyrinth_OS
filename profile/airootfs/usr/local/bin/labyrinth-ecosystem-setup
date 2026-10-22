@@ -155,11 +155,12 @@ EOF
   fi
 fi
 
-# Ollama serves models from this disk: it must not hold the desktop back waiting for "network online" (about 6 s at every start)
+# Ollama serves models from this disk and need not wait for "network online" (about 6 s): it is ready sooner. (The login screen never
+# waited for it; the start's "graphical target" did.)
 if [[ -f /usr/lib/systemd/system/ollama.service && ! -f /etc/systemd/system/ollama.service ]]; then
-  { echo "# Labyrinth's copy of ollama.service without the wait for network-online (it delayed every start by ~6 s)."
+  { echo "# Labyrinth's copy of ollama.service without the wait for network-online, so Ollama is ready about 6 s sooner after a start."
     sed -e '/^Wants=network-online.target$/d' -e 's/^After=network.target network-online.target$/After=network.target/' /usr/lib/systemd/system/ollama.service; } > /etc/systemd/system/ollama.service
-  say "ollama: starts without waiting for the network"
+  say "ollama: starts without waiting for the network (ready sooner)"
 fi
 systemctl daemon-reload
 for u in ollama limbo heimdall sarina-service; do
