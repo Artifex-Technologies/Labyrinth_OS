@@ -59,10 +59,16 @@ def save_state(state, path=None):
 
 
 def active_mode():
-    try:
-        return subprocess.run(["powerprofilesctl", "get"], capture_output=True, text=True, timeout=5).stdout.strip()
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
+    # read straight from power-profiles-daemon over D-Bus: `powerprofilesctl` is a Python program whose interpreter aborts at exit now and
+    # then (Python 3.14 with PyGObject: a fatal error in PyGILState_Ensure while GLib frees its data), which left a core dump every few hours
+    for name, path in (("org.freedesktop.UPower.PowerProfiles", "/org/freedesktop/UPower/PowerProfiles"), ("net.hadess.PowerProfiles", "/net/hadess/PowerProfiles")):
+        try:
+            out = subprocess.run(["busctl", "get-property", name, path, name, "ActiveProfile"], capture_output=True, text=True, timeout=5).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if out.startswith("s "):
+            return out[2:].strip().strip('"')
+    return ""
 
 
 def read_int(path):

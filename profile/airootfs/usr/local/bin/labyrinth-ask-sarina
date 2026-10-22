@@ -161,6 +161,9 @@ def main(argv):
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
         rc = p.returncode
         answer = re.sub(r"<(\w+)>.*?</\1>", "", p.stdout, flags=re.S)
+        # emoji are read out as their names ("printer, grinning face") and the card has no room for them
+        answer = re.sub("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]", "", answer)
+        answer = re.sub(r"[ \t]+\n", "\n", answer)
         answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
         print(answer)
         log_joke(" ".join(a.question), answer, env)
