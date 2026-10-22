@@ -91,6 +91,9 @@ def plan_install(chosen, comps, installed):
         units = comps[i].get("enable_global", [])
         if units:
             steps.append((f"enable {', '.join(units)} for every user", sudo(["systemctl", "--global", "enable"] + units), None))
+        units = comps[i].get("enable_system", [])
+        if units:
+            steps.append((f"start {', '.join(units)}", sudo(["systemctl", "enable", "--now"] + units), None))
     return steps
 
 
@@ -105,6 +108,9 @@ def plan_remove(chosen, comps, installed):
         units = comps[i].get("enable_global", [])
         if units and any(p in installed for p in all_packages(comps[i])):
             steps.append((f"disable {', '.join(units)}", sudo(["systemctl", "--global", "disable"] + units), None))
+        units = comps[i].get("enable_system", [])
+        if units and any(p in installed for p in all_packages(comps[i])):
+            steps.append((f"stop {', '.join(units)}", sudo(["systemctl", "disable", "--now"] + units), None))
     if pk:
         steps.append((f"remove {len(pk)} package(s) and their unneeded dependencies", sudo(["pacman", "-Rs"] + pk), None))
     return steps

@@ -28,6 +28,10 @@ mesa
 vulkan-intel
 vulkan-radeon
 iio-sensor-proxy
+sof-firmware
+alsa-ucm-conf
+nvidia-prime
+switcheroo-control
 intel-media-driver
 hyprland
 waybar
@@ -211,3 +215,15 @@ socat
 # component: asus
 asusctl
 rog-control-center
+# component: printing
+cups
+cups-filters
+cups-pdf
+ipp-usb
+avahi
+nss-mdns
+system-config-printer
+gutenprint
+foomatic-db
+foomatic-db-engine
+hplip

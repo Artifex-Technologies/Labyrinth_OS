@@ -61,6 +61,32 @@ ln -sf /dev/null "$sysd/systemd-firstboot.service"
 ln -sf /etc/systemd/system/pacman-init.service "$sysd/multi-user.target.wants/pacman-init.service"
 mkdir -p "$sysd/getty.target.wants"
 ln -sf /usr/lib/systemd/system/serial-getty@.service "$sysd/getty.target.wants/serial-getty@ttyS0.service"
+# Hybrid graphics: lets the desktop start an app on the dedicated GPU (harmless on a computer with one)
+ln -sf /usr/lib/systemd/system/switcheroo-control.service "$sysd/multi-user.target.wants/switcheroo-control.service"
+# Services the components in the image ask for (components.json "enable_global"), enabled as labyrinth-apps would on an installed system
+python3 - "$repo_root/profile/airootfs/usr/share/labyrinth/components.json" "$profile_build_dir/packages.x86_64" <<'PY' | while read -r unit; do
+import json, re, sys
+comps = json.load(open(sys.argv[1]))["components"]
+present = set(re.findall(r"^# component: (\S+)", open(sys.argv[2]).read(), re.M))
+for c in comps:
+    if c["id"] in present:
+        for u in c.get("enable_system", []):
+            print("system", u)
+        for u in c.get("enable_global", []):
+            print("user", u)
+PY
+  read -r kind name <<<"$unit"
+  case "$name" in
+    *.socket) want=sockets.target.wants ;;
+    *.timer) want=timers.target.wants ;;
+    *) want=$([[ $kind == user ]] && echo default.target.wants || echo multi-user.target.wants) ;;
+  esac
+  if [[ $kind == user ]]; then dir="$profile_build_dir/airootfs/etc/systemd/user/$want"; src="/usr/lib/systemd/user/$name"
+  else dir="$sysd/$want"; src="/usr/lib/systemd/system/$name"; fi
+  mkdir -p "$dir"
+  ln -sf "$src" "$dir/$name"
+  echo "    enabled $kind unit $name"
+done
 # User services: drop KWin's stale compiled-script cache before KWin starts (labyrinth-kwin-cache).
 usd="$profile_build_dir/airootfs/etc/systemd/user/plasma-workspace.target.wants"
 mkdir -p "$usd"

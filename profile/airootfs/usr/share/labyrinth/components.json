@@ -1,5 +1,5 @@
 {
-  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/local/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR).",
+  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/local/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR). enable_global: user services enabled for every user (systemctl --global); enable_system: system services (systemctl enable --now).",
   "components": [
     {
       "id": "steam",
@@ -234,6 +234,30 @@
         "rog-control-center"
       ],
       "notes": "Open ROG Control Center from the start menu. On a computer that is not an ASUS it does nothing."
+    },
+    {
+      "id": "printing",
+      "name": "Printing and scanning",
+      "description": "Printers: CUPS (the print system), printers on the network found by themselves (Avahi), USB printers that need no driver (ipp-usb), drivers for HP (HPLIP), Epson, Canon and most others (Gutenprint, Foomatic), and a 'Print to PDF' printer. Most printers from the last ten years work with no driver at all.",
+      "proprietary": false,
+      "packages": [
+        "cups",
+        "cups-filters",
+        "cups-pdf",
+        "ipp-usb",
+        "avahi",
+        "nss-mdns",
+        "system-config-printer",
+        "gutenprint",
+        "foomatic-db",
+        "foomatic-db-engine",
+        "hplip"
+      ],
+      "notes": "Open 'Print Settings' to add a printer; network printers usually appear by themselves. A printer that is not found: check it is on the same network, then 'Add' and pick it from the list. Brother and Samsung laser drivers are in the AUR (brlaser, splix).",
+      "enable_system": [
+        "cups.socket",
+        "avahi-daemon.service"
+      ]
     }
   ],
   "presets": {
@@ -241,12 +265,14 @@
     "gaming": [
       "steam",
       "dev",
-      "asus"
+      "asus",
+      "printing"
     ],
     "creative": [
       "creative",
       "obsidian",
-      "dev"
+      "dev",
+      "printing"
     ],
     "everything": [
       "steam",
@@ -267,7 +293,8 @@
       "sarina",
       "heimdall",
       "dev",
-      "asus"
+      "asus",
+      "printing"
     ]
   }
 }

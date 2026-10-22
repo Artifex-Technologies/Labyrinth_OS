@@ -33,6 +33,12 @@ vulkan-intel
 vulkan-radeon
 # screen rotation and light sensors on tablets and 2-in-1s
 iio-sensor-proxy
+# laptop sound: Intel's audio DSP firmware and the mixer setups for laptop codecs (without them most Intel laptops have no sound)
+sof-firmware
+alsa-ucm-conf
+# laptops with two graphics chips (Intel or AMD plus NVIDIA): run an app on the NVIDIA one (prime-run, "Launch using dedicated GPU")
+nvidia-prime
+switcheroo-control
 intel-media-driver
 # desktop (Omarchy model)
 hyprland
