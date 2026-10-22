@@ -135,13 +135,15 @@ hibernate_setup() {
     sed -i -E "s|^(GRUB_CMDLINE_LINUX_DEFAULT=['\"])([^'\"]*)(['\"])|\1\2 resume=UUID=${uuid} resume_offset=${offset}\3|" /etc/default/grub
   fi
   # The initramfs already has the resume hook (labyrinth-install-cleanup's drop-in), so no rebuild.
-  # NVIDIA keeps video memory across suspend/hibernate only if asked to.
-  install -d /etc/modprobe.d
-  echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' >/etc/modprobe.d/labyrinth-nvidia-power.conf
-  systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service >/dev/null 2>&1     || warn "could not enable the nvidia power services (fine without an NVIDIA driver)"
+  # (NVIDIA's sleep settings are made by labyrinth-hardware-setup, only on a computer with NVIDIA graphics.)
   say "hibernate ready: ${gib} GiB swap file, resume offset ${offset}"
 }
 hibernate_setup || warn "hibernate not set up"
+
+# 2b''. Drivers and device tools for this computer: the image carries them all; what the hardware does not need is removed (offline).
+if command -v labyrinth-hardware-setup >/dev/null; then
+  labyrinth-hardware-setup || warn "hardware setup did not finish (see /var/log/labyrinth-hardware.log)"
+fi
 
 # 2c. Snapshots: snapper on the root subvolume, and grub-btrfs so snapshots show up
 #     in the boot menu. Only if / is really btrfs.

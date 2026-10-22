@@ -225,17 +225,6 @@
       "notes": "Claude Code itself is installed per user: curl -fsSL https://claude.ai/install.sh | bash (see docs/CLAUDE_CODE.md)"
     },
     {
-      "id": "asus",
-      "name": "ASUS laptop and tablet tools",
-      "description": "asusctl and ROG Control Center for ASUS laptops and tablets (ROG, TUF, Zenbook, ROG Flow): fan and power profiles, keyboard lighting, battery charge limit. Its service only starts on ASUS hardware.",
-      "proprietary": false,
-      "packages": [
-        "asusctl",
-        "rog-control-center"
-      ],
-      "notes": "Open ROG Control Center from the start menu. On a computer that is not an ASUS it does nothing."
-    },
-    {
       "id": "printing",
       "name": "Printing and scanning",
       "description": "Printers: CUPS (the print system), printers on the network found by themselves (Avahi), USB printers that need no driver (ipp-usb), drivers for HP (HPLIP), Epson, Canon and most others (Gutenprint, Foomatic), and a 'Print to PDF' printer. Most printers from the last ten years work with no driver at all.",
@@ -264,15 +253,12 @@
     "minimal": [],
     "gaming": [
       "steam",
-      "dev",
-      "asus",
-      "printing"
+      "dev"
     ],
     "creative": [
       "creative",
       "obsidian",
-      "dev",
-      "printing"
+      "dev"
     ],
     "everything": [
       "steam",
@@ -292,9 +278,7 @@
       "flatpak",
       "sarina",
       "heimdall",
-      "dev",
-      "asus",
-      "printing"
+      "dev"
     ]
   }
 }

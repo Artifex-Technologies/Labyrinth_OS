@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# labyrinth-hardware-setup [--dry-run]: run once by the installer, on the installed system. It looks at the hardware and keeps only the
+# drivers and device tools this computer needs, like other systems do at install time: the image carries them all (it installs offline), and
+# what does not match the hardware is removed here. Nothing is downloaded. --dry-run prints what it would do and changes nothing.
+#
+#   NVIDIA graphics      kept (driver, settings, 32-bit libraries, power services for sleep), else removed
+#   two graphics chips   (Intel or AMD plus NVIDIA) GPU switching service enabled, else switched off
+#   ASUS computer        ASUS tools (asusctl, ROG Control Center) kept, else removed
+# Logged in /var/log/labyrinth-hardware.log.
+set -u
+SYS=${LABYRINTH_HW_SYS:-/sys}   # another root only for testing
+DRY=0
+[[ ${1:-} == --dry-run ]] && DRY=1
+LOG=/var/log/labyrinth-hardware.log
+say() { echo "==> $*"; [[ $DRY == 1 ]] || echo "$(date -Is) $*" >>"$LOG"; }
+run() { if [[ $DRY == 1 ]]; then echo "    would run: $*"; else "$@" >>"$LOG" 2>&1; fi; }
+installed() { local out=(); for p in "$@"; do pacman -Q "$p" >/dev/null 2>&1 && out+=("$p"); done; echo "${out[@]}"; }
+
+# graphics chips, by PCI vendor of every display controller (class 0x03xxxx)
+nvidia=0; other=0
+for d in "$SYS"/bus/pci/devices/*; do
+  [[ $(cat "$d/class" 2>/dev/null) == 0x03* ]] || continue
+  case $(cat "$d/vendor" 2>/dev/null) in
+    0x10de) nvidia=1 ;;
+    0x8086|0x1002) other=1 ;;
+  esac
+done
+vendor=$(cat "$SYS"/class/dmi/id/sys_vendor 2>/dev/null)
+
+if [[ $nvidia == 1 ]]; then
+  say "NVIDIA graphics found: keeping its driver"
+  # NVIDIA keeps video memory across suspend and hibernate only if asked to
+  if [[ $DRY == 1 ]]; then echo "    would write /etc/modprobe.d/labyrinth-nvidia-power.conf"
+  else install -d /etc/modprobe.d; echo 'options nvidia NVreg_PreserveVideoMemoryAllocations=1' >/etc/modprobe.d/labyrinth-nvidia-power.conf; fi
+  run systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
+else
+  pk=$(installed linux-cachyos-nvidia-open linux-cachyos-lts-nvidia-open lib32-nvidia-utils nvidia-settings nvidia-prime nvidia-utils)
+  if [[ -n $pk ]]; then
+    say "no NVIDIA graphics: removing $pk"
+    run pacman -Rns --noconfirm $pk
+  fi
+fi
+
+if [[ $nvidia == 1 && $other == 1 ]]; then
+  say "two graphics chips: GPU switching on (apps can be started on the NVIDIA chip)"
+  run systemctl enable switcheroo-control.service
+else
+  run systemctl disable switcheroo-control.service
+fi
+
+if [[ $vendor == ASUSTeK* ]]; then
+  say "ASUS computer ($vendor): keeping ASUS tools"
+else
+  pk=$(installed rog-control-center asusctl)
+  if [[ -n $pk ]]; then
+    say "not an ASUS computer: removing $pk"
+    run pacman -Rns --noconfirm $pk
+  fi
+fi
+say "hardware setup done (nvidia=$nvidia, other graphics=$other, maker=${vendor:-unknown})"

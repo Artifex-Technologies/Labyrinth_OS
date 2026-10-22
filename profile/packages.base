@@ -39,6 +39,9 @@ alsa-ucm-conf
 # laptops with two graphics chips (Intel or AMD plus NVIDIA): run an app on the NVIDIA one (prime-run, "Launch using dedicated GPU")
 nvidia-prime
 switcheroo-control
+# ASUS laptops and tablets (fans, power modes, keyboard light, charge limit); removed at install on other computers
+asusctl
+rog-control-center
 intel-media-driver
 # desktop (Omarchy model)
 hyprland
