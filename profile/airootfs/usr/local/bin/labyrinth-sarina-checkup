@@ -70,11 +70,60 @@ def findings(last):
         m = re.match(r"\s*(\d+)%\s+(\S+)", line)
         if m and int(m.group(1)) >= 90:
             found.append("%s is %s%% full" % (m.group(2), m.group(1)))
+    for unit, diff, want in stale_overrides():
+        d = os.path.join(os.path.dirname(STATE), "overrides")
+        os.makedirs(d, exist_ok=True)
+        cand = os.path.join(d, unit)
+        with open(cand, "w", encoding="utf-8") as f:
+            f.write("# Labyrinth's copy of %s, rebuilt from the updated package with Labyrinth's change applied again.\n%s" % (unit, want))
+        found.append("the package's %s changed in an update and Labyrinth's copy of it is now missing that change. Difference (lines with + are "
+                     "what the update brought):\n%s\nA rebuilt copy is ready; to use it: sudo install -m644 %s %s && sudo systemctl daemon-reload"
+                     % (unit, diff.strip(), cand, os.path.join(UNIT_ETC, unit)))
     out = run(["journalctl", "-k", "-p", "err", "--since=" + since, "--no-pager", "-q", "-o", "cat"])
     n = len([l for l in out.splitlines() if l.strip()])
     if n >= 5:
         found.append("%d kernel errors" % n)
     return found
+
+
+# Labyrinth's override copies of packaged units: how each was made from the package's file. When the package's file changes in an update, the
+# copy is rebuilt the same way from the new file; if that differs from the copy in /etc, the update brought something the copy is missing.
+OVERRIDES = {
+    "ollama.service": [("drop", "Wants=network-online.target"), ("swap", "After=network.target network-online.target", "After=network.target")],
+}
+UNIT_PKG = os.environ.get("LABYRINTH_UNIT_PKG_DIR", "/usr/lib/systemd/system")
+UNIT_ETC = os.environ.get("LABYRINTH_UNIT_ETC_DIR", "/etc/systemd/system")
+
+
+def rebuild(pkg_text, rules):
+    lines = pkg_text.splitlines()
+    for rule in rules:
+        if rule[0] == "drop":
+            lines = [l for l in lines if l.strip() != rule[1]]
+        elif rule[0] == "swap":
+            lines = [rule[2] if l.strip() == rule[1] else l for l in lines]
+    return "\n".join(lines).strip() + "\n"
+
+
+def body(text):
+    return "\n".join(l for l in text.splitlines() if not l.startswith("#")).strip() + "\n"
+
+
+def stale_overrides():
+    """Overrides whose package file changed since they were made: (unit, a unified diff, the rebuilt copy)."""
+    import difflib
+    out = []
+    for unit, rules in OVERRIDES.items():
+        try:
+            pkg = open(os.path.join(UNIT_PKG, unit), encoding="utf-8").read()
+            ours = open(os.path.join(UNIT_ETC, unit), encoding="utf-8").read()
+        except OSError:
+            continue
+        want = rebuild(body(pkg), rules)
+        if want != body(ours):
+            diff = "".join(difflib.unified_diff(body(ours).splitlines(True), want.splitlines(True), "Labyrinth's copy now", "rebuilt from the updated package"))
+            out.append((unit, diff, want))
+    return out
 
 
 def note(vault, text):
