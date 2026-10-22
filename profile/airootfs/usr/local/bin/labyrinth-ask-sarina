@@ -55,7 +55,7 @@ ROUTES = [
     (r"\b(crash|crashed|crashes|core dump|segfault|segmentation|aborted|froze|freez|hung|hang)\w*", "crashes"),
     (r"\b(slow|lag|laggy|sluggish|performance|cpu|processor|memory|ram|swap|busy|fan|hot|temperature|heat|load)\b", "performance"),
     (r"\b(internet|wi-?fi|network|connection|connect|online|offline|dns|ethernet)\b", "network"),
-    (r"\b(disk|storage|space|full|drive)\b", "disk"),
+    (r"\b(disk|storage|space|full)\b|\b(?<!proton )drive\b", "disk"),
     (r"\b(boot|startup|start up|takes? long to (start|boot))\b", "boot"),
     (r"\b(sound|audio|speaker|microphone|mic|volume)\b", "audio"),
     (r"\b(error|errors|log|logs|failed|failing|broke|broken|problem|wrong|issue)\b", "services"),
@@ -79,6 +79,60 @@ def prefetch(question):
     if not out:
         return ""
     return "What the computer reports right now (read-only, already looked up for you; call system_status for anything more):\n\n" + "\n\n".join(out) + "\n\nThe question: "
+
+
+def flatten(text):
+    """A spoken answer is plain sentences: markdown emphasis, code marks, headings and list markers are removed, and list items become sentences
+    on one line (they are read aloud and shown on a small card)."""
+    text = re.sub(r"\*\*|__|`", "", text)
+    out = []
+    for line in text.splitlines():
+        t = line.strip()
+        if not t:
+            out.append("\n")
+            continue
+        t = re.sub(r"^#{1,6}\s*", "", t)
+        m = re.match(r"^(?:[-*•]|\d{1,2}[.)])\s+(.*)$", t)
+        if m:
+            t = m.group(1).strip()
+            if t and t[-1] not in ".!?:":
+                t += "."
+        out.append(t + " ")
+    text = "".join(out)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r" *\n *", "\n", text)
+    return re.sub(r"\n{2,}", "\n\n", text).strip()
+
+
+def guides(question, vault):
+    """Her guide notes about this desktop (Guides/ in the vault) that match the question, placed before it: a small model answers a "how do I"
+    question from general Linux knowledge unless the right note is in front of it. At most two short notes."""
+    if not vault or not os.path.isdir(os.path.join(vault, "Guides")):
+        return ""
+    try:
+        r = subprocess.run(["sarina", "vault-search", "--path", vault, question], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    picked = []
+    for line in r.stdout.splitlines():
+        m = re.match(r"^(Guides/[^\s].*?\.md)\s{2}", line)
+        if m and m.group(1) not in picked:
+            picked.append(m.group(1))
+        if len(picked) == 2:
+            break
+    parts = []
+    for rel in picked:
+        try:
+            with open(os.path.join(vault, rel), encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            continue
+        if text.startswith("---\n") and "\n---" in text[4:]:
+            text = text[text.index("\n---", 4) + 4:]
+        parts.append("[%s]\n%s" % (rel[:-3], text.strip()[:1800]))
+    if not parts:
+        return ""
+    return "From your guides about this computer (use them when they answer the question; prefer them to general Linux advice):\n\n" + "\n\n".join(parts) + "\n\n"
 
 
 def log_joke(question, answer, env):
@@ -156,14 +210,18 @@ def main(argv):
             except OSError:
                 before = set()
     question = " ".join(a.question)
-    if a.voice and env.get("SARINA_SYSTEM") == "on":
-        question = prefetch(question) + question
+    if a.voice:
+        g = guides(question, env.get("SARINA_VAULT", ""))
+        if env.get("SARINA_SYSTEM") == "on":
+            question = prefetch(question) + question
+        question = g + question
     cmd = command(question, a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
     if a.voice:
         # a spoken answer is cleaned here: a small model sometimes writes a tool call as text, which must not be read out or shown
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
         rc = p.returncode
         answer = re.sub(r"<(\w+)>.*?</\1>", "", p.stdout, flags=re.S)
+        answer = flatten(answer)
         # emoji are read out as their names ("printer, grinning face") and the card has no room for them
         answer = re.sub("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]", "", answer)
         answer = re.sub(r"[ \t]+\n", "\n", answer)
