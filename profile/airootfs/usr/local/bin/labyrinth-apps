@@ -69,7 +69,7 @@ def resolve(ids, presets, comps):
 
 
 def sudo(cmd):
-    # LABYRINTH_SUDO: another program that gains administrator rights (the Marketplace uses its password-box one, no terminal)
+    # LABYRINTH_SUDO: another program that gains administrator rights (Agora (the app store) uses its password-box one, no terminal)
     return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else [os.environ.get("LABYRINTH_SUDO") or "sudo"] + cmd
 
 
@@ -92,7 +92,7 @@ def plan_install(chosen, comps, installed):
         # yay shows each AUR package's build file and asks before building; it asks for the password itself when it installs
         cmd = ["yay", "-S", "--needed"]
         if os.environ.get("LABYRINTH_SUDO"):
-            # from the Marketplace (no terminal, Labyrinth's reviewed catalog): no questions, and the password box instead of sudo
+            # from Agora (the app store) (no terminal, Labyrinth's reviewed catalog): no questions, and the password box instead of sudo
             cmd += ["--noconfirm", "--sudo", os.environ["LABYRINTH_SUDO"]]
         steps.append((f"build and install {len(aur)} package(s) from the AUR ({', '.join(aur)})", cmd + aur, None))
     for i in chosen:

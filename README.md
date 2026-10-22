@@ -1,7 +1,7 @@
 # Labyrinth OS
 
 **Labyrinth OS** is the operating system (CachyOS-based, for one specific machine, with the Artifex ecosystem). **Yggdrasil** is its desktop environment: the
-panel and dock, Fylgja, Settings, the Marketplace, Minos, the lock screen, the login screen, the idle manager, the polkit and portal pieces and, in progress, the
+panel and dock, Fylgja, Settings, Agora (the app store), Minos, the lock screen, the login screen, the idle manager, the polkit and portal pieces and, in progress, the
 compositor. Yggdrasil is built to be reused: [Chymaera OS](https://github.com/ChymaeraLabs) will use it too. See [docs/YGGDRASIL.md](docs/YGGDRASIL.md).
 
 ## Screenshots
@@ -12,7 +12,7 @@ compositor. Yggdrasil is built to be reused: [Chymaera OS](https://github.com/Ch
 
 ### Yggdrasil, the desktop
 
-The desktop (panel and dock, Fylgja, Settings, the Marketplace, Minos, the lock and login screens, the idle manager and the compositor) is developed in its own
+The desktop (panel and dock, Fylgja, Settings, Agora (the app store), Minos, the lock and login screens, the idle manager and the compositor) is developed in its own
 repository, [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil), with its own README, screenshots and docs.
 Labyrinth builds its packages from a checkout next to this repository (`scripts/build-local-packages.sh`). See [docs/YGGDRASIL.md](docs/YGGDRASIL.md).
 

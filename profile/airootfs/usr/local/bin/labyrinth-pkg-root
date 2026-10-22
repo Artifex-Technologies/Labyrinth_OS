@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""labyrinth-pkg-root: run one pacman command with administrator rights for the Marketplace, so it can be cancelled and cleaned up.
+"""labyrinth-pkg-root: run one pacman command with administrator rights for Agora (the app store), so it can be cancelled and cleaned up.
 
   pkexec labyrinth-pkg-root CANCELFILE pacman OPTIONS... PACKAGES...
 
 It is started through pkexec (the password box is Labyrinth's). Only pacman, and only install (-S, -U) and remove (-R) commands with a short
-list of plain options, are accepted. While pacman runs it watches CANCELFILE (a file the Marketplace creates under /run/user/<uid>/labyrinth-market/
+list of plain options, are accepted. While pacman runs it watches CANCELFILE (a file Agora (the app store) creates under /run/user/<uid>/labyrinth-market/
 to say "stop"): on cancel it stops pacman, removes the packages that this run had installed (that were not installed before it started) and the
 package files it downloaded, then exits with code 130. Nothing else is changed.
 """
