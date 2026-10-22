@@ -225,30 +225,6 @@
       "notes": "Claude Code itself is installed per user: curl -fsSL https://claude.ai/install.sh | bash (see docs/CLAUDE_CODE.md)"
     },
     {
-      "id": "printing",
-      "name": "Printing and scanning",
-      "description": "Printers: CUPS (the print system), printers on the network found by themselves (Avahi), USB printers that need no driver (ipp-usb), drivers for HP (HPLIP), Epson, Canon and most others (Gutenprint, Foomatic), and a 'Print to PDF' printer. Most printers from the last ten years work with no driver at all.",
-      "proprietary": false,
-      "packages": [
-        "cups",
-        "cups-filters",
-        "cups-pdf",
-        "ipp-usb",
-        "avahi",
-        "nss-mdns",
-        "system-config-printer",
-        "gutenprint",
-        "foomatic-db",
-        "foomatic-db-engine",
-        "hplip"
-      ],
-      "notes": "Open 'Print Settings' to add a printer; network printers usually appear by themselves. A printer that is not found: check it is on the same network, then 'Add' and pick it from the list. Brother and Samsung laser drivers are in the AUR (brlaser, splix).",
-      "enable_system": [
-        "cups.socket",
-        "avahi-daemon.service"
-      ]
-    },
-    {
       "id": "asus",
       "name": "ASUS laptop and tablet tools",
       "description": "asusctl and ROG Control Center: fan and power profiles, keyboard lighting, battery charge limit on ASUS laptops and tablets (ROG, TUF, Zenbook, ROG Flow). The installer already keeps them on ASUS computers.",

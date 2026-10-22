@@ -61,6 +61,10 @@ ln -sf /dev/null "$sysd/systemd-firstboot.service"
 ln -sf /etc/systemd/system/pacman-init.service "$sysd/multi-user.target.wants/pacman-init.service"
 mkdir -p "$sysd/getty.target.wants"
 ln -sf /usr/lib/systemd/system/serial-getty@.service "$sysd/getty.target.wants/serial-getty@ttyS0.service"
+# Printing is built in (Settings > Printers): CUPS starts when something prints, Avahi finds the printers on the network
+mkdir -p "$sysd/sockets.target.wants"
+ln -sf /usr/lib/systemd/system/cups.socket "$sysd/sockets.target.wants/cups.socket"
+ln -sf /usr/lib/systemd/system/avahi-daemon.service "$sysd/multi-user.target.wants/avahi-daemon.service"
 # Hybrid graphics: lets the desktop start an app on the dedicated GPU (harmless on a computer with one)
 ln -sf /usr/lib/systemd/system/switcheroo-control.service "$sysd/multi-user.target.wants/switcheroo-control.service"
 # Services the components in the image ask for (components.json "enable_global"), enabled as labyrinth-apps would on an installed system

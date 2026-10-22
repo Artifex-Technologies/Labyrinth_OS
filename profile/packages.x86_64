@@ -147,6 +147,16 @@ ffmpegthumbnailer
 unrar
 swaybg
 edk2-shell
+cups
+cups-filters
+cups-pdf
+ipp-usb
+avahi
+nss-mdns
+gutenprint
+foomatic-db
+foomatic-db-engine
+hplip
 # component: steam
 steam
 lib32-nvidia-utils

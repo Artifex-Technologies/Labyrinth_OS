@@ -180,3 +180,15 @@ unrar
 # wallpaper
 swaybg
 edk2-shell
+# printing, built in (Settings > Printers): CUPS, network printers found by themselves (Avahi), USB printers that need no driver
+# (ipp-usb), drivers for HP, Epson, Canon and most others, and a "Print to PDF" printer
+cups
+cups-filters
+cups-pdf
+ipp-usb
+avahi
+nss-mdns
+gutenprint
+foomatic-db
+foomatic-db-engine
+hplip
