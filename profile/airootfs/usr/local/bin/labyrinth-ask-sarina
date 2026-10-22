@@ -104,6 +104,22 @@ def flatten(text):
     return re.sub(r"\n{2,}", "\n\n", text).strip()
 
 
+def shorten(text, limit=75):
+    """A spoken answer longer than about 75 words is cut after the last whole sentence that fits (the card is small and it is read aloud);
+    the first sentence always stays."""
+    if len(text.split()) <= limit:
+        return text
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    out, n = [], 0
+    for s in sentences:
+        w = len(s.split())
+        if out and n + w > limit:
+            break
+        out.append(s)
+        n += w
+    return " ".join(out).strip()
+
+
 def guides(question, vault):
     """Her guide notes about this desktop (Guides/ in the vault) that match the question, placed before it: a small model answers a "how do I"
     question from general Linux knowledge unless the right note is in front of it. At most two short notes."""
@@ -221,7 +237,7 @@ def main(argv):
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
         rc = p.returncode
         answer = re.sub(r"<(\w+)>.*?</\1>", "", p.stdout, flags=re.S)
-        answer = flatten(answer)
+        answer = shorten(flatten(answer))
         # emoji are read out as their names ("printer, grinning face") and the card has no room for them
         answer = re.sub("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]", "", answer)
         answer = re.sub(r"[ \t]+\n", "\n", answer)
