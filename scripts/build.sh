@@ -65,6 +65,9 @@ ln -sf /usr/lib/systemd/system/serial-getty@.service "$sysd/getty.target.wants/s
 usd="$profile_build_dir/airootfs/etc/systemd/user/plasma-workspace.target.wants"
 mkdir -p "$usd"
 ln -sf /usr/lib/systemd/user/labyrinth-kwin-cache.service "$usd/labyrinth-kwin-cache.service"
+# KDE's password agent stays off: Labyrinth's own (labyrinth-polkit, autostarted) answers password requests
+mkdir -p "$profile_build_dir/airootfs/etc/systemd/user"
+ln -sf /dev/null "$profile_build_dir/airootfs/etc/systemd/user/plasma-polkit-agent.service"
 
 # mkarchiso remembers the steps it finished in the work directory and skips them next time, so a second build in the same folder
 # would reuse the first build's packages and ignore everything changed since. Every build starts from nothing.
