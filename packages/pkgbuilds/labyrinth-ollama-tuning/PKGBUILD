@@ -1,0 +1,18 @@
+# Maintainer: Labyrinth OS
+#
+# Labyrinth's settings for Ollama, as an add-on to the distribution's own ollama package: a systemd drop-in next to its unit, so Ollama
+# updates as usual and keeps these settings. Nothing of Ollama is copied or replaced.
+pkgname=labyrinth-ollama-tuning
+pkgver=1.0
+pkgrel=1
+pkgdesc="Labyrinth's Ollama settings: the context Sarina needs, and about half the graphics memory per conversation"
+arch=('any')
+license=('MIT')
+depends=('ollama')
+source=('labyrinth.conf')
+sha256sums=('SKIP')
+
+package() {
+  # the vendor drop-in folder: /etc stays free for the owner's own overrides
+  install -Dm644 "$srcdir/labyrinth.conf" "$pkgdir/usr/lib/systemd/system/ollama.service.d/labyrinth.conf"
+}

@@ -30,13 +30,19 @@ have_unit() { systemctl cat "$1" >/dev/null 2>&1; }
 
 # Ollama
 if have_unit ollama.service; then
-  install -d /etc/systemd/system/ollama.service.d
-  [[ -f /etc/systemd/system/ollama.service.d/labyrinth.conf ]] || cat > /etc/systemd/system/ollama.service.d/labyrinth.conf <<'EOF'
+  # Labyrinth's Ollama settings (context for Sarina, less graphics memory) come with the labyrinth-ollama-tuning package, a drop-in that
+  # follows Ollama's updates; without it they are written here once
+  if pacman -Q labyrinth-ollama-tuning >/dev/null 2>&1; then
+    say "ollama: settings come from labyrinth-ollama-tuning"
+  else
+    install -d /etc/systemd/system/ollama.service.d
+    [[ -f /etc/systemd/system/ollama.service.d/labyrinth.conf ]] || cat > /etc/systemd/system/ollama.service.d/labyrinth.conf <<'EOF'
 # Sarina needs at least 8k tokens of context (16k recommended); Ollama's default is 4k.
 [Service]
 Environment=OLLAMA_CONTEXT_LENGTH=16384
 EOF
-  say "ollama: context 16384"
+    say "ollama: context 16384 (install labyrinth-ollama-tuning to have this kept with updates)"
+  fi
 else
   say "ollama is not installed (pacman -S ollama, or ollama-cuda on an NVIDIA machine): skipping"
 fi
@@ -155,13 +161,6 @@ EOF
   fi
 fi
 
-# Ollama serves models from this disk and need not wait for "network online" (about 6 s): it is ready sooner. (The login screen never
-# waited for it; the start's "graphical target" did.)
-if [[ -f /usr/lib/systemd/system/ollama.service && ! -f /etc/systemd/system/ollama.service ]]; then
-  { echo "# Labyrinth's copy of ollama.service without the wait for network-online, so Ollama is ready about 6 s sooner after a start."
-    sed -e '/^Wants=network-online.target$/d' -e 's/^After=network.target network-online.target$/After=network.target/' /usr/lib/systemd/system/ollama.service; } > /etc/systemd/system/ollama.service
-  say "ollama: starts without waiting for the network (ready sooner)"
-fi
 systemctl daemon-reload
 for u in ollama limbo heimdall sarina-service; do
   if have_unit "$u.service"; then systemctl enable --now "$u.service" >/dev/null 2>&1 && say "enabled and started $u" || echo "warning: could not start $u" >&2; fi

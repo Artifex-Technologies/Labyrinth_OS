@@ -88,9 +88,9 @@ def findings(last):
 
 # Labyrinth's override copies of packaged units: how each was made from the package's file. When the package's file changes in an update, the
 # copy is rebuilt the same way from the new file; if that differs from the copy in /etc, the update brought something the copy is missing.
-OVERRIDES = {
-    "ollama.service": [("drop", "Wants=network-online.target"), ("swap", "After=network.target network-online.target", "After=network.target")],
-}
+# (None at the moment: Labyrinth's Ollama settings are an add-on drop-in now, which follows updates by itself. Kept for the next one that
+# cannot be a drop-in.)
+OVERRIDES = {}
 UNIT_PKG = os.environ.get("LABYRINTH_UNIT_PKG_DIR", "/usr/lib/systemd/system")
 UNIT_ETC = os.environ.get("LABYRINTH_UNIT_ETC_DIR", "/etc/systemd/system")
 
