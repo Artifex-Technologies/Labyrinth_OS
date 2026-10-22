@@ -55,6 +55,7 @@ SARINA_LIMBO_SOCKET=/run/limbo/agent.sock
 HEIMDALL_REVIEW_URL=http://127.0.0.1:8930/v1/review
 SARINA_TEMPERATURE=0.6
 SARINA_REQUEST_MAX_TOKENS=6000
+SARINA_SEMANTIC=on
 EOF
     chown root:sarina /etc/sarina/service.env; chmod 640 /etc/sarina/service.env
     say "sarina: wrote /etc/sarina/service.env (new token)"
@@ -161,5 +162,8 @@ done
 if command -v ollama >/dev/null && ! ollama list 2>/dev/null | grep -q "^$MODEL"; then
   echo
   echo "The model $MODEL is not on this machine yet. Pull it (5 GB):  ollama pull $MODEL"
+fi
+if command -v ollama >/dev/null && ! ollama list 2>/dev/null | grep -q "^nomic-embed-text"; then
+  echo "For finding her notes by meaning, also pull the small embedding model (270 MB):  ollama pull nomic-embed-text"
 fi
 say "done. Check it with: curl -s 127.0.0.1:8930/healthz ; labyrinth-ask-sarina 'hello'"
