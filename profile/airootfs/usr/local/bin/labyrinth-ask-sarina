@@ -117,7 +117,7 @@ def prefetch(question, topics):
             try:
                 r = subprocess.run(["sarina", "crash-detail", c], capture_output=True, text=True, timeout=30)
                 if r.returncode == 0 and r.stdout.strip():
-                    out.append("[latest crash of %s]\n%s" % (os.path.basename(c), r.stdout.strip()[-3500:]))
+                    out.append("[latest crash of %s]\n%s" % (os.path.basename(c), r.stdout.strip()[:3500]))
             except (OSError, subprocess.TimeoutExpired):
                 pass
     if not out:
