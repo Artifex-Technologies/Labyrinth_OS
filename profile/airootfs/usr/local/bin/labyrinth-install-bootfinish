@@ -64,6 +64,11 @@ if [[ -e /usr/lib/systemd/user/labyrinth-appusage.service ]]; then
   systemctl --global enable labyrinth-appusage.service >/dev/null 2>&1 && say "enabled app usage counting" || warn "could not enable app usage counting"
 fi
 
+# 2a''''. DNS block list of malware, phishing and scam domains (NetworkManager's DNS cache carries it; updated daily)
+if [[ -e /usr/lib/systemd/system/labyrinth-dns-blocklist.timer ]]; then
+  systemctl enable labyrinth-dns-blocklist.timer >/dev/null 2>&1 && say "enabled the DNS block list (malware and phishing domains)" || warn "could not enable the DNS block list"
+fi
+
 # 2a'''. Malware scan of new downloads (user timer) and ClamAV's signature updates.
 if [[ -e /usr/lib/systemd/user/labyrinth-scan.timer ]]; then
   systemctl --global enable labyrinth-scan.timer labyrinth-scan-watch.service >/dev/null 2>&1 && say "enabled the malware scan (watcher and timer)" || warn "could not enable the downloads malware scan"
