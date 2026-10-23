@@ -61,7 +61,7 @@ Took 21 s, exit 0. Heimdall alerts raised during it: connection-watch/info
 The function `protected` determines if a package is protected from removal. It protects packages with names starting with these prefixes:
 
 ```
-protected("labyrinth-minos") && protected("plasma-desktop") && protected("kwin")
+protected("yggdrasil-minos") && protected("plasma-desktop") && protected("kwin")
 ```
 
 These lines are in the test function `desktop_packages_are_protected` (lines 134-137 of the file). The actual `protected` function logic isn't shown in the excerpt, but the test implies it checks for exact matches of these package IDs.

@@ -4,7 +4,7 @@
   pkexec labyrinth-pkg-root CANCELFILE pacman OPTIONS... PACKAGES...
 
 It is started through pkexec (the password box is Labyrinth's). Only pacman, and only install (-S, -U) and remove (-R) commands with a short
-list of plain options, are accepted. While pacman runs it watches CANCELFILE (a file Agora (the app store) creates under /run/user/<uid>/labyrinth-market/
+list of plain options, are accepted. While pacman runs it watches CANCELFILE (a file Agora (the app store) creates under /run/user/<uid>/agora/
 to say "stop"): on cancel it stops pacman, removes the packages that this run had installed (that were not installed before it started) and the
 package files it downloaded, then exits with code 130. Nothing else is changed.
 """
@@ -33,7 +33,7 @@ def valid_cancel_file(path):
     uid = os.environ.get("PKEXEC_UID", "")
     if not uid.isdigit():
         return False
-    base = "/run/user/%s/labyrinth-market/" % uid
+    base = "/run/user/%s/agora/" % uid
     real = os.path.normpath(path)
     return real.startswith(base) and ".." not in path
 

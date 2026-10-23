@@ -1,0 +1,4 @@
+# Labyrinth's own packages: Yggdrasil's Settings will not uninstall them (one name per line; name* covers a prefix).
+labyrinth-*
+heimdall-git
+limbo-git

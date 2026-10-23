@@ -16,7 +16,7 @@
   file falls back to defaults), background recursive search, mount parsing,
   Proton Drive link verification logic.
 - The egui app builds, opens, and writes `state.json` on exit (session restore
-  data). `labyrinth-cloud` CLI builds and handles arguments.
+  data). `minos-cloud` CLI builds and handles arguments.
 - `tests/test_steam_playall.py` (Steam config editor): 7 tests pass.
 
 ## Written but never exercised
@@ -48,13 +48,13 @@ devices, Sarina hook, a desktop in the live image (Hyprland/SDDM), Calamares bra
 
 Tested here: `tests/test_labyrinth_apps.py` (20), `test_bar_tools.py` (7), `test_displays.py` (13),
 `test_desktop_scripts.sh` (16), `test_install_cleanup.sh` (20); `cargo test` in
-`packages/minos` (22) and `packages/labyrinth-weather` (34).
+`packages/minos` (22) and `packages/yggdrasil-weather` (34).
 Not done: everything that needs Linux or the real machine. See DESKTOP.md, COMPONENTS.md,
 WEATHER.md, INSTALLER.md, and the "what is missing for an ISO" list below.
 
 ### Missing before an ISO can be built
 - `profile/pacman.conf` has no `[labyrinth]` local repo for the packages we build ourselves
-  (calamares, minos, labyrinth-weather, proton-pass, visual-studio-code-bin).
+  (calamares, minos, yggdrasil-weather, proton-pass, visual-studio-code-bin).
 - No `scripts/build.sh` or `scripts/build-local-packages.sh` (Chymaera has these to port).
 - No live-session setup in `airootfs`: live user, SDDM + session files, os-release, hostname,
   locale, `efiboot`/bootloader entries. The profile is a skeleton.
@@ -66,9 +66,9 @@ Ran on real Arch Linux under WSL2 (no GPU session, so no Hyprland, installer or 
 - All script/Python suites and both Rust suites pass (`scripts/wsl-test.sh tests`).
 - Package names: all found in Arch's repos (core/extra/multilib) except CachyOS's own
   (`linux-cachyos*`, `proton-cachyos`), `protonup-qt` (AUR), and our own packages.
-- `makepkg` built `proton-pass`, `visual-studio-code-bin`, `labyrinth-weather` and
+- `makepkg` built `proton-pass`, `visual-studio-code-bin`, `yggdrasil-weather` and
   `minos` successfully; checksums verified; packages inspected.
-- `labyrinth-weather` run live on Linux; `labyrinth-apps`, `probe.sh`, `labyrinth-gaming check`
+- `yggdrasil-weather` run live on Linux; `labyrinth-apps`, `probe.sh`, `labyrinth-gaming check`
   and `labyrinth-displays` (clean failure without Hyprland) run for real.
 - `minos` run as a real window under WSLg and driven with mouse and keyboard:
   navigation, hidden files, tabs, split pane, gallery thumbnails, rename, copy/paste,
@@ -84,8 +84,8 @@ Ran on real Arch Linux under WSL2 (no GPU session, so no Hyprland, installer or 
 ## ISO build and first boot (2026-10-10)
 
 Done, on Arch under WSL:
-- Local `[labyrinth]` repo built by `scripts/build-local-packages.sh`: calamares, labyrinth-minos,
-  labyrinth-weather, proton-pass, visual-studio-code-bin all build.
+- Local `[labyrinth]` repo built by `scripts/build-local-packages.sh`: calamares, yggdrasil-minos,
+  yggdrasil-weather, proton-pass, visual-studio-code-bin all build.
 - `scripts/build.sh` builds the ISO with mkarchiso (CachyOS keyring and mirrorlists provisioned on
   the host; the generated package list resolves against the CachyOS v3 repos). Result: a ~9.7 GB
   UEFI ISO with the "everything" component preset (it is big because of cosmic, cuda/ollama, qemu,
@@ -208,9 +208,9 @@ screenshots in the guest with `spectacle -b -n -f`). Tests: `bash tests/test_des
 tests.test_labyrinth_apps tests.test_steam_playall`.
 
 ## Rust shell, calculator, installer (2026-10-12)
-- **labyrinth-panel (packages/panel):** Rust top bar + dock (Wayland layer-shell, plasma-window-management for the task list). Opt-in: `labyrinth-panel-mode on|off|status` (Settings → Appearance → "Top bar and dock"). Missing for parity: system tray (StatusNotifier), global menu, quick-settings popover, launcher, notifications, fractional scaling, dock context menus/previews.
+- **yggdrasil-panel (packages/panel):** Rust top bar + dock (Wayland layer-shell, plasma-window-management for the task list). Opt-in: `labyrinth-panel-mode on|off|status` (Settings → Appearance → "Top bar and dock"). Missing for parity: system tray (StatusNotifier), global menu, quick-settings popover, launcher, notifications, fractional scaling, dock context menus/previews.
 - **panel.conf (packages/labyrinth-conf):** `~/.config/labyrinth/panel.conf` (dock size 32-72, dock/bar opacity 0-100 where 0 = invisible, colour = match theme or plain dark/light). Settings writes it; the panel re-reads it about once a second.
-- **labyrinth-calculator (packages/calculator):** standard pad plus history at >= 600 px, scientific pad at >= 860 px. The equation stays at the top and editable after "="; the result shows below. One decimal point per number. History persists.
+- **yggdrasil-calculator (packages/calculator):** standard pad plus history at >= 600 px, scientific pad at >= 860 px. The equation stays at the top and editable after "="; the result shows below. One decimal point per number. History persists.
 - **Installer:** Calamares kept; branding `stylesheet.qss` uses the Minos/Settings palette. Needs a visual check in a VM install.
 - Not yet verified in a VM: Settings dock controls end-to-end, the installer look, panel on real NVIDIA hardware.
 - Candidates to rewrite next: launcher/KRunner, notification daemon, lock screen, SDDM login, screenshot tool, task manager, volume/brightness OSD, clipboard history.
@@ -222,7 +222,7 @@ tests.test_labyrinth_apps tests.test_steam_playall`.
 - Not done: Settings' own sidebar icons are still hand-drawn; icon theme does not switch to a light flavour with the light theme; the Golden Gate flat set has no public pack.
 
 ## Rename (2026-10-12)
-The file explorer is now **Minos** (was Finder, and Labyrinth Files before): `packages/minos`, package `labyrinth-minos`, binary `minos`, config folder `~/.config/minos` (reads fall back to `finder` and `labyrinth-files`). `/usr/bin/finder` stays as a link, and pins named `finder` in the dock file still work. The macOS Finder icon (a dark macOS icon you may import) is unaffected: `labyrinth-icon` still matches files named `Finder_...` and `Minos_...`.
+The file explorer is now **Minos** (was Finder, and Labyrinth Files before): `packages/minos`, package `yggdrasil-minos`, binary `minos`, config folder `~/.config/minos` (reads fall back to `finder` and `labyrinth-files`). `/usr/bin/finder` stays as a link, and pins named `finder` in the dock file still work. The macOS Finder icon (a dark macOS icon you may import) is unaffected: `labyrinth-icon` still matches files named `Finder_...` and `Minos_...`.
 
 ## Dock (2026-10-12)
 `panel.conf` has `dock_pos` (bottom, left, right) and `dock_gap` (0 to 40 px, default 4; 0 is right on the edge); Settings > Appearance > Dock has both. The Trash is the last dock item (empty or full; opens the trash folder in Minos).
@@ -239,12 +239,12 @@ Title bar: the installer runs as root and does not read the user's colour scheme
 GRUB uses grub-evodevo (MIT, vendored in `usr/share/labyrinth/grub-evodevo`) through `labyrinth-grub-theme`: black background, Labyrinth purple, 1920x1080, an emblem per system. `data/Labyrinth` is the logo as a 24x24 emblem, sized like the CachyOS one. The installer's boot step (2e) runs it last and puts the old menu back if the result has no entries. `os-prober` is installed and enabled for dual boot. Verified in a VM install: the menu shows "Labyrinth Linux" with the emblem, Advanced options, UEFI Firmware Settings (gear) and the other firmware boot entries; the entry boots to the login screen. Not tested with a real Windows disk, on real hardware, or at other GRUB resolutions (it asks for 1920x1080 and falls back to auto).
 
 ## Top bar, pill style (2026-10-12)
-`labyrinth-panel`'s bar has no strip of its own now: floating pills over the wallpaper (their backdrop is Settings > Appearance > Top bar > Background; 0% leaves floating text). Left: the Labyrinth button, the desktops (1..9 with a "+"; click to switch, "+" adds a plain desktop), the focused app. Middle: a pure-black tab where the notch will open (inert for now). Right: network and Bluetooth icons (read with nmcli and bluetoothctl on a worker thread), the date ("Sun 19 Dec") and the time in 24 hours. The quick power button is gone (its job moves to the notch's Power tab). Not done yet: the start-menu dropdown, the workspace profile chooser, weather, the notch itself. Design notes: see docs in the memory note "Bar and workspaces design".
+`yggdrasil-panel`'s bar has no strip of its own now: floating pills over the wallpaper (their backdrop is Settings > Appearance > Top bar > Background; 0% leaves floating text). Left: the Labyrinth button, the desktops (1..9 with a "+"; click to switch, "+" adds a plain desktop), the focused app. Middle: a pure-black tab where the notch will open (inert for now). Right: network and Bluetooth icons (read with nmcli and bluetoothctl on a worker thread), the date ("Sun 19 Dec") and the time in 24 hours. The quick power button is gone (its job moves to the notch's Power tab). Not done yet: the start-menu dropdown, the workspace profile chooser, weather, the notch itself. Design notes: see docs in the memory note "Bar and workspaces design".
 Calendar (2026-10-12): clicking the date and time (one pill) opens a month view; the wheel changes the month, a click on its header returns to this month, a click outside or Escape closes it. The header reads "Sunday, December 19, 2026   16:41:23" in 24-hour mode; with `clock_24h = no` (Settings > Date & Time > 24-hour clock) it shows AM/PM and the month is abbreviated ("Dec"). The bar's logo is a solid arrowhead (`assets/logo/labyrinth-solid.svg`, drawn from the user's own tracing of the logo), reusable for Chymaera OS.
 Start menu (2026-10-12): the Labyrinth button opens it (it takes the keyboard at once, so typing searches). Search box, pinned apps (the dock's), every app A to Z (wheel scrolls), your name, and Lock / Sleep / Restart / Shut down. Enter opens the best match; Escape or a click outside closes it. Apps meant for other desktops (OnlyShowIn/NotShowIn) are not listed. Same palette as Minos and Settings. The Super key still opens KRunner; pointing it at this menu is the next step. Typing uses xkbcommon (libxkbcommon is a dependency now).
 Start menu themes (2026-10-12): `start_theme = windows | folders` in panel.conf; Settings > Appearance > Start menu picks it. "Windows" is the grid-and-list menu. "Folders" is narrow: search, Favorites (the dock's apps), then Folders by kind (Accessories, Development, Games, Graphics, Internet, Multimedia, Office, Settings, System, ... from each app's Categories); a folder opens to the side while the pointer is on it. A power button at the bottom opens Lock / Sleep / Hibernate (only on machines that can hibernate: real swap at least the size of RAM plus resume=) / Restart / Shut down.
 
-Super key (2026-10-12): the panel now serves `org.labyrinth.Panel` on the session bus (`ToggleStart`), and `labyrinth-panel-mode on` points KWin's bare-Super shortcut at it (`kwinrc [ModifierOnlyShortcuts] Meta`); `off` puts Plasma's launcher back. Verified: the D-Bus call opens and closes the menu, the setting is written and survives a fresh login, Meta+Return (another shortcut) fires. NOT verified: the bare Super tap itself; the VM's simulated key presses never triggered KWin's modifier-only shortcut (not even with KRunner as the target), so it needs a check on a real keyboard. Also seen: Meta+E (Minos) did not launch anything in the VM; check on real hardware.
+Super key (2026-10-12): the panel now serves `org.yggdrasil.Panel` on the session bus (`ToggleStart`), and `labyrinth-panel-mode on` points KWin's bare-Super shortcut at it (`kwinrc [ModifierOnlyShortcuts] Meta`); `off` puts Plasma's launcher back. Verified: the D-Bus call opens and closes the menu, the setting is written and survives a fresh login, Meta+Return (another shortcut) fires. NOT verified: the bare Super tap itself; the VM's simulated key presses never triggered KWin's modifier-only shortcut (not even with KRunner as the target), so it needs a check on a real keyboard. Also seen: Meta+E (Minos) did not launch anything in the VM; check on real hardware.
 
 Fylgja, the notch (2026-10-12, first slice): hover the black tab in the top bar's middle and it opens; the wheel moves through the sections (Controls, Today, Stats, Clipboard, Apps, Wallpaper, Power), the dots jump to one, moving the pointer away closes it. Built: Controls (what is playing via MPRIS with previous/play/next, the main volume and each app's volume as sliders via `wpctl`/`pactl`), Today, Stats (processor, memory, disk, temperature), Apps (the dock's pinned apps), Power. Not built: Clipboard, Wallpaper (placeholders), album art, hover-for-music-card on the closed tab, keyboard use. Readings are taken once a second only while it is open. Verified in the VM: opening, closing, wheel through all sections, Stats and Apps and Power drawing; NOT verified: media buttons and sliders against a real player (the VM has no audio), per-app volume rows, temperature (the VM has no sensor).
 
@@ -290,7 +290,7 @@ ISO labyrinth-2026.10.13-x86_64.iso (built 2026-10-13 15:45, 6.09 GB, sha256 b9f
 
 ## Super key and start menu keyboard (2026-10-14)
 
-- **Super on its own** now opens the start menu on KWin 6.7. KWin no longer reads `kwinrc [ModifierOnlyShortcuts]`; a bare Super tap is handed to the global shortcut `plasmashell: activate application launcher` (still bound to `Meta`), and `kglobalacceld` announces it on the session bus (`org.kde.kglobalaccel.Component.globalShortcutPressed`). `labyrinth-panel` listens for that signal and toggles the menu. Verified with simulated key presses (ydotool, uinput): Super opens it with the search box active. `labyrinth-panel-mode`'s `kwinrc` line is now harmless but no longer what does the work.
+- **Super on its own** now opens the start menu on KWin 6.7. KWin no longer reads `kwinrc [ModifierOnlyShortcuts]`; a bare Super tap is handed to the global shortcut `plasmashell: activate application launcher` (still bound to `Meta`), and `kglobalacceld` announces it on the session bus (`org.kde.kglobalaccel.Component.globalShortcutPressed`). `yggdrasil-panel` listens for that signal and toggles the menu. Verified with simulated key presses (ydotool, uinput): Super opens it with the search box active. `labyrinth-panel-mode`'s `kwinrc` line is now harmless but no longer what does the work.
 - **Keyboard in the Folders start menu:** Tab goes Search → list → power choices → Search. Up/Down move in each; Right (or Enter) on a folder goes into its apps, Left comes back; Enter opens the selected app or power choice; typing from anywhere returns to the search box; with search results, Up/Down pick a result. Verified with simulated keys and screenshots. Not done for the Windows start-menu theme.
 
 See also [DESKTOP_ROADMAP.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/DESKTOP_ROADMAP.md): the decision to keep CachyOS as the base and replace KDE piece by piece, in order.
@@ -346,7 +346,7 @@ position with your dock and the pane on the real screen**. Theme option (macOS v
    Heimdall / Labyrinth_OS and make Daedalus public (MPL-2.0 file is in place, repo still private).
 2. Sarina's Task 2 (board): a plan for roadmap item 1, our own power and idle manager. Claude reviews it.
 3. Roadmap item 1 itself (replace PowerDevil), then the notification service and the portals backend (Minos as file chooser).
-4. Settings > Apps: right-click "App settings" in the dock (`labyrinth-settings apps:ID` already works), Flatpak overrides for
+4. Settings > Apps: right-click "App settings" in the dock (`yggdrasil-settings apps:ID` already works), Flatpak overrides for
    location / other apps, a running-time logger.
 5. Check the sandbox on an Electron app (Vivaldi, VS Code) before offering it to more than the owner.
 6. Daedalus: drive the viewer by hand, then milestone 2 (drawing tools), keymaps for SketchUp and Fusion.
@@ -363,8 +363,8 @@ Plasma upgrade; keep Breeze as the default and test any other theme in a VM afte
 - **Minos:** drive discovery moved off the startup path (a 2.3 s stall); keyboard use (arrows, Enter, type-to-find, tab keys: docs/MINOS_KEYS.md); Settings for where a window or tab opens; a see-through option (switch and slider, live); Ctrl+F opens search; `minos --pick open|save|dir` is a file-chooser mode (paths printed, exit 1 on cancel).
 - **Dock:** one dot per window (active lit, capped at the icon width, last two merge into an oval); resting on an app for 1 s lists its windows (titles, not thumbnails); right-click gives New window / Close / Keep in dock.
 - **Keys:** Super+Up full screen, Super+Down leaves full screen or hides (labyrinth-screen-keys).
-- **polkit agent (`labyrinth-polkit`):** now the live agent (KDE's is disabled in ~/.config/autostart). The agent has no window; each request starts `labyrinth-polkit --dialog` (a Wayland window cannot be hidden, so the first design left a black rectangle). Enter authenticates. Verified with `pkexec true` and the owner's password.
-- **File chooser portal (`labyrinth-portal`):** the backend answers `org.freedesktop.impl.portal.FileChooser` by running Minos in pick mode; selected through /etc/xdg-desktop-portal/kde-portals.conf. The frontend reaches it and the backend starts Minos (checked by hand); Checked end to end on 2026-10-18 through the real `xdg-desktop-portal` frontend with a small client that keeps its D-Bus connection open (a one-shot `gdbus call` makes the frontend cancel the request as soon as the caller disconnects, which looks like "nothing happens"): `OpenFile` with `current_folder` opens Minos in that folder, Down + Enter answers `(0, {uris: [file:///.../Budget%202026.ods]})`, closing Minos answers `(1, ...)` (cancelled); `SaveFile` opens Minos in the home folder with the suggested name filled in. A real GTK app works too: `GTK_USE_PORTAL=1 zenity --file-selection` opened Minos and printed the chosen path. Not yet checked: Obsidian, Vivaldi, VS Code, multiple files, folders, and the Save button's reply.
+- **polkit agent (`yggdrasil-polkit`):** now the live agent (KDE's is disabled in ~/.config/autostart). The agent has no window; each request starts `yggdrasil-polkit --dialog` (a Wayland window cannot be hidden, so the first design left a black rectangle). Enter authenticates. Verified with `pkexec true` and the owner's password.
+- **File chooser portal (`yggdrasil-portal`):** the backend answers `org.freedesktop.impl.portal.FileChooser` by running Minos in pick mode; selected through /etc/xdg-desktop-portal/kde-portals.conf. The frontend reaches it and the backend starts Minos (checked by hand); Checked end to end on 2026-10-18 through the real `xdg-desktop-portal` frontend with a small client that keeps its D-Bus connection open (a one-shot `gdbus call` makes the frontend cancel the request as soon as the caller disconnects, which looks like "nothing happens"): `OpenFile` with `current_folder` opens Minos in that folder, Down + Enter answers `(0, {uris: [file:///.../Budget%202026.ods]})`, closing Minos answers `(1, ...)` (cancelled); `SaveFile` opens Minos in the home folder with the suggested name filled in. A real GTK app works too: `GTK_USE_PORTAL=1 zenity --file-selection` opened Minos and printed the chosen path. Not yet checked: Obsidian, Vivaldi, VS Code, multiple files, folders, and the Save button's reply.
 - **Wallpaper:** `own_wallpaper = yes`, so the panel draws labyrinth-purple.png. plasmashell was stopped for this session as a test; not yet made permanent.
 - baloo (file indexer) disabled: it was crash-looping.
 - CI: the release check no longer fails on systemd units in a runner without a user manager (and skips D-Bus service files).

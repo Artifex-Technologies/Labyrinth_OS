@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Labyrinth authentication agent
-Comment=The password box for administrator rights
-Exec=/usr/bin/labyrinth-polkit
-NoDisplay=true
-OnlyShowIn=KDE;

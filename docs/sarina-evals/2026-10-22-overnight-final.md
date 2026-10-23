@@ -62,7 +62,7 @@ The function `protected` determines if a package is protected. It protects packa
 
 **Quoted lines from the test:**
 ```rust
-assert!(protected("labyrinth-minos") && protected("plasma-desktop") && protected("kwin") && !protected("firefox"));
+assert!(protected("yggdrasil-minos") && protected("plasma-desktop") && protected("kwin") && !protected("firefox"));
 ```
 
 These lines show that packages with IDs starting with `"labyrinth-"`, `"plasma-"`, or `"kwin-"` are protected, while others like `"firefox"` are not. The actual `protected` function logic (not shown in the snippet) likely checks for these prefixes.

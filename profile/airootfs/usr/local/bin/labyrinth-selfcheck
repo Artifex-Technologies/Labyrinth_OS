@@ -133,8 +133,8 @@ def checks():
         add(FAIL, "no screen found in kscreen-doctor -j", "the panel would place the dock as if the screen were 1920x1080")
     else:
         add(OK, "screens", ", ".join("%s %sx%s" % (o.get("name"), o.get("size", {}).get("width"), o.get("size", {}).get("height")) for o in outs))
-    rc, _ = run(["pgrep", "-f", "^/usr/bin/labyrinth-panel$"])
-    add(OK if rc == 0 else FAIL, "labyrinth-panel running", "" if rc == 0 else "start it: labyrinth-panel-mode on")
+    rc, _ = run(["pgrep", "-f", "^/usr/bin/yggdrasil-panel$"])
+    add(OK if rc == 0 else FAIL, "yggdrasil-panel running", "" if rc == 0 else "start it: labyrinth-panel-mode on")
 
     # the login theme (a broken one blocks every login)
     sddm_conf = read_text("/etc/sddm.conf.d/theme.conf")
@@ -146,7 +146,7 @@ def checks():
     # notification service owner
     rc, o = run(["busctl", "--user", "list", "--no-legend"])
     owner = [l.split()[2] for l in o.splitlines() if l.startswith("org.freedesktop.Notifications ")]
-    if owner and owner[0] == "labyrinth-panel":
+    if owner and owner[0] == "yggdrasil-panel":
         add(OK, "notifications are served by the Labyrinth panel")
     elif owner:
         add(WARN, "notifications are served by %s, not the Labyrinth panel" % owner[0], "stop it (systemctl --user stop mako) and the panel takes over within 10 s")

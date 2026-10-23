@@ -27,7 +27,7 @@ class PanelCtl(unittest.TestCase):
             rc, calls = run("labyrinth-panelctl", arg.split())
             self.assertEqual(rc, 0, arg)
             self.assertEqual(len(calls), 1, arg)
-            self.assertIn("org.labyrinth.Panel /Panel org.labyrinth.Panel " + want, calls[0])
+            self.assertIn("org.yggdrasil.Panel /Panel org.yggdrasil.Panel " + want, calls[0])
 
     def test_unknown_command_is_an_error(self):
         rc, calls = run("labyrinth-panelctl", ["nope"])

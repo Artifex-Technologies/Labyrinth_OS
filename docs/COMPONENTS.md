@@ -13,7 +13,7 @@ choose, so someone else's install need not carry what you use. The list is
 | `vscode` | Microsoft's official VS Code, repackaged from their tarball, pinned and hash-checked (verified) | Their [Linux docs](https://github.com/microsoft/vscode-docs/blob/main/docs/setup/linux.md) cover Debian, Fedora, Snap and a community AUR package; nothing official for Arch. Arch's `code` is the open-source build with a different marketplace; the two conflict |
 | `containers` | Podman + Distrobox: Fedora/Debian/Ubuntu userlands whose apps show up in the app menu | See below |
 | `flatpak` | Flatpak (Flathub) | See below |
-| `proton-drive` | rclone + FUSE, mount service, `labyrinth-cloud` links | No official Linux client exists |
+| `proton-drive` | rclone + FUSE, mount service, `minos-cloud` links | No official Linux client exists |
 | `proton-pass` | Proton's official desktop app, repackaged from their RPM, pinned and hash-checked | Built on the machine with makepkg |
 | `creative` | Krita, Darktable, Kdenlive, OBS Studio, Ardour | |
 | `virtualization` | QEMU, libvirt, UEFI firmware, dnsmasq, nftables (for Limbo) | |

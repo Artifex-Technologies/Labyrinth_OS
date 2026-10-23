@@ -128,15 +128,15 @@ nm-connection-editor
 ttf-jetbrains-mono-nerd
 btop
 noto-fonts-emoji
-labyrinth-minos
-labyrinth-settings
-labyrinth-polkit
-labyrinth-portal
-labyrinth-market
-labyrinth-calculator
-labyrinth-panel
-labyrinth-idle
-labyrinth-keyring-sync
+yggdrasil-minos
+yggdrasil-settings
+yggdrasil-polkit
+yggdrasil-portal
+yggdrasil-agora
+yggdrasil-calculator
+yggdrasil-panel
+yggdrasil-idle
+yggdrasil-keyring-sync
 gnome-keyring
 clamav
 python-dbus
@@ -174,7 +174,7 @@ spotify-launcher
 # component: obsidian
 obsidian
 # component: weather
-labyrinth-weather
+yggdrasil-weather
 # component: proton-drive
 rclone
 fuse3

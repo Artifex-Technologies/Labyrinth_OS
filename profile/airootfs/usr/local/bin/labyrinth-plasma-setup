@@ -59,7 +59,7 @@ qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || busctl --user call org.
 # The top bar, the notch (Fylgja), the dock and the start menu are Labyrinth's own panel: on from the
 # first login (Settings > Appearance, or labyrinth-panel-mode off, goes back to Plasma's panels). Only
 # if it is not installed are Plasma's panels set up from the layout.
-if [[ -x /usr/bin/labyrinth-panel ]]; then
+if [[ -x /usr/bin/yggdrasil-panel ]]; then
   labyrinth-panel-mode on >/dev/null 2>&1
 elif [[ -r $LAYOUT ]]; then
   busctl --user call org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell evaluateScript s "$(cat "$LAYOUT")" >/dev/null 2>&1

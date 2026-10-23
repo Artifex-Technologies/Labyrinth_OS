@@ -41,7 +41,7 @@ tests() {
   step "Rust: file explorer"
   (cd packages/minos && run cargo test --lib)
   step "Rust: weather"
-  (cd packages/labyrinth-weather && run cargo test --lib)
+  (cd packages/yggdrasil-weather && run cargo test --lib)
 }
 
 packages() {

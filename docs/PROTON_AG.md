@@ -33,10 +33,10 @@ opened. Those codes belong in a password manager, not a synced file.
 
 ## Folder links and verification (built)
 
-`labyrinth-cloud` (and the sidebar's **Cloud** section in the explorer):
+`minos-cloud` (and the sidebar's **Cloud** section in the explorer):
 
-    labyrinth-cloud link docs ~/Documents/Github "proton:My files/Documents/Github"
-    labyrinth-cloud verify docs
+    minos-cloud link docs ~/Documents/Github "proton:My files/Documents/Github"
+    minos-cloud verify docs
 
 Verification is read-only and compares `rclone lsjson -R --hash` of the local
 folder against the remote one: missing on either side, size differences, and

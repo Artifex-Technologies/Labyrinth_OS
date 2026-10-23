@@ -50,7 +50,7 @@ tasks.writeConfig("launchers", [
     "applications:obsidian.desktop",
     "applications:spotify-launcher.desktop",
     "applications:steam.desktop",
-    "applications:labyrinth-settings.desktop"
+    "applications:yggdrasil-settings.desktop"
 ]);
 // The trash, at the right end: empty or full by what is in it (Plasma's own widget; it opens
 // trash:/ , which Minos understands).

@@ -57,16 +57,16 @@
       "name": "Weather (multi-model)",
       "description": "Labyrinth's weather engine: GFS, ECMWF and ICON models plus a 30-member ensemble, with an honest uncertainty range, scored against measured airport temperatures over time. Shows in the top bar and replaces nothing if left out. Uses Open-Meteo and aviationweather.gov, which receive the coordinates of the place you set.",
       "proprietary": false,
-      "pkgbuild": "labyrinth-weather",
+      "pkgbuild": "yggdrasil-weather",
       "enable_global": [
-        "labyrinth-weather-record.timer"
+        "yggdrasil-weather-record.timer"
       ],
-      "notes": "Set your place once: labyrinth-weather set-location \"Your city\". Accuracy weighting needs a few days of recorded history."
+      "notes": "Set your place once: yggdrasil-weather set-location \"Your city\". Accuracy weighting needs a few days of recorded history."
     },
     {
       "id": "proton-drive",
       "name": "Proton Drive (rclone)",
-      "description": "rclone with FUSE, to mount Proton Drive at ~/ProtonDrive and to link and verify folders with labyrinth-cloud. No official Proton Drive client exists for Linux.",
+      "description": "rclone with FUSE, to mount Proton Drive at ~/ProtonDrive and to link and verify folders with minos-cloud. No official Proton Drive client exists for Linux.",
       "proprietary": false,
       "packages": [
         "rclone",

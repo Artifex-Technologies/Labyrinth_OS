@@ -95,7 +95,7 @@ done
 usd="$profile_build_dir/airootfs/etc/systemd/user/plasma-workspace.target.wants"
 mkdir -p "$usd"
 ln -sf /usr/lib/systemd/user/labyrinth-kwin-cache.service "$usd/labyrinth-kwin-cache.service"
-# KDE's password agent stays off: Labyrinth's own (labyrinth-polkit, autostarted) answers password requests
+# KDE's password agent stays off: Labyrinth's own (yggdrasil-polkit, autostarted) answers password requests
 mkdir -p "$profile_build_dir/airootfs/etc/systemd/user"
 ln -sf /dev/null "$profile_build_dir/airootfs/etc/systemd/user/plasma-polkit-agent.service"
 

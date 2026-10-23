@@ -158,15 +158,15 @@ btop
 # emoji font for the bar's weather icons
 noto-fonts-emoji
 # Labyrinth's own file explorer, built from packages/pkgbuilds into the local repo
-labyrinth-minos
-labyrinth-settings
-labyrinth-polkit
-labyrinth-portal
-labyrinth-market
-labyrinth-calculator
-labyrinth-panel
-labyrinth-idle
-labyrinth-keyring-sync
+yggdrasil-minos
+yggdrasil-settings
+yggdrasil-polkit
+yggdrasil-portal
+yggdrasil-agora
+yggdrasil-calculator
+yggdrasil-panel
+yggdrasil-idle
+yggdrasil-keyring-sync
 gnome-keyring
 clamav
 python-dbus

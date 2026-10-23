@@ -10,8 +10,8 @@ press, not the release.
 
 ## What is built (Labyrinth's side)
 
-- `labyrinth-panel` serves `org.labyrinth.Panel` on the session bus with `AskSarina`; the shortcut
-  runs `busctl --user call org.labyrinth.Panel /Panel org.labyrinth.Panel AskSarina`
+- `yggdrasil-panel` serves `org.yggdrasil.Panel` on the session bus with `AskSarina`; the shortcut
+  runs `busctl --user call org.yggdrasil.Panel /Panel org.yggdrasil.Panel AskSarina`
   (`labyrinth-sarina-ask.desktop`, bound to Meta+S in `kglobalshortcutsrc`).
 - Recording uses `pw-record` (PipeWire): mono, 16 kHz, 16-bit, into a private folder
   (`$XDG_RUNTIME_DIR/labyrinth-sarina/`, mode 700, in memory-backed storage). The file is deleted as soon
@@ -94,7 +94,7 @@ She stops when you press Super+S again, Esc, or click outside the card.
 ## Hold to talk, and the voice island (2026-10-16)
 
 - **Hold Super+S, talk, let go.** No card opens and there is no Send button. The panel registers the shortcut itself with KDE's global-shortcut
-  daemon (`org.kde.KGlobalAccel`, component `labyrinth-panel`, action `ask-sarina`; change it in System Settings > Shortcuts) because only
+  daemon (`org.kde.KGlobalAccel`, component `yggdrasil-panel`, action `ask-sarina`; change it in System Settings > Shortcuts) because only
   registered actions report the key coming UP (`globalShortcutReleased`). A tap shorter than a third of a second is not a question: it just stops her talking.
   The old desktop-file shortcut (`labyrinth-sarina-ask.desktop`) is unregistered at startup. The D-Bus call `AskSarina` still works as a press-to-start,
   press-to-send fallback.

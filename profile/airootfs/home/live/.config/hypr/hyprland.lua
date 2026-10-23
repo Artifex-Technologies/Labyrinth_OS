@@ -92,7 +92,7 @@ o.bind("SUPER + CTRL + N", "New desktop", "labyrinth-workspace new")
 -- The Windows shortcuts, so muscle memory from Windows works here too.
 o.bind("SUPER + E", "File manager (Windows: Explorer)", "uwsm-app -- minos")
 o.bind("SUPER + R", "Run (Windows: Run box)", "fuzzel")
-o.bind("SUPER + I", "Settings", "uwsm-app -- labyrinth-settings")
+o.bind("SUPER + I", "Settings", "uwsm-app -- yggdrasil-settings")
 o.bind("SUPER + L", "Lock screen", "pidof hyprlock || hyprlock")
 o.bind("SUPER + V", "Clipboard history", "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy")
 o.bind("SUPER + SHIFT + S", "Screenshot region", "grim -g \"$(slurp)\" - | wl-copy")

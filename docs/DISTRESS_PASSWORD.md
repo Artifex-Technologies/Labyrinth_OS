@@ -58,7 +58,7 @@ answer, in the order listed, and a step that fails does not stop the next one.
 A list of every change and every time it fired, newest first.
 
 ## Where it works
-- **Labyrinth's lock screen** (`labyrinth-lock`): asks the helper only after the real password was wrong, and only if the feature is set up.
+- **Labyrinth's lock screen** (`yggdrasil-lock`): asks the helper only after the real password was wrong, and only if the feature is set up.
   Not live until Labyrinth runs on a compositor with session-lock.
 - **Terminals and other prompts** (sudo, login, su, administrator questions): the PAM module `pam_labyrinth_distress.so`
   (`packages/distress-pam`). Turning on "Also in terminals and other password prompts" and saving adds one line to

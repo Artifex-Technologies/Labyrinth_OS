@@ -8,7 +8,7 @@ _launch=Alt+Space\tAlt+F2\tMeta+R
 [services][org.kde.krunner.desktop]
 _launch=none
 
-[services][labyrinth-settings.desktop]
+[services][yggdrasil-settings.desktop]
 _launch=Meta+I
 
 [services][org.kde.plasma-systemmonitor.desktop]

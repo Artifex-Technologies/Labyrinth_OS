@@ -49,8 +49,8 @@ fi
 
 # 2a'. The hourly weather-recording timer, for every user, if the optional weather
 #      component is in this image (it exits quietly until a location is set).
-if [[ -e /usr/lib/systemd/user/labyrinth-weather-record.timer ]]; then
-  systemctl --global enable labyrinth-weather-record.timer >/dev/null 2>&1 && say "enabled weather recording timer" || warn "could not enable the weather recording timer"
+if [[ -e /usr/lib/systemd/user/yggdrasil-weather-record.timer ]]; then
+  systemctl --global enable yggdrasil-weather-record.timer >/dev/null 2>&1 && say "enabled weather recording timer" || warn "could not enable the weather recording timer"
 fi
 
 # 2a''. Per-app network rules: the user service that keeps the slices alive and loads the rules at login.

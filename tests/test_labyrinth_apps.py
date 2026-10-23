@@ -100,15 +100,15 @@ class Commands(unittest.TestCase):
         self.assertNotIn("weather", presets["minimal"] + presets["gaming"] + presets["creative"])
         rc, out, _ = run(["install", "weather", "--dry-run"], installed=set())
         self.assertIn("makepkg -si", out)
-        self.assertIn("systemctl --global enable labyrinth-weather-record.timer", out)
+        self.assertIn("systemctl --global enable yggdrasil-weather-record.timer", out)
 
     def test_removing_weather_disables_the_timer_first(self):
-        rc, out, _ = run(["remove", "weather", "--dry-run"], installed={"labyrinth-weather"})
-        self.assertLess(out.index("--global disable"), out.index("pacman -Rs labyrinth-weather"))
+        rc, out, _ = run(["remove", "weather", "--dry-run"], installed={"yggdrasil-weather"})
+        self.assertLess(out.index("--global disable"), out.index("pacman -Rs yggdrasil-weather"))
 
     def test_minimal_iso_has_no_weather_package(self):
         text = gen.compose(gen.read_base(os.path.join(ROOT, "profile", "packages.base")), json.load(open(MANIFEST, encoding="utf-8")), [])
-        self.assertNotIn("labyrinth-weather", text)
+        self.assertNotIn("yggdrasil-weather", text)
 
     def test_without_pacman_it_explains_instead_of_crashing(self):
         orig = apps.pacman_installed

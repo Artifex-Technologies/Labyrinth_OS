@@ -94,5 +94,5 @@ is proprietary (`LicenseRef-Obsidian`); the `github.com/obsidianmd` repos are
 releases, docs, plugin API and tooling, not the app's source. Your account,
 Sync and plugins work as on other platforms. Vaults are plain folders, so a vault
 can live inside a linked Proton Drive folder and be checked with
-`labyrinth-cloud verify`; avoid running Obsidian Sync and Proton Drive on the
+`minos-cloud verify`; avoid running Obsidian Sync and Proton Drive on the
 same vault at once.

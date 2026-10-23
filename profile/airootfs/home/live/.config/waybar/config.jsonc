@@ -101,14 +101,14 @@
 
   // OPTIONAL component (labyrinth-apps install weather): hidden when not installed.
   // Multi-model consensus with measured-accuracy weighting. Set a place once:
-  //   labyrinth-weather set-location "Your city"
+  //   yggdrasil-weather set-location "Your city"
   // Click for the next 24 hours in a terminal.
   "custom/weather": {
-    "exec-if": "command -v labyrinth-weather",
-    "exec": "labyrinth-weather bar",
+    "exec-if": "command -v yggdrasil-weather",
+    "exec": "yggdrasil-weather bar",
     "return-type": "json",
     "interval": 900,
-    "on-click": "foot --hold -e labyrinth-weather forecast 24"
+    "on-click": "foot --hold -e yggdrasil-weather forecast 24"
   },
 
   "network": {

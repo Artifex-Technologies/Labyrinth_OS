@@ -9,10 +9,10 @@ installed); every systemd unit verifies; every file `profiledef.sh` lists exists
 
 ## Found and fixed by it (2026-10-16)
 
-- The generated `packages.x86_64` had lost five base packages (labyrinth-idle, labyrinth-keyring-sync, gnome-keyring, clamav, python-dbus):
+- The generated `packages.x86_64` had lost five base packages (yggdrasil-idle, yggdrasil-keyring-sync, gnome-keyring, clamav, python-dbus):
   they had been added to the generated file instead of `profile/packages.base`, so the next regeneration would have dropped them from the ISO.
 - `labyrinth-appnet-ask.service` had an invalid `ProtectControlGroups=` value (systemd ignored it).
-- `labyrinth-weather` used `rustls` 0.23.45 (RUSTSEC-2026-0346, TLS secrets visible in Debug output): updated to 0.23.46.
+- `yggdrasil-weather` used `rustls` 0.23.45 (RUSTSEC-2026-0346, TLS secrets visible in Debug output): updated to 0.23.46.
 
 ## Known warnings (not vulnerabilities)
 

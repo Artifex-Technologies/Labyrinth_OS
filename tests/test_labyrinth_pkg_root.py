@@ -13,7 +13,7 @@ def run(args, uid="1000"):
     return subprocess.run([sys.executable, HELPER] + args, capture_output=True, text=True, env=env)
 
 
-GOOD = "/run/user/1000/labyrinth-market/x.cancel"
+GOOD = "/run/user/1000/agora/x.cancel"
 
 
 class Refusals(unittest.TestCase):
@@ -23,8 +23,8 @@ class Refusals(unittest.TestCase):
 
     def test_cancel_file_must_be_the_invoking_users_runtime_folder(self):
         self.assertEqual(run(["/etc/passwd", "pacman", "-S", "krita"]).returncode, 2)
-        self.assertEqual(run(["/run/user/1000/labyrinth-market/../../0/x", "pacman", "-S", "krita"]).returncode, 2)
-        self.assertEqual(run(["/run/user/1001/labyrinth-market/x", "pacman", "-S", "krita"], uid="1000").returncode, 2)
+        self.assertEqual(run(["/run/user/1000/agora/../../0/x", "pacman", "-S", "krita"]).returncode, 2)
+        self.assertEqual(run(["/run/user/1001/agora/x", "pacman", "-S", "krita"], uid="1000").returncode, 2)
         self.assertEqual(run([GOOD, "pacman", "-S", "krita"], uid="").returncode, 2)
 
     def test_options_outside_the_short_list_are_refused(self):

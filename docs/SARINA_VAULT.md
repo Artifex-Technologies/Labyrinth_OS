@@ -26,7 +26,7 @@ links instead of rereading everything, and the owner can see what she thinks she
 ## The book vault (the owner's, not hers)
 
 It lives in Proton Drive and is mounted at `~/ProtonDrive`; in Minos the Status column shows which files are on this computer or only in the
-cloud, and `labyrinth-cloud verify` checks that a local copy and the cloud copy match. Before the first Obsidian login: make sure a verified
+cloud, and `minos-cloud verify` checks that a local copy and the cloud copy match. Before the first Obsidian login: make sure a verified
 local copy exists (a green check on the whole folder), open the vault from the local copy rather than the mount if possible, and do not run
 Obsidian Sync on a vault that Proton Drive also syncs.
 

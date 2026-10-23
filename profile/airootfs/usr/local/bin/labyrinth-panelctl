@@ -9,7 +9,7 @@
 #   clipboard        Fylgja on the clipboard history      (bind to Super+V)
 #   ask              start or send a spoken question to Sarina   (bind to Super+S)
 # Hyprland example (hyprland.conf):  bind = SUPER, S, exec, labyrinth-panelctl ask
-call() { busctl --user call org.labyrinth.Panel /Panel org.labyrinth.Panel "$@" >/dev/null; }
+call() { busctl --user call org.yggdrasil.Panel /Panel org.yggdrasil.Panel "$@" >/dev/null; }
 case "${1:-}" in
   start) call ToggleStart ;;
   calendar) call ToggleCalendar ;;
