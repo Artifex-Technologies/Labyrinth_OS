@@ -1,0 +1,23 @@
+#!/bin/bash
+# labyrinth-security-setting: Labyrinth's security settings as the desktop's Settings asks for them (Yggdrasil's docs/INTEGRATIONS.md;
+# declared in /usr/share/yggdrasil/integrations/labyrinth-security.conf).
+#   scan FOLDER                         scan one folder now with Heimdall's scanner (ClamAV); the same memory of unchanged files as
+#                                       labyrinth-scan-downloads, so a second scan is quick
+#   auto-quarantine status|on|off       move certain malware to quarantine automatically (labyrinth-scan-downloads reads scan.conf)
+set -u
+conf=${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth
+state=${XDG_STATE_HOME:-$HOME/.local/state}/labyrinth
+case ${1:-} in
+  scan)
+    [[ -n ${2:-} ]] || exit 2
+    mkdir -p "$state"
+    exec heimdalld scan-files --state "$state/scan-state.json" "$2" ;;
+  auto-quarantine)
+    case ${2:-} in
+      status) grep -qE '^[[:space:]]*action[[:space:]]*=[[:space:]]*notify' "$conf/scan.conf" 2>/dev/null && echo off || echo on ;;
+      on) mkdir -p "$conf" && echo "action = quarantine" >"$conf/scan.conf" ;;
+      off) mkdir -p "$conf" && echo "action = notify" >"$conf/scan.conf" ;;
+      *) exit 2 ;;
+    esac ;;
+  *) echo "usage: labyrinth-security-setting scan FOLDER | auto-quarantine status|on|off" >&2; exit 2 ;;
+esac
