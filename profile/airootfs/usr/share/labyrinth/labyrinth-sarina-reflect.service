@@ -1,0 +1,13 @@
+# systemd USER unit, started by labyrinth-sarina-reflect.timer (both off until the owner switches them on).
+[Unit]
+Description=Sarina learns from your talks (Entities/About Zlothra in her vault)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/labyrinth-sarina-reflect
+# exit 75: the graphics card was busy (a game) or the model server was down; try again in an hour
+SuccessExitStatus=0
+RestartForceExitStatus=75
+Restart=on-failure
+RestartSec=3600
+Nice=10

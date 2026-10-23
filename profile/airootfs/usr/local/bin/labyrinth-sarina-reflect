@@ -1,0 +1,20 @@
+#!/bin/bash
+# labyrinth-sarina-reflect: once a day, Sarina reads what you talked about (Talks/ in her vault, kept only for talk that was not about
+# the computer) and updates what she has learned about you in Entities/About Zlothra.md: each observation with your own words as
+# evidence (checked against the talk log, so nothing is invented) and how often she has seen it. You can edit that note; anything you
+# move under "Forgotten" she will not add again. Off until you switch it on in Settings > Sarina's agents. Local model only.
+set -u
+envf="${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env"
+while IFS='=' read -r k v; do
+  [[ $k =~ ^[A-Z_][A-Z0-9_]*$ ]] && [[ -z ${!k:-} ]] && export "$k=$v"
+done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$envf" 2>/dev/null)
+[[ -n ${SARINA_VAULT:-} && -d $SARINA_VAULT ]] || { echo "no vault set (SARINA_VAULT in $envf)"; exit 0; }
+command -v sarina >/dev/null || { echo "Sarina is not installed"; exit 0; }
+# never take the graphics card while a game uses it: try again in an hour (the unit restarts on 75)
+if u=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null | head -n1) && [[ $u =~ ^[0-9]+$ ]] && (( u >= 40 )); then
+  echo "the graphics card is busy; trying again later"
+  exit 75
+fi
+curl -fsS -m 2 http://127.0.0.1:11434/api/tags >/dev/null 2>&1 || { echo "the model server is not running; trying again later"; exit 75; }
+export SARINA_TEMPERATURE=${SARINA_TEMPERATURE:-0.6}
+exec nice -n 10 sarina reflect --path "$SARINA_VAULT"

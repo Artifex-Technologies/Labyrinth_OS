@@ -84,6 +84,20 @@ class Companion(unittest.TestCase):
         self.assertEqual(self.m.recall("my cat knocked the mug over", self.vault, self.env), ["2026-10-17: Zlothra is Sloth plus Mothra."])
         self.assertEqual(len(self.m.recall("what about my cat", self.vault, self.env)), 2)
 
+    def test_what_she_learned_is_known_but_forgotten_is_not(self):
+        with open(os.path.join(self.vault, "Entities", "About Zlothra.md"), "w") as f:
+            f.write("# About Zlothra\n\n## Observations\n\n"
+                    "- Zlothra has a cat named Pixel — seen 3×, last 2026-10-01. Evidence: \"my cat Pixel\"\n"
+                    "- Zlothra is learning to draw — seen 1×, last 2026-10-20. Evidence: \"picking up drawing\"\n"
+                    "- Zlothra once mentioned rain — seen 1×, last 2026-09-01.\n"
+                    "\n## Forgotten\n\n- Zlothra's sister is called Ana — seen 4×, last 2026-10-21.\n")
+        got = self.m.learned(self.vault, datetime.date(2026, 10, 23))
+        self.assertEqual(got, ["Zlothra has a cat named Pixel", "Zlothra is learning to draw"])
+        c = self.m.companion("hello there friend", dict(self.env, LABYRINTH_TONE="0"), datetime.datetime(2026, 10, 23, 12, 0))
+        self.assertIn("What you have learned about them", c)
+        self.assertNotIn("Ana", c)
+        self.assertNotIn("rain", c)
+
     def test_a_retold_joke_is_recognised(self):
         told = self.m.told_jokes(self.vault)
         self.assertEqual(told, ["It had a paper cut."])

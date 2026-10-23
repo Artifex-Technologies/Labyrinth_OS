@@ -283,6 +283,33 @@ def drop_offers(text):
     return " ".join(kept or sentences)
 
 
+OBS_RX = re.compile(r"^- (.+?) — seen (\d+)×, last (\d{4}-\d{2}-\d{2})\.")
+
+
+def learned(vault, today=None, n=6):
+    """What she has learned about the owner (Entities/About Zlothra.md, written by `sarina reflect`): the observations seen at least twice,
+    or seen in the last week, most seen first. Only the Observations section; what the owner moved under Forgotten is never read."""
+    today = today or datetime.date.today()
+    try:
+        with open(os.path.join(vault, "Entities", "About Zlothra.md"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return []
+    out, section = [], ""
+    for line in text.splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip().lower()
+            continue
+        m = OBS_RX.match(line.strip()) if section == "observations" else None
+        if not m:
+            continue
+        seen, last = int(m.group(2)), datetime.date.fromisoformat(m.group(3))
+        if seen >= 2 or (today - last).days <= 7:
+            out.append((seen, m.group(1)))
+    out.sort(key=lambda x: -x[0])
+    return [t for _, t in out[:n]]
+
+
 def companion(question, env, now=None):
     """What a friend would already know when the talk is not about the computer: the time of day, how the owner has sounded lately (from the
     numbers sarina-tone keeps, never words), things they laughed at together, the jokes she told lately (so she does not repeat them), and earlier
@@ -298,6 +325,9 @@ def companion(question, env, now=None):
         except (OSError, subprocess.TimeoutExpired):
             pass
     if vault and os.path.isdir(vault):
+        known = learned(vault, now.date())
+        if known:
+            parts.append("What you have learned about them (your own note; you know this the way a friend does, so let it shape what you say, never list it or say where it comes from):\n" + "\n".join("- " + plain(x, 200) for x in known))
         inside = []
         if CALLBACK_RX.search(spoken(question)):
             inside = tail_lines(os.path.join(vault, "Entities", "Inside jokes.md"), 8)

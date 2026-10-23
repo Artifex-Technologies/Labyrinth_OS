@@ -1,0 +1,11 @@
+# Sarina's daily reflection on your talks. Off until the owner switches it on in Settings > Sarina's agents.
+[Unit]
+Description=Sarina learns from your talks, once a day
+
+[Timer]
+OnCalendar=*-*-* 04:30
+Persistent=true
+RandomizedDelaySec=20min
+
+[Install]
+WantedBy=timers.target
