@@ -63,8 +63,9 @@ do_check() {
     pass "Steam data at $root"
     ls -d "$root"/steamapps/common/Proton* >/dev/null 2>&1 && pass "Valve Proton present: $(ls -d "$root"/steamapps/common/Proton* | xargs -n1 basename | tr '\n' ' ')" \
       || warn "no Valve Proton downloaded yet (Steam fetches it the first time a game needs it)"
-    ls -d "$root"/compatibilitytools.d/* /usr/share/steam/compatibilitytools.d/* >/dev/null 2>&1 \
-      && pass "extra compatibility tools installed" || warn "no extra tools (Proton-CachyOS/GE); optional"
+    # each folder on its own: ls fails as a whole when one of them does not exist, which hid the system-wide Proton-CachyOS
+    extra=$( { ls -d "$root"/compatibilitytools.d/* 2>/dev/null; ls -d /usr/share/steam/compatibilitytools.d/* 2>/dev/null; } | xargs -rn1 basename | tr '\n' ' ')
+    [ -n "$extra" ] && pass "extra compatibility tools installed: $extra" || warn "no extra tools (Proton-CachyOS/GE); optional"
     cfg="$root/config/config.vdf"
     if [ -f "$cfg" ] && python3 - "$cfg" <<'PY' >/dev/null 2>&1
 import sys,re

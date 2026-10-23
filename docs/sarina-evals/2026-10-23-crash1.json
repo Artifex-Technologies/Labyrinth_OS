@@ -1,0 +1,12 @@
+{
+ "time": "2026-10-23T13:06:16",
+ "model": "qwen3:8b",
+ "only": true,
+ "results": [
+  {
+   "name": "voice-game-crash",
+   "group": "gaming",
+   "passed": true
+  }
+ ]
+}

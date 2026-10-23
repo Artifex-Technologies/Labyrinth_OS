@@ -60,6 +60,7 @@ ROUTES = [
     (r"\b(boot|startup|start up|takes? long to (start|boot))\b", "boot"),
     (r"\b(sound|audio|speaker|microphone|mic|volume)\b", "audio"),
     (r"\b(error|errors|log|logs|failed|failing|broke|broken|problem|wrong|issue)\b", "services"),
+    (r"\b(game|games|gaming|steam|proton|wine|mods?|modding|fps|frame ?rates?|stutter\w*|controller|gamepad)\b", "gaming"),
 ]
 
 
@@ -118,7 +119,15 @@ def prefetch(question, topics):
             try:
                 r = subprocess.run(["sarina", "crash-detail", c], capture_output=True, text=True, timeout=30)
                 if r.returncode == 0 and r.stdout.strip():
-                    out.append("[latest crash of %s]\n%s" % (os.path.basename(c), r.stdout.strip()[:3500]))
+                    label, lead = "latest crash of %s" % os.path.basename(c), ""
+                    # the newest crash is the one looked up; when the question names no program it may not be the one meant (a game shows as its
+                    # .exe, wine or a Steam path), so she is told, before the record, which program it is and whether that can be a game
+                    if os.path.basename(c).lower() not in question.lower():
+                        game = re.search(r"(?i)steam|wine|proton|\.exe", c)
+                        lead = "Note first: the newest crash recorded is of %s, %s. Say which program this record is about%s\n" % (
+                            os.path.basename(c), "a Steam, Proton or Wine program" if game else "an ordinary program, not a game",
+                            "." if game else "; if they asked about a game, say that no game crash is recorded and that this one is a different program. Do not call it the game.")
+                    out.append("[%s]\n%s%s" % (label, lead, r.stdout.strip()[:3500]))
             except (OSError, subprocess.TimeoutExpired):
                 pass
     if not out:
@@ -167,7 +176,7 @@ def shorten(text, limit=75):
 
 def guides(question, vault):
     """Her guide notes about this desktop (Guides/ in the vault) that match the question, placed before it: a small model answers a "how do I"
-    question from general Linux knowledge unless the right note is in front of it. At most two short notes."""
+    question from general Linux knowledge unless the right note is in front of it. At most two notes, 2600 characters each (a gaming guide is about that long)."""
     if not vault or not os.path.isdir(os.path.join(vault, "Guides")):
         return ""
     try:
@@ -190,7 +199,7 @@ def guides(question, vault):
             continue
         if text.startswith("---\n") and "\n---" in text[4:]:
             text = text[text.index("\n---", 4) + 4:]
-        parts.append("[%s]\n%s" % (rel[:-3], text.strip()[:1800]))
+        parts.append("[%s]\n%s" % (rel[:-3], text.strip()[:2600]))
     if not parts:
         return ""
     return "From your guides about this computer (use them when they answer the question; prefer them to general Linux advice):\n\n" + "\n\n".join(parts) + "\n\n"
@@ -263,6 +272,8 @@ def tail_lines(path, n, prefix="- 20"):
 
 # Words that invite a callback: then her inside jokes are put in front of her (otherwise only the ones that match by meaning, so a small model
 # does not force one into every answer).
+# Asked whether she remembers something: with nothing in her notes, the honest answer is that she does not.
+MEMORY_ASK_RX = re.compile(r"(?i)\b(remember|recall|told you|said about|mentioned|last time|that time)\b")
 CALLBACK_RX = re.compile(r"(?i)\b(remember|again|my name|funny|joke|laugh|that time|last time|the one about)\b")
 
 # Asked for a joke. The jokes she told before are not put in front of her (a small model retells what it is shown); a repeat is caught after.
@@ -402,6 +413,9 @@ def companion(question, env, now=None):
         moments = [x for x in recall(spoken(question), vault, env) if x not in inside]
         if moments:
             parts.append("Earlier moments and inside jokes that may be about this (from your notes; use one only if it clearly is):\n" + "\n".join("- " + plain(x, 240) for x in moments))
+        elif not inside and MEMORY_ASK_RX.search(spoken(question)):
+            # asked to remember something her notes do not hold: said here, once, so a small model does not fill the gap with an invented memory
+            parts.append("Your notes (Talks, Jokes, inside jokes) hold nothing about what they are asking you to remember. Say plainly that you do not remember it; do not invent one, and do not guess at details.")
     return "About this moment (for you, not to recite):\n" + "\n\n".join(parts) + "\n\nWhat they said: "
 
 
@@ -606,7 +620,9 @@ def main(argv):
         if chat:
             question = companion(question, env) + question
         else:
-            g = guides(said, env.get("SARINA_VAULT", "")) if "guides" in topics else ""
+            # her guide notes (known problems on this machine, the desktop, gaming) go in front of every question about the computer, not only a
+            # "how do I" one: she told the owner to restart the sound system with sudo when the Troubleshooting note had the right command
+            g = guides(said, env.get("SARINA_VAULT", ""))
             if env.get("SARINA_SYSTEM") == "on":
                 question = prefetch(said, topics) + question
             question = g + question

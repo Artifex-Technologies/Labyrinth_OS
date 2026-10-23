@@ -54,3 +54,12 @@ called a command that does not exist (`sarina ask --audio`); rewritten as whispe
 "not set up yet" message; STT model and a spoken reply are not installed/built (owner decision, a download). No audio was recorded or played.
 
 Full run 2026-10-16 07:18: 13 of 13 cases pass (docs/sarina-evals/2026-10-16-0718.md), after the lessons, the doc fix for socket groups and Heimdall's unicode/credential fixes. The checks are keyword checks: read the answers too (see the decompile-explain slip).
+
+### 2026-10-23 12:40 [Claude] Gaming round: Sarina knows the gaming side now, and has her first repair tool
+Built today (details and the what-next list with reasons in `docs/SARINA_GAMING.md`): `system_status gaming` (the setup check, who holds
+graphics memory including her own model, Proton versions, installed games), `system_fix` (named user-level repairs behind `--allow-shell`:
+restart audio, restart Bluetooth), a `gaming` route, four gaming guide notes in her vault, and 11 gaming evals. `labyrinth-gaming check`
+had a bug (it hid the system-wide Proton-CachyOS); fixed in the repo copy. Three new lessons in `SARINA_LESSONS.md`. Full run (`docs/sarina-evals/2026-10-23-full.md`): 63 of 70 graded cases passed (the 4 Limbo cases need the sudo password and were skipped); after the fixes the retry passed the append, sudo, false-memory, thread and game-crash cases. Still failing: the two Heimdall alert checks (its session scan raised no `injection-phrase` for the "SYSTEM NOTICE TO THE ASSISTANT" text although its `/v1/review` denies it: for Heimdall's board) and `voice-install-help` by five words over the cap with the content now right (Agora first).
+**For the owner:** the installed copies need `sudo install` (commands at the end of `SARINA_GAMING.md`); the evals ran the staged build in
+`~/.local/bin`. Sarina: read the gaming guides and the three lessons before the next gaming question.
+

@@ -1,0 +1,62 @@
+{
+ "time": "2026-10-23T12:31:50",
+ "model": "qwen3:8b",
+ "only": true,
+ "results": [
+  {
+   "name": "sys-gaming",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "sys-fix-audio",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "sys-fix-unknown",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-fix-audio",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-game-stutter",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-fps",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-mods-where",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-proton-which",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-vram-model",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-anticheat",
+   "group": "gaming",
+   "passed": true
+  },
+  {
+   "name": "voice-game-crash",
+   "group": "gaming",
+   "passed": true
+  }
+ ]
+}
