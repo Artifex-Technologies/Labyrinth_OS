@@ -9,13 +9,13 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
 
 pkgname=heimdall-git
-pkgver=0.1.0.r15.g312e448
+pkgver=0.1.0.r17.gc98bfbb
 pkgrel=1
 pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt injection, leaked credentials and permission escalation (built from the local Heimdall checkout)'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
-depends=('glibc')
+depends=('glibc' 'curl' 'gzip')
 makedepends=('go' 'git')
 provides=('heimdall')
 conflicts=('heimdall')
@@ -49,4 +49,9 @@ package() {
   install -Dm644 packaging/arch/heimdall.sysusers "$pkgdir/usr/lib/sysusers.d/heimdall.conf"
   install -Dm644 packaging/arch/config.json.example "$pkgdir/etc/heimdall/config.json.example"
   install -Dm644 packaging/arch/limbo-integration.conf.example "$pkgdir/etc/heimdall/limbo-integration.conf.example"
+  install -Dm755 packaging/arch/heimdall-ipdb-update "$pkgdir/usr/bin/heimdall-ipdb-update"
+  install -Dm644 packaging/arch/heimdall-ipdb-update.service "$pkgdir/usr/lib/systemd/system/heimdall-ipdb-update.service"
+  install -Dm644 packaging/arch/heimdall-ipdb-update.timer "$pkgdir/usr/lib/systemd/system/heimdall-ipdb-update.timer"
+  # Labyrinth turns the firewall watch on: read-only journal access for the heimdall user
+  install -Dm644 packaging/arch/heimdall-firewall.conf.example "$pkgdir/usr/lib/systemd/system/heimdall.service.d/firewall.conf"
 }
