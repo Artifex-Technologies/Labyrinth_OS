@@ -93,8 +93,12 @@ class Companion(unittest.TestCase):
                     "\n## Forgotten\n\n- Zlothra's sister is called Ana — seen 4×, last 2026-10-21.\n")
         got = self.m.learned(self.vault, datetime.date(2026, 10, 23))
         self.assertEqual(got, ["Zlothra has a cat named Pixel", "Zlothra is learning to draw"])
-        c = self.m.companion("hello there friend", dict(self.env, LABYRINTH_TONE="0"), datetime.datetime(2026, 10, 23, 12, 0))
-        self.assertIn("What you have learned about them", c)
+        env = dict(self.env, LABYRINTH_TONE="0", SARINA_EMBED_URL="http://127.0.0.1:9/none")  # no embeddings: shared words decide
+        c = self.m.companion("hello there friend", env, datetime.datetime(2026, 10, 23, 12, 0))
+        self.assertNotIn("What you have learned", c)  # nothing in it is about this
+        c = self.m.companion("how is my cat doing, do you think", env, datetime.datetime(2026, 10, 23, 12, 0))
+        self.assertIn("What you have learned about them that bears on this", c)
+        self.assertIn("cat named Pixel", c)
         self.assertNotIn("Ana", c)
         self.assertNotIn("rain", c)
 

@@ -310,6 +310,72 @@ def learned(vault, today=None, n=6):
     return [t for _, t in out[:n]]
 
 
+# Small talk every observation is compared with, so each one is judged against its own usual closeness to anything (an observation like
+# "prefers short answers" is close to every question; "has a cat" only to a few).
+NEUTRAL = ["What time is it?", "Tell me something interesting.", "How are you doing today?", "What do you think about that?", "Okay, sounds good.",
+           "Good morning!", "Can you help me with something?", "I was just thinking about stuff.", "Tell me a short joke.", "Yes or no?"]
+LEARN_STOP = {"zlothra", "their", "about", "with", "they", "them", "from", "that", "this", "when", "have", "likes", "prefers", "wants", "being", "despite",
+              "the", "and", "you", "are", "was", "for", "how", "its", "not", "but", "can", "did", "has", "had", "his", "her", "she", "him", "our",
+              "who", "why", "way", "all", "any", "one", "out", "get", "got", "too", "now", "new", "day", "see", "say", "what", "think", "doing",
+              "your", "just", "like", "some", "will", "would", "could", "should", "really", "today", "tell", "know", "want", "yes"}
+
+
+def embed(texts, env, cache):
+    """Embeddings from the small model Sarina already uses for her notes (Ollama /api/embed), cached by text; None when it is not there."""
+    import hashlib
+    import json as _json
+    import urllib.request
+    key = lambda t: hashlib.sha1(t.encode()).hexdigest()
+    todo = [t for t in texts if key(t) not in cache]
+    if todo:
+        try:
+            req = urllib.request.Request(env.get("SARINA_EMBED_URL", "http://127.0.0.1:11434/api/embed"),
+                                         data=_json.dumps({"model": env.get("SARINA_EMBED_MODEL", "nomic-embed-text"), "input": todo}).encode(),
+                                         headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                for t, e in zip(todo, _json.load(r)["embeddings"]):
+                    cache[key(t)] = e
+        except Exception:
+            return None
+    return [cache[key(t)] for t in texts]
+
+
+def relevant(question, observations, env):
+    """The observations that are about what was just said: clearly closer to it in meaning than to everyday small talk, or sharing a
+    word with it. A small model told everything it knows brings it up everywhere ("Pixel would approve" of pineapple pizza)."""
+    import json as _json
+    import math
+    if not observations:
+        return []
+    said = set(w for w in re.findall(r"[a-z]{3,}", question.lower()) if w not in LEARN_STOP)
+    out = [o for o in observations if said & set(w for w in re.findall(r"[a-z]{3,}", o.lower()) if w not in LEARN_STOP)]
+    cache_path = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina", "embed-cache.json")
+    try:
+        with open(cache_path) as f:
+            cache = _json.load(f)
+    except (OSError, ValueError):
+        cache = {}
+    docs = embed(["search_document: " + o for o in observations], env, cache)
+    qs = embed(["search_query: " + q for q in NEUTRAL + [question]], env, cache)
+    if docs and qs:
+        cos = lambda a, b: sum(x * y for x, y in zip(a, b)) / (math.sqrt(sum(x * x for x in a) * sum(y * y for y in b)) or 1)
+        for o, d in zip(observations, docs):
+            base = [cos(n, d) for n in qs[:-1]]
+            mean = sum(base) / len(base)
+            sd = max(math.sqrt(sum((b - mean) ** 2 for b in base) / len(base)), 0.02)
+            if (cos(qs[-1], d) - mean) / sd >= 1.5 and o not in out:
+                out.append(o)
+        try:
+            os.makedirs(os.path.dirname(cache_path), mode=0o700, exist_ok=True)
+            if len(cache) > 500:
+                cache = {}
+            with open(cache_path, "w") as f:
+                _json.dump(cache, f)
+        except OSError:
+            pass
+    return [o for o in observations if o in out][:4]
+
+
 def companion(question, env, now=None):
     """What a friend would already know when the talk is not about the computer: the time of day, how the owner has sounded lately (from the
     numbers sarina-tone keeps, never words), things they laughed at together, the jokes she told lately (so she does not repeat them), and earlier
@@ -325,9 +391,9 @@ def companion(question, env, now=None):
         except (OSError, subprocess.TimeoutExpired):
             pass
     if vault and os.path.isdir(vault):
-        known = learned(vault, now.date())
+        known = relevant(spoken(question), learned(vault, now.date(), 20), env)
         if known:
-            parts.append("What you have learned about them (your own note; you know this the way a friend does, so let it shape what you say, never list it or say where it comes from):\n" + "\n".join("- " + plain(x, 200) for x in known))
+            parts.append("What you have learned about them that bears on this (your own note; you know it the way a friend does: use it only if it fits, never list it or say where it comes from):\n" + "\n".join("- " + plain(x, 200) for x in known))
         inside = []
         if CALLBACK_RX.search(spoken(question)):
             inside = tail_lines(os.path.join(vault, "Entities", "Inside jokes.md"), 8)
@@ -567,6 +633,10 @@ def main(argv):
         answer = re.sub(r"\((?:They laughed|Style hint)[^)]*\)\s*", "", answer)
         # a delivery tag written in round brackets would be read out as a word; it is meant as the tag
         answer = re.sub(r"\((joking|unsure|urgent|gentle|serious)\)", r"[\1]", answer, flags=re.I)
+        # a small model sometimes starts by saying the question back as if it were its own words
+        said = spoken(" ".join(a.question)).strip()
+        if len(said) > 12 and answer.lstrip().lower().startswith(said.lower()):
+            answer = answer.lstrip()[len(said):].lstrip(" .?!,")
         answer = shorten(flatten(answer))
         if chat:
             answer = drop_offers(answer)
