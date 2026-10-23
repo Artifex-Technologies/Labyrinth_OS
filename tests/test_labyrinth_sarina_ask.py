@@ -48,6 +48,16 @@ class SarinaAsk(unittest.TestCase):
         r = self.run_it(whisper="echo what time is it", ask=asks, tone="exit 0")  # no hint (nothing unusual, or not enough history)
         self.assertNotIn("Style hint", r.stdout)
 
+    def test_laughter_is_passed_on_and_not_shown_as_words(self):
+        asks = 'echo "$@"'
+        r = self.run_it(whisper="echo '[laughs] okay that one was good'", ask=asks)
+        self.assertIn("(They laughed.) okay that one was good", r.stdout)
+        r = self.run_it(whisper="echo '*chuckles*'", ask=asks)  # only laughter is still something said
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("(They laughed.) Haha.", r.stdout)
+        r = self.run_it(whisper="echo what time is it", ask=asks)
+        self.assertNotIn("laughed", r.stdout)
+
     def test_no_recording(self):
         r = subprocess.run(["bash", SCRIPT, "/nonexistent.wav"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)

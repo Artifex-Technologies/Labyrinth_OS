@@ -38,11 +38,15 @@ fi
 # Names it should expect: without them "Zlothra" comes out as "lothra" and "Sarina" as "serina". The owner can add more in ~/.config/labyrinth/stt-words (one line, commas).
 words=$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/stt-words" 2>/dev/null)
 heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+# laughter comes out as [laughs], (laughing) or *chuckles*: she is told they laughed (what she said just before may become an inside joke)
+laughed=""
+printf '%s' "$heard" | grep -qiE '[[(*] *(laugh|laughs|laughing|laughter|chuckl|giggl)[a-z]* *[])*]' && laughed=1
 # whisper writes things like [BLANK_AUDIO] or (silence) when there is no speech
-clean=$(printf '%s' "$heard" | sed -E 's/\[[^]]*\]//g; s/\([^)]*\)//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
+clean=$(printf '%s' "$heard" | sed -E 's/\[[^]]*\]//g; s/\*[^*]*\*//g; s/\([^)]*\)//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
 # on silence or noise whisper tends to "hear" a stock phrase; those are not questions
 lower=$(printf '%s' "$clean" | tr 'A-Z' 'a-z' | sed -E 's/[[:punct:]]//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
 case $lower in you|thank\ you|thanks|thanks\ for\ watching|bye|okay|ok|uh|um|hmm|"") clean="" ;; esac
+[[ -z $clean && -n $laughed ]] && clean="Haha."
 [[ -n $clean ]] || { echo "I did not catch that. Try again, a little closer to the microphone."; exit 1; }
 
 # How it was said (pace, loudness, pitch, pauses, against the owner's own usual): a private style hint for her, or nothing. Numbers only are kept, the recording is
@@ -62,7 +66,7 @@ vm=${LABYRINTH_VOICE_MODEL:-$(sed -n 's/^VOICE_MODEL=//p' "${XDG_CONFIG_HOME:-$H
 [[ -n $vm ]] && export OPENAI_MODEL=$vm
 # The rules for a spoken answer go in her system prompt once (LABYRINTH_VOICE_RULES), so a conversation's history is the questions and answers, not the same paragraph again and again.
 export LABYRINTH_VOICE_RULES="$(cat /usr/share/labyrinth/sarina-voice-rules.txt 2>/dev/null)"
-prompt="${tone:+(Style hint, never mention it or say how they sound: $tone) }$clean"
+prompt="${laughed:+(They laughed.) }${tone:+(Style hint, never mention it or say how they sound: $tone) }$clean"
 answer=$(labyrinth-ask-sarina --voice ${LABYRINTH_CONVERSATION:+--conversation "$LABYRINTH_CONVERSATION"} --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
 # the answer without a <think> block, markdown emphasis, or empty lines at the ends
 answer=$(printf '%s' "$answer" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | sed -E 's/\*\*//g; s/`//g; s/^#+ *//' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')

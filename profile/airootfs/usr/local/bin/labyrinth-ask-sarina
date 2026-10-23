@@ -9,6 +9,7 @@ else. The model and server come from ~/.config/labyrinth/sarina.env (KEY=value l
 """
 import argparse
 import datetime
+import glob
 import os
 import re
 import subprocess
@@ -195,9 +196,202 @@ def guides(question, vault):
     return "From your guides about this computer (use them when they answer the question; prefer them to general Linux advice):\n\n" + "\n\n".join(parts) + "\n\n"
 
 
+# A spoken question can carry notes from the desktop before the words: "(Style hint ...)" from how it sounded, "(They laughed.)" when the recording
+# had laughter in it. They are for her; the logs keep only what was said.
+NOTE_RX = re.compile(r"^\s*\((?:Style hint|They laughed)[^)]*\)\s*")
+
+
+def spoken(question):
+    while NOTE_RX.match(question):
+        question = NOTE_RX.sub("", question, count=1)
+    return question.strip()
+
+
+# Asking her to change something is about the computer even when it sounds like small talk to the router.
+ACTION_RX = re.compile(r"(?i)\b(sudo|pacman|yay|systemctl|delete|remove|uninstall|install|update|upgrade|rename|kill|restart|reboot|shut ?down|format|wipe|empty the)\b")
+
+
+def about_the_computer(topics, said=""):
+    return any(t != "chat" for t in topics) or bool(ACTION_RX.search(said))
+
+
+def daypart(now):
+    h = now.hour
+    return "late at night" if h < 5 else "morning" if h < 12 else "afternoon" if h < 17 else "evening" if h < 22 else "late evening"
+
+
+SECRET_RX = re.compile(r"(?i)(password|passphrase|pass code|passcode|pin code|api key|token|secret|private key|credit card|\b[A-Za-z0-9+/_-]{32,}\b)")
+
+
+def plain(t, n):
+    return re.sub(r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]", " ", t).strip()[:n]
+
+
+def recall(question, vault, env):
+    """Earlier moments that fit what was just said, from her talk log, jokes and inside jokes, found by meaning (vault-search): at most three lines."""
+    try:
+        r = subprocess.run(["sarina", "vault-search", "--path", vault, question], capture_output=True, text=True, timeout=10, env=env)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    out, note = [], ""
+    for line in r.stdout.splitlines():
+        m = re.match(r"^(\S.*?\.md)\s{2}", line)
+        if m:
+            note = m.group(1)
+            continue
+        if note.startswith(("Talks/", "Jokes/", "Entities/Inside jokes")) and line.strip().startswith("- 20"):
+            t = line.strip()[2:]
+            # the same question asked before is not a memory: its old answer would only be said again
+            m2 = re.search(r"\| they said: (.*?) \| I said:", t)
+            q, said = words_of(question), words_of(m2.group(1)) if m2 else set()
+            if q and len(q & said) >= 0.8 * len(q):
+                continue
+            if t not in out:
+                out.append(t)
+        if len(out) == 3:
+            break
+    return out
+
+
+def tail_lines(path, n, prefix="- 20"):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return [l.strip()[2:] for l in f if l.startswith(prefix)][-n:]
+    except OSError:
+        return []
+
+
+# Words that invite a callback: then her inside jokes are put in front of her (otherwise only the ones that match by meaning, so a small model
+# does not force one into every answer).
+CALLBACK_RX = re.compile(r"(?i)\b(remember|again|my name|funny|joke|laugh|that time|last time|the one about)\b")
+
+# Asked for a joke. The jokes she told before are not put in front of her (a small model retells what it is shown); a repeat is caught after.
+JOKE_ASK_RX = re.compile(r"(?i)\b(tell|another|got|know|have|one more)\b.*\b(joke|pun|riddle)s?\b|make me laugh|something funny|cheer me up")
+
+# A closing offer of help is a help desk, not a friend; it is dropped from a chat answer that has something else in it.
+OFFER_RX = re.compile(r"(?i)^(would you like|do you want|want me to|want help|need help|is there anything|let me know|if you (need|want)|i'?m (always )?here (if|for)|feel free|or is there anything|anything (else|i can))")
+
+
+def drop_offers(text):
+    # a closing aside in brackets is read aloud badly and is where a small model puts its stray jokes
+    text = re.sub(r"(?<=[.!?])\s*\([^()]{8,}\)\s*$", "", text.strip()) or text
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    offer = lambda x: OFFER_RX.search(x) or re.search(r"(?i)\b(anything (else|i can do|specific)|help (ease|you with|with (something|anything)))\b", x)
+    while len(sentences) > 1 and offer(sentences[-1]):
+        sentences.pop()
+    kept = [x for x in sentences if not re.search(r"(?i)\b(help|assist)\b", x) or not offer(x)]
+    return " ".join(kept or sentences)
+
+
+def companion(question, env, now=None):
+    """What a friend would already know when the talk is not about the computer: the time of day, how the owner has sounded lately (from the
+    numbers sarina-tone keeps, never words), things they laughed at together, the jokes she told lately (so she does not repeat them), and earlier
+    moments that fit what was said. Placed before the question; empty when there is nothing."""
+    now = now or datetime.datetime.now()
+    vault = env.get("SARINA_VAULT", "")
+    parts = ["It is %s %s, %s." % (now.strftime("%A"), daypart(now), now.strftime("%H:%M"))]
+    if env.get("LABYRINTH_TONE", "1") != "0":
+        try:
+            r = subprocess.run(["sarina-tone", "--pattern"], capture_output=True, text=True, timeout=5)
+            if r.returncode == 0 and r.stdout.strip():
+                parts.append("How they have sounded lately (from their voice only; do not bring it up unless the moment really fits, and if asked how you know, say so honestly): " + plain(r.stdout, 400))
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    if vault and os.path.isdir(vault):
+        inside = []
+        if CALLBACK_RX.search(spoken(question)):
+            inside = tail_lines(os.path.join(vault, "Entities", "Inside jokes.md"), 8)
+            if inside:
+                parts.append("Your inside jokes with them (they may be asking about one of these):\n" + "\n".join("- " + plain(x, 200) for x in inside))
+        moments = [x for x in recall(spoken(question), vault, env) if x not in inside]
+        if moments:
+            parts.append("Earlier moments and inside jokes that may be about this (from your notes; use one only if it clearly is):\n" + "\n".join("- " + plain(x, 240) for x in moments))
+    return "About this moment (for you, not to recite):\n" + "\n\n".join(parts) + "\n\nWhat they said: "
+
+
+def told_jokes(vault):
+    """What she said in her joke log of this month and the one before."""
+    out = []
+    for f in sorted(glob.glob(os.path.join(vault, "Jokes", "20*.md")))[-2:]:
+        out += [x.split("| I said:", 1)[1].strip() for x in tail_lines(f, 400) if "| I said:" in x]
+    return out
+
+
+def words_of(t):
+    return set(re.findall(r"[a-z']{3,}", t.lower()))
+
+
+def a_repeat(answer, told):
+    """The joke she already told that this answer repeats (most of its words again), or ""."""
+    a = words_of(re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", answer))
+    if len(a) < 4:
+        return ""
+    for t in told:
+        w = words_of(t)
+        if w and len(a & w) >= 0.7 * min(len(a), len(w)):
+            return t
+    return ""
+
+
+def log_talk(question, answer, env):
+    """Talk that is not about the computer is kept in her vault (Talks/YYYY-MM.md), one line each, so she can remember it later the way a friend
+    does and inside jokes can grow from it. Short acknowledgements and anything that looks like a secret are not kept. LABYRINTH_TALK_LOG=0 turns this off, and the joke and laugh notes too."""
+    if env.get("LABYRINTH_TALK_LOG", "1") == "0":
+        return
+    vault = env.get("SARINA_VAULT", "")
+    q = spoken(question)
+    if not vault or not os.path.isdir(vault) or len(q.split()) < 3 or SECRET_RX.search(q) or SECRET_RX.search(answer):
+        return
+    now = datetime.datetime.now()
+    try:
+        d = os.path.join(vault, "Talks")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, now.strftime("%Y-%m") + ".md")
+        new = not os.path.exists(path)
+        with open(path, "a", encoding="utf-8") as f:
+            if new:
+                f.write("# Talks " + now.strftime("%Y-%m") + "\n\nWhat we talked about when it was not about the computer. Each line: when, what the owner said, what I said.\n\n")
+            f.write("- %s | they said: %s | I said: %s\n" % (now.strftime("%Y-%m-%d %H:%M"), plain(q, 240), plain(re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", answer), 240)))
+    except OSError:
+        pass
+
+
+def note_laugh(prev, env):
+    """They laughed at what she said just before: that line goes into Entities/Inside jokes (date, what she said, what it answered), so it can
+    become a callback. Done here, not left to the model. prev is (question, answer) of the turn before."""
+    vault = env.get("SARINA_VAULT", "")
+    if env.get("LABYRINTH_TALK_LOG", "1") == "0" or not prev or not vault or not os.path.isdir(vault):
+        return
+    q, ans = prev
+    ans = re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", ans)
+    if not ans.strip() or SECRET_RX.search(ans) or SECRET_RX.search(q):
+        return
+    path = os.path.join(vault, "Entities", "Inside jokes.md")
+    line = "- %s: they laughed when I said \"%s\" (to: %s)\n" % (datetime.date.today().isoformat(), plain(ans, 200), plain(q, 120))
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("---\ncreated: %s\nsource: sarina\n---\n\n# Inside jokes\n\nThings that made the owner laugh, so she can call back to them. One line each, with the date.\n\n" % datetime.date.today().isoformat())
+        with open(path, encoding="utf-8") as f:
+            if plain(ans, 200) in f.read():
+                return
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(line)
+    except OSError:
+        pass
+
+
+HOWTO_RX = re.compile(r"(?i)\b(how (do|can) i|where (is|do|can)|setting|shortcut|install|sign in|open)\b")
+LAUGH_RX = re.compile(r"\(They laughed\.\)|\b(ha(ha)+|lol|lmao|that'?s (so )?funny|hilarious)\b", re.I)
+
+
 def log_joke(question, answer, env):
     """When she told a joke, keep what it was said in answer to, in her vault (Jokes/YYYY-MM.md), so that she can say later why she said it.
     Done here, not left to the model: a small model forgets or writes the call as text. Plain text only, short, never fails the answer."""
+    question = spoken(question)
+    if env.get("LABYRINTH_TALK_LOG", "1") == "0":
+        return
     if "[joking]" not in answer and not re.search(r"\b(joke|funny|pun|humou?r)\b", question, re.I):
         return
     vault = env.get("SARINA_VAULT", "")
@@ -215,6 +409,36 @@ def log_joke(question, answer, env):
             if new:
                 f.write("# Jokes " + now.strftime("%Y-%m") + "\n\nEach line: when, what the owner said, what I said. I chose a joke because of what was said just before it.\n\n")
             f.write("- %s | they said: %s | I said: %s\n" % (now.strftime("%Y-%m-%d %H:%M"), clean(question, 200), joke))
+    except OSError:
+        pass
+
+
+def new_session(before, state):
+    """The id of the session a first turn of a conversation made (the one new file in the sessions folder), or None."""
+    if not state:
+        return None
+    try:
+        new = [n for n in os.listdir(SESSIONS) if n.endswith(".json") and n not in before]
+    except OSError:
+        return None
+    return new[0][:-5] if len(new) == 1 else None
+
+
+def last_turn(state):
+    """The question and answer of this conversation's turn before (kept next to its session id, in the private runtime folder)."""
+    try:
+        with open(state + ".last", encoding="utf-8") as f:
+            q, _, ans = f.read().partition("\n")
+        return (q, ans) if ans else None
+    except OSError:
+        return None
+
+
+def save_turn(state, question, answer):
+    try:
+        fd = os.open(state + ".last", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(question.replace("\n", " ") + "\n" + answer)
     except OSError:
         pass
 
@@ -274,37 +498,68 @@ def main(argv):
             except OSError:
                 before = set()
     question = " ".join(a.question)
+    chat = False
     if a.voice:
-        topics = route(question, env)
-        if topics is None:
-            topics = keyword_topics(question) + ["guides"]
-        g = guides(question, env.get("SARINA_VAULT", "")) if "guides" in topics else ""
-        if env.get("SARINA_SYSTEM") == "on":
-            question = prefetch(question, topics) + question
-        question = g + question
+        said = spoken(question)
+        topics = route(said, env)
+        if topics is None:  # no embedding model: keywords decide, and a question that sounds like "how do I" may need her guides
+            topics = keyword_topics(said)
+            if topics or HOWTO_RX.search(said):
+                topics.append("guides")
+        chat = not about_the_computer(topics, said)
+        if chat:
+            question = companion(question, env) + question
+        else:
+            g = guides(said, env.get("SARINA_VAULT", "")) if "guides" in topics else ""
+            if env.get("SARINA_SYSTEM") == "on":
+                question = prefetch(said, topics) + question
+            question = g + question
+        if state and LAUGH_RX.search(" ".join(a.question)):
+            note_laugh(last_turn(state), env)
     cmd = command(question, a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
     if a.voice:
         # a spoken answer is cleaned here: a small model sometimes writes a tool call as text, which must not be read out or shown
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
         rc = p.returncode
-        answer = re.sub(r"<(\w+)>.*?</\1>", "", p.stdout, flags=re.S)
+        out = p.stdout
+        if chat and rc == 0 and JOKE_ASK_RX.search(spoken(" ".join(a.question))):
+            # a joke she has told before: asked once more, in the same conversation when there is one (so its history holds the new joke)
+            old = a_repeat(re.sub(r"<(\w+)>.*?</\1>", "", out, flags=re.S), told_jokes(env.get("SARINA_VAULT", "")))
+            if old:
+                again = "You told that one before (%s). Tell a different joke, a new one, about the same thing. Only the joke." % old[:160]
+                sid = resume or new_session(before, state)
+                c2 = command(again, a.cwd, voice=True, resume=sid, rules=env.get("LABYRINTH_VOICE_RULES", "")) if sid else command(again + " The request was: " + spoken(" ".join(a.question)), a.cwd, voice=True, rules=env.get("LABYRINTH_VOICE_RULES", ""))
+                p2 = subprocess.run(c2, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
+                if p2.returncode == 0 and p2.stdout.strip():
+                    out = p2.stdout
+        answer = re.sub(r"<(\w+)>.*?</\1>", "", out, flags=re.S)
+        # a small model sometimes repeats the notes it was given before the question; they are never said aloud
+        answer = re.sub(r"\((?:They laughed|Style hint)[^)]*\)\s*", "", answer)
+        # a delivery tag written in round brackets would be read out as a word; it is meant as the tag
+        answer = re.sub(r"\((joking|unsure|urgent|gentle|serious)\)", r"[\1]", answer, flags=re.I)
         answer = shorten(flatten(answer))
+        if chat:
+            answer = drop_offers(answer)
         # emoji are read out as their names ("printer, grinning face") and the card has no room for them
         answer = re.sub("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]", "", answer)
         answer = re.sub(r"[ \t]+\n", "\n", answer)
         answer = re.sub(r"\n{3,}", "\n\n", answer).strip()
         print(answer)
         log_joke(" ".join(a.question), answer, env)
+        if chat and "[joking]" not in answer:
+            log_talk(" ".join(a.question), answer, env)
+        if state:
+            save_turn(state, spoken(" ".join(a.question)), answer)
     else:
         rc = subprocess.run(cmd, env=env).returncode
     if state and not resume:
-        try:  # the session this first turn made: the later turns resume it
-            new = [n for n in os.listdir(SESSIONS) if n.endswith(".json") and n not in before]
-            if len(new) == 1:
+        sid = new_session(before, state)
+        if sid:  # the session this first turn made: the later turns resume it
+            try:
                 with open(state, "w") as f:
-                    f.write(new[0][:-5])
-        except OSError:
-            pass
+                    f.write(sid)
+            except OSError:
+                pass
     return rc
 
 

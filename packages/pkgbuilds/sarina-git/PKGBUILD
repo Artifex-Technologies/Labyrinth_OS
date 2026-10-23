@@ -10,7 +10,7 @@
 _agent_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Sarina" && pwd)"
 
 pkgname=sarina-git
-pkgver=0.1.0.r71.gaa0f29c
+pkgver=0.1.0.r73.g970f7f1
 pkgrel=1
 pkgdesc='Local-model agent: Go core with an optional Python ML/voice helper (built from the local Sarina checkout)'
 arch=('x86_64')
@@ -37,6 +37,7 @@ build() {
   cd "$srcdir/sarina/go"
   export CGO_ENABLED=0 GOFLAGS="-trimpath -mod=readonly -modcacherw"
   go build -ldflags "-s -w" -o sarina ./cmd/sarina
+  go build -ldflags "-s -w" -o sarina-tone ./cmd/sarina-tone
 
   cd ../python/sarina_helpers
   python -m build --wheel --no-isolation
@@ -46,6 +47,7 @@ package() {
   cd "$srcdir/sarina"
 
   install -Dm755 go/sarina "$pkgdir/usr/bin/sarina"
+  install -Dm755 go/sarina-tone "$pkgdir/usr/bin/sarina-tone"
   ln -s sarina "$pkgdir/usr/bin/sarina-gui"
   ln -s sarina "$pkgdir/usr/bin/sarina-service"
 
