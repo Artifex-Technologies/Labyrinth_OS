@@ -1,0 +1,68 @@
+#!/bin/bash
+# labyrinth-sarina-setting: Sarina's settings, for Yggdrasil's Settings > Sarina page (the controls declared in
+# /usr/share/yggdrasil/integrations/sarina.conf). Each setting answers the way Yggdrasil asks (see its docs/INTEGRATIONS.md):
+#   switches:  NAME status | on | off          (tone, forge, checkup, learn)
+#   choices:   voice list | get | set NAME
+#   buttons:   hear, agents
+set -u
+conf=${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth
+env_file=$conf/sarina.env
+mkdir -p "$conf"
+
+env_get() { sed -n "s/^$1=//p" "$env_file" 2>/dev/null | tail -n1; }
+env_set() { # KEY VALUE (or VALUE empty: remove)
+  touch "$env_file"
+  grep -v "^$1=" "$env_file" >"$env_file.tmp"
+  [[ -n $2 ]] && echo "$1=$2" >>"$env_file.tmp"
+  mv "$env_file.tmp" "$env_file"
+}
+
+daily() { # UNIT status|on|off: a user timer installed from /usr/share/labyrinth once
+  local unit=$1
+  case $2 in
+    status) systemctl --user is-enabled "$unit.timer" >/dev/null 2>&1 && echo on || echo off ;;
+    on)
+      mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+      for f in "$unit.service" "$unit.timer"; do
+        [[ -e ${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/$f ]] || cp "/usr/share/labyrinth/$f" "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/$f" || exit 1
+      done
+      systemctl --user daemon-reload && systemctl --user enable --now "$unit.timer" >/dev/null 2>&1 ;;
+    off) systemctl --user disable --now "$unit.timer" >/dev/null 2>&1 || true ;;
+    *) exit 2 ;;
+  esac
+}
+
+voices_dir=${XDG_DATA_HOME:-$HOME/.local/share}/labyrinth/tts/voices
+case ${1:-} in
+  voice)
+    case ${2:-} in
+      list) for f in "$voices_dir"/*.onnx; do [[ -f $f ]] && basename "$f" .onnx; done | sort ;;
+      get) v=$(head -n1 "$conf/sarina-voice" 2>/dev/null); echo "${v:-en_US-amy-medium}" ;;
+      set)
+        v=${3:-}
+        [[ $v =~ ^[A-Za-z0-9_.-]{1,80}$ && -f $voices_dir/$v.onnx ]] || exit 1
+        echo "$v" >"$conf/sarina-voice"
+        labyrinth-sarina-speak "Hello. I am Sarina, and this is how I sound when I answer you." >/dev/null 2>&1 & ;;
+      *) exit 2 ;;
+    esac ;;
+  hear) labyrinth-sarina-speak "Hello. I am Sarina, and this is how I sound when I answer you." >/dev/null 2>&1 & ;;
+  tone) # "Notice how I sound": on unless switched off (labyrinth-sarina-ask reads the same file)
+    case ${2:-} in
+      status) [[ $(cat "$conf/sarina-tone" 2>/dev/null) == off ]] && echo off || echo on ;;
+      on) rm -f "$conf/sarina-tone" ;;
+      off) echo off >"$conf/sarina-tone" ;;
+      *) exit 2 ;;
+    esac ;;
+  forge)
+    case ${2:-} in
+      status) [[ $(env_get SARINA_FORGE) == on ]] && echo on || echo off ;;
+      on) env_set SARINA_FORGE on ;;
+      off) env_set SARINA_FORGE "" ;;
+      *) exit 2 ;;
+    esac ;;
+  checkup) daily labyrinth-sarina-checkup "${2:-}" ;;
+  learn) daily labyrinth-sarina-reflect "${2:-}" ;;
+  agents) # her agents and approving one need you at a terminal (it shows every file first)
+    exec ghostty -e bash -c 'sarina forge-list; echo; echo "To approve one: sarina forge-approve NAME   To remove one: sarina forge-remove NAME"; exec bash' ;;
+  *) echo "usage: labyrinth-sarina-setting voice|hear|tone|forge|checkup|learn|agents ..." >&2; exit 2 ;;
+esac

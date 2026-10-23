@@ -47,6 +47,8 @@ package() {
   cd "$srcdir/sarina"
 
   install -Dm755 go/sarina "$pkgdir/usr/bin/sarina"
+  # how Sarina plugs into the desktop (Yggdrasil): hold-to-talk, voice, and her page in Settings
+  install -Dm644 "$startdir/sarina.integration.conf" "$pkgdir/usr/share/yggdrasil/integrations/sarina.conf"
   install -Dm755 go/sarina-tone "$pkgdir/usr/bin/sarina-tone"
   ln -s sarina "$pkgdir/usr/bin/sarina-gui"
   ln -s sarina "$pkgdir/usr/bin/sarina-service"

@@ -50,8 +50,10 @@ case $lower in you|thank\ you|thanks|thanks\ for\ watching|bye|okay|ok|uh|um|hmm
 [[ -n $clean ]] || { echo "I did not catch that. Try again, a little closer to the microphone."; exit 1; }
 
 # How it was said (pace, loudness, pitch, pauses, against the owner's own usual): a private style hint for her, or nothing. Numbers only are kept, the recording is
-# deleted by the panel afterwards. Off with Settings > Sound > "Notice how I sound" (LABYRINTH_TONE=0).
+# deleted by the panel afterwards. Off with Settings > Sarina > "Notice how I sound" (or LABYRINTH_TONE=0).
 tone=""
+# off when "Notice how I sound" is switched off in Settings > Sarina (labyrinth-sarina-setting tone)
+[[ $(cat "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina-tone" 2>/dev/null) == off ]] && LABYRINTH_TONE=0
 if [[ ${LABYRINTH_TONE:-1} != 0 ]] && command -v sarina-tone >/dev/null 2>&1; then
   tone=$(sarina-tone "$wav" 2>/dev/null | head -n1)
 fi
@@ -72,7 +74,9 @@ fi
 # The rules for a spoken answer go in her system prompt once (LABYRINTH_VOICE_RULES), so a conversation's history is the questions and answers, not the same paragraph again and again.
 export LABYRINTH_VOICE_RULES="$(cat /usr/share/labyrinth/sarina-voice-rules.txt 2>/dev/null)"
 prompt="${laughed:+(They laughed.) }${tone:+(Style hint, never mention it or say how they sound: $tone) }$clean"
-answer=$(labyrinth-ask-sarina --voice ${LABYRINTH_CONVERSATION:+--conversation "$LABYRINTH_CONVERSATION"} --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
+# the desktop names a conversation's turns YGGDRASIL_CONVERSATION (older panels: LABYRINTH_CONVERSATION)
+conversation=${YGGDRASIL_CONVERSATION:-${LABYRINTH_CONVERSATION:-}}
+answer=$(labyrinth-ask-sarina --voice ${conversation:+--conversation "$conversation"} --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
 # the answer without a <think> block, markdown emphasis, or empty lines at the ends
 answer=$(printf '%s' "$answer" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | sed -E 's/\*\*//g; s/`//g; s/^#+ *//' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
 [[ -n $answer ]] || { echo "Sarina had no answer."; exit 1; }

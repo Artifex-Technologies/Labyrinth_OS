@@ -16,6 +16,6 @@ case "${1:-}" in
   notifications) call ShowFylgja u 4 ;;
   fylgja) call ShowFylgja u "${2:-0}" ;;
   clipboard) call ShowClipboard ;;
-  ask) call AskSarina ;;
+  ask) call Ask ;;
   *) sed -n '2,12p' "$0" >&2; exit 2 ;;
 esac

@@ -6,7 +6,7 @@ set -u
 
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}
 
-WALLPAPER=${LABYRINTH_WALLPAPER:-/usr/share/labyrinth/wallpapers/labyrinth-purple.png}
+WALLPAPER=${LABYRINTH_WALLPAPER:-/usr/share/wallpapers/labyrinth/labyrinth-purple.png}
 
 apply() {
   pkill -x swaybg 2>/dev/null

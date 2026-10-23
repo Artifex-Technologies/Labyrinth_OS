@@ -11,7 +11,7 @@ import struct
 import sys
 import zlib
 
-out = sys.argv[1] if len(sys.argv) > 1 else "profile/airootfs/usr/share/labyrinth/wallpapers/labyrinth-purple.png"
+out = sys.argv[1] if len(sys.argv) > 1 else "profile/airootfs/usr/share/wallpapers/labyrinth/labyrinth-purple.png"
 w = int(sys.argv[2]) if len(sys.argv) > 2 else 2560
 h = int(sys.argv[3]) if len(sys.argv) > 3 else 1080
 
