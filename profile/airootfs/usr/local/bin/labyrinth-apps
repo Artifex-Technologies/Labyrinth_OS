@@ -68,9 +68,14 @@ def resolve(ids, presets, comps):
     return chosen
 
 
+def gui_sudo():
+    # AGORA_SUDO: another program that gains administrator rights (Agora, the app store, gives its password-box one: no terminal).
+    # LABYRINTH_SUDO is the name older versions of Agora used.
+    return os.environ.get("AGORA_SUDO") or os.environ.get("LABYRINTH_SUDO")
+
+
 def sudo(cmd):
-    # LABYRINTH_SUDO: another program that gains administrator rights (Agora (the app store) uses its password-box one, no terminal)
-    return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else [os.environ.get("LABYRINTH_SUDO") or "sudo"] + cmd
+    return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else [gui_sudo() or "sudo"] + cmd
 
 
 def plan_install(chosen, comps, installed):
@@ -91,9 +96,9 @@ def plan_install(chosen, comps, installed):
     if aur:
         # yay shows each AUR package's build file and asks before building; it asks for the password itself when it installs
         cmd = ["yay", "-S", "--needed"]
-        if os.environ.get("LABYRINTH_SUDO"):
+        if gui_sudo():
             # from Agora (the app store) (no terminal, Labyrinth's reviewed catalog): no questions, and the password box instead of sudo
-            cmd += ["--noconfirm", "--sudo", os.environ["LABYRINTH_SUDO"]]
+            cmd += ["--noconfirm", "--sudo", gui_sudo()]
         steps.append((f"build and install {len(aur)} package(s) from the AUR ({', '.join(aur)})", cmd + aur, None))
     for i in chosen:
         pb = comps[i].get("pkgbuild")
