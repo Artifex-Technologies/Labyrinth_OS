@@ -4,7 +4,7 @@
 # this one (Artifex/Heimdall), the same way sarina-git is built from Sarina. It builds from the commit that
 # checkout is on (committed work only). Layout needed: <dir>/Heimdall and
 # <dir>/Labyrinth_OS/packages/pkgbuilds/heimdall-git/PKGBUILD. The packaging files come from Heimdall's own
-# packaging/arch directory; the service is installed but not enabled.
+# packaging/ directory (packaging/install.sh); on a fresh install the package switches on Heimdall and its timers itself.
 
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
 
@@ -15,11 +15,11 @@ pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt inje
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
-depends=('glibc' 'curl' 'gzip' 'python' 'iproute2')
+depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'networkmanager' 'dnsmasq' 'nftables')
 makedepends=('go' 'git')
 provides=('heimdall')
 conflicts=('heimdall')
-backup=()
+backup=('etc/heimdall/dns-allow.txt' 'etc/NetworkManager/dnsmasq.d/heimdall-blocklist.conf')
 options=('!debug')
 source=("heimdall::git+file://${_src}")
 sha256sums=('SKIP')
@@ -42,19 +42,6 @@ check() {
 
 package() {
   cd "$srcdir/heimdall"
-  install -Dm755 heimdalld "$pkgdir/usr/bin/heimdalld"
-  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
-  install -Dm644 packaging/arch/heimdall.service "$pkgdir/usr/lib/systemd/system/heimdall.service"
-  install -Dm644 packaging/arch/heimdall.sysusers "$pkgdir/usr/lib/sysusers.d/heimdall.conf"
-  install -Dm644 packaging/arch/config.json.example "$pkgdir/etc/heimdall/config.json.example"
-  install -Dm644 packaging/arch/limbo-integration.conf.example "$pkgdir/etc/heimdall/limbo-integration.conf.example"
-  install -Dm755 packaging/arch/heimdall-intel-update "$pkgdir/usr/bin/heimdall-intel-update"
-  install -Dm644 packaging/arch/heimdall-intel-update.service "$pkgdir/usr/lib/systemd/system/heimdall-intel-update.service"
-  install -Dm644 packaging/arch/heimdall-intel-update.timer "$pkgdir/usr/lib/systemd/system/heimdall-intel-update.timer"
-  install -Dm755 packaging/arch/heimdall-wifi-check "$pkgdir/usr/bin/heimdall-wifi-check"
-  install -Dm644 packaging/arch/heimdall-wifi-check@.service "$pkgdir/usr/lib/systemd/system/heimdall-wifi-check@.service"
-  install -Dm755 packaging/arch/90-heimdall-wifi "$pkgdir/usr/lib/NetworkManager/dispatcher.d/90-heimdall-wifi"
-  # Labyrinth turns the firewall watch on: read-only journal access for the heimdall user
-  install -Dm644 packaging/arch/heimdall-firewall.conf.example "$pkgdir/usr/lib/systemd/system/heimdall.service.d/firewall.conf"
+  # the file list lives in Heimdall itself (one place for every system that packages it)
+  ./packaging/install.sh "$pkgdir"
 }

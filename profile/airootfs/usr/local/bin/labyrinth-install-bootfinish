@@ -64,14 +64,10 @@ if [[ -e /usr/lib/systemd/user/labyrinth-appusage.service ]]; then
   systemctl --global enable labyrinth-appusage.service >/dev/null 2>&1 && say "enabled app usage counting" || warn "could not enable app usage counting"
 fi
 
-# 2a''''. DNS block list of malware, phishing and scam domains (NetworkManager's DNS cache carries it; updated daily)
-if [[ -e /usr/lib/systemd/system/labyrinth-dns-blocklist.timer ]]; then
-  systemctl enable labyrinth-dns-blocklist.timer >/dev/null 2>&1 && say "enabled the DNS block list (malware and phishing domains)" || warn "could not enable the DNS block list"
-fi
-
-# Heimdall's Wi-Fi safety check shows its verdict as a notification
-if [[ -e /usr/lib/systemd/user/labyrinth-wifi-notify.path ]]; then
-  systemctl --global enable labyrinth-wifi-notify.path >/dev/null 2>&1 && say "enabled Wi-Fi safety notifications" || warn "could not enable Wi-Fi safety notifications"
+# 2a''''. Heimdall's own defaults: the service, its daily updates (threat lists, security tracker, DNS block list) and the Wi-Fi
+# notifications. Heimdall's package knows its own units; this only asks it (the package does the same on a fresh install).
+if command -v heimdall-enable-defaults >/dev/null 2>&1; then
+  heimdall-enable-defaults && say "switched on Heimdall's defaults (DNS block list, threat lists, Wi-Fi checks)" || warn "could not switch on Heimdall's defaults"
 fi
 
 # 2a'''. Malware scan of new downloads (user timer) and ClamAV's signature updates.
