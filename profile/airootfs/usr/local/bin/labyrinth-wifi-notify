@@ -7,10 +7,39 @@ import os
 import subprocess
 
 PUB = "/run/heimdall-wifi/last.json"
+GUARD = "/run/labyrinth-wifi-guard/last.json"
 SEEN = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "labyrinth", "wifi-notified.json")
 
 
+def guard(seen):
+    """The Wi-Fi guard's events: the VPN came on, or the Wi-Fi was dropped because the VPN could not protect it."""
+    try:
+        with open(GUARD) as f:
+            g = json.load(f)
+    except (OSError, ValueError):
+        return
+    if seen.get("guard") == g.get("time"):
+        return
+    seen["guard"] = g.get("time")
+    ssid = "".join(c for c in str(g.get("ssid", "")) if c.isprintable())[:64] or "Wi-Fi"
+    msg = str(g.get("message", ""))[:300]
+    ev = g.get("event")
+    if ev == "dropped":
+        subprocess.run(["notify-send", "-a", "Heimdall", "-u", "critical", "-i", "network-wireless-disconnected", "Disconnected from " + ssid, msg], timeout=10)
+    elif ev in ("vpn-up", "no-vpn", "router-changed"):
+        subprocess.run(["notify-send", "-a", "Heimdall", "-u", "normal", "-i", "network-vpn", ssid, msg], timeout=10)
+
+
 def main():
+    try:
+        with open(SEEN) as f:
+            seen = json.load(f)
+    except (OSError, ValueError):
+        seen = {}
+    guard(seen)
+    os.makedirs(os.path.dirname(SEEN), exist_ok=True)
+    with open(SEEN, "w") as f:
+        json.dump(seen, f)
     try:
         with open(PUB) as f:
             r = json.load(f)
