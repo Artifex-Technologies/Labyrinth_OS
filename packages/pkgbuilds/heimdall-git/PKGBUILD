@@ -9,13 +9,13 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
 
 pkgname=heimdall-git
-pkgver=0.1.0.r19.g44b67da
+pkgver=0.1.0.r21.gede26b6
 pkgrel=1
 pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt injection, leaked credentials and permission escalation (built from the local Heimdall checkout)'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
-depends=('glibc' 'curl' 'gzip')
+depends=('glibc' 'curl' 'gzip' 'python' 'iproute2')
 makedepends=('go' 'git')
 provides=('heimdall')
 conflicts=('heimdall')
@@ -52,6 +52,9 @@ package() {
   install -Dm755 packaging/arch/heimdall-intel-update "$pkgdir/usr/bin/heimdall-intel-update"
   install -Dm644 packaging/arch/heimdall-intel-update.service "$pkgdir/usr/lib/systemd/system/heimdall-intel-update.service"
   install -Dm644 packaging/arch/heimdall-intel-update.timer "$pkgdir/usr/lib/systemd/system/heimdall-intel-update.timer"
+  install -Dm755 packaging/arch/heimdall-wifi-check "$pkgdir/usr/bin/heimdall-wifi-check"
+  install -Dm644 packaging/arch/heimdall-wifi-check@.service "$pkgdir/usr/lib/systemd/system/heimdall-wifi-check@.service"
+  install -Dm755 packaging/arch/90-heimdall-wifi "$pkgdir/usr/lib/NetworkManager/dispatcher.d/90-heimdall-wifi"
   # Labyrinth turns the firewall watch on: read-only journal access for the heimdall user
   install -Dm644 packaging/arch/heimdall-firewall.conf.example "$pkgdir/usr/lib/systemd/system/heimdall.service.d/firewall.conf"
 }

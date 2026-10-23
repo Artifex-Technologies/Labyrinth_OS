@@ -69,6 +69,11 @@ if [[ -e /usr/lib/systemd/system/labyrinth-dns-blocklist.timer ]]; then
   systemctl enable labyrinth-dns-blocklist.timer >/dev/null 2>&1 && say "enabled the DNS block list (malware and phishing domains)" || warn "could not enable the DNS block list"
 fi
 
+# Heimdall's Wi-Fi safety check shows its verdict as a notification
+if [[ -e /usr/lib/systemd/user/labyrinth-wifi-notify.path ]]; then
+  systemctl --global enable labyrinth-wifi-notify.path >/dev/null 2>&1 && say "enabled Wi-Fi safety notifications" || warn "could not enable Wi-Fi safety notifications"
+fi
+
 # 2a'''. Malware scan of new downloads (user timer) and ClamAV's signature updates.
 if [[ -e /usr/lib/systemd/user/labyrinth-scan.timer ]]; then
   systemctl --global enable labyrinth-scan.timer labyrinth-scan-watch.service >/dev/null 2>&1 && say "enabled the malware scan (watcher and timer)" || warn "could not enable the downloads malware scan"
