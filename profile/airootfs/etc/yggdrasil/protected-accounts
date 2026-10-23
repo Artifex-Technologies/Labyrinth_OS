@@ -1,0 +1,7 @@
+# Accounts Labyrinth keeps for itself: Settings > Users does not create, change or remove them (Yggdrasil's account helper reads
+# this file). One name per line; a name ending in * covers every name that starts so.
+claude-agent*
+sarina
+limbo
+heimdall
+ollama

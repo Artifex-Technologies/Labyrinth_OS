@@ -154,7 +154,7 @@ def checks():
         add(WARN, "nobody serves notifications", "restart the panel")
 
     # services
-    for unit in ("ollama", "limbo", "heimdall", "sarina-service", "labyrinth-powerlimit"):
+    for unit in ("ollama", "limbo", "heimdall", "sarina-service", "yggdrasil-powerlimit"):
         rc, st = run(["systemctl", "is-active", unit + ".service"])
         if st.strip() == "active":
             add(OK, unit)
