@@ -63,7 +63,12 @@ printf 'Heard: "%s"\n' "$clean"
 # A smaller model answers voice questions (faster): VOICE_MODEL in ~/.config/labyrinth/sarina.env or $LABYRINTH_VOICE_MODEL;
 # without one, her usual model is used.
 vm=${LABYRINTH_VOICE_MODEL:-$(sed -n 's/^VOICE_MODEL=//p' "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env" 2>/dev/null | head -n1)}
-[[ -n $vm ]] && export OPENAI_MODEL=$vm
+if [[ -n $vm ]]; then
+  # if the voice model is missing or failing, her usual model answers instead of nothing
+  main=$(sed -n 's/^OPENAI_MODEL=//p' "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env" 2>/dev/null | head -n1)
+  [[ -n $main && $main != "$vm" ]] && export SARINA_FALLBACK_MODELS=${SARINA_FALLBACK_MODELS:-$main}
+  export OPENAI_MODEL=$vm
+fi
 # The rules for a spoken answer go in her system prompt once (LABYRINTH_VOICE_RULES), so a conversation's history is the questions and answers, not the same paragraph again and again.
 export LABYRINTH_VOICE_RULES="$(cat /usr/share/labyrinth/sarina-voice-rules.txt 2>/dev/null)"
 prompt="${laughed:+(They laughed.) }${tone:+(Style hint, never mention it or say how they sound: $tone) }$clean"
