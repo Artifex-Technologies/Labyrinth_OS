@@ -644,6 +644,29 @@
    "tags": []
   },
   {
+   "id": "tor",
+   "name": "Tor",
+   "subtitle": "Anonymous network service",
+   "description": "The Tor network service, for apps that can send their traffic through it; torsocks runs a terminal program through it. Installing it does not start it: run sudo systemctl enable --now tor when you want it.",
+   "category": "Work",
+   "subcategory": "Passwords & Privacy",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "tor",
+     "torsocks"
+    ]
+   },
+   "icon": "security-high",
+   "reviewed": true,
+   "tags": [
+    "tor",
+    "anonymous",
+    "privacy",
+    "torsocks"
+   ]
+  },
+  {
    "id": "joplin",
    "name": "Joplin",
    "subtitle": "Notes and to-dos",
@@ -1144,19 +1167,24 @@
   {
    "id": "tor-browser",
    "name": "Tor Browser",
-   "subtitle": "Private browsing",
-   "description": "Browse through the Tor network.",
+   "subtitle": "Private web browser",
+   "description": "Browse through the Tor network, so the sites you visit do not see where you are and your network does not see which sites you visit. The launcher downloads Tor Browser from the Tor Project and checks its signature before it first runs, and keeps it up to date.",
    "category": "Internet",
    "subcategory": "Browsers",
    "source": {
-    "type": "aur",
+    "type": "pacman",
     "packages": [
-     "tor-browser-bin"
+     "torbrowser-launcher"
     ]
    },
-   "icon": "tor-browser",
-   "reviewed": false,
-   "tags": [],
+   "icon": "org.torproject.torbrowser-launcher",
+   "reviewed": true,
+   "tags": [
+    "tor",
+    "anonymous",
+    "privacy"
+   ],
+   "launch": "org.torproject.torbrowser-launcher",
    "flathub": "org.torproject.torbrowser-launcher"
   },
   {
@@ -1212,6 +1240,28 @@
    "reviewed": true,
    "tags": [],
    "flathub": "org.qbittorrent.qBittorrent"
+  },
+  {
+   "id": "deluge",
+   "name": "Deluge",
+   "subtitle": "Torrent client",
+   "description": "A lightweight BitTorrent client with plugins, encryption and per-torrent speed limits.",
+   "category": "Internet",
+   "subcategory": "Downloads",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "deluge-gtk"
+    ]
+   },
+   "icon": "deluge",
+   "reviewed": true,
+   "tags": [
+    "torrent",
+    "bittorrent"
+   ],
+   "launch": "deluge",
+   "flathub": "org.deluge_torrent.deluge"
   },
   {
    "id": "btop",
