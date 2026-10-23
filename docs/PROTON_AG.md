@@ -18,9 +18,9 @@ The explorer does not speak any cloud protocol. A provider is a **folder kept
 populated by another process**, exactly how OneDrive looks in Windows Explorer.
 `places::proton_drive()` looks for `~/ProtonDrive` (our mount) then
 `~/Proton Drive` (the official Windows client's name), or whatever
-`LABYRINTH_PROTON_DRIVE` points to. It shows under **Cloud** in the sidebar, or
-greyed out as "not mounted" with the expected path. The mount unit is
-`/usr/share/labyrinth/proton-drive.service` (untested).
+`MINOS_PROTON_DRIVE` points to. It shows under **Cloud** in the sidebar, or
+greyed out as "not mounted" with the expected path. The mount unit ships with Minos
+(Yggdrasil) as the user unit `/usr/lib/systemd/user/proton-drive.service`.
 
 ### The official `proton-drive` CLI
 
@@ -92,8 +92,8 @@ from Obsidian's constantly-rewritten workspace file.
 In Minos, **Cloud → Proton Drive (click to connect)** opens a sign-in form (email, password,
 2FA code if you use one, mailbox password only if you set a separate one). It creates the rclone
 remote `proton` (type `protondrive`; passwords are scrambled with `rclone obscure`, read from
-stdin), copies `/usr/share/labyrinth/proton-drive.service` to `~/.config/systemd/user/`, and runs
-`systemctl --user enable --now proton-drive`. Once signed in, a click on a not-mounted entry just
+stdin) and runs `systemctl --user enable --now proton-drive` (the user unit that comes with
+Minos; a copy in `~/.config/systemd/user/` wins). Once signed in, a click on a not-mounted entry just
 starts the mount. A wrong sign-in deletes the half-made remote. The 2FA code only has to be fresh
 for this one sign-in. **Not yet tested against a real Proton account.**
 

@@ -72,7 +72,7 @@
         "rclone",
         "fuse3"
       ],
-      "notes": "One-time: run `rclone config`, create a remote named proton of type protondrive. Mount service: /usr/share/labyrinth/proton-drive.service (copy to ~/.config/systemd/user/)."
+      "notes": "One-time: run `rclone config`, create a remote named proton of type protondrive. Minos's Cloud > Proton Drive signs in and starts the mount (the proton-drive user unit comes with Minos)."
     },
     {
       "id": "proton-pass",
