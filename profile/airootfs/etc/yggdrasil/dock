@@ -1,0 +1,8 @@
+# Labyrinth's default dock: pinned apps, in order (desktop file ids). Yggdrasil reads it as the operating system's default; a user copy in ~/.config/yggdrasil/dock wins.
+minos
+vivaldi-stable
+com.mitchellh.ghostty
+obsidian
+spotify-launcher
+steam
+labyrinth-settings

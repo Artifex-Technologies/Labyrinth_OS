@@ -1,8 +1,0 @@
-# The dock's pinned apps, in order: desktop file ids. A user copy in ~/.config/labyrinth/dock wins.
-minos
-vivaldi-stable
-com.mitchellh.ghostty
-obsidian
-spotify-launcher
-steam
-labyrinth-settings
