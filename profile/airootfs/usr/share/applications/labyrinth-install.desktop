@@ -8,6 +8,11 @@ Exec=labyrinth-install
 Icon=labyrinthos
 Terminal=false
 StartupNotify=true
-StartupWMClass=io.calamares.calamares
-Categories=Qt;System;
+StartupWMClass=yggdrasil-installer
+Categories=System;
+Actions=calamares;
 X-AppStream-Ignore=true
+
+[Desktop Action calamares]
+Name=Install with the old installer (Calamares)
+Exec=labyrinth-install --calamares

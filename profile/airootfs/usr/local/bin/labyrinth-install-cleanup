@@ -44,6 +44,8 @@ live_only=(
   /etc/tmpfiles.d/live-home.conf
   /etc/xdg/kscreenlockerrc
   /etc/xdg/powerdevilrc
+  /usr/share/applications/labyrinth-install.desktop
+  /usr/share/yggdrasil/integrations/labyrinth-installer.conf
 )
 for f in "${live_only[@]}"; do rm -f -- "$R$f"; done
 rm -rf -- "$R/home/live"

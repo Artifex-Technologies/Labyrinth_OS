@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
-# Start the Calamares installer from the desktop (launcher, dock). Live medium only.
+# Start the installer from the desktop (launcher, dock). Live medium only.
 #
+# Yggdrasil's installer (yggdrasil-installer) is the installer: it runs as the live user and asks pkexec for root only for
+# the install itself (labyrinth-install-system, named in the "installer" integration file). `labyrinth-install --calamares`
+# starts the old Calamares installer instead, kept on the medium as a fallback until the new one has proven itself.
+set -u
+if [[ ${1:-} != --calamares ]] && command -v yggdrasil-installer >/dev/null; then
+  exec yggdrasil-installer
+fi
+[[ ${1:-} == --calamares ]] && shift
+#
+# Calamares:
 # Calamares needs root, and it must still reach the Wayland session. The stock launcher entry
 # runs `pkexec calamares`, which drops the environment, so the installer started with no
 # display and exited without a word (found on the first real boot of the ISO). sudo with an
 # explicit environment keeps the session; the live account has passwordless sudo
 # (/etc/sudoers.d/00-live-nopasswd, removed by labyrinth-install-cleanup on the installed system).
-set -u
 LOG=${XDG_RUNTIME_DIR:-/tmp}/labyrinth-install.log
 
 if [[ $EUID -eq 0 ]]; then

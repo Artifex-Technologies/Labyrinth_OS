@@ -139,6 +139,7 @@ yggdrasil-idle
 yggdrasil-keyring-sync
 yggdrasil-session
 yggdrasil-xmove
+yggdrasil-installer
 # the boot screen (Settings > Appearance > Boot screen; theme labyrinth-rain)
 plymouth
 yggdrasil-lock

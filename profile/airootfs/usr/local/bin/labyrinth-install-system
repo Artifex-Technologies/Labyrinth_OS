@@ -1,0 +1,461 @@
+#!/usr/bin/python3 -I
+"""labyrinth-install-system: installs Labyrinth from the live medium onto a disk. Yggdrasil's installer runs it as root (pkexec) and
+shows what it says; it can also be run by hand. Nothing is asked here: the choices come as one JSON object on standard input,
+so passwords never appear on a command line.
+
+    {"disk": "/dev/nvme0n1", "mode": "erase",
+     "encrypt": true, "encrypt_password": "...",          (LUKS2; one password at start-up)
+     "user": {"name": "Full Name", "login": "me", "password": "..."},
+     "hostname": "labyrinth", "timezone": "America/Denver", "locale": "en_US.UTF-8", "keymap": "us"}
+
+    labyrinth-install-system --check < plan.json      only check the plan and the computer, change nothing
+    labyrinth-install-system --disks                  the disks it could install onto (JSON)
+
+What it prints, one line each (the installer reads these):
+    STEP n N text        step n of N has started
+    INFO text            something worth knowing
+    WARN text            something went wrong but the install goes on
+    ERROR text           the install stopped (nothing after this)
+    DONE                 finished: the computer can restart into the new system
+
+The steps: check, partition (a 1 GiB EFI partition and the rest for the system), encrypt (optional, LUKS2), format (btrfs with
+the subvolumes @, @home, @cache, @log), copy the system from the medium, set it up inside (Labyrinth's labyrinth-install-cleanup,
+language, keyboard, time zone, name, the account; root stays locked and the account administers with sudo), the start-up image,
+GRUB with Labyrinth's menu, and Labyrinth's labyrinth-install-bootfinish. Only mode "erase" (the whole disk) is offered so far.
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+SFS = os.environ.get("LABYRINTH_INSTALL_SFS", "/run/archiso/bootmnt/labyrinth/x86_64/airootfs.sfs")
+TARGET = os.environ.get("LABYRINTH_INSTALL_TARGET", "/mnt/labyrinth-install")
+MAPPER = "labyrinth-root"
+MIN_BYTES = 30 * 1024**3
+SUBVOLUMES = [("@", ""), ("@home", "home"), ("@cache", "var/cache"), ("@log", "var/log")]
+GROUPS = ["users", "lp", "video", "network", "storage", "wheel", "audio", "openrazer"]
+# What GRUB is set up with (as the Calamares configuration did): a short menu, the last choice remembered, and the kernel
+# options NVIDIA's Wayland support needs.
+GRUB_DEFAULTS = {
+    "GRUB_TIMEOUT": "2",
+    # the first entry, not the last one chosen: remembering means GRUB writing its grubenv file, which it cannot do on btrfs
+    # ("sparse file not allowed", then a "press any key" stop at every start)
+    "GRUB_DEFAULT": "0",
+    "GRUB_SAVEDEFAULT": "false",
+    "GRUB_DISABLE_SUBMENU": "true",
+    "GRUB_TERMINAL_OUTPUT": "console",
+    "GRUB_DISABLE_RECOVERY": "true",
+    "GRUB_DISTRIBUTOR": "Labyrinth",
+}
+KERNEL_OPTIONS = ["quiet", "splash", "nvidia_drm.modeset=1", "nvidia_drm.fbdev=1"]
+STEPS = ["Checking the computer", "Preparing the disk", "Encrypting", "Formatting", "Copying the system", "Setting it up",
+         "Making the start-up image", "Installing the boot menu", "Finishing"]
+
+
+def say(kind, text=""):
+    print(f"{kind} {text}".rstrip(), flush=True)
+
+
+class Stop(Exception):
+    pass
+
+
+def run(argv, stdin=None, check=True, capture=False):
+    """Runs a program; on failure stops the install with its error output."""
+    r = subprocess.run(argv, input=stdin, text=True, capture_output=True)
+    if check and r.returncode != 0:
+        raise Stop(f"{' '.join(argv[:3])} failed: {(r.stderr or r.stdout).strip()[-400:]}")
+    return r.stdout if capture else r
+
+
+def inside(argv, stdin=None, check=True):
+    """Runs a program inside the new system (chroot)."""
+    return run(["chroot", TARGET] + argv, stdin=stdin, check=check)
+
+
+# ---------------------------------------------------------------- the plan
+
+LOGIN = re.compile(r"^[a-z_][a-z0-9_-]{0,31}$")
+HOSTNAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+LOCALE = re.compile(r"^[A-Za-z_]+(\.[A-Za-z0-9-]+)?(@[a-z]+)?$")
+KEYMAP = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def check_plan(p):
+    """The plan, checked: an error message, or None when it can be installed."""
+    if p.get("mode") != "erase":
+        return "only installing onto a whole disk is possible so far"
+    disk = p.get("disk", "")
+    if not re.fullmatch(r"/dev/[A-Za-z0-9/_-]+", disk):
+        return "no disk chosen"
+    u = p.get("user") or {}
+    if not LOGIN.match(u.get("login", "")):
+        return "the account name must start with a small letter and use only small letters, digits, - and _"
+    if u.get("login") in ("root", "live", "greeter", "heimdall", "sarina"):
+        return "that account name is taken by the system"
+    if len(u.get("password", "")) < 1:
+        return "the account needs a password"
+    if ":" in u.get("name", "") or "\n" in u.get("name", ""):
+        return "the full name may not contain : or a line break"
+    if not HOSTNAME.match(p.get("hostname", "")):
+        return "the computer's name may use letters, digits and - (not at the start or end)"
+    if p.get("encrypt") and len(p.get("encrypt_password", "")) < 8:
+        return "the encryption password needs at least 8 characters"
+    tz = p.get("timezone", "")
+    if not tz or ".." in tz or not os.path.isfile(os.path.join("/usr/share/zoneinfo", tz)):
+        return "unknown time zone"
+    if not LOCALE.match(p.get("locale", "")):
+        return "unknown language setting"
+    if not KEYMAP.match(p.get("keymap", "")):
+        return "unknown keyboard layout"
+    return None
+
+
+# ---------------------------------------------------------------- disks
+
+def disks():
+    """Whole disks it could install onto: not the live medium, not read-only, not a loop or zram device."""
+    out = json.loads(run(["lsblk", "-J", "-b", "-d", "-o", "NAME,PATH,SIZE,MODEL,TRAN,RO,TYPE,RM"], capture=True))
+    live = live_disk()
+    found = []
+    for d in out.get("blockdevices", []):
+        if d.get("type") != "disk" or d.get("ro") or d["path"] == live or d["name"].startswith(("loop", "zram", "sr")):
+            continue
+        found.append({"path": d["path"], "size": int(d.get("size") or 0), "model": (d.get("model") or "").strip(),
+                      "removable": bool(d.get("rm")), "transport": d.get("tran") or "", "big_enough": int(d.get("size") or 0) >= MIN_BYTES})
+    return found
+
+
+def live_disk():
+    """The disk the live system runs from (never offered)."""
+    src = run(["findmnt", "-no", "SOURCE", "/run/archiso/bootmnt"], check=False, capture=True).strip()
+    if not src:
+        return None
+    parent = run(["lsblk", "-no", "PKNAME", src], check=False, capture=True).strip()
+    return f"/dev/{parent}" if parent else src
+
+
+def part(disk, n):
+    """Partition n of a disk: /dev/sda2, /dev/nvme0n1p2, /dev/vda2."""
+    return f"{disk}p{n}" if disk[-1].isdigit() else f"{disk}{n}"
+
+
+def settle():
+    run(["udevadm", "settle"], check=False)
+    time.sleep(1)
+
+
+# ---------------------------------------------------------------- the steps
+
+def step(n, total):
+    say("STEP", f"{n} {total} {STEPS[n - 1]}")
+
+
+def preflight(p):
+    if not os.path.isdir("/sys/firmware/efi"):
+        raise Stop("this computer started without UEFI; Labyrinth installs on UEFI computers only (turn off Legacy/CSM)")
+    if not os.path.isfile(SFS):
+        raise Stop(f"the system to copy was not found ({SFS}); start the installer from the Labyrinth USB")
+    disk = p["disk"]
+    choice = next((d for d in disks() if d["path"] == disk), None)
+    if not choice:
+        raise Stop(f"{disk} cannot be installed onto (not a disk, read-only, or the Labyrinth USB itself)")
+    if not choice["big_enough"]:
+        raise Stop(f"{disk} is too small: Labyrinth needs at least {MIN_BYTES // 1024**3} GB")
+    mounted = run(["lsblk", "-nr", "-o", "MOUNTPOINTS", disk], capture=True).split()
+    if any(m for m in mounted if m):
+        raise Stop(f"something on {disk} is in use (mounted); close it first")
+
+
+def partition(disk):
+    run(["wipefs", "-a", disk])
+    # GPT: 1 GiB EFI system partition, the rest for Labyrinth
+    layout = "label: gpt\nsize=1GiB, type=uefi, name=EFI\ntype=linux, name=Labyrinth\n"
+    run(["sfdisk", "--wipe", "always", "--wipe-partitions", "always", disk], stdin=layout)
+    settle()
+    return part(disk, 1), part(disk, 2)
+
+
+def encrypt(dev, password):
+    # LUKS2 with PBKDF2: GRUB (which reads /boot from inside) cannot open Argon2 keys
+    run(["cryptsetup", "luksFormat", "--batch-mode", "--type", "luks2", "--pbkdf", "pbkdf2", "--label", "Labyrinth-crypt",
+         "--key-file=-", dev], stdin=password)
+    run(["cryptsetup", "open", "--key-file=-", dev, MAPPER], stdin=password)
+    return f"/dev/mapper/{MAPPER}"
+
+
+def format_and_mount(esp, root):
+    run(["mkfs.vfat", "-F", "32", "-n", "EFI", esp])
+    run(["mkfs.btrfs", "-f", "-L", "Labyrinth", root])
+    os.makedirs(TARGET, exist_ok=True)
+    run(["mount", root, TARGET])
+    for sub, _ in SUBVOLUMES:
+        run(["btrfs", "subvolume", "create", f"{TARGET}/{sub}"])
+    run(["umount", TARGET])
+    opts = "compress=zstd:1,noatime"
+    for sub, where in SUBVOLUMES:
+        dst = os.path.join(TARGET, where)
+        os.makedirs(dst, exist_ok=True)
+        run(["mount", "-o", f"{opts},subvol={sub}", root, dst])
+    os.makedirs(f"{TARGET}/boot/efi", exist_ok=True)
+    run(["mount", esp, f"{TARGET}/boot/efi"])
+
+
+def copy_system():
+    """unsquashfs, with its percentage turned into INFO lines every 10%."""
+    proc = subprocess.Popen(["unsquashfs", "-f", "-percentage", "-d", TARGET, SFS], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    last = -10
+    for line in proc.stdout:
+        line = line.strip()
+        if line.isdigit() and int(line) >= last + 10:
+            last = int(line)
+            say("INFO", f"copied {last}%")
+    err = proc.stderr.read()
+    if proc.wait() != 0:
+        raise Stop(f"copying the system failed: {err.strip()[-400:]}")
+
+
+def bind_mounts():
+    # a fresh /run (the live system's would keep the new one busy at the end), with udev's part for the disk tools
+    for src, dst, extra in [("proc", "proc", ["-t", "proc"]), ("sys", "sys", ["-t", "sysfs"]), ("/dev", "dev", ["--rbind"]),
+                            ("tmpfs", "run", ["-t", "tmpfs"]), ("/run/udev", "run/udev", ["--bind"])]:
+        d = os.path.join(TARGET, dst)
+        os.makedirs(d, exist_ok=True)
+        run(["mount"] + extra + [src, d])
+        if "--rbind" in extra or "--bind" in extra:
+            # one way only: unmounting it at the end must never unmount anything of the live system (bind mounts are shared)
+            run(["mount", "--make-rslave", d])
+    if os.path.isdir("/sys/firmware/efi/efivars"):
+        run(["mount", "-t", "efivarfs", "efivarfs", f"{TARGET}/sys/firmware/efi/efivars"], check=False)
+
+
+def uuid_of(dev):
+    return run(["blkid", "-s", "UUID", "-o", "value", dev], capture=True).strip()
+
+
+def write_fstab(esp, root):
+    ru, eu = uuid_of(root), uuid_of(esp)
+    lines = ["# Written by labyrinth-install-system. <device> <mount point> <type> <options> <dump> <pass>"]
+    for sub, where in SUBVOLUMES:
+        lines.append(f"UUID={ru} /{where} btrfs compress=zstd:1,noatime,subvol=/{sub} 0 0")
+    lines.append(f"UUID={eu} /boot/efi vfat umask=0077 0 2")
+    with open(f"{TARGET}/etc/fstab", "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def set_up(p):
+    # Labyrinth's own clean-up of everything that belongs to the live medium (live account, autologin, no-password rules ...),
+    # and its kernels and start-up image presets put back
+    inside(["/usr/local/bin/labyrinth-install-cleanup"])
+    # a new machine id at first start (the medium's must not be shared)
+    with open(f"{TARGET}/etc/machine-id", "w"):
+        pass
+    # language
+    loc = p["locale"]
+    gen = f"{TARGET}/etc/locale.gen"
+    text = open(gen).read() if os.path.exists(gen) else ""
+    if not re.search(rf"^{re.escape(loc)}\s", text, re.M):
+        charset = loc.split(".")[1] if "." in loc else "UTF-8"
+        text = re.sub(rf"^#\s*({re.escape(loc)}\s)", r"\1", text, flags=re.M) if re.search(rf"^#\s*{re.escape(loc)}\s", text, re.M) else text + f"{loc} {charset}\n"
+        with open(gen, "w") as f:
+            f.write(text)
+    inside(["locale-gen"], check=False)
+    with open(f"{TARGET}/etc/locale.conf", "w") as f:
+        f.write(f"LANG={loc}\n")
+    # keyboard: the text console, and the desktop (X11's setting, which Yggdrasil's session reads)
+    with open(f"{TARGET}/etc/vconsole.conf", "w") as f:
+        f.write(f"KEYMAP={p['keymap']}\n")
+    os.makedirs(f"{TARGET}/etc/X11/xorg.conf.d", exist_ok=True)
+    with open(f"{TARGET}/etc/X11/xorg.conf.d/00-keyboard.conf", "w") as f:
+        f.write(f'Section "InputClass"\n    Identifier "system-keyboard"\n    MatchIsKeyboard "on"\n    Option "XkbLayout" "{p["keymap"]}"\nEndSection\n')
+    # time zone and the hardware clock in UTC
+    lt = f"{TARGET}/etc/localtime"
+    if os.path.lexists(lt):
+        os.remove(lt)
+    os.symlink(f"/usr/share/zoneinfo/{p['timezone']}", lt)
+    inside(["hwclock", "--systohc", "--utc"], check=False)
+    # the computer's name
+    with open(f"{TARGET}/etc/hostname", "w") as f:
+        f.write(p["hostname"] + "\n")
+    with open(f"{TARGET}/etc/hosts", "w") as f:
+        f.write(f"127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {p['hostname']}.localdomain {p['hostname']}\n")
+    # the account: an administrator through sudo (wheel); root stays locked
+    u = p["user"]
+    groups = [g for g in GROUPS if inside(["getent", "group", g], check=False).returncode == 0]
+    inside(["useradd", "-m", "-G", ",".join(groups), "-s", "/bin/bash", "-c", u.get("name", ""), u["login"]])
+    inside(["chpasswd"], stdin=f"{u['login']}:{u['password']}\n")
+    inside(["passwd", "-l", "root"], check=False)
+    os.makedirs(f"{TARGET}/etc/sudoers.d", exist_ok=True)
+    with open(f"{TARGET}/etc/sudoers.d/10-labyrinth-wheel", "w") as f:
+        f.write("# Written by labyrinth-install-system: administrators (the wheel group) use sudo with their own password.\n%wheel ALL=(ALL:ALL) ALL\n")
+    os.chmod(f"{TARGET}/etc/sudoers.d/10-labyrinth-wheel", 0o440)
+    # the login screen: Yggdrasil's (greetd) when the system has it; never leave the system without one
+    if os.path.exists(f"{TARGET}/usr/lib/systemd/system/greetd.service"):
+        inside(["systemctl", "disable", "sddm.service"], check=False)
+        inside(["systemctl", "enable", "greetd.service"])
+    elif os.path.exists(f"{TARGET}/usr/lib/systemd/system/sddm.service"):
+        say("WARN", "this system has no greetd; SDDM stays the login screen")
+        inside(["systemctl", "enable", "sddm.service"], check=False)
+    else:
+        raise Stop("the system has no login screen (neither greetd nor SDDM)")
+
+
+def encryption_setup(dev):
+    """Encrypted system: the start-up image opens it with a key file, so the password is typed once (in GRUB)."""
+    key = f"{TARGET}/crypto_keyfile.bin"
+    with open(key, "wb") as f:
+        f.write(os.urandom(4096))
+    os.chmod(key, 0o000)
+    return key
+
+
+def systemd_initramfs():
+    """Whether the new system's start-up image is built with systemd (Arch's default since mkinitcpio 39) rather than busybox."""
+    try:
+        text = open(f"{TARGET}/etc/mkinitcpio.conf").read()
+    except OSError:
+        return True
+    hooks = next((l for l in text.splitlines() if l.strip().startswith("HOOKS=")), "")
+    return " systemd " in " " + hooks.replace("(", " ").replace(")", " ") + " "
+
+
+def initramfs(encrypted):
+    os.makedirs(f"{TARGET}/etc/mkinitcpio.conf.d", exist_ok=True)
+    if encrypted:
+        hook = "sd-encrypt" if systemd_initramfs() else "encrypt"
+        with open(f"{TARGET}/etc/mkinitcpio.conf.d/labyrinth-encrypt.conf", "w") as f:
+            f.write(f'''# Written by labyrinth-install-system: the system disk is encrypted. "{hook}" opens it (before resume and filesystems)
+# with the key file inside this image, so the password is asked once, by GRUB.
+if [[ " ${{HOOKS[*]}} " != *" encrypt "* && " ${{HOOKS[*]}} " != *" sd-encrypt "* ]]; then
+  _ly=()
+  for _h in "${{HOOKS[@]}}"; do
+    [[ $_h == resume || $_h == filesystems ]] && [[ " ${{_ly[*]}} " != *" {hook} "* ]] && _ly+=({hook})
+    _ly+=("$_h")
+  done
+  HOOKS=("${{_ly[@]}}")
+  unset _ly _h
+fi
+FILES+=(/crypto_keyfile.bin)
+''')
+    inside(["mkinitcpio", "-P"])
+    # the image holds the key: only root may read it
+    for img in os.listdir(f"{TARGET}/boot"):
+        if img.startswith("initramfs-"):
+            os.chmod(f"{TARGET}/boot/{img}", 0o600)
+
+
+def bootloader(encrypted, crypt_uuid, root_uuid):
+    path = f"{TARGET}/etc/default/grub"
+    text = open(path).read() if os.path.exists(path) else ""
+    options = list(KERNEL_OPTIONS)
+    if encrypted:
+        if systemd_initramfs():
+            options += [f"rd.luks.name={crypt_uuid}={MAPPER}", f"rd.luks.key={crypt_uuid}=/crypto_keyfile.bin", f"root=/dev/mapper/{MAPPER}"]
+        else:
+            options += [f"cryptdevice=UUID={crypt_uuid}:{MAPPER}", "cryptkey=rootfs:/crypto_keyfile.bin", f"root=/dev/mapper/{MAPPER}"]
+    values = dict(GRUB_DEFAULTS)
+    values["GRUB_CMDLINE_LINUX_DEFAULT"] = "'" + " ".join(options) + "'"
+    if encrypted:
+        values["GRUB_ENABLE_CRYPTODISK"] = "y"
+    for k, v in values.items():
+        line = f"{k}={v}"
+        if re.search(rf"^#?\s*{k}=", text, re.M):
+            text = re.sub(rf"^#?\s*{k}=.*$", line.replace("\\", "\\\\"), text, count=1, flags=re.M)
+        else:
+            text += line + "\n"
+    with open(path, "w") as f:
+        f.write(text)
+    inside(["grub-install", "--target=x86_64-efi", "--efi-directory=/boot/efi", "--bootloader-id=Labyrinth", "--recheck"])
+    # a second copy at the firmware's fallback path, for computers that forget boot entries
+    inside(["grub-install", "--target=x86_64-efi", "--efi-directory=/boot/efi", "--removable"], check=False)
+    # the plain menu first (the theme's installer keeps a copy of it to fall back on), then Labyrinth's (sized to this screen)
+    inside(["grub-mkconfig", "-o", "/boot/grub/grub.cfg"])
+    if os.path.exists(f"{TARGET}/usr/local/bin/labyrinth-grub-theme"):
+        r = inside(["/usr/local/bin/labyrinth-grub-theme"], check=False)
+        if r.returncode != 0:
+            say("WARN", "the Labyrinth menu theme could not be installed; the plain menu is used: " + (r.stderr or r.stdout).strip()[-200:])
+
+
+def unmount_all():
+    if run(["umount", "-R", TARGET], check=False).returncode != 0:
+        run(["umount", "-R", "-l", TARGET], check=False)
+    run(["cryptsetup", "close", MAPPER], check=False)
+
+
+def install(p):
+    total = len(STEPS)
+    step(1, total)
+    preflight(p)
+    say("INFO", f"installing onto {p['disk']}; everything on it is erased")
+    step(2, total)
+    esp, root_part = partition(p["disk"])
+    step(3, total)
+    root = root_part
+    encrypted = bool(p.get("encrypt"))
+    if encrypted:
+        root = encrypt(root_part, p["encrypt_password"])
+    else:
+        say("INFO", "not encrypted (as chosen)")
+    step(4, total)
+    format_and_mount(esp, root)
+    step(5, total)
+    copy_system()
+    step(6, total)
+    bind_mounts()
+    write_fstab(esp, root)
+    set_up(p)
+    if encrypted:
+        encryption_setup(root_part)
+        run(["cryptsetup", "luksAddKey", "--batch-mode", "--key-file=-", root_part, f"{TARGET}/crypto_keyfile.bin"], stdin=p["encrypt_password"])
+    step(7, total)
+    initramfs(encrypted)
+    step(8, total)
+    bootloader(encrypted, uuid_of(root_part), uuid_of(root))
+    step(9, total)
+    r = inside(["/usr/local/bin/labyrinth-install-bootfinish"], check=False)
+    for line in (r.stdout or "").splitlines():
+        if "WARNING" in line:
+            say("WARN", line.split("WARNING:", 1)[-1].strip())
+    if r.returncode != 0:
+        raise Stop("the last checks of the new system failed: " + (r.stdout or r.stderr).strip()[-400:])
+    unmount_all()
+    say("DONE")
+
+
+def main():
+    args = sys.argv[1:]
+    if args[:1] == ["--disks"]:
+        print(json.dumps(disks()))
+        return
+    try:
+        plan = json.loads(sys.stdin.read() or "{}")
+    except ValueError:
+        say("ERROR", "the plan is not JSON")
+        sys.exit(2)
+    problem = check_plan(plan)
+    if problem:
+        say("ERROR", problem)
+        sys.exit(2)
+    if args[:1] == ["--check"]:
+        say("DONE")
+        return
+    if os.geteuid() != 0:
+        say("ERROR", "labyrinth-install-system needs root")
+        sys.exit(1)
+    try:
+        install(plan)
+    except Stop as e:
+        say("ERROR", str(e))
+        unmount_all()
+        sys.exit(1)
+    except Exception as e:  # noqa: BLE001
+        say("ERROR", f"unexpected: {e}")
+        unmount_all()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
