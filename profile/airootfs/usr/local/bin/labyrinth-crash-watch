@@ -20,6 +20,9 @@ seen = {}
 
 
 def ask(exe, sig, name):
+    # at once, so the click visibly did something (her answer takes a while and replaces this one)
+    shown = subprocess.run(["notify-send", "-p", "-a", "Sarina", "-i", "dialog-information", "Sarina is looking at the %s crash" % name,
+                            "Her answer shows here in a moment."], capture_output=True, text=True, check=False).stdout.strip()
     q = ("The program %s just crashed (%s). Look into it: call crash_detail on it, say in plain words what the system recorded, which package owns it, "
          "what you cannot tell, and one or two things I could try (as guesses, with how to check them). Do not change anything." % (name, sig))
     env = dict(os.environ)
@@ -33,7 +36,9 @@ def ask(exe, sig, name):
         text = (r.stdout or r.stderr).strip() or "She had nothing to say about it."
     except Exception as e:  # noqa: BLE001
         text = "Sarina could not look: %s" % e
-    subprocess.run(["notify-send", "-a", "Sarina", "-i", "dialog-information", "About the %s crash" % name, text[:900]], check=False)
+    # it stays until it is read and closed (it is the answer to a question you asked)
+    replace = ["-r", shown] if shown.isdigit() else []
+    subprocess.run(["notify-send", *replace, "-a", "Sarina", "-i", "dialog-information", "-t", "0", "About the %s crash" % name, text[:900]], check=False)
 
 
 def notify(exe, sig, name):
