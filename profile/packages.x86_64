@@ -139,6 +139,8 @@ yggdrasil-idle
 yggdrasil-keyring-sync
 yggdrasil-session
 yggdrasil-xmove
+# the boot screen (Settings > Appearance > Boot screen; theme labyrinth-rain)
+plymouth
 yggdrasil-lock
 gnome-keyring
 clamav

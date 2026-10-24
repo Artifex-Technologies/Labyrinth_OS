@@ -1,0 +1,84 @@
+# Labyrinth's boot screen: columns of characters fall down the screen in Labyrinth purple, each at its own speed, behind the
+# logo. The columns are pictures made by scripts/gen-plymouth-rain.py (in the Labyrinth repository).
+
+Window.SetBackgroundTopColor(0.02, 0.01, 0.04);
+Window.SetBackgroundBottomColor(0.02, 0.01, 0.04);
+
+W = Window.GetWidth();
+H = Window.GetHeight();
+COLW = 18;
+STRIPS = 16;
+
+for (i = 0; i < STRIPS; i++)
+  strip[i] = Image("strip-" + i + ".png");
+
+fun pick () {
+  return strip[Math.Int(Math.Random() * STRIPS) % STRIPS];
+}
+
+ncols = Math.Int(W / COLW) + 1;
+for (c = 0; c < ncols; c++) {
+  col[c].sprite = Sprite(pick());
+  col[c].sprite.SetX(c * COLW);
+  col[c].sprite.SetZ(1);
+  # start anywhere from well above the screen to its middle, so the rain is already falling when it shows
+  col[c].y = -Math.Random() * H * 1.6;
+  col[c].speed = 2.5 + Math.Random() * 6.5;
+  col[c].sprite.SetY(col[c].y);
+}
+
+logo.image = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX(Math.Int((W - logo.image.GetWidth()) / 2));
+logo.sprite.SetY(Math.Int((H - logo.image.GetHeight()) / 2));
+logo.sprite.SetZ(10);
+
+fun refresh () {
+  for (c = 0; c < ncols; c++) {
+    col[c].y += col[c].speed;
+    if (col[c].y > H) {
+      img = pick();
+      col[c].sprite.SetImage(img);
+      col[c].y = -img.GetHeight() - Math.Random() * H * 0.6;
+      col[c].speed = 2.5 + Math.Random() * 6.5;
+    }
+    col[c].sprite.SetY(col[c].y);
+  }
+}
+Plymouth.SetRefreshFunction(refresh);
+
+# ---- a password (an encrypted disk) or a question: shown under the logo
+fun text_sprite (s, y) {
+  t = Image.Text(s, 0.92, 0.89, 1.0);
+  sp = Sprite(t);
+  sp.SetX(Math.Int((W - t.GetWidth()) / 2));
+  sp.SetY(y);
+  sp.SetZ(20);
+  return sp;
+}
+
+fun ask_password (prompt, bullets) {
+  stars = "";
+  for (i = 0; i < bullets; i++)
+    stars += "*";
+  question.sprite = text_sprite(prompt, H / 2 + 150);
+  answer.sprite = text_sprite(stars + "_", H / 2 + 180);
+}
+Plymouth.SetDisplayPasswordFunction(ask_password);
+
+fun ask_question (prompt, entry) {
+  question.sprite = text_sprite(prompt, H / 2 + 150);
+  answer.sprite = text_sprite(entry + "_", H / 2 + 180);
+}
+Plymouth.SetDisplayQuestionFunction(ask_question);
+
+fun normal () {
+  question.sprite = NULL;
+  answer.sprite = NULL;
+}
+Plymouth.SetDisplayNormalFunction(normal);
+
+fun message (text) {
+  msg.sprite = text_sprite(text, H - 60);
+}
+Plymouth.SetMessageFunction(message);

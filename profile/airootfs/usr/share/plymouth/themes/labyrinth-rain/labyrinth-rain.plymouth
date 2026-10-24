@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Labyrinth rain
+Description=Falling columns of characters in Labyrinth purple, with the logo in the middle
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/labyrinth-rain
+ScriptFile=/usr/share/plymouth/themes/labyrinth-rain/labyrinth-rain.script
