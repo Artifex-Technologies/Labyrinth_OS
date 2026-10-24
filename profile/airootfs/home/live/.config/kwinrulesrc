@@ -1,6 +1,6 @@
 [General]
-count=1
-rules=labyrinth-installer
+count=2
+rules=labyrinth-installer,labyrinth-spotify
 
 [labyrinth-installer]
 Description=Labyrinth installer: a title bar in the installer's own dark colours
@@ -9,3 +9,11 @@ decocolorrule=2
 wmclass=calamares
 wmclasscomplete=false
 wmclassmatch=2
+
+[labyrinth-spotify]
+Description=Spotify: a black title bar, the colour of Spotify's own top bar, so the two read as one header (as on Windows)
+decocolor=LabyrinthSpotify
+decocolorrule=2
+wmclass=^[Ss]potify$
+wmclasscomplete=false
+wmclassmatch=3
