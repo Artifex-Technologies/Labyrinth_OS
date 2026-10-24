@@ -77,6 +77,9 @@ halo = halo.filter(ImageFilter.GaussianBlur(pad / 2.5))
 out.alpha_composite(Image.merge("RGBA", (Image.new("L", out.size, 6), Image.new("L", out.size, 4), Image.new("L", out.size, 12), halo)))
 out.alpha_composite(logo, (pad, pad))
 out.save(os.path.join(OUT, "logo.png"))
+# the same logo for Yggdrasil's screen after signing in (the branding's splash_logo)
+if len(sys.argv) < 2:
+    out.save(os.path.join(HERE, "..", "profile", "airootfs", "usr", "share", "labyrinth", "logo", "labyrinth-splash.png"))
 print(f"wrote {STRIPS} columns and the logo to {os.path.normpath(OUT)}")
 
 # a still for Settings (Appearance > Boot screen): one moment of the rain, with the logo
