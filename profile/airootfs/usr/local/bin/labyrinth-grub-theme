@@ -69,6 +69,17 @@ fi
 grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub || echo 'GRUB_GFXPAYLOAD_LINUX=keep' >>/etc/default/grub
 
 if sh ./install.sh >"$work/install.log" 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg && grep -q initrd /boot/grub/grub.cfg; then
+    # The theme gives each menu entry its icon through a class it writes into grub.cfg (evodevo_entry_N), which every later
+    # grub-mkconfig (a kernel update, the boot screen's set-up) loses. GRUB also picks an icon by the entry's own first class
+    # (labyrinth, windows, uefi_cd_dvd ...), which grub-mkconfig always writes: each icon is kept under that name too.
+    icons=/usr/share/grub/themes/evodevo/icons
+    grep -o -E "^[[:space:]]*menuentry '[^']*'( --class [^ ]+)+" /boot/grub/grub.cfg | while read -r line; do
+        entry=$(printf '%s\n' "$line" | grep -o -E 'evodevo_entry_[0-9]+' | head -n1)
+        own=$(printf '%s\n' "$line" | grep -o -E -- '--class [^ ]+' | sed 's/--class //' | grep -v '^evodevo_entry_' | head -n1)
+        if [ -n "$entry" ] && [ -n "$own" ] && [ -f "$icons/$entry.png" ] && [ ! -e "$icons/$own.png" ]; then
+            cp "$icons/$entry.png" "$icons/$own.png"
+        fi
+    done
     echo "labyrinth-grub-theme: installed"
 else
     echo "labyrinth-grub-theme: failed; putting the old menu back" >&2
