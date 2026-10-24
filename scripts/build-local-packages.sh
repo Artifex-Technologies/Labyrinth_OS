@@ -28,7 +28,7 @@ mkdir -p "$repo_dir"
 # not change when the code does, so they are always rebuilt. Every other package is pinned to a
 # released version and checksum, and is skipped when that exact version is already in the repo
 # (Calamares alone is a ~10-minute C++ build). Naming packages rebuilds them regardless.
-local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-calculator yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session sarina-git heimdall-git limbo-git)
+local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-calculator yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove sarina-git heimdall-git limbo-git)
 
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do

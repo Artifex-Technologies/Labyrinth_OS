@@ -138,6 +138,7 @@ yggdrasil-panel
 yggdrasil-idle
 yggdrasil-keyring-sync
 yggdrasil-session
+yggdrasil-xmove
 yggdrasil-lock
 gnome-keyring
 clamav
