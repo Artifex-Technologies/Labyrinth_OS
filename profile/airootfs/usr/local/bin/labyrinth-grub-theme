@@ -1,7 +1,8 @@
 #!/bin/sh
 # Install the Labyrinth boot menu theme: grub-evodevo (MIT, vendored in /usr/share/labyrinth/grub-evodevo)
 # with Labyrinth's settings: black background, the purple accent, an emblem for each system (Labyrinth's
-# included) and 1920x1080. Run as root on the installed system (the installer's boot step does).
+# included), drawn for the screen's own resolution (read from the connected monitor; 1920x1080 when none can be read).
+# Run as root on the installed system (the installer's boot step does).
 #
 #   labyrinth-grub-theme              install the theme and regenerate grub.cfg
 #   labyrinth-grub-theme --preview F  write a picture of the menu to F (needs no root, changes nothing)
@@ -21,9 +22,21 @@ cd "$work"
 set_var() {   # set_var NAME VALUE: change the first NAME=VALUE setting (the later ones are derived values)
     sed -i -E "0,/^$1=/s|^$1=.*|$1='$2'|" install.sh
 }
-set_var ScreenWidth 1920
-set_var ScreenHeight 1080
-set_var FontSize 22
+# the monitor's own resolution (its preferred mode, the first one the kernel lists), so the menu fills whatever screen it is
+# installed on; the text grows with it (22 at 1080 lines)
+native=
+for f in /sys/class/drm/card*-*; do
+    [ "$(cat "$f/status" 2>/dev/null)" = connected ] || continue
+    m=$(head -n1 "$f/modes" 2>/dev/null)
+    m=${m%%[!0-9x]*}
+    case $m in [0-9]*x[0-9]*) native=$m; break ;; esac
+done
+[ -n "$native" ] || native=1920x1080
+screen_w=${native%x*}
+screen_h=${native#*x}
+set_var ScreenWidth "$screen_w"
+set_var ScreenHeight "$screen_h"
+set_var FontSize $(( (22 * screen_h + 540) / 1080 ))
 set_var Wallpaper '#000000'
 set_var Title 'Labyrinth OS'
 # Colours are H S V (degrees, percent, percent): the Labyrinth purple (hue 259) on black.
@@ -47,11 +60,11 @@ fi
 [ "$(id -u)" -eq 0 ] || { echo "labyrinth-grub-theme: run as root" >&2; exit 1; }
 cp /etc/default/grub "$work/grub.default.orig"
 cp /boot/grub/grub.cfg "$work/grub.cfg.orig"
-# GRUB must draw at the size the theme is made for.
+# GRUB must draw at the size the theme is made for (and picks its own if the firmware cannot show that one)
 if grep -q '^#\?GRUB_GFXMODE=' /etc/default/grub; then
-    sed -i -E 's|^#?GRUB_GFXMODE=.*|GRUB_GFXMODE=1920x1080,auto|' /etc/default/grub
+    sed -i -E "s|^#?GRUB_GFXMODE=.*|GRUB_GFXMODE=$native,auto|" /etc/default/grub
 else
-    echo 'GRUB_GFXMODE=1920x1080,auto' >>/etc/default/grub
+    echo "GRUB_GFXMODE=$native,auto" >>/etc/default/grub
 fi
 grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub || echo 'GRUB_GFXPAYLOAD_LINUX=keep' >>/etc/default/grub
 
