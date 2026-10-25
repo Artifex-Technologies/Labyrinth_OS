@@ -1,5 +1,11 @@
 # Installer
 
+> **Superseded (2026-10-24):** Labyrinth no longer uses Calamares. It has its own installer: Yggdrasil's installer window
+> (`yggdrasil-installer`) with Labyrinth's install steps (`profile/airootfs/usr/local/bin/labyrinth-install-system`), including
+> manual partitioning beside Windows. The current description is Yggdrasil's
+> [docs/INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md). What follows is the earlier
+> Calamares plan, kept for its reasoning.
+
 Decision: **Calamares, copying the live image onto the disk**, the same model as
 Chymaera_OS (see its `docs/INSTALLER.md` for the long reasoning). It is fast, needs
 no network, and the config is already proven statically. Not chosen: CachyOS's own
