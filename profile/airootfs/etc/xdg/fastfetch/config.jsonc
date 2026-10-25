@@ -1,0 +1,24 @@
+// Labyrinth OS's fastfetch: the Labyrinth emblem in Labyrinth's purple instead of the Arch logo (fastfetch knows no "labyrinth"
+// and falls back to ID_LIKE=arch). Your own ~/.config/fastfetch/config.jsonc still wins.
+// Privacy: the local IP address is left out (fastfetch shows it by default, and screenshots of fastfetch get shared).
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "/usr/share/labyrinth/fastfetch/labyrinth.txt",
+    "color": { "1": "38;2;124;84;214" },
+    "padding": { "top": 1, "right": 3 }
+  },
+  "display": {
+    "color": { "keys": "38;2;124;84;214", "title": "38;2;124;84;214" },
+    "separator": "  "
+  },
+  "modules": [
+    "title", "separator",
+    "os", "host", "kernel", "uptime", "packages", "shell",
+    "display", "de", "wm", "theme", "icons", "font", "cursor", "terminal", "terminalfont",
+    "cpu", "gpu", "memory", "swap", "disk",
+    "battery", "poweradapter", "locale",
+    "break", "colors"
+  ]
+}

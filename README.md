@@ -10,6 +10,12 @@ photo and video work, CAD, everyday browsing.
 *The desktop: the top bar (start button, workspaces, the open app's name, network, Bluetooth, date and time), the dock, and
 notification pop-ups at the bottom right. The black tab at the top middle is Fylgja, the notch.*
 
+![fastfetch on Labyrinth](assets/screenshots/fastfetch.png)
+
+*`fastfetch` shows Labyrinth's emblem in Labyrinth's purple (`/etc/xdg/fastfetch/config.jsonc`; your own
+`~/.config/fastfetch/config.jsonc` still wins). The local IP address is left out, since these get shared. The picture leaves out the
+user and computer name line.*
+
 ## The desktop: Yggdrasil
 
 Yggdrasil runs as its own session on Hyprland: top bar and dock, Fylgja, Settings, Agora (the app store), Minos (the file manager),
