@@ -53,5 +53,25 @@ class Security(unittest.TestCase):
         self.assertIn("notify -a Sarina -i security-high Security review nothing urgent.", calls)
 
 
+class Held(unittest.TestCase):
+    def test_a_broken_program_whose_file_is_held_asks_heimdall(self):
+        mod = load()
+        spool = tempfile.mkdtemp()
+        mod.REQUESTS = spool
+        held = [{"sha256": "ab" * 32, "original": "/home/u/.local/bin/mytool", "status": "held"},
+                {"sha256": "cd" * 32, "original": "/home/u/.sarina/skills/evil.md", "status": "held"}]
+        broken = [("{ path=/home/u/.local/bin/mytool ; argv[]=/home/u/.local/bin/mytool --serve ; }", "the service mytool.service failed (your session)"),
+                  ("/usr/bin/spotify", "spotify crashed")]
+        asked = mod.held_check(held, broken)
+        self.assertEqual(asked, ["/home/u/.local/bin/mytool: the service mytool.service failed (your session)"])
+        reqs = os.listdir(spool)
+        self.assertEqual(len(reqs), 1)
+        body = open(os.path.join(spool, reqs[0])).read()
+        self.assertIn('"release_if_proven": "' + "ab" * 32, body)
+
+    def test_nothing_held_nothing_asked(self):
+        self.assertEqual(load().held_check([], [("x", "y")]), [])
+
+
 if __name__ == "__main__":
     unittest.main()

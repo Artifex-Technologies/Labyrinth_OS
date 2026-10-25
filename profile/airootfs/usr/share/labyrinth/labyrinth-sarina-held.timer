@@ -1,0 +1,10 @@
+# Every 10 minutes: one look at Heimdall's quarantine (nothing to do when it holds nothing). On with the daily check-up.
+[Unit]
+Description=Sarina's look at what Heimdall holds
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target

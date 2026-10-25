@@ -1,0 +1,8 @@
+# systemd USER unit, started by labyrinth-sarina-held.timer (on together with the daily check-up).
+[Unit]
+Description=Sarina: is a program that was there before broken because Heimdall holds its file? (asks Heimdall to check)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/labyrinth-sarina-checkup --held
+Nice=10

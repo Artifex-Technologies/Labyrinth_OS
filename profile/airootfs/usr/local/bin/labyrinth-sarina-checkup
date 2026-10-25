@@ -9,7 +9,12 @@ the graphics card is busy (a game), so it never takes the GPU while you play.
 
 Security: when Heimdall reports something new (a package or kernel with known holes, a setting that could be safer; its /v1/audit), Sarina's
 security-advisor skill judges it and proposes the fixes in order, with the exact commands. The proposal goes in the vault (Security/YYYY-MM-DD.md)
-with one notification; you run the commands, she changes nothing.
+with one notification; you run the commands, she changes nothing. Files Heimdall holds in quarantine are part of that review: she says
+for each what it most likely is and whether to release it or confirm it as malware.
+
+  labyrinth-sarina-checkup --held   (every 10 minutes, labyrinth-sarina-held.timer; no model, a moment) a program that was there
+      before and stopped working because Heimdall holds its file (a failed service that runs it, a crash of it): Heimdall is asked to
+      release it. Heimdall does so only if it can prove the file was there before (its inventory, or your signature), and tells you.
 """
 import datetime
 import json
@@ -139,6 +144,62 @@ def heimdall_audit():
         return None
 
 
+def heimdall_held():
+    import urllib.request
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8930/v1/quarantine", timeout=15) as r:
+            return [e for e in json.loads(r.read(4 << 20)) if e.get("status") == "held"]
+    except (OSError, ValueError, AttributeError):
+        return []
+
+
+REQUESTS = os.environ.get("LABYRINTH_HEIMDALL_REQUESTS", "/var/lib/heimdall-requests")
+
+
+def broken_programs():
+    """What stopped working: (the program or command line, a description) for failed services and recent crashes."""
+    out = []
+    for scope in ([], ["--user"]):
+        for line in run(["systemctl"] + scope + ["--failed", "--no-legend", "--plain", "--no-pager"]).splitlines():
+            unit = line.split()[0] if line.split() else ""
+            if not unit:
+                continue
+            execs = run(["systemctl"] + scope + ["show", "-p", "ExecStart", "-p", "ExecStartPre", "--value", unit])
+            out.append((execs, "the service %s failed%s" % (unit, " (your session)" if scope else "")))
+    since = (datetime.datetime.now() - datetime.timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+    uid = str(os.getuid())
+    for line in run(["coredumpctl", "list", "--no-pager", "--no-legend", "--since=" + since]).splitlines():
+        f = line.split()
+        if len(f) >= 10 and f[5] == uid:
+            out.append((f[9], "%s crashed" % os.path.basename(f[9])))
+    return out
+
+
+def held_check(held=None, broken=None):
+    """Ask Heimdall to release held files that a program which was there before needs (Heimdall checks the proof). Returns what was asked."""
+    held = heimdall_held() if held is None else held
+    if not held:
+        return []
+    broken = broken_programs() if broken is None else broken
+    asked = []
+    for e in held:
+        paths = [e.get("original", "")] + list(e.get("copies") or [])
+        for cmdline, what in broken:
+            hit = next((p for p in paths if p and (p in cmdline.split() or ("path=" + p + " ") in cmdline or cmdline == p)), None)
+            if not hit:
+                continue
+            req = {"release_if_proven": e["sha256"], "why": "%s, and it runs %s, which Heimdall holds" % (what, hit)}
+            try:
+                name = os.path.join(REQUESTS, "sarina-%s-%d.json" % (e["sha256"][:12], os.getpid()))
+                with open(name, "x") as f:
+                    json.dump(req, f)
+                asked.append("%s: %s" % (hit, what))
+            except OSError:
+                pass
+            break
+    return asked
+
+
 def security_keys(audit):
     """What Heimdall finds open, one short key per finding (a kernel's key changes when its count of holes does)."""
     keys = {}
@@ -149,6 +210,8 @@ def security_keys(audit):
             keys["kernel|%s|%s" % (k.get("kernel"), k.get("count"))] = "kernel %s%s: %s known holes" % (k.get("kernel"), " (running)" if k.get("running") else "", k.get("count"))
     for g in audit.get("hardening") or []:
         keys["hard|%s|%s" % (g.get("id"), g.get("now"))] = g.get("now", "")
+    for e in audit.get("held") or []:
+        keys["held|%s" % e.get("sha256")] = "Heimdall holds %s in quarantine (%s)" % (e.get("original"), e.get("reason"))
     return keys
 
 
@@ -196,6 +259,10 @@ def note(vault, text):
 
 
 def main():
+    if "--held" in sys.argv[1:]:
+        for a in held_check():
+            print("asked Heimdall to release (if it can prove it was there before): " + a)
+        return 0
     if gpu_busy():
         print("the graphics card is busy; trying again later")
         return 75  # systemd retries per the unit's Restart
@@ -229,6 +296,7 @@ def main():
         subprocess.run(["notify-send", "-a", "Sarina", "-i", "dialog-information", "Daily check-up", ("; ".join(found) + "\n\n" + answer)[:800]], check=False)
     audit = heimdall_audit()
     if audit is not None:
+        audit["held"] = heimdall_held()
         keys = security_keys(audit)
         seen = set(st.get("security_seen") or [])
         new = [keys[k] for k in sorted(keys) if k not in seen]

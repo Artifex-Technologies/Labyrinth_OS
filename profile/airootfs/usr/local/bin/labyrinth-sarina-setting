@@ -60,7 +60,9 @@ case ${1:-} in
       off) env_set SARINA_FORGE "" ;;
       *) exit 2 ;;
     esac ;;
-  checkup) daily labyrinth-sarina-checkup "${2:-}" ;;
+  checkup) # the daily check-up, and with it the 10-minute look at what Heimdall holds
+    daily labyrinth-sarina-checkup "${2:-}" || exit $?
+    [[ ${2:-} == status ]] || daily labyrinth-sarina-held "${2:-}" ;;
   learn) daily labyrinth-sarina-reflect "${2:-}" ;;
   agents) # her agents and approving one need you at a terminal (it shows every file first)
     exec ghostty -e bash -c 'sarina forge-list; echo; echo "To approve one: sarina forge-approve NAME   To remove one: sarina forge-remove NAME"; exec bash' ;;
