@@ -1339,7 +1339,7 @@
    "id": "weather",
    "name": "Weather",
    "subtitle": "Forecast and rain alerts in the top bar",
-   "description": "The temperature in the top bar from three forecast models and an ensemble, weighted by how well each has matched measured temperatures near you; click it for the details. When rain is coming in the next two hours the pill says \"rain in 20 min\" and one notification arrives before it starts. Set your place once with yggdrasil-weather set-location \"Your city\". Uses Open-Meteo and aviationweather.gov, which receive only the coordinates of that place. The rain view follows Omarchy's weather-nowcast plugin.",
+   "description": "The temperature in the top bar from three forecast models and an ensemble, weighted by how well each has matched measured temperatures near you; click it for the details. When rain is coming in the next two hours the pill says \"rain in 20 min\" and one notification arrives before it starts. It starts with your time zone's main city; in its settings (the card's Settings button) choose Automatic to find your place from nearby Wi-Fi through beaconDB, or search for a city. Open-Meteo and aviationweather.gov receive only the coordinates of your place. The rain view follows Omarchy's weather-nowcast plugin.",
    "category": "Plugins",
    "subcategory": "Top bar",
    "source": {

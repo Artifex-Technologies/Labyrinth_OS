@@ -55,14 +55,14 @@
     {
       "id": "weather",
       "name": "Weather (forecast and rain alerts)",
-      "description": "Labyrinth's weather engine: GFS, ECMWF and ICON models plus a 30-member ensemble, with an honest uncertainty range, scored against measured airport temperatures over time, and a rain nowcast for the next two hours (Open-Meteo's 15-minute data). The temperature sits in the top bar with \"rain in 20 min\" when a shower is coming, and one notification arrives before it. Uses Open-Meteo and aviationweather.gov, which receive the coordinates of the place you set.",
+      "description": "Labyrinth's weather engine: GFS, ECMWF and ICON models plus a 30-member ensemble, with an honest uncertainty range, scored against measured airport temperatures over time, and a rain nowcast for the next two hours (Open-Meteo's 15-minute data). The temperature sits in the top bar with \"rain in 20 min\" when a shower is coming, and one notification arrives before it. Uses Open-Meteo and aviationweather.gov, which receive the coordinates of your place. The place comes from your time zone until you choose Automatic (nearby Wi-Fi network IDs and your IP address go to beaconDB, an open non-profit database) or search for one.",
       "proprietary": false,
       "pkgbuild": "yggdrasil-weather",
       "enable_global": [
         "yggdrasil-weather-record.timer",
         "yggdrasil-weather-nowcast.timer"
       ],
-      "notes": "Set your place once: yggdrasil-weather set-location \"Your city\". Accuracy weighting needs a few days of recorded history."
+      "notes": "Works right away for your time zone's main city. For your exact place, open the Weather card in the top bar, press Settings and choose Automatic (nearby Wi-Fi, through beaconDB) or search for a place."
     },
     {
       "id": "proton-drive",
