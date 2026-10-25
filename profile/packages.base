@@ -146,6 +146,8 @@ yggdrasil-session
 yggdrasil-lock
 yggdrasil-xmove
 yggdrasil-installer
+# Player: Yggdrasil's video player (VLC underneath; continue where you left off)
+yggdrasil-player
 # the boot screen (Settings > Appearance > Boot screen; theme labyrinth-rain)
 plymouth
 gnome-keyring

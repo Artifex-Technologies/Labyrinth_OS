@@ -119,6 +119,7 @@ yggdrasil-session
 yggdrasil-lock
 yggdrasil-xmove
 yggdrasil-installer
+yggdrasil-player
 plymouth
 gnome-keyring
 clamav
