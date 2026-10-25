@@ -1127,8 +1127,8 @@
   {
    "id": "heimdall",
    "name": "Heimdall",
-   "subtitle": "Security watcher",
-   "description": "Labyrinth's security watcher: what connects where, quarantine and alerts.",
+   "subtitle": "Security watcher, with or without Sarina",
+   "description": "Labyrinth's security watcher: it keeps an eye on file changes, connections and open ports, logins, known holes in your packages and kernels, network impersonation and malware, holds suspicious files and explains every alert in plain language with what to do next. You see and act on everything in Settings > Security. Works on its own; with Sarina it can also explain things in conversation.",
    "category": "Security",
    "subcategory": "Protection",
    "source": {
@@ -1137,7 +1137,12 @@
    },
    "icon": "heimdall",
    "reviewed": true,
-   "tags": [],
+   "tags": [
+    "security",
+    "antivirus",
+    "firewall",
+    "alerts"
+   ],
    "repo": "https://github.com/Artifex-Technologies/Heimdall"
   },
   {

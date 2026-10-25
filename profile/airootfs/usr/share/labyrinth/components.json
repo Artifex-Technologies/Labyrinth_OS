@@ -201,11 +201,11 @@
     },
     {
       "id": "heimdall",
-      "name": "Heimdall (security agent for Sarina)",
-      "description": "Heimdall, a separate program that watches what Sarina writes to disk for prompt injection, leaked credentials, invisible-Unicode smuggling and permission escalation. Built here with makepkg from the Heimdall repository. Installed but not started.",
+      "name": "Heimdall (security watcher)",
+      "description": "Heimdall watches this computer for attacks: file changes, open ports and connections, firewall and SSH logins, known holes in installed packages and kernels, Wi-Fi and network impersonation, and malware (ClamAV, held and fingerprinted). It explains every alert in plain language and tells you what to do; Settings > Security shows the alerts and the held files. Works on its own; with Sarina he can also explain in conversation and watch her sessions for prompt injection. Built here with makepkg from Heimdall's repository.",
       "proprietary": false,
       "pkgbuild": "heimdall-git",
-      "notes": "Not enabled by default. Copy /etc/heimdall/config.json.example to config.json, set what it watches, then: sudo systemctl enable --now heimdall."
+      "notes": "Switches itself on when installed. Alerts appear as notifications and in Settings > Security."
     },
     {
       "id": "dev",
