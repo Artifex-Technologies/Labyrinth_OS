@@ -75,6 +75,21 @@ class Commands(unittest.TestCase):
         self.assertIn("makepkg -si", out)
         self.assertIn("proton-pass", out)
 
+    def test_makepkg_from_agora_asks_through_its_password_box(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ.pop("AGORA_SUDO", None)
+            self.assertEqual(apps.makepkg_gui_args(tmp), [])
+            os.environ["AGORA_SUDO"] = "/usr/lib/agora/sudo"
+            try:
+                args = apps.makepkg_gui_args(tmp)
+            finally:
+                del os.environ["AGORA_SUDO"]
+            self.assertEqual(args[:2], ["--noconfirm", "--config"])
+            conf = open(args[2]).read()
+            self.assertIn("source /etc/makepkg.conf", conf)
+            self.assertIn("PACMAN_AUTH=(/usr/lib/agora/sudo)", conf)
+
     def test_preset_expands(self):
         rc, out, _ = run(["install", "--preset", "gaming", "--dry-run"], installed=set())
         self.assertIn("steam", out)

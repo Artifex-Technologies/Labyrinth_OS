@@ -74,6 +74,18 @@ def gui_sudo():
     return os.environ.get("AGORA_SUDO") or os.environ.get("LABYRINTH_SUDO")
 
 
+def makepkg_gui_args(tmp):
+    """From Agora (no terminal): makepkg must not ask questions, and must gain administrator rights (its build dependencies, the
+    install) through Agora's password box instead of sudo, which would wait for a password on a terminal that is not there."""
+    if not gui_sudo():
+        return []
+    conf = os.path.join(tmp, "makepkg.conf")
+    with open(conf, "w") as f:
+        f.write("source /etc/makepkg.conf\n")
+        f.write(f"PACMAN_AUTH=({shlex.quote(gui_sudo())})\n")
+    return ["--noconfirm", "--config", conf]
+
+
 def sudo(cmd):
     return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else [gui_sudo() or "sudo"] + cmd
 
@@ -158,7 +170,7 @@ def run_steps(steps, dry_run):
             with tempfile.TemporaryDirectory(prefix="labyrinth-build-") as tmp:
                 work = os.path.join(tmp, pkgbuild)
                 shutil.copytree(src, work)
-                rc = subprocess.run(argv, cwd=work).returncode
+                rc = subprocess.run(argv + makepkg_gui_args(tmp), cwd=work).returncode
         else:
             rc = subprocess.run(argv).returncode
         if rc != 0:
