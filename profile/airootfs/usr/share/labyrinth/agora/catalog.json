@@ -1216,6 +1216,144 @@
    "flathub": "org.mozilla.firefox"
   },
   {
+   "id": "brave",
+   "name": "Brave",
+   "subtitle": "Chromium with ads and trackers blocked",
+   "description": "A Chromium-based browser that blocks ads and trackers by default, with Chrome extensions, private windows with Tor, and its own optional rewards and AI features (off unless you turn them on).",
+   "category": "Internet",
+   "subcategory": "Browsers",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "brave-bin"
+    ]
+   },
+   "icon": "brave-browser",
+   "logo": "brave",
+   "reviewed": true,
+   "tags": [
+    "browser",
+    "chromium",
+    "privacy"
+   ],
+   "launch": "brave",
+   "flathub": "com.brave.Browser"
+  },
+  {
+   "id": "librewolf",
+   "name": "LibreWolf",
+   "subtitle": "Firefox, hardened for privacy",
+   "description": "Firefox with telemetry removed, uBlock Origin included and privacy settings turned up from the start. Firefox extensions work.",
+   "category": "Internet",
+   "subcategory": "Browsers",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "librewolf"
+    ]
+   },
+   "icon": "librewolf",
+   "logo": "librewolf",
+   "reviewed": true,
+   "tags": [
+    "browser",
+    "firefox",
+    "privacy"
+   ],
+   "launch": "librewolf",
+   "flathub": "io.gitlab.librewolf-community"
+  },
+  {
+   "id": "mullvad-browser",
+   "name": "Mullvad Browser",
+   "subtitle": "Tor Browser's privacy, without Tor",
+   "description": "Made by Mullvad and the Tor Project: Tor Browser's protections against tracking and fingerprinting, for use with a VPN instead of the Tor network. Every user looks the same to websites.",
+   "category": "Internet",
+   "subcategory": "Browsers",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "mullvad-browser-bin"
+    ]
+   },
+   "icon": "mullvad-browser",
+   "logo": "mullvad",
+   "reviewed": true,
+   "tags": [
+    "browser",
+    "privacy",
+    "firefox"
+   ],
+   "launch": "mullvad-browser",
+   "flathub": "net.mullvad.MullvadBrowser"
+  },
+  {
+   "id": "waterfox",
+   "name": "Waterfox",
+   "subtitle": "An independent Firefox-based browser",
+   "description": "A privacy-minded browser built on Firefox, with no telemetry, support for Firefox extensions and a classic-style interface option.",
+   "category": "Internet",
+   "subcategory": "Browsers",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "waterfox-bin"
+    ]
+   },
+   "icon": "waterfox",
+   "reviewed": true,
+   "tags": [
+    "browser",
+    "firefox"
+   ],
+   "launch": "waterfox",
+   "flathub": "net.waterfox.waterfox"
+  },
+  {
+   "id": "opera",
+   "name": "Opera",
+   "subtitle": "Opera's browser, with built-in VPN and sidebar",
+   "description": "Opera's Chromium-based browser: a free built-in VPN (a proxy for the browser only), ad blocker, messengers in the sidebar and Aria, its AI. From Flathub, as Opera publishes it.",
+   "category": "Internet",
+   "subcategory": "Browsers",
+   "source": {
+    "type": "flatpak",
+    "app": "com.opera.Opera"
+   },
+   "icon": "com.opera.Opera",
+   "logo": "opera",
+   "reviewed": true,
+   "proprietary": true,
+   "tags": [
+    "browser",
+    "chromium",
+    "vpn"
+   ],
+   "flathub": "com.opera.Opera"
+  },
+  {
+   "id": "opera-gx",
+   "name": "Opera GX",
+   "subtitle": "The browser for gamers",
+   "description": "Opera's gaming browser: limits on how much memory, CPU and network it may use, Twitch and Discord in the sidebar, GX Corner for game deals, and themes and sounds. Released for Linux in 2026; live wallpapers are not in the Linux version. From Flathub, as Opera publishes it.",
+   "category": "Internet",
+   "subcategory": "Browsers",
+   "source": {
+    "type": "flatpak",
+    "app": "com.opera.opera-gx"
+   },
+   "icon": "com.opera.opera-gx",
+   "logo": "opera",
+   "reviewed": true,
+   "proprietary": true,
+   "tags": [
+    "browser",
+    "gaming",
+    "chromium"
+   ],
+   "flathub": "com.opera.opera-gx"
+  },
+  {
    "id": "tor-browser",
    "name": "Tor Browser",
    "subtitle": "Private web browser",
