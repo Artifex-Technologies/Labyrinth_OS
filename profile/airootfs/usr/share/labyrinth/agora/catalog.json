@@ -703,7 +703,11 @@
     "valve",
     "games"
    ],
-   "flathub": "com.valvesoftware.Steam"
+   "flathub": "com.valvesoftware.Steam",
+   "recommends": [
+    "controllers",
+    "xbox-controllers"
+   ]
   },
   {
    "id": "lutris",
@@ -1615,6 +1619,50 @@
     "browser",
     "speed",
     "startup"
+   ]
+  },
+  {
+   "id": "controllers",
+   "name": "Controller support",
+   "subtitle": "Battery, lights and alerts for game controllers",
+   "description": "See your controller's battery in the top bar while it is connected; click it for a rumble test, disconnecting and the lightbar colour. You get a notification when it connects, runs low or is fully charged, and the lights you picked come back every time it connects. Works with PlayStation 4 and 5 controllers, Xbox controllers (add Xbox controller support for Bluetooth) and others Linux knows. Pair controllers in Settings > Bluetooth > Controllers. Rewritten in Rust from the ideas of Omarchy's Bluechip, bt-battery and DualSense plugins.",
+   "category": "Plugins",
+   "subcategory": "Top bar",
+   "source": {
+    "type": "component",
+    "id": "controllers"
+   },
+   "icon": "input-gaming",
+   "reviewed": true,
+   "tags": [
+    "controller",
+    "gamepad",
+    "dualshock",
+    "dualsense",
+    "xbox",
+    "battery",
+    "bar"
+   ]
+  },
+  {
+   "id": "xbox-controllers",
+   "name": "Xbox controller support",
+   "subtitle": "xpadneo: Xbox controllers over Bluetooth",
+   "description": "The xpadneo driver for Xbox One and Series controllers connected over Bluetooth: rumble (including the trigger motors), battery level and the right button layout. Also helps some 8BitDo controllers in Xbox mode. USB Xbox controllers already work without it.",
+   "category": "Play",
+   "subcategory": "Gaming Gear",
+   "source": {
+    "type": "component",
+    "id": "xbox-controllers"
+   },
+   "icon": "input-gaming",
+   "reviewed": true,
+   "tags": [
+    "xbox",
+    "controller",
+    "gamepad",
+    "bluetooth",
+    "driver"
    ]
   }
  ],

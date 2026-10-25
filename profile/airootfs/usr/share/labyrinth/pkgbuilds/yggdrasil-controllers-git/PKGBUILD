@@ -1,0 +1,48 @@
+# Maintainer: Labyrinth OS
+#
+# Controller support, a Yggdrasil plugin: your game controller's battery in the top bar while it is connected, a card with a rumble
+# test, disconnect and lightbar colours, notifications (connected, battery low, charged), the lights you chose restored on every
+# connection, and a narrow udev rule that lets you change the controller's lights. Ideas from Bluechip, bt-battery and
+# omarchy-plugin-dualsense (MIT); built from Yggdrasil's public repository (packages/controllers, packages/gamepads). Agora's Plugins
+# installs it (labyrinth-apps install controllers).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-controllers-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Yggdrasil plugin: game controller battery, lights and notifications"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'systemd' 'bluez-utils' 'libnotify' 'yggdrasil-panel')
+optdepends=('xpadneo-dkms: Xbox controllers over Bluetooth (Agora: Xbox controller support)')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-controllers')
+conflicts=('yggdrasil-controllers')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/controllers packages/gamepads)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/controllers"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/controllers"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/controllers"
+  install -Dm755 "$srcdir/target/release/yggdrasil-controllers" "$pkgdir/usr/bin/yggdrasil-controllers"
+  install -Dm644 controllers.conf "$pkgdir/usr/share/yggdrasil/integrations/controllers.conf"
+  install -Dm644 yggdrasil-controllers.service "$pkgdir/usr/lib/systemd/user/yggdrasil-controllers.service"
+  # the controller's own LED files (lightbar, player lights) writable, for PlayStation controllers only
+  install -Dm644 70-yggdrasil-controllers.rules "$pkgdir/usr/lib/udev/rules.d/70-yggdrasil-controllers.rules"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-controllers/README.md"
+}

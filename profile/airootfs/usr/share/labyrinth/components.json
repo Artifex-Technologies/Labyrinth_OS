@@ -360,6 +360,27 @@
         "yggdrasil-browser-warm.service"
       ],
       "notes": "Quitting the browser from its menu starts it again in the background within a minute; remove the plugin to stop that."
+    },
+    {
+      "id": "controllers",
+      "name": "Controller support (top bar)",
+      "description": "Your game controller's battery in the top bar while it is connected, with a card for a rumble test, disconnecting and the lightbar colour; notifications when it connects, runs low or is charged; the lights you chose restored every time it connects (the driver resets them). PlayStation 4 and 5, Xbox (with Xbox controller support), Switch Pro and others the kernel knows. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-controllers-git",
+      "enable_global": [
+        "yggdrasil-controllers.service"
+      ],
+      "notes": "Pair a controller in Settings > Bluetooth > Controllers. The lights can be changed after the controller reconnects once (a udev rule opens its LED files)."
+    },
+    {
+      "id": "xbox-controllers",
+      "name": "Xbox controller support (xpadneo)",
+      "description": "xpadneo, the driver for Xbox One and Series controllers over Bluetooth: working rumble, trigger rumble, battery level and correct buttons (also some 8BitDo controllers in Xbox mode). A kernel module built for your kernels (DKMS).",
+      "proprietary": false,
+      "packages": [
+        "xpadneo-dkms"
+      ],
+      "notes": "Reconnect the controller after installing. USB Xbox controllers work without it."
     }
   ],
   "presets": {
