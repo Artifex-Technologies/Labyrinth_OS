@@ -1,7 +1,7 @@
 # Maintainer: Labyrinth OS
 #
 # Health Mode, a Yggdrasil plugin: reminders to rest your eyes, move, drink water and breathe, held while you are away, with a
-# countdown in the top bar and a settings window. Adapted from musgandapur645-sudo/omarchy-health-mode (MIT), built from
+# countdown in the top bar and its settings in the card there. Adapted from musgandapur645-sudo/omarchy-health-mode (MIT), built from
 # Yggdrasil's public repository (packages/health). Agora's Plugins installs it (labyrinth-apps install health-mode).
 # To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
 pkgname=yggdrasil-health-git
@@ -41,7 +41,6 @@ package() {
   install -Dm644 data/yggdrasil-health.service "$pkgdir/usr/lib/systemd/user/yggdrasil-health.service"
   install -Dm644 data/health.conf "$pkgdir/usr/share/yggdrasil/integrations/health.conf"
   install -Dm644 data/health-symbolic.svg "$pkgdir/usr/share/yggdrasil/icons/health-symbolic.svg"
-  install -Dm644 data/yggdrasil-health.desktop "$pkgdir/usr/share/applications/yggdrasil-health.desktop"
   install -Dm644 data/UPSTREAM-LICENSE "$pkgdir/usr/share/licenses/$pkgname/UPSTREAM-LICENSE"
   install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-health/README.md"
 }

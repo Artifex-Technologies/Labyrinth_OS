@@ -1,13 +1,13 @@
 # Maintainer: Labyrinth OS
 #
-# Timer, a Yggdrasil plugin: a countdown in the top bar and a window to start, pause and stop timers; alarms are systemd user
+# Timer, a Yggdrasil plugin: a countdown in the top bar and a card there to start, pause and stop it; alarms are systemd user
 # timers, so nothing runs while it counts. Adapted from NickmDrummer/omarchy-timer (MIT), built from Yggdrasil's public
 # repository (packages/timer). Agora's Plugins installs it (labyrinth-apps install timer).
 # To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
 pkgname=yggdrasil-timer-git
 pkgver=0.1.0.r0.g0000000
 pkgrel=1
-pkgdesc="Yggdrasil plugin: timers in the top bar and a small window"
+pkgdesc="Yggdrasil plugin: a timer in the top bar"
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Yggdrasil'
 license=('MIT')
@@ -41,7 +41,6 @@ package() {
   install -Dm644 timer.conf "$pkgdir/usr/share/yggdrasil/integrations/timer.conf"
   # its logo, in the bar and on its notifications
   install -Dm644 timer-symbolic.svg "$pkgdir/usr/share/yggdrasil/icons/timer-symbolic.svg"
-  install -Dm644 yggdrasil-timer.desktop "$pkgdir/usr/share/applications/yggdrasil-timer.desktop"
   # at login: timers that ended while the computer was off are marked done, running ones get their alarm back
   install -Dm644 yggdrasil-timer-reconcile.desktop "$pkgdir/etc/xdg/autostart/yggdrasil-timer-reconcile.desktop"
   install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-timer/README.md"

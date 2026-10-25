@@ -12,7 +12,7 @@ pkgdesc="Yggdrasil weather: multi-model consensus and rain nowcast in the top ba
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Yggdrasil'
 license=('MIT')
-depends=('gcc-libs' 'ca-certificates' 'libnotify' 'wayland' 'libxkbcommon')
+depends=('gcc-libs' 'ca-certificates' 'libnotify')
 optdepends=('yggdrasil-panel: the top bar pill' 'networkmanager: Wi-Fi networks for the automatic place (without it, beaconDB places the IP address)')
 replaces=('labyrinth-weather')
 makedepends=('cargo' 'git')
@@ -44,9 +44,6 @@ package() {
   for u in yggdrasil-weather-record.service yggdrasil-weather-record.timer yggdrasil-weather-nowcast.service yggdrasil-weather-nowcast.timer; do
     install -Dm644 "systemd/$u" "$pkgdir/usr/lib/systemd/user/$u"
   done
-  # its settings window (place: automatic, from the time zone or chosen; units), opened from the card's Settings button
-  install -Dm755 "$srcdir/target/release/yggdrasil-weather-settings" "$pkgdir/usr/bin/yggdrasil-weather-settings"
-  install -Dm644 yggdrasil-weather-settings.desktop "$pkgdir/usr/share/applications/yggdrasil-weather-settings.desktop"
   install -Dm644 weather.conf "$pkgdir/usr/share/yggdrasil/integrations/weather.conf"
   install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-weather/README.md"
 }

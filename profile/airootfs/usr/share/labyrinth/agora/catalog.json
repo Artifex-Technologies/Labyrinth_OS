@@ -1561,7 +1561,7 @@
    "id": "timer",
    "name": "Timer",
    "subtitle": "Countdowns in the top bar",
-   "description": "A timer pill in the top bar that counts down by itself. Click it for presets, your own time (\"90s\", \"1h30m\") and a label; pause, add a minute or run several at once. It rings with a notification and a sound even when the window is closed. Rewritten in Rust from Omarchy's timer plugin.",
+   "description": "A timer in the top bar: its logo when idle, the countdown when running. Click it for a card with presets (1 to 45 minutes) and your own length; pause, add a minute or reset. It rings with a notification and a sound, and nothing runs while it counts. Rewritten in Rust from Omarchy's timer plugin.",
    "category": "Plugins",
    "subcategory": "Top bar",
    "source": {
@@ -1575,8 +1575,7 @@
     "countdown",
     "pomodoro",
     "bar"
-   ],
-   "launch": "yggdrasil-timer"
+   ]
   },
   {
    "id": "health-mode",
@@ -1597,8 +1596,7 @@
     "eyes",
     "reminders",
     "bar"
-   ],
-   "launch": "yggdrasil-health"
+   ]
   },
   {
    "id": "browser-warm",
