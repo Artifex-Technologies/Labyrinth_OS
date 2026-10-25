@@ -52,7 +52,7 @@ MIN_ROOT = 20 * 1024**3
 MIN_ESP = 260 * 1024**2
 MIB = 1024**2
 SUBVOLUMES = [("@", ""), ("@home", "home"), ("@cache", "var/cache"), ("@log", "var/log")]
-GROUPS = ["users", "lp", "video", "network", "storage", "wheel", "audio", "openrazer"]
+GROUPS = ["users", "lp", "video", "network", "storage", "wheel", "audio", "openrazer", "kvm"]
 # What GRUB is set up with (as the Calamares configuration did): a short menu, the last choice remembered, and the kernel
 # options NVIDIA's Wayland support needs.
 GRUB_DEFAULTS = {

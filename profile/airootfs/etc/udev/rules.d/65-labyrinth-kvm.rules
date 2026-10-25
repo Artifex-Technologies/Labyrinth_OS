@@ -1,0 +1,4 @@
+# Virtual machines (/dev/kvm) for the kvm group only, not every account: a bug in the kernel's virtual machine code (Januscape,
+# CVE-2026-53359) is then not a way to root for any program that runs. Labyrinth's installer puts every user in the kvm group,
+# so their virtual machines keep working. (systemd's own rule makes it 0666.)
+KERNEL=="kvm", GROUP="kvm", MODE="0660", OPTIONS+="static_node=kvm"
