@@ -318,6 +318,17 @@
       "proprietary": false,
       "pkgbuild": "yggdrasil-agent-usage-git",
       "notes": "Shows nothing until Claude Code is signed in on this account. The numbers come from Anthropic, asked with Claude Code's own sign-in."
+    },
+    {
+      "id": "proton-authenticator",
+      "name": "Authenticator (Proton Authenticator codes)",
+      "description": "Proton's official Authenticator app (from the AUR, Proton's own release) and Yggdrasil's Authenticator window: search your 2FA codes and copy one with Enter. The window reads the app's local vault read-only through devSviat's pa-helper; nothing goes over the network.",
+      "proprietary": false,
+      "aur": [
+        "proton-authenticator-bin"
+      ],
+      "pkgbuild": "yggdrasil-authenticator-git",
+      "notes": "Open Proton Authenticator once, sign in and let it sync; then the Authenticator window shows your codes."
     }
   ],
   "presets": {

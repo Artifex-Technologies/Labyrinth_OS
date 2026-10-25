@@ -1,0 +1,59 @@
+# Maintainer: Labyrinth OS
+#
+# Authenticator, a Yggdrasil plugin: Proton Authenticator's 2FA codes in a small window (search, Enter copies). Two sources:
+# the window from Yggdrasil's repository (packages/authenticator), and devSviat's pa-helper, which does all vault work, from
+# github.com/devSviat/omarchy-proton-authenticator pinned to the reviewed commit below (MIT). Agora's Plugins installs it
+# (labyrinth-apps install proton-authenticator). Local checkout: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-authenticator-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Proton Authenticator's 2FA codes in a Yggdrasil window: search, Enter copies"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'libsecret' 'glib2' 'wl-clipboard' 'yggdrasil-panel')
+optdepends=('proton-authenticator-bin: the official app, whose vault this reads (AUR; sign in and sync once)')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-authenticator')
+conflicts=('yggdrasil-authenticator')
+options=('!lto')
+_helper_commit=3cdba859986eddc2b8f434240825eed3e076c42e
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}"
+        "pa::git+https://github.com/devSviat/omarchy-proton-authenticator.git#commit=${_helper_commit}")
+sha256sums=('SKIP' 'SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/authenticator)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/pa/helper"
+  cargo build --release --locked --target-dir "$srcdir/target-helper"
+  cd "$srcdir/yggdrasil/packages/authenticator"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/authenticator"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  install -Dm755 "$srcdir/target/release/yggdrasil-authenticator" "$pkgdir/usr/bin/yggdrasil-authenticator"
+  install -Dm755 "$srcdir/target-helper/release/pa-helper" "$pkgdir/usr/lib/yggdrasil-authenticator/pa-helper"
+  install -Dm644 "$srcdir/pa/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.pa-helper"
+  install -Dm644 "$srcdir/yggdrasil/packages/authenticator/README.md" "$pkgdir/usr/share/doc/yggdrasil-authenticator/README.md"
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/yggdrasil-authenticator.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Authenticator
+GenericName=2FA codes
+Comment=Your Proton Authenticator codes: search, Enter copies
+Exec=yggdrasil-authenticator
+Icon=proton-authenticator
+Terminal=false
+Categories=Utility;Security;
+Keywords=2fa;totp;otp;proton;authenticator;
+DESKTOP
+}

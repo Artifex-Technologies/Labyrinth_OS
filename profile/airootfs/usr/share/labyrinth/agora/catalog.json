@@ -1529,6 +1529,28 @@
     "usage"
    ],
    "logo": "claude"
+  },
+  {
+   "id": "proton-authenticator",
+   "name": "Authenticator",
+   "subtitle": "Your Proton 2FA codes, one keypress away",
+   "description": "Search your Proton Authenticator accounts and press Enter: the code is on the clipboard, marked sensitive and cleared after 20 seconds. Installs Proton's official Authenticator app (sign in and sync it once) and Yggdrasil's Authenticator window, which reads the app's local vault read-only, takes its key from your keyring and never goes online. Adapted from devSviat's Omarchy plugin.",
+   "category": "Plugins",
+   "subcategory": "Security",
+   "source": {
+    "type": "component",
+    "id": "proton-authenticator"
+   },
+   "icon": "proton-authenticator",
+   "logo": "proton",
+   "reviewed": true,
+   "tags": [
+    "2fa",
+    "totp",
+    "proton",
+    "security"
+   ],
+   "launch": "yggdrasil-authenticator"
   }
  ],
  "featured": [
