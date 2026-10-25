@@ -575,6 +575,25 @@ def command(question, cwd, write=False, shell=False, voice=False, resume=None, r
     return cmd
 
 
+def addon_prefetch(said, env):
+    """LABYRINTH_VOICE_PREFETCH (sarina.env): commands of an owner's add-on, separated by ';', each a program and its arguments (no
+    shell), run with what was said as the last argument before her model. One that recognises a plain step (a tarot card named during
+    a reading, say) does it and prints what it did, so she only has to speak it: one pass of the model instead of a tool call and a
+    second pass. Nothing printed: nothing done, the turn goes on as usual."""
+    spec = os.environ.get("LABYRINTH_VOICE_PREFETCH") or env_file().get("LABYRINTH_VOICE_PREFETCH", "")
+    out = []
+    for c in (x.split() for x in spec.split(";")):
+        if not c or not os.path.isabs(c[0]) or not os.access(c[0], os.X_OK):
+            continue
+        try:
+            r = subprocess.run(c + [said], capture_output=True, text=True, timeout=5, env=env)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if r.returncode == 0 and r.stdout.strip():
+            out.append(r.stdout.strip()[:6000])
+    return "\n".join(out)
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cwd", default=os.getcwd())
@@ -632,6 +651,11 @@ def main(argv):
             question = g + question
         if state and LAUGH_RX.search(" ".join(a.question)):
             note_laugh(last_turn(state), env)
+    if a.voice:
+        # an add-on already did what was asked (a tarot card recorded): its report replaces the usual notes, so the model reads less
+        pre = addon_prefetch(spoken(" ".join(a.question)), env)
+        if pre:
+            question = pre + "\n\nWhat they said: " + " ".join(a.question)
     cmd = command(question, a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
     if a.voice:
         # a spoken answer is cleaned here: a small model sometimes writes a tool call as text, which must not be read out or shown
