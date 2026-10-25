@@ -310,6 +310,14 @@
         ]
       ],
       "notes": "Start 'Waydroid' from the start menu; the first start takes a minute. Install Android apps from an APK (waydroid app install FILE.apk) or an open store such as F-Droid. Google Play needs the image with Google apps: sudo waydroid init -s GAPPS -f. If Android has no internet, the firewall is blocking it: sudo ufw allow in on waydroid0 && sudo ufw route allow in on waydroid0."
+    },
+    {
+      "id": "agent-usage",
+      "name": "Agent usage (bar add-on)",
+      "description": "Claude's weekly and 5-hour limits in Yggdrasil's top bar, red when the week's use is ahead of an even pace. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-agent-usage-git",
+      "notes": "Shows nothing until Claude Code is signed in on this account. The numbers come from Anthropic, asked with Claude Code's own sign-in."
     }
   ],
   "presets": {

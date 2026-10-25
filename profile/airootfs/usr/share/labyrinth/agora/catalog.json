@@ -641,7 +641,8 @@
    },
    "icon": "proton-vpn",
    "reviewed": true,
-   "tags": []
+   "tags": [],
+   "logo": "protonvpn"
   },
   {
    "id": "tor",
@@ -664,7 +665,8 @@
     "anonymous",
     "privacy",
     "torsocks"
-   ]
+   ],
+   "logo": "torproject"
   },
   {
    "id": "joplin",
@@ -926,7 +928,8 @@
    },
    "icon": "lazygit",
    "reviewed": true,
-   "tags": []
+   "tags": [],
+   "logo": "git"
   },
   {
    "id": "github-cli",
@@ -946,7 +949,8 @@
    "tags": [
     "gh",
     "github"
-   ]
+   ],
+   "logo": "github"
   },
   {
    "id": "docker",
@@ -964,7 +968,8 @@
    },
    "icon": "docker",
    "reviewed": true,
-   "tags": []
+   "tags": [],
+   "logo": "docker"
   },
   {
    "id": "podman",
@@ -981,7 +986,8 @@
    },
    "icon": "podman",
    "reviewed": true,
-   "tags": []
+   "tags": [],
+   "logo": "podman"
   },
   {
    "id": "virt-manager",
@@ -1032,7 +1038,8 @@
    },
    "icon": "local-ai",
    "reviewed": true,
-   "tags": []
+   "tags": [],
+   "logo": "ollama"
   },
   {
    "id": "ghidra",
@@ -1310,7 +1317,8 @@
    },
    "icon": "flatpak",
    "reviewed": true,
-   "tags": []
+   "tags": [],
+   "logo": "flatpak"
   },
   {
    "id": "accessibility",
@@ -1428,7 +1436,8 @@
     "mouse",
     "rgb",
     "macros"
-   ]
+   ],
+   "logo": "corsair"
   },
   {
    "id": "razer",
@@ -1452,7 +1461,8 @@
     "dpi",
     "buttons",
     "macros"
-   ]
+   ],
+   "logo": "razer"
   },
   {
    "id": "asus",
@@ -1474,7 +1484,8 @@
     "armoury crate",
     "fans",
     "keyboard"
-   ]
+   ],
+   "logo": "asus"
   },
   {
    "id": "waydroid",
@@ -1495,7 +1506,29 @@
     "apps",
     "mobile",
     "f-droid"
-   ]
+   ],
+   "logo": "android"
+  },
+  {
+   "id": "agent-usage",
+   "name": "Agent usage",
+   "subtitle": "Claude's limits in the top bar",
+   "description": "How much of Claude's weekly and 5-hour limits you have used, in the top bar (\"Claude 27% · 2d 12h\"), red when the week's use is ahead of an even pace; click it for every window and when each resets. It asks Anthropic with Claude Code's own sign-in, the way Claude Code does, at most every four minutes; nothing else is sent anywhere. Adapted from Omarchy's agent-usage plugin.",
+   "category": "Plugins",
+   "subcategory": "Top bar",
+   "source": {
+    "type": "component",
+    "id": "agent-usage"
+   },
+   "icon": "agent-usage",
+   "reviewed": true,
+   "tags": [
+    "claude",
+    "ai",
+    "bar",
+    "usage"
+   ],
+   "logo": "claude"
   }
  ],
  "featured": [

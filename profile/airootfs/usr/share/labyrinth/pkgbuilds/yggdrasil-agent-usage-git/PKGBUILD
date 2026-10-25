@@ -1,0 +1,41 @@
+# Maintainer: Labyrinth OS
+#
+# Agent usage, a Yggdrasil bar add-on (Claude's weekly and 5-hour limits in the top bar), built from Yggdrasil's public repository
+# (packages/agent-usage). Agora's Plugins installs it (labyrinth-apps install agent-usage). To build a local checkout instead:
+# YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-agent-usage-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Yggdrasil bar add-on: Claude's weekly and 5-hour usage from Claude Code's own sign-in"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'curl' 'yggdrasil-panel')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-agent-usage')
+conflicts=('yggdrasil-agent-usage')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/agent-usage)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/agent-usage"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/agent-usage"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/agent-usage"
+  install -Dm755 "$srcdir/target/release/yggdrasil-agent-usage" "$pkgdir/usr/bin/yggdrasil-agent-usage"
+  install -Dm644 agent-usage.conf "$pkgdir/usr/share/yggdrasil/integrations/agent-usage.conf"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-agent-usage/README.md"
+}
