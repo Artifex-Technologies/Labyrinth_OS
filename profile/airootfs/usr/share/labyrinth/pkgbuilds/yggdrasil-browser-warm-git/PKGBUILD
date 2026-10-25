@@ -1,0 +1,44 @@
+# Maintainer: Labyrinth OS
+#
+# Browser warm start, a Yggdrasil plugin: keeps a Chromium-family default browser started with no window so new windows open at
+# once (costs about 0.5-0.8 GB of memory; never for a browser set to run sandboxed). Adapted from
+# AgentRBY/omarchy-speedup-browser-startup (MIT), built from Yggdrasil's public repository (packages/browser-warm). Agora's Plugins
+# installs it (labyrinth-apps install browser-warm).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-browser-warm-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Yggdrasil plugin: the default browser kept started in the background for instant windows"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'systemd')
+optdepends=('xdg-utils: finding the default browser' 'hyprland: knowing when the browser has no windows, for restarts after updates')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-browser-warm')
+conflicts=('yggdrasil-browser-warm')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/browser-warm)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/browser-warm"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/browser-warm"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/browser-warm"
+  install -Dm755 "$srcdir/target/release/yggdrasil-browser-warm" "$pkgdir/usr/bin/yggdrasil-browser-warm"
+  install -Dm644 yggdrasil-browser-warm.service "$pkgdir/usr/lib/systemd/user/yggdrasil-browser-warm.service"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-browser-warm/README.md"
+}

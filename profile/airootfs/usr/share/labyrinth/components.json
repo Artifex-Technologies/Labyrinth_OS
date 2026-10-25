@@ -54,12 +54,13 @@
     },
     {
       "id": "weather",
-      "name": "Weather (multi-model)",
-      "description": "Labyrinth's weather engine: GFS, ECMWF and ICON models plus a 30-member ensemble, with an honest uncertainty range, scored against measured airport temperatures over time. Shows in the top bar and replaces nothing if left out. Uses Open-Meteo and aviationweather.gov, which receive the coordinates of the place you set.",
+      "name": "Weather (forecast and rain alerts)",
+      "description": "Labyrinth's weather engine: GFS, ECMWF and ICON models plus a 30-member ensemble, with an honest uncertainty range, scored against measured airport temperatures over time, and a rain nowcast for the next two hours (Open-Meteo's 15-minute data). The temperature sits in the top bar with \"rain in 20 min\" when a shower is coming, and one notification arrives before it. Uses Open-Meteo and aviationweather.gov, which receive the coordinates of the place you set.",
       "proprietary": false,
       "pkgbuild": "yggdrasil-weather",
       "enable_global": [
-        "yggdrasil-weather-record.timer"
+        "yggdrasil-weather-record.timer",
+        "yggdrasil-weather-nowcast.timer"
       ],
       "notes": "Set your place once: yggdrasil-weather set-location \"Your city\". Accuracy weighting needs a few days of recorded history."
     },
@@ -329,6 +330,36 @@
       ],
       "pkgbuild": "yggdrasil-authenticator-git",
       "notes": "Open Proton Authenticator once, sign in and let it sync; then the Authenticator window shows your codes."
+    },
+    {
+      "id": "timer",
+      "name": "Timer (top bar)",
+      "description": "Countdown timers in Yggdrasil's top bar: click the pill for presets (1 to 60 minutes), your own time and a label, pause and +1 minute; several can run at once. The alarm is a systemd user timer, so nothing runs while it counts, and it rings even with the window closed. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-timer-git",
+      "notes": "From a terminal or a shortcut: yggdrasil-timer start 25m Tea."
+    },
+    {
+      "id": "health-mode",
+      "name": "Health Mode (reminders)",
+      "description": "Gentle reminders to rest your eyes (20-20-20), move, drink water and breathe, plus a meal and a wind-down reminder at set times. Nothing is sent while you are away or the screen is locked, quiet hours and pause are a click away, and the top bar counts down to the next one. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-health-git",
+      "enable_global": [
+        "yggdrasil-health.service"
+      ],
+      "notes": "Click the heart in the top bar to choose reminders and intervals."
+    },
+    {
+      "id": "browser-warm",
+      "name": "Browser warm start",
+      "description": "Keeps your default browser started in the background with no window, so a new window opens at once instead of after half a second or more. Chromium-family browsers only (Chromium, Brave, Vivaldi, Chrome, Edge); Firefox has no such mode. Costs about 0.5 to 0.8 GB of memory. A browser you set to run sandboxed is never started this way, and after an update it is restarted only when it has no windows open. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-browser-warm-git",
+      "enable_global": [
+        "yggdrasil-browser-warm.service"
+      ],
+      "notes": "Quitting the browser from its menu starts it again in the background within a minute; remove the plugin to stop that."
     }
   ],
   "presets": {

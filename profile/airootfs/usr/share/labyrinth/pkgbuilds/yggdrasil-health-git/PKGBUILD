@@ -1,0 +1,47 @@
+# Maintainer: Labyrinth OS
+#
+# Health Mode, a Yggdrasil plugin: reminders to rest your eyes, move, drink water and breathe, held while you are away, with a
+# countdown in the top bar and a settings window. Adapted from musgandapur645-sudo/omarchy-health-mode (MIT), built from
+# Yggdrasil's public repository (packages/health). Agora's Plugins installs it (labyrinth-apps install health-mode).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-health-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Yggdrasil plugin: health reminders with a top bar countdown"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'systemd' 'libnotify' 'yggdrasil-panel')
+optdepends=('libpulse: the reminder sound (paplay)')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-health')
+conflicts=('yggdrasil-health')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/health)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/health"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/health"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/health"
+  install -Dm755 "$srcdir/target/release/yggdrasil-health" "$pkgdir/usr/bin/yggdrasil-health"
+  install -Dm644 data/yggdrasil-health.service "$pkgdir/usr/lib/systemd/user/yggdrasil-health.service"
+  install -Dm644 data/health.conf "$pkgdir/usr/share/yggdrasil/integrations/health.conf"
+  install -Dm644 data/health-symbolic.svg "$pkgdir/usr/share/yggdrasil/icons/health-symbolic.svg"
+  install -Dm644 data/yggdrasil-health.desktop "$pkgdir/usr/share/applications/yggdrasil-health.desktop"
+  install -Dm644 data/UPSTREAM-LICENSE "$pkgdir/usr/share/licenses/$pkgname/UPSTREAM-LICENSE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-health/README.md"
+}

@@ -44,6 +44,8 @@ package() {
   install -Dm755 "$srcdir/target-helper/release/pa-helper" "$pkgdir/usr/lib/yggdrasil-authenticator/pa-helper"
   install -Dm644 "$srcdir/pa/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.pa-helper"
   install -Dm644 "$srcdir/yggdrasil/packages/authenticator/README.md" "$pkgdir/usr/share/doc/yggdrasil-authenticator/README.md"
+  # the key in the top bar that opens the window
+  install -Dm644 "$srcdir/yggdrasil/packages/authenticator/authenticator.conf" "$pkgdir/usr/share/yggdrasil/integrations/authenticator.conf"
   install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/yggdrasil-authenticator.desktop" <<'DESKTOP'
 [Desktop Entry]
 Type=Application

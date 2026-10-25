@@ -1338,17 +1338,22 @@
   {
    "id": "weather",
    "name": "Weather",
-   "subtitle": "Forecast",
-   "description": "Labyrinth's weather app.",
-   "category": "Utilities",
-   "subcategory": "Everyday",
+   "subtitle": "Forecast and rain alerts in the top bar",
+   "description": "The temperature in the top bar from three forecast models and an ensemble, weighted by how well each has matched measured temperatures near you; click it for the details. When rain is coming in the next two hours the pill says \"rain in 20 min\" and one notification arrives before it starts. Set your place once with yggdrasil-weather set-location \"Your city\". Uses Open-Meteo and aviationweather.gov, which receive only the coordinates of that place. The rain view follows Omarchy's weather-nowcast plugin.",
+   "category": "Plugins",
+   "subcategory": "Top bar",
    "source": {
     "type": "component",
     "id": "weather"
    },
-   "icon": "weather",
+   "icon": "yggdrasil-weather",
    "reviewed": true,
-   "tags": []
+   "tags": [
+    "weather",
+    "rain",
+    "forecast",
+    "bar"
+   ]
   },
   {
    "id": "daedalus-cad",
@@ -1551,6 +1556,68 @@
     "security"
    ],
    "launch": "yggdrasil-authenticator"
+  },
+  {
+   "id": "timer",
+   "name": "Timer",
+   "subtitle": "Countdowns in the top bar",
+   "description": "A timer pill in the top bar that counts down by itself. Click it for presets, your own time (\"90s\", \"1h30m\") and a label; pause, add a minute or run several at once. It rings with a notification and a sound even when the window is closed. Rewritten in Rust from Omarchy's timer plugin.",
+   "category": "Plugins",
+   "subcategory": "Top bar",
+   "source": {
+    "type": "component",
+    "id": "timer"
+   },
+   "icon": "yggdrasil-timer",
+   "reviewed": true,
+   "tags": [
+    "timer",
+    "countdown",
+    "pomodoro",
+    "bar"
+   ],
+   "launch": "yggdrasil-timer"
+  },
+  {
+   "id": "health-mode",
+   "name": "Health Mode",
+   "subtitle": "Breaks for your eyes and body",
+   "description": "Reminders to look away (20-20-20), move, drink water and breathe, with a meal and a wind-down reminder at times you pick. Held while you are away or locked, quiet hours and pause, and a countdown to the next one in the top bar. Rewritten in Rust from Omarchy's health-mode plugin.",
+   "category": "Plugins",
+   "subcategory": "Top bar",
+   "source": {
+    "type": "component",
+    "id": "health-mode"
+   },
+   "icon": "yggdrasil-health",
+   "reviewed": true,
+   "tags": [
+    "health",
+    "breaks",
+    "eyes",
+    "reminders",
+    "bar"
+   ],
+   "launch": "yggdrasil-health"
+  },
+  {
+   "id": "browser-warm",
+   "name": "Browser warm start",
+   "subtitle": "New browser windows at once",
+   "description": "Keeps your Chromium-family default browser (Brave, Vivaldi, Chromium, Chrome, Edge) started in the background with no window, so a new window opens immediately. Costs about 0.5 to 0.8 GB of memory. Never used for a browser you set to run sandboxed; after an update it waits until the browser has no windows before restarting it. Firefox has no such mode. Rewritten in Rust from Omarchy's speedup-browser-startup plugin.",
+   "category": "Plugins",
+   "subcategory": "Performance",
+   "source": {
+    "type": "component",
+    "id": "browser-warm"
+   },
+   "icon": "yggdrasil-browser-warm",
+   "reviewed": true,
+   "tags": [
+    "browser",
+    "speed",
+    "startup"
+   ]
   }
  ],
  "featured": [

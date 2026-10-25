@@ -1,0 +1,49 @@
+# Maintainer: Labyrinth OS
+#
+# Weather, a Yggdrasil plugin: GFS, ECMWF and ICON plus an ensemble, scored against measured temperatures, in the top bar, with a
+# rain nowcast for the next two hours and one notification before a shower. Built from Yggdrasil's public repository
+# (packages/weather). Agora installs it (labyrinth-apps install weather).
+# Named like the ISO's package (Yggdrasil's packages/pkgbuilds/yggdrasil-weather builds the same from a checkout).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-weather
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Yggdrasil weather: multi-model consensus and rain nowcast in the top bar, with a notification before rain"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'ca-certificates' 'libnotify')
+optdepends=('yggdrasil-panel: the top bar pill')
+replaces=('labyrinth-weather')
+makedepends=('cargo' 'git')
+provides=('labyrinth-weather')
+conflicts=('labyrinth-weather')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/weather)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/weather"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/weather"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/weather"
+  install -Dm755 "$srcdir/target/release/yggdrasil-weather" "$pkgdir/usr/bin/yggdrasil-weather"
+  # hourly recording (accuracy weighting) and the 10-minute rain check; Labyrinth enables both timers for every user
+  for u in yggdrasil-weather-record.service yggdrasil-weather-record.timer yggdrasil-weather-nowcast.service yggdrasil-weather-nowcast.timer; do
+    install -Dm644 "systemd/$u" "$pkgdir/usr/lib/systemd/user/$u"
+  done
+  install -Dm644 weather.conf "$pkgdir/usr/share/yggdrasil/integrations/weather.conf"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-weather/README.md"
+}
