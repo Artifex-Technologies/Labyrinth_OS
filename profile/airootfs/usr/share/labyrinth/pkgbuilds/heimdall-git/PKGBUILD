@@ -1,0 +1,45 @@
+# Maintainer: Labyrinth OS
+#
+# Heimdall, the security agent, built from Heimdall's public repository: for Agora (labyrinth-apps install heimdall) and for
+# an install that chose Heimdall when it was not on the medium (installed at first login). The ISO's own build uses
+# packages/pkgbuilds/heimdall-git, which builds the checkout next to Labyrinth_OS. The file list lives in Heimdall's
+# packaging/install.sh; on a fresh install the package switches on Heimdall and its timers itself.
+# To build a local checkout instead: HEIMDALL_SRC=file://$HOME/Documents/Github/Heimdall makepkg -si
+
+pkgname=heimdall-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt injection, leaked credentials and permission escalation'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Heimdall'
+license=('MPL-2.0')
+depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'networkmanager' 'dnsmasq' 'nftables')
+makedepends=('go' 'git')
+provides=('heimdall')
+conflicts=('heimdall')
+backup=('etc/heimdall/dns-allow.txt' 'etc/NetworkManager/dnsmasq.d/heimdall-blocklist.conf')
+options=('!debug')
+source=("heimdall::git+${HEIMDALL_SRC:-https://github.com/Artifex-Technologies/Heimdall.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/heimdall"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/heimdall"
+  export CGO_ENABLED=0
+  go build -trimpath -ldflags "-s -w" -o heimdalld ./cmd/heimdalld
+}
+
+check() {
+  cd "$srcdir/heimdall"
+  go test ./...
+}
+
+package() {
+  cd "$srcdir/heimdall"
+  # the file list lives in Heimdall itself (one place for every system that packages it)
+  ./packaging/install.sh "$pkgdir"
+}
