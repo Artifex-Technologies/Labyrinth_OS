@@ -67,13 +67,15 @@ def run(argv, stdin=None, check=True, capture=False):
     """Runs a program; on failure stops the install with its error output."""
     r = subprocess.run(argv, input=stdin, text=True, capture_output=True)
     if check and r.returncode != 0:
-        raise Stop(f"{' '.join(argv[:3])} failed: {(r.stderr or r.stdout).strip()[-400:]}")
+        shown = argv[4:] if argv[:1] == ["chroot"] else argv  # the program, not the chroot and search path around it
+        raise Stop(f"{' '.join(shown[:3])} failed: {(r.stderr or r.stdout).strip()[-400:]}")
     return r.stdout if capture else r
 
 
 def inside(argv, stdin=None, check=True):
-    """Runs a program inside the new system (chroot)."""
-    return run(["chroot", TARGET] + argv, stdin=stdin, check=check)
+    """Runs a program inside the new system (chroot), with the system's full search path: pkexec gives the installer one
+    without /usr/local/bin, where Labyrinth's own helpers are (labyrinth-install-bootfinish then found no menu theme)."""
+    return run(["chroot", TARGET, "/usr/bin/env", "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin"] + argv, stdin=stdin, check=check)
 
 
 # ---------------------------------------------------------------- the plan

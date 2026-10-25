@@ -190,8 +190,8 @@ fi
 
 # 2e. The boot menu theme (grub-evodevo with Labyrinth's emblem). It regenerates grub.cfg itself and puts
 #     the old menu back if the result is unusable, so a failure here costs only the looks.
-if command -v labyrinth-grub-theme >/dev/null && command -v rsvg-convert >/dev/null; then
-  labyrinth-grub-theme && say "boot menu theme installed" || warn "could not install the boot menu theme (the plain menu stays)"
+if [ -x /usr/local/bin/labyrinth-grub-theme ] && command -v rsvg-convert >/dev/null; then
+  /usr/local/bin/labyrinth-grub-theme && say "boot menu theme installed" || warn "could not install the boot menu theme (the plain menu stays)"
 else
   warn "labyrinth-grub-theme or rsvg-convert is missing; plain boot menu"
 fi
