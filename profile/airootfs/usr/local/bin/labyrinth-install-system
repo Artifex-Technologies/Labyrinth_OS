@@ -6,7 +6,8 @@ so passwords never appear on a command line.
     {"disk": "/dev/nvme0n1", "mode": "erase",
      "encrypt": true, "encrypt_password": "...",          (LUKS2; one password at start-up)
      "user": {"name": "Full Name", "login": "me", "password": "..."},
-     "hostname": "labyrinth", "timezone": "America/Denver", "locale": "en_US.UTF-8", "keymap": "us", "keymap_variant": ""}
+     "hostname": "labyrinth", "timezone": "America/Denver", "locale": "en_US.UTF-8", "keymap": "us", "keymap_variant": "",
+     "browsers": ["vivaldi", "librewolf"], "default_browser": "vivaldi"}      (optional; ids from installer-browsers.json)
 
     Partitions chosen by hand instead of the whole disk ("mode": "manual"; only on the chosen disk):
     {"disk": "/dev/nvme0n1", "mode": "manual", "new_table": false,
@@ -41,6 +42,10 @@ import subprocess
 import sys
 import time
 
+BROWSERS_FILE = os.environ.get("LABYRINTH_INSTALL_BROWSERS", "/usr/share/labyrinth/installer-browsers.json")
+# the keys that make a browser the default (as /etc/xdg/mimeapps.list sets them)
+BROWSER_MIME = ["x-scheme-handler/http", "x-scheme-handler/https", "x-scheme-handler/about", "x-scheme-handler/unknown", "text/html",
+                "application/xhtml+xml"]
 SFS = os.environ.get("LABYRINTH_INSTALL_SFS", "/run/archiso/bootmnt/labyrinth/x86_64/airootfs.sfs")
 TARGET = os.environ.get("LABYRINTH_INSTALL_TARGET", "/mnt/labyrinth-install")
 MAPPER = "labyrinth-root"
@@ -135,7 +140,169 @@ def check_plan(p):
         return "unknown keyboard layout"
     if p.get("keymap_variant") and not KEYMAP.match(p["keymap_variant"]):
         return "unknown keyboard variant"
+    if "browsers" in p:
+        known = {b["id"] for b in browser_catalog()}
+        chosen = p["browsers"]
+        if not isinstance(chosen, list) or any(not isinstance(b, str) or b not in known for b in chosen):
+            return "unknown browser chosen"
+        if p.get("default_browser") and p["default_browser"] not in chosen:
+            return "the default browser must be one of those chosen"
     return None
+
+
+# ---------------------------------------------------------------- browsers
+
+
+def browser_catalog(path=None):
+    """The browsers the installer offers (installer-browsers.json); none when the file is missing."""
+    try:
+        return [b for b in json.load(open(path or BROWSERS_FILE)).get("browsers", []) if isinstance(b, dict) and b.get("id")]
+    except (OSError, ValueError):
+        return []
+
+
+def browser_plan(catalog, chosen):
+    """What choosing `chosen` (ids) means: the repository packages of the others to remove (only those installed are), the ones
+    to install, and the Flathub apps to install."""
+    remove, install, flatpaks = [], [], []
+    for b in catalog:
+        pk = b.get("packages", [])
+        if b["id"] in chosen:
+            install += pk
+            if b.get("flatpak"):
+                flatpaks.append(b["flatpak"])
+        else:
+            remove += pk
+    keep = set(install)
+    return {"remove": [x for x in remove if x not in keep], "install": install, "flatpaks": flatpaks}
+
+
+def mimeapps_with_browser(text, desktop):
+    """/etc/xdg/mimeapps.list with `desktop` opening web links and pages (the keys added under [Default Applications] if
+    missing)."""
+    lines = text.splitlines()
+    if not any(l.strip() == "[Default Applications]" for l in lines):
+        lines.append("[Default Applications]")
+    seen = set()
+    out = []
+    for l in lines:
+        k = l.split("=", 1)[0].strip()
+        if "=" in l and k in BROWSER_MIME and not l.lstrip().startswith("#"):
+            out.append(f"{k}={desktop}")
+            seen.add(k)
+        else:
+            out.append(l)
+    at = next(i for i, l in enumerate(out) if l.strip() == "[Default Applications]") + 1
+    for k in reversed([k for k in BROWSER_MIME if k not in seen]):
+        out.insert(at, f"{k}={desktop}")
+    return "\n".join(out) + "\n"
+
+
+def dock_with_browser(text, browser_ids, default_id):
+    """The dock's pinned apps with the browser pinned there (any of `browser_ids`) replaced by the default one, or taken out
+    when there is none; other browsers pinned are taken out."""
+    out, placed = [], False
+    for l in text.splitlines():
+        if l.strip() in browser_ids and not l.lstrip().startswith("#"):
+            if default_id and not placed:
+                out.append(default_id)
+                placed = True
+            continue
+        out.append(l)
+    return "\n".join(out) + "\n"
+
+
+def with_dns(fn):
+    """Runs fn with the new system able to look up names: its /run is empty, so its resolv.conf (a link into /run) points
+    nowhere; the live system's own answers are lent to it for the time being."""
+    link = f"{TARGET}/etc/resolv.conf"
+    live = ""
+    try:
+        live = open("/etc/resolv.conf").read()
+    except OSError:
+        pass
+    made = None
+    if os.path.islink(link):
+        dest = os.readlink(link)
+        dest = os.path.normpath(os.path.join("/etc", dest)) if not dest.startswith("/") else dest
+        made = TARGET + dest
+        if not os.path.exists(made):
+            os.makedirs(os.path.dirname(made), exist_ok=True)
+            with open(made, "w") as f:
+                f.write(live)
+        else:
+            made = None
+    try:
+        return fn()
+    finally:
+        if made:
+            os.remove(made)
+
+
+def set_up_browsers(p):
+    """The browsers chosen in the installer: the others that came on the medium are removed, the rest installed (from the
+    repositories, or Flathub; both need the internet, and a browser that cannot be had is left for Agora: never a reason to stop
+    the install), and the default one opens web links and sits in the dock."""
+    if "browsers" not in p:
+        return
+    catalog = browser_catalog()
+    chosen = p["browsers"]
+    plan = browser_plan(catalog, chosen)
+    names = {b["id"]: b.get("name", b["id"]) for b in catalog}
+    have = [x for x in plan["remove"] if inside(["pacman", "-Q", x], check=False).returncode == 0]
+    if have:
+        say("INFO", "removing the browsers not chosen: " + ", ".join(have))
+        r = inside(["pacman", "-Rns", "--noconfirm"] + have, check=False)
+        if r.returncode != 0:
+            say("WARN", "could not remove " + ", ".join(have) + ": " + (r.stderr or r.stdout).strip()[-200:])
+    missing = [x for x in plan["install"] if inside(["pacman", "-Q", x], check=False).returncode != 0]
+    flat = plan["flatpaks"]
+    if missing or flat:
+        def fetch():
+            if missing:
+                say("INFO", "installing " + ", ".join(missing) + " (from the internet)")
+                r = inside(["pacman", "-S", "--needed", "--noconfirm"] + missing, check=False)
+                if r.returncode != 0:
+                    # the medium's package lists may be older than the mirrors: bring the system up to date with them
+                    r = inside(["pacman", "-Syu", "--needed", "--noconfirm"] + missing, check=False)
+                if r.returncode != 0:
+                    say("WARN", "could not install " + ", ".join(missing) + " (no internet?); Agora can install them later")
+            for app in flat:
+                inside(["flatpak", "remote-add", "--system", "--if-not-exists", "flathub", "https://dl.flathub.org/repo/flathub.flatpakrepo"], check=False)
+                say("INFO", f"installing {app} from Flathub")
+                r = inside(["flatpak", "install", "--system", "-y", "--noninteractive", "flathub", app], check=False)
+                if r.returncode != 0:
+                    say("WARN", f"could not install {app} from Flathub (no internet?); Agora can install it later")
+        with_dns(fetch)
+    # the default: the one picked, else the first chosen; only one that is really there now
+    order = ([p["default_browser"]] if p.get("default_browser") else []) + chosen
+    dirs = [f"{TARGET}/usr/share/applications", f"{TARGET}/var/lib/flatpak/exports/share/applications"]
+    default = None
+    for bid in order:
+        b = next((x for x in catalog if x["id"] == bid), None)
+        for d in (b or {}).get("desktop", []):
+            if any(os.path.exists(os.path.join(dd, d)) for dd in dirs):
+                default = d
+                break
+        if default:
+            break
+    if not chosen:
+        say("INFO", "no browser chosen: Agora has them all")
+    elif not default:
+        say("WARN", "none of the chosen browsers could be installed; Agora can install one later")
+    else:
+        say("INFO", f"default browser: {default}")
+        mf = f"{TARGET}/etc/xdg/mimeapps.list"
+        text = open(mf).read() if os.path.exists(mf) else ""
+        with open(mf, "w") as f:
+            f.write(mimeapps_with_browser(text, default))
+    dock = f"{TARGET}/etc/yggdrasil/dock"
+    if os.path.exists(dock):
+        ids = {d[:-len(".desktop")] for b in catalog for d in b.get("desktop", [])}
+        with open(dock) as f:
+            text = f.read()
+        with open(dock, "w") as f:
+            f.write(dock_with_browser(text, ids, default[:-len(".desktop")] if default else None))
 
 
 def check_manual(p):
@@ -647,6 +814,7 @@ def install(p):
     bind_mounts()
     write_fstab(fstab)
     set_up(p)
+    set_up_browsers(p)
     if encrypted:
         encryption_setup(root_part)
         run(["cryptsetup", "luksAddKey", "--batch-mode", "--key-file=-", root_part, f"{TARGET}/crypto_keyfile.bin"], stdin=p["encrypt_password"])

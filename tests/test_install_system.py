@@ -97,5 +97,61 @@ class Manual(unittest.TestCase):
         self.assertIn("no partition table", inst.manual_fits(manual(), dict(DISK, table="", partitions=[])))
 
 
+CATALOG = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "installer-browsers.json")
+
+
+class Browsers(unittest.TestCase):
+    def setUp(self):
+        self.cat = inst.browser_catalog(CATALOG)
+
+    def test_the_offered_browsers_are_the_linux_ones(self):
+        ids = [b["id"] for b in self.cat]
+        self.assertEqual(ids, ["vivaldi", "firefox", "brave", "librewolf", "mullvad-browser", "waterfox", "opera", "opera-gx"])
+        self.assertEqual([b["id"] for b in self.cat if b.get("chosen")], ["vivaldi"], "Vivaldi is chosen to start with")
+        for b in self.cat:
+            self.assertTrue(b.get("packages") or b.get("flatpak"), b["id"])
+            self.assertTrue(b.get("desktop"), b["id"])
+        self.assertEqual(inst.browser_catalog("/nonexistent.json"), [])
+
+    def test_a_choice_removes_the_others_and_installs_its_own(self):
+        p = inst.browser_plan(self.cat, ["librewolf", "opera-gx"])
+        self.assertIn("vivaldi", p["remove"])
+        self.assertIn("vivaldi-ffmpeg-codecs", p["remove"])
+        self.assertIn("firefox", p["remove"])
+        self.assertEqual(p["install"], ["librewolf"])
+        self.assertEqual(p["flatpaks"], ["com.opera.opera-gx"])
+        none = inst.browser_plan(self.cat, [])
+        self.assertEqual((none["install"], none["flatpaks"]), ([], []))
+        self.assertIn("vivaldi", none["remove"])
+
+    def test_the_plan_names_known_browsers_only(self):
+        base = {"disk": "/dev/vda", "mode": "erase", "encrypt": False, "user": {"name": "A", "login": "a", "password": "longenough"},
+                "hostname": "x", "timezone": "UTC", "locale": "en_US.UTF-8", "keymap": "us"}
+        old = inst.BROWSERS_FILE
+        inst.BROWSERS_FILE = CATALOG
+        try:
+            self.assertIsNone(inst.check_plan(base), "no browsers key: the medium's browsers stay")
+            self.assertIsNone(inst.check_plan(dict(base, browsers=["brave", "firefox"], default_browser="firefox")))
+            self.assertIsNone(inst.check_plan(dict(base, browsers=[])))
+            self.assertEqual(inst.check_plan(dict(base, browsers=["duckduckgo"])), "unknown browser chosen")
+            self.assertEqual(inst.check_plan(dict(base, browsers="vivaldi")), "unknown browser chosen")
+            self.assertEqual(inst.check_plan(dict(base, browsers=["brave"], default_browser="vivaldi")), "the default browser must be one of those chosen")
+        finally:
+            inst.BROWSERS_FILE = old
+
+    def test_the_default_browser_opens_links_and_sits_in_the_dock(self):
+        mime = "# comment\n[Default Applications]\nx-scheme-handler/http=vivaldi-stable.desktop\ntext/html=vivaldi-stable.desktop\nvideo/mp4=yggdrasil-player.desktop\n"
+        out = inst.mimeapps_with_browser(mime, "librewolf.desktop")
+        self.assertIn("x-scheme-handler/http=librewolf.desktop", out)
+        self.assertIn("x-scheme-handler/https=librewolf.desktop", out, "a missing key is added")
+        self.assertIn("video/mp4=yggdrasil-player.desktop", out)
+        self.assertNotIn("vivaldi", out)
+        self.assertIn("text/html=x.desktop", inst.mimeapps_with_browser("", "x.desktop"))
+        dock = "# pins\nminos\nvivaldi-stable\nfirefox\nsteam\n"
+        ids = {"vivaldi-stable", "firefox", "librewolf"}
+        self.assertEqual(inst.dock_with_browser(dock, ids, "librewolf"), "# pins\nminos\nlibrewolf\nsteam\n")
+        self.assertEqual(inst.dock_with_browser(dock, ids, None), "# pins\nminos\nsteam\n")
+
+
 if __name__ == "__main__":
     unittest.main()

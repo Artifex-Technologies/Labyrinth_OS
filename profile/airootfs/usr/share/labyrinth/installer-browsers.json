@@ -1,0 +1,21 @@
+{
+ "_comment": "The browsers the installer offers (Yggdrasil's installer shows id, name, note, chosen; labyrinth-install-system installs them). packages: from the repositories (those already on the medium need no network); flatpak: from Flathub. desktop: the launcher names to look for when making it the default (the first one found).",
+ "browsers": [
+  {"id": "vivaldi", "name": "Vivaldi", "note": "Chromium-based, very customisable: tabs, panels, mail and calendar built in", "chosen": true,
+   "packages": ["vivaldi", "vivaldi-ffmpeg-codecs"], "desktop": ["vivaldi-stable.desktop"]},
+  {"id": "firefox", "name": "Firefox", "note": "Mozilla's browser: independent engine, many extensions", "chosen": false,
+   "packages": ["firefox"], "desktop": ["firefox.desktop"]},
+  {"id": "brave", "name": "Brave", "note": "Chromium-based, blocks ads and trackers by default", "chosen": false,
+   "packages": ["brave-bin"], "desktop": ["brave-browser.desktop", "brave.desktop"]},
+  {"id": "librewolf", "name": "LibreWolf", "note": "Firefox without telemetry, privacy settings turned up, uBlock Origin included", "chosen": false,
+   "packages": ["librewolf"], "desktop": ["librewolf.desktop"]},
+  {"id": "mullvad-browser", "name": "Mullvad Browser", "note": "Tor Browser's anti-tracking, for use with a VPN instead of Tor", "chosen": false,
+   "packages": ["mullvad-browser-bin"], "desktop": ["mullvad-browser.desktop", "mullvadbrowser.desktop"]},
+  {"id": "waterfox", "name": "Waterfox", "note": "Independent Firefox-based browser, no telemetry", "chosen": false,
+   "packages": ["waterfox-bin"], "desktop": ["waterfox.desktop", "waterfox-bin.desktop"]},
+  {"id": "opera", "name": "Opera", "note": "Chromium-based, built-in browser VPN and ad blocker (from Flathub)", "chosen": false,
+   "flatpak": "com.opera.Opera", "desktop": ["com.opera.Opera.desktop"]},
+  {"id": "opera-gx", "name": "Opera GX", "note": "Opera for gamers: CPU, memory and network limits, Twitch and Discord (from Flathub)", "chosen": false,
+   "flatpak": "com.opera.opera-gx", "desktop": ["com.opera.opera-gx.desktop"]}
+ ]
+}
