@@ -10,7 +10,7 @@
 _agent_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Sarina" && pwd)"
 
 pkgname=sarina-git
-pkgver=0.1.0.r83.geb9ee4a
+pkgver=0.1.0.r84.gfae5729
 pkgrel=1
 pkgdesc='Local-model agent: Go core with an optional Python ML/voice helper (built from the local Sarina checkout)'
 arch=('x86_64')
@@ -62,5 +62,9 @@ package() {
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   for d in packaging/skills/*/; do
     install -Dm644 "$d/SKILL.md" "$pkgdir/usr/share/sarina/skills/$(basename "$d")/SKILL.md"
+    # a long skill's sections, read on demand (skill_section, skill_search)
+    for f in "$d"sections/*.md; do
+      if [ -f "$f" ]; then install -Dm644 "$f" "$pkgdir/usr/share/sarina/skills/$(basename "$d")/sections/$(basename "$f")"; fi
+    done
   done
 }
