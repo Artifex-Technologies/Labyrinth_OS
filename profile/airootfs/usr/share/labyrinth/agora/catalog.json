@@ -1646,9 +1646,9 @@
   },
   {
    "id": "xbox-controllers",
-   "name": "Xbox controller support",
-   "subtitle": "xpadneo: Xbox controllers over Bluetooth",
-   "description": "The xpadneo driver for Xbox One and Series controllers connected over Bluetooth: rumble (including the trigger motors), battery level and the right button layout. Also helps some 8BitDo controllers in Xbox mode. USB Xbox controllers already work without it.",
+   "name": "Xbox and 8BitDo controllers",
+   "subtitle": "xpadneo: Xbox-mode controllers over Bluetooth",
+   "description": "The xpadneo driver for Xbox One and Series controllers connected over Bluetooth, and for 8BitDo controllers in Xbox mode (hold Start + X while turning it on): rumble (including the trigger motors), battery level and the right button layout. Over USB, and 8BitDo controllers in Switch mode, already work without it. For 8BitDo firmware updates, use 8BitDo's own updater at web.8bitdo.com in Vivaldi or another Chromium-based browser.",
    "category": "Play",
    "subcategory": "Gaming Gear",
    "source": {
@@ -1662,7 +1662,8 @@
     "controller",
     "gamepad",
     "bluetooth",
-    "driver"
+    "driver",
+    "8bitdo"
    ]
   }
  ],

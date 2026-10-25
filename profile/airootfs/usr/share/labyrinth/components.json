@@ -374,13 +374,13 @@
     },
     {
       "id": "xbox-controllers",
-      "name": "Xbox controller support (xpadneo)",
-      "description": "xpadneo, the driver for Xbox One and Series controllers over Bluetooth: working rumble, trigger rumble, battery level and correct buttons (also some 8BitDo controllers in Xbox mode). A kernel module built for your kernels (DKMS).",
+      "name": "Xbox and 8BitDo controller support (xpadneo)",
+      "description": "xpadneo, the driver for Xbox One and Series controllers over Bluetooth, and for 8BitDo controllers in Xbox mode: working rumble, trigger rumble, battery level and correct buttons. A kernel module built for your kernels (DKMS).",
       "proprietary": false,
       "packages": [
         "xpadneo-dkms"
       ],
-      "notes": "Reconnect the controller after installing. USB Xbox controllers work without it."
+      "notes": "Reconnect the controller after installing. USB Xbox controllers, and 8BitDo controllers over USB or in Switch mode, work without it."
     }
   ],
   "presets": {
