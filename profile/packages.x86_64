@@ -114,6 +114,8 @@ yggdrasil-portal
 yggdrasil-agora
 yggdrasil-calculator
 yggdrasil-panel
+yggdrasil-clipboard
+yggdrasil-colorpicker
 yggdrasil-idle
 yggdrasil-keyring-sync
 yggdrasil-session

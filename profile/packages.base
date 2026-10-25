@@ -140,6 +140,8 @@ yggdrasil-portal
 yggdrasil-agora
 yggdrasil-calculator
 yggdrasil-panel
+yggdrasil-clipboard
+yggdrasil-colorpicker
 yggdrasil-idle
 yggdrasil-keyring-sync
 # the session (Hyprland with Yggdrasil's settings), lock and login screen, dragging X11 windows, the installer
