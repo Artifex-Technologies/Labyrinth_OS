@@ -9,6 +9,9 @@
 #   3. Runs mkarchiso.
 #
 # Output: out/*.iso. Env: LABYRINTH_WORK_DIR, LABYRINTH_OUT_DIR override work/ and out/.
+# LABYRINTH_PRESET=minimal (or gaming, creative; see components.json) builds a lighter medium from the same profile: only that
+# preset's components are on it, and the ISO is named labyrinth-PRESET-DATE.iso. The installer still offers the browsers and the AI
+# (Sarina, Heimdall); what is not on the medium is fetched during the install or at the first login.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -49,6 +52,11 @@ rm -rf --one-file-system "${profile_build_dir:?}"
 mkdir -p "$work_dir"
 cp -r "$repo_root/profile" "$profile_build_dir"
 sed -i "s|@@LABYRINTH_REPO_DIR@@|$repo_root/repo/x86_64|g" "$profile_build_dir/pacman.conf"
+if [[ -n ${LABYRINTH_PRESET:-} ]]; then
+  echo "==> A lighter medium: the $LABYRINTH_PRESET preset"
+  python3 "$repo_root/scripts/gen-packages.py" --preset "$LABYRINTH_PRESET" --out "$profile_build_dir/packages.x86_64"
+  sed -i "s|^iso_name=\"labyrinth\"|iso_name=\"labyrinth-$LABYRINTH_PRESET\"|" "$profile_build_dir/profiledef.sh"
+fi
 
 # Service wiring as symlinks (mkarchiso copies airootfs over the pacstrapped root as-is).
 sysd="$profile_build_dir/airootfs/etc/systemd/system"

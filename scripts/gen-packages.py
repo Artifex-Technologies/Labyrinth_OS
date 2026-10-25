@@ -5,6 +5,7 @@
   scripts/gen-packages.py --preset minimal      # base system only
   scripts/gen-packages.py --components steam,obsidian
   scripts/gen-packages.py --check               # exit 1 if the committed file is stale
+  scripts/gen-packages.py --preset minimal --out FILE   # write elsewhere (scripts/build.sh does, for LABYRINTH_PRESET)
 
 The ISO is whatever this writes; components left out can still be installed later with
 labyrinth-apps (needs network). Output has no trailing comments (mkarchiso's parser
@@ -70,6 +71,7 @@ def main(argv):
     ap.add_argument("--preset", default=None)
     ap.add_argument("--components", default=None)
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--out", default=OUT)
     a = ap.parse_args(argv)
     data = json.load(open(COMPONENTS, encoding="utf-8"))
     if a.components is not None:
@@ -87,9 +89,9 @@ def main(argv):
             print("profile/packages.x86_64 is stale; run scripts/gen-packages.py", file=sys.stderr)
             return 1
         return 0
-    with open(OUT, "w", encoding="utf-8", newline="\n") as f:
+    with open(a.out, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
-    print(f"wrote {OUT}: {len(seen_names(text))} packages, components: {', '.join(ids) or 'none'}")
+    print(f"wrote {a.out}: {len(seen_names(text))} packages, components: {', '.join(ids) or 'none'}")
     return 0
 
 
