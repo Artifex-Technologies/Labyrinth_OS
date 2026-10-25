@@ -6,6 +6,10 @@ What it does, all read-only: new crashes since the last check-up, failed service
 writes one line in her vault (Daily/YYYY-MM-DD.md) and says nothing. If something is wrong it asks Sarina, with her read-only spoken-question
 tools, to explain it in a few sentences, notes that, and shows one notification. It never changes anything, and it waits for another day if
 the graphics card is busy (a game), so it never takes the GPU while you play.
+
+Security: when Heimdall reports something new (a package or kernel with known holes, a setting that could be safer; its /v1/audit), Sarina's
+security-advisor skill judges it and proposes the fixes in order, with the exact commands. The proposal goes in the vault (Security/YYYY-MM-DD.md)
+with one notification; you run the commands, she changes nothing.
 """
 import datetime
 import json
@@ -126,6 +130,57 @@ def stale_overrides():
     return out
 
 
+def heimdall_audit():
+    import urllib.request
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8930/v1/audit", timeout=15) as r:
+            return json.loads(r.read(2 << 20))
+    except (OSError, ValueError):
+        return None
+
+
+def security_keys(audit):
+    """What Heimdall finds open, one short key per finding (a kernel's key changes when its count of holes does)."""
+    keys = {}
+    for p in audit.get("packages") or []:
+        keys["pkg|%s|%s|%s" % (p.get("package"), p.get("installed"), p.get("advisory"))] = "%s %s: %s vulnerability" % (p.get("package"), p.get("installed"), (p.get("severity") or "").lower())
+    for k in audit.get("kernels") or []:
+        if k.get("count"):
+            keys["kernel|%s|%s" % (k.get("kernel"), k.get("count"))] = "kernel %s%s: %s known holes" % (k.get("kernel"), " (running)" if k.get("running") else "", k.get("count"))
+    for g in audit.get("hardening") or []:
+        keys["hard|%s|%s" % (g.get("id"), g.get("now"))] = g.get("now", "")
+    return keys
+
+
+def security_review(env, vault, new):
+    """Sarina's proposal for Heimdall's new findings: saved, and one notification."""
+    env = dict(env, SARINA_SYSTEM="on")
+    try:
+        r = subprocess.run(["sarina", "skill", "run", "security-advisor", "new since the last check-up: " + "; ".join(new)],
+                           capture_output=True, text=True, timeout=600, env=env, cwd=os.path.expanduser("~"))
+        answer = r.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        answer = ""
+    if not answer:
+        return "Heimdall found %d new thing(s) (%s); Sarina could not review them" % (len(new), "; ".join(new))
+    today = datetime.date.today().isoformat()
+    if vault and os.path.isdir(vault):
+        d = os.path.join(vault, "Security")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, today + ".md")
+        front = "---\ncreated: %s\nsource: labyrinth-sarina-checkup (security-advisor)\ntags: [security]\n---\n\n" % today
+    else:
+        d = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "sarina", "security-reviews")
+        os.makedirs(d, exist_ok=True)
+        path, front = os.path.join(d, today + ".md"), ""
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(front if os.path.getsize(path) == 0 else "\n\n")
+        f.write("# Security review %s\n\nHeimdall's new findings: %s\n\n%s\n" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "; ".join(new), answer))
+    summary = answer.split("\n", 1)[0].removeprefix("Summary:").strip()
+    subprocess.run(["notify-send", "-a", "Sarina", "-i", "security-high", "Security review", (summary + "\n\nHer proposal: " + path)[:800]], check=False)
+    return "security review of %d new finding(s) saved in %s" % (len(new), path)
+
+
 def note(vault, text):
     if not vault or not os.path.isdir(vault):
         return
@@ -172,6 +227,14 @@ def main():
             answer = "(Sarina could not look at it)"
         note(vault, "; ".join(found) + ". " + answer.replace("\n", " "))
         subprocess.run(["notify-send", "-a", "Sarina", "-i", "dialog-information", "Daily check-up", ("; ".join(found) + "\n\n" + answer)[:800]], check=False)
+    audit = heimdall_audit()
+    if audit is not None:
+        keys = security_keys(audit)
+        seen = set(st.get("security_seen") or [])
+        new = [keys[k] for k in sorted(keys) if k not in seen]
+        if new:
+            note(vault, security_review(env, vault, new))
+        st["security_seen"] = sorted(keys)  # only what is still open: a hole that comes back is new again
     st["last"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
     with open(STATE, "w") as f:
