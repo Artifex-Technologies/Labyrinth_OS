@@ -1,0 +1,41 @@
+# Maintainer: Labyrinth OS
+#
+# 2048, a game for Yggdrasil: slide tiles to reach 2048, with undo, stats, four modes and board sizes 3x3 to 6x6. Rewritten in Rust from imranZERO/omarchy-2048 (MIT); built from Yggdrasil's public
+# repository (packages/game-2048). Agora installs it (labyrinth-apps install game-2048).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-2048-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="2048 for Yggdrasil: slide and merge tiles"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'wayland' 'libxkbcommon')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-2048')
+conflicts=('yggdrasil-2048')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/game-2048)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/game-2048"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/game-2048"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/game-2048"
+  install -Dm755 "$srcdir/target/release/yggdrasil-2048" "$pkgdir/usr/bin/yggdrasil-2048"
+  install -Dm644 yggdrasil-2048.desktop "$pkgdir/usr/share/applications/yggdrasil-2048.desktop"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-2048/README.md"
+}

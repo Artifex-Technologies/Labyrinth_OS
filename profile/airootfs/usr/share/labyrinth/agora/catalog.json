@@ -818,6 +818,46 @@
    "flathub": "com.play0ad.zeroad"
   },
   {
+   "id": "game-2048",
+   "name": "2048",
+   "subtitle": "Slide, merge, reach 2048",
+   "description": "The sliding-tile puzzle: move with the arrow keys (or WASD, hjkl, or by dragging), merge equal tiles and reach 2048. Undo, stats, board sizes from 3x3 to 6x6, and four modes: Classic, Fibonacci, Evil (the game picks the worst place for each new tile) and Daily (the same game for everyone each day). Colours follow your accent. Rewritten in Rust from Omarchy's 2048 plugin; works offline.",
+   "category": "Play",
+   "subcategory": "Games",
+   "source": {
+    "type": "component",
+    "id": "game-2048"
+   },
+   "icon": "yggdrasil-2048",
+   "reviewed": true,
+   "tags": [
+    "puzzle",
+    "2048",
+    "game"
+   ],
+   "launch": "yggdrasil-2048"
+  },
+  {
+   "id": "sudoku",
+   "name": "Sudoku",
+   "subtitle": "Classic puzzles and a survival challenge",
+   "description": "Sudoku with Easy, Medium and Hard puzzles that always have exactly one solution, and a Survival Challenge: three lives, a wrong number costs one, a solved board gives two back and moves you up a tier, up to Extreme. Pencil notes that clean themselves up, hints, undo and redo, best times, full mouse and keyboard control. Rewritten in Rust from Omarchy's Sudoku plugin; works offline.",
+   "category": "Play",
+   "subcategory": "Games",
+   "source": {
+    "type": "component",
+    "id": "sudoku"
+   },
+   "icon": "yggdrasil-sudoku",
+   "reviewed": true,
+   "tags": [
+    "puzzle",
+    "sudoku",
+    "game"
+   ],
+   "launch": "yggdrasil-sudoku"
+  },
+  {
    "id": "spotify",
    "name": "Spotify",
    "subtitle": "Music streaming",

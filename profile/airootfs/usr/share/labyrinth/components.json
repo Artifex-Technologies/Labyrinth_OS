@@ -381,6 +381,20 @@
         "xpadneo-dkms"
       ],
       "notes": "Reconnect the controller after installing. USB Xbox controllers, and 8BitDo controllers over USB or in Switch mode, work without it."
+    },
+    {
+      "id": "game-2048",
+      "name": "2048",
+      "description": "Slide the tiles and merge equal numbers to reach 2048: undo, stats, Classic, Fibonacci, Evil and Daily modes, boards from 3x3 to 6x6, colours from your accent. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-2048-git"
+    },
+    {
+      "id": "sudoku",
+      "name": "Sudoku",
+      "description": "Sudoku with Easy, Medium and Hard puzzles that always have one solution, and a survival challenge that gets harder as you go: notes, hints, undo and redo, mouse or keyboard. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "proprietary": false,
+      "pkgbuild": "yggdrasil-sudoku-git"
     }
   ],
   "presets": {

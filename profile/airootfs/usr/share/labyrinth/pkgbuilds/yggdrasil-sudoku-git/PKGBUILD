@@ -1,0 +1,41 @@
+# Maintainer: Labyrinth OS
+#
+# Sudoku, a game for Yggdrasil: classic puzzles in three difficulties and a survival challenge, with notes, hints and undo. Rewritten in Rust from Morganczech/omarchy-sudoku-plugin (MIT); built from Yggdrasil's public
+# repository (packages/sudoku). Agora installs it (labyrinth-apps install sudoku).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=yggdrasil-sudoku-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Sudoku for Yggdrasil: classic and survival"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MIT')
+depends=('gcc-libs' 'wayland' 'libxkbcommon')
+makedepends=('cargo' 'git')
+provides=('yggdrasil-sudoku')
+conflicts=('yggdrasil-sudoku')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/sudoku)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/sudoku"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/sudoku"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/sudoku"
+  install -Dm755 "$srcdir/target/release/yggdrasil-sudoku" "$pkgdir/usr/bin/yggdrasil-sudoku"
+  install -Dm644 yggdrasil-sudoku.desktop "$pkgdir/usr/share/applications/yggdrasil-sudoku.desktop"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-sudoku/README.md"
+}
