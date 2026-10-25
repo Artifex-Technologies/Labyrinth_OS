@@ -112,3 +112,10 @@ is built and what is not.
 - Yggdrasil's [DESKTOP.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/DESKTOP.md),
   [INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md) and
   [WEATHER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/WEATHER.md)
+
+## License
+
+Labyrinth OS's own files are under the [Mozilla Public License 2.0](LICENSE): use, change and share them, and changes to these
+files stay open. The packages it installs (from Arch, CachyOS, the AUR and Flathub) keep their own licences; Yggdrasil, Heimdall,
+Sarina and Limbo are MPL-2.0 too. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The licence covers the files, not the names
+and logos: "Labyrinth OS" and its emblem are not licensed for use by other projects.
