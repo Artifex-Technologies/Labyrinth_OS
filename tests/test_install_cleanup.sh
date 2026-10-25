@@ -12,12 +12,14 @@ check(){ if eval "$2"; then ok "$1"; else bad "$1"; fi; }
 mkroot() {  # $1 = list of kernel pkgbases
   local r; r=$(mktemp -d)
   mkdir -p "$r/usr/share/mkinitcpio" "$r/etc/mkinitcpio.d" "$r/etc/mkinitcpio.conf.d" \
-           "$r/etc/sudoers.d" "$r/etc/sddm.conf.d" "$r/home/live/.config/hypr" "$r/boot"
+           "$r/etc/sudoers.d" "$r/etc/greetd" "$r/etc/systemd/system/greetd.service.d" "$r/home/live/.config/hypr" "$r/boot"
   printf 'ALL_config="/etc/mkinitcpio.conf"\nALL_kver="/boot/vmlinuz-%%PKGBASE%%"\nPRESETS=('"'default'"')\ndefault_image="/boot/initramfs-%%PKGBASE%%.img"\n' >"$r/usr/share/mkinitcpio/hook.preset"
   printf 'archiso preset\n' >"$r/etc/mkinitcpio.d/linux.preset"
   printf 'HOOKS=(archiso)\n' >"$r/etc/mkinitcpio.conf.d/archiso.conf"
   printf 'live ALL=(ALL) NOPASSWD: ALL\n' >"$r/etc/sudoers.d/00-live-nopasswd"
-  printf '[Autologin]\nUser=live\n' >"$r/etc/sddm.conf.d/autologin.conf"
+  printf '[initial_session]\nuser = "live"\n' >"$r/etc/greetd/live.toml"
+  printf 'vt = 7\n' >"$r/etc/greetd/config.toml"
+  printf '[Service]\nExecStart=\n' >"$r/etc/systemd/system/greetd.service.d/live.conf"
   printf 'x' >"$r/home/live/.config/hypr/hyprland.conf"
   for k in $1; do
     mkdir -p "$r/usr/lib/modules/6.99-$k"
@@ -38,7 +40,8 @@ done
 check "archiso preset removed"           "[ ! -e $r/etc/mkinitcpio.d/linux.preset ]"
 check "archiso initcpio drop-in removed" "[ ! -e $r/etc/mkinitcpio.conf.d/archiso.conf ]"
 check "live sudoers removed"             "[ ! -e $r/etc/sudoers.d/00-live-nopasswd ]"
-check "autologin removed"                "[ ! -e $r/etc/sddm.conf.d/autologin.conf ]"
+check "autologin removed"                "[ ! -e $r/etc/greetd/live.toml ] && [ ! -e $r/etc/systemd/system/greetd.service.d ]"
+check "login screen config kept"         "[ -e $r/etc/greetd/config.toml ]"
 check "live home removed"                "[ ! -d $r/home/live ]"
 check "desktop config seeded to skel"    "[ -f $r/etc/skel/.config/hypr/hyprland.conf ]"
 check "no LTS warning when LTS present"  "! grep -q WARNING <<<\"\$out\""

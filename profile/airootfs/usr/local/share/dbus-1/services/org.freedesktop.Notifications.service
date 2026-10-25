@@ -1,0 +1,5 @@
+# Notifications are shown by Yggdrasil's panel. Here, ahead of /usr/share (where mako has its own file for this name), so a
+# notification sent before the panel is up starts the panel, not mako.
+[D-BUS Service]
+Name=org.freedesktop.Notifications
+Exec=/usr/local/bin/labyrinth-notify-activate

@@ -4,7 +4,6 @@
   labyrinth-displays --print      show the Lua it would write
   labyrinth-displays --apply      write ~/.config/hypr/monitors.lua and reload Hyprland
   labyrinth-displays --list       show what Hyprland reports, for writing rules
-  labyrinth-displays --kde        KDE Plasma: give each new monitor its best mode (once per monitor)
 
 Hyprland names outputs (DP-1, HDMI-A-1 ...) by whichever port a cable is in, and those
 names are not known until the machine is running, so rules in displays.json match on the
@@ -19,7 +18,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 
 SYSTEM_RULES = os.environ.get("LABYRINTH_DISPLAY_RULES", "/usr/share/labyrinth/displays.json")
 
@@ -183,195 +181,7 @@ def lua(entries):
     return "\n".join(lines) + "\n"
 
 
-def edid_model(edid):
-    """'MFG Name' from raw EDID bytes, e.g. 'ACR X34 GS' or 'GSM LG SDQHD'; '' if it cannot be read."""
-    if len(edid) < 128 or edid[:8] != b"\x00\xff\xff\xff\xff\xff\xff\x00":
-        return ""
-    raw = (edid[8] << 8) | edid[9]
-    mfg = "".join(chr(((raw >> shift) & 31) + 64) for shift in (10, 5, 0))
-    name = ""
-    for off in (54, 72, 90, 108):
-        d = edid[off:off + 18]
-        if d[:3] == b"\x00\x00\x00" and d[3] == 0xFC:
-            name = d[5:18].split(b"\n")[0].decode("ascii", "replace").strip()
-    return f"{mfg} {name}".strip()
-
-
-def read_edid_model(connector, drm_root="/sys/class/drm"):
-    """Model of the monitor on a connector (kscreen's 'DP-1' is the kernel's 'card1-DP-1')."""
-    import glob
-    for path in glob.glob(os.path.join(drm_root, f"card*-{connector}", "edid")):
-        try:
-            with open(path, "rb") as f:
-                model = edid_model(f.read())
-            if model:
-                return model
-        except OSError:
-            continue
-    return ""
-
-
-def kscreen_outputs():
-    cmd = os.environ.get("LABYRINTH_KSCREEN", "kscreen-doctor").split()
-    r = subprocess.run(cmd + ["-j"], capture_output=True, text=True, timeout=10)
-    if r.returncode != 0:
-        raise RuntimeError(r.stderr.strip() or "kscreen-doctor failed")
-    return json.loads(r.stdout).get("outputs", [])
-
-
-def _mode_strings(o):
-    return [f"{m['size']['width']}x{m['size']['height']}@{m['refreshRate']:.2f}Hz" for m in o.get("modes", [])]
-
-
-def _native(o):
-    """The panel's own resolution: the first preferred mode, else the current one."""
-    modes = {str(m["id"]): m for m in o.get("modes", [])}
-    for mid in o.get("preferredModes", []):
-        m = modes.get(str(mid))
-        if m:
-            return (m["size"]["width"], m["size"]["height"])
-    m = modes.get(str(o.get("currentModeId")))
-    return (m["size"]["width"], m["size"]["height"]) if m else None
-
-
-def _mode_id(o, wxh_at):
-    """kscreen's id for a 'WxH@R' string (refresh matched to within half a hertz)."""
-    w, h, r = parse_mode(wxh_at)
-    for m in o.get("modes", []):
-        if (m["size"]["width"], m["size"]["height"]) == (w, h) and abs(m["refreshRate"] - r) < 0.51:
-            return m["id"]
-    return None
-
-
-def kde_plan(outputs, seen, rules=None, models=None):
-    """What to apply on KDE: ([kscreen-doctor arguments], [state keys to remember], [notes]).
-
-    A monitor is handled once (its key is the output name plus its list of modes), so a mode the
-    user later picks in System Settings is never overridden. A monitor that matches a rule in
-    displays.json (by the model name in its EDID) gets that rule's mode, scale and position;
-    any other monitor gets the best mode of its own shape (see best_mode) and KDE's own scale.
-    """
-    rules = rules or []
-    models = models or {}
-    args, keys, notes = [], [], []
-    new = []
-    for o in outputs:
-        # Plasma 6.8 no longer has an "enabled" key: connected with a current mode means in use
-        if not (o.get("connected") and o.get("enabled", bool(o.get("currentModeId")))):
-            continue
-        key = o["name"] + "|" + ",".join(sorted(_mode_strings(o)))
-        if seen.get(key):
-            continue
-        model = models.get(o["name"], "")
-        rule = find_rule({"description": model, "model": model, "make": ""}, rules) if model else None
-        new.append((o, key, model, rule))
-
-    # Mode and scale for every new output.
-    chosen = {}
-    for o, key, model, rule in new:
-        want = None
-        if rule and rule.get("mode"):
-            exact = pick_mode({"availableModes": _mode_strings(o)}, rule["mode"])
-            want = exact
-        if not want:
-            want = best_mode({"availableModes": _mode_strings(o)}, _native(o))
-        mid = _mode_id(o, want) if want else None
-        scale = float(rule["scale"]) if rule and rule.get("scale") else None
-        chosen[o["name"]] = (mid, want, scale)
-        if mid is not None and str(mid) != str(o.get("currentModeId")):
-            args.append(f"output.{o['name']}.mode.{mid}")
-        if scale is not None and abs(scale - float(o.get("scale", 1))) > 0.001:
-            args.append(f"output.{o['name']}.scale.{scale:g}")
-        notes.append(f"{o['name']} ({model or 'unknown model'}): {want}" + (f" at {scale:g}x" if scale else "") + (" [rule]" if rule else ""))
-        keys.append(key)
-
-    # Placement from the rules: the primary at 0,0, the others beside it.
-    primary = next(((o, r) for o, k, m, r in new if r and r.get("primary")), None)
-    if primary:
-        po, pr = primary
-        pmid, pwant, pscale = chosen[po["name"]]
-        pw = parse_mode(pwant)[0] if pwant else po["size"]["width"]
-        plogical = pw / (pscale or float(po.get("scale", 1)) or 1)
-        args.append(f"output.{po['name']}.position.0,0")
-        args.append(f"output.{po['name']}.priority.1")
-        for o, k, m, r in new:
-            if o is po or not r:
-                continue
-            _, want, scale = chosen[o["name"]]
-            place = r.get("place")
-            lw = (parse_mode(want)[0] if want else o["size"]["width"]) / (scale or float(o.get("scale", 1)) or 1)
-            y = round(r.get("y", 0))
-            if place == "right_of_primary":
-                args.append(f"output.{o['name']}.position.{round(plogical)},{y}")
-            elif place == "left_of_primary":
-                args.append(f"output.{o['name']}.position.{round(-lw)},{y}")
-    return args, keys, notes
-
-
-def tiling_target(outputs, rules, models):
-    """(connector, model) of the connected monitor whose rule says "tiling": true, or None.
-
-    That monitor becomes the Omarchy-style tiling screen of the macOS-style desktop (see
-    labyrinth-tiling). Matched by the EDID model like every other rule, so it follows the monitor
-    to whichever port it is plugged into.
-    """
-    for o in outputs:
-        if not (o.get("connected") and o.get("enabled")):
-            continue
-        model = models.get(o["name"], "")
-        rule = find_rule({"description": model, "model": model, "make": ""}, rules) if model else None
-        if rule and rule.get("tiling"):
-            return o["name"], model
-    return None
-
-
-def kde_main():
-    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
-    state_path = os.path.join(base, "labyrinth", "displays-kde.json")
-    try:
-        seen = json.load(open(state_path, encoding="utf-8"))
-    except (OSError, ValueError):
-        seen = {}
-    try:
-        outputs = kscreen_outputs()
-    except Exception as e:
-        print(f"labyrinth-displays: cannot read monitors from KDE: {e}", file=sys.stderr)
-        return 1
-    drm_root = os.environ.get("LABYRINTH_DRM_ROOT", "/sys/class/drm")
-    models = {o["name"]: read_edid_model(o["name"], drm_root) for o in outputs if o.get("connected")}
-    args, keys, notes = kde_plan(outputs, seen, load_rules(), models)
-    for n in notes:
-        print(f"labyrinth-displays: {n}")
-    if args:
-        cmd = os.environ.get("LABYRINTH_KSCREEN", "kscreen-doctor").split()
-        r = subprocess.run(cmd + args, capture_output=True, text=True, timeout=30)
-        if r.returncode != 0:
-            print(f"labyrinth-displays: kscreen-doctor failed: {r.stderr.strip()}", file=sys.stderr)
-            return 1
-    for k in keys:
-        seen[k] = True
-    # The tiling screen, once per monitor and port: after that, `labyrinth-tiling off` or another
-    # screen chosen by hand is never overridden.
-    target = tiling_target(outputs, load_rules(), models)
-    if target:
-        key = f"tiling|{target[1]}|{target[0]}"
-        if not seen.get(key):
-            tool = os.environ.get("LABYRINTH_TILING", "labyrinth-tiling").split()
-            if args:
-                time.sleep(2)  # let the new positions settle; the tiling bar is placed by them
-            r = subprocess.run(tool + [target[0]], capture_output=True, text=True, timeout=60)
-            print(f"labyrinth-displays: tiling screen {target[0]} ({target[1]}): " + (r.stdout.strip() or r.stderr.strip()))
-            if r.returncode == 0:
-                seen[key] = True
-    os.makedirs(os.path.dirname(state_path), exist_ok=True)
-    with open(state_path, "w", encoding="utf-8") as f:
-        json.dump(seen, f, indent=1)
-    return 0
-
-
 def main(argv):
-    if "--kde" in argv:
-        return kde_main()
     try:
         monitors = hyprctl_monitors()
     except Exception as e:

@@ -35,6 +35,11 @@ class Rules(unittest.TestCase):
     def setUp(self):
         self.rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
 
+    def test_best_mode_keeps_the_native_shape(self):
+        m = {"availableModes": ["3840x2160@60.00Hz", "2560x2880@59.98Hz", "1920x1080@60.00Hz"]}
+        self.assertEqual(disp.best_mode(m, (2560, 2880)), "2560x2880@59.98")
+        self.assertEqual(disp.best_mode(m), "3840x2160@60")        # without a native size it takes the most pixels
+
     def test_the_shipped_layout_matches_the_windows_arrangement(self):
         p = {e["output"]: e for e in disp.plan([ULTRAWIDE, DUALUP], self.rules)}
         self.assertEqual((p["DP-1"]["position"], p["DP-1"]["scale"]), ("0x0", 1))
@@ -145,172 +150,6 @@ class Output(unittest.TestCase):
         r = subprocess.run([sys.executable, TOOL, "--print"], env=env, capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)
         self.assertIn("cannot read monitors", r.stderr)
-
-
-def kscreen_output(name, modes, current, preferred=None, **kw):
-    """One output as `kscreen-doctor -j` reports it (mode ids are strings, ids start at 1)."""
-    out = {"name": name, "connected": True, "enabled": True, "currentModeId": str(current), "scale": 1.0,
-           "preferredModes": [str(preferred)] if preferred else [],
-           "modes": [{"id": str(i + 1), "name": f"{w}x{h}@{r:g}", "refreshRate": r, "size": {"width": w, "height": h}}
-                     for i, (w, h, r) in enumerate(modes)]}
-    out.update(kw)
-    return out
-
-
-def make_edid(mfg="ACR", name="X34 GS"):
-    """A minimal valid 128-byte EDID with a manufacturer id and a monitor-name descriptor."""
-    raw = 0
-    for ch in mfg:
-        raw = (raw << 5) | (ord(ch) - 64)
-    b = bytearray(128)
-    b[0:8] = b"\x00\xff\xff\xff\xff\xff\xff\x00"
-    b[8], b[9] = raw >> 8, raw & 0xFF
-    desc = b"\x00\x00\x00\xfc\x00" + (name + "\n").ljust(13).encode("ascii")
-    b[54:72] = desc
-    return bytes(b)
-
-
-# What the Acer and the LG DualUp report. The DualUp's native mode is 2560x2880 (16:18), and it also
-# lists a 16:9 4K mode, which has more pixels and must not be chosen.
-ACER = kscreen_output("DP-1", [(3440, 1440, 59.97), (3440, 1440, 143.97), (2560, 1440, 143.97), (1920, 1080, 60)],
-                      current=1, preferred=2)
-DUALUP_K = kscreen_output("HDMI-A-1", [(3840, 2160, 60), (3840, 2160, 30), (2560, 2880, 59.98), (2560, 1440, 60), (1920, 1080, 60)],
-                          current=1, preferred=3)
-MODELS = {"DP-1": "ACR X34 GS", "HDMI-A-1": "GSM LG SDQHD"}
-
-
-class Kde(unittest.TestCase):
-    HDMI = kscreen_output("HDMI-A-1", [(3840, 2160, 29.98), (3840, 2160, 59.94), (2560, 1440, 119.88), (1920, 1080, 119.88)],
-                          current=1, preferred=1)
-
-    def test_a_slow_native_mode_steps_down_to_the_best_of_the_same_shape(self):
-        args, keys, notes = disp.kde_plan([self.HDMI], {})
-        # native 3840x2160 runs at 59.94, which counts as 60 Hz
-        self.assertEqual(args, ["output.HDMI-A-1.mode.2"])
-        self.assertEqual(len(keys), 1)
-
-    def test_a_30hz_only_native_steps_down_but_keeps_the_shape(self):
-        o = kscreen_output("HDMI-A-1", [(3440, 1440, 29.98), (2560, 1080, 59.9), (1920, 1080, 60), (1280, 720, 60)],
-                           current=1, preferred=1)
-        args, _, _ = disp.kde_plan([o], {})
-        self.assertEqual(args, ["output.HDMI-A-1.mode.2"])        # 2560x1080 is 21:9 like the panel; 1920x1080 is not
-
-    def test_the_dualup_does_not_get_the_4k_mode(self):
-        args, _, notes = disp.kde_plan([DUALUP_K], {})
-        self.assertEqual(args, ["output.HDMI-A-1.mode.3"])        # 2560x2880@59.98, its own
-        self.assertIn("2560x2880", notes[0])
-
-    def test_already_best_changes_nothing_but_is_remembered(self):
-        out = dict(self.HDMI, currentModeId="2")
-        args, keys, _ = disp.kde_plan([out], {})
-        self.assertEqual(args, [])
-        self.assertEqual(disp.kde_plan([out], {keys[0]: True}), ([], [], []))
-
-    def test_a_monitor_already_handled_is_left_alone(self):
-        key = disp.kde_plan([self.HDMI], {})[1][0]
-        self.assertEqual(disp.kde_plan([self.HDMI], {key: True}), ([], [], []))   # the user's own choice is never overridden
-
-    def test_a_different_monitor_on_the_same_port_is_handled_again(self):
-        key = disp.kde_plan([self.HDMI], {})[1][0]
-        other = kscreen_output("HDMI-A-1", [(1920, 1080, 60), (1920, 1080, 144)], current=1, preferred=1)
-        self.assertEqual(len(disp.kde_plan([other], {key: True})[1]), 1)
-
-    def test_disconnected_or_disabled_outputs_are_skipped(self):
-        off = dict(self.HDMI, enabled=False)
-        gone = dict(self.HDMI, connected=False)
-        self.assertEqual(disp.kde_plan([off, gone], {}), ([], [], []))
-
-    def test_your_rules_set_mode_scale_and_position(self):
-        rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
-        args, keys, notes = disp.kde_plan([ACER, DUALUP_K], {}, rules, MODELS)
-        self.assertIn("output.DP-1.mode.2", args)                   # 3440x1440@143.97, the 144 Hz mode
-        self.assertIn("output.HDMI-A-1.mode.3", args)               # the LG at its own 2560x2880
-        self.assertIn("output.HDMI-A-1.scale.1.25", args)
-        self.assertIn("output.DP-1.position.0,0", args)
-        self.assertIn("output.DP-1.priority.1", args)
-        self.assertIn("output.HDMI-A-1.position.3440,-783", args)   # right of the Acer, top 783 px higher
-        self.assertEqual(len(keys), 2)
-
-    def test_the_rule_only_applies_to_the_monitor_it_names(self):
-        rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
-        stranger = kscreen_output("DP-2", [(3840, 2160, 60), (2560, 1440, 144)], current=1, preferred=1)
-        args, _, notes = disp.kde_plan([stranger], {}, rules, {"DP-2": "DEL U2720Q"})
-        self.assertEqual(args, [])                                  # best mode is already current
-        self.assertNotIn("[rule]", notes[0])
-
-    def test_best_mode_keeps_the_native_shape(self):
-        m = {"availableModes": ["3840x2160@60.00Hz", "2560x2880@59.98Hz", "1920x1080@60.00Hz"]}
-        self.assertEqual(disp.best_mode(m, (2560, 2880)), "2560x2880@59.98")
-        self.assertEqual(disp.best_mode(m), "3840x2160@60")        # without a native size it takes the most pixels
-
-    def test_edid_names(self):
-        self.assertEqual(disp.edid_model(make_edid("ACR", "X34 GS")), "ACR X34 GS")
-        self.assertEqual(disp.edid_model(make_edid("GSM", "LG SDQHD")), "GSM LG SDQHD")
-        self.assertEqual(disp.edid_model(b""), "")
-        self.assertEqual(disp.edid_model(b"\x01" * 128), "")
-
-    def test_edid_is_read_from_the_connector_directory(self):
-        with tempfile.TemporaryDirectory() as d:
-            os.makedirs(os.path.join(d, "card1-DP-1"))
-            open(os.path.join(d, "card1-DP-1", "edid"), "wb").write(make_edid("ACR", "X34 GS"))
-            self.assertEqual(disp.read_edid_model("DP-1", d), "ACR X34 GS")
-            self.assertEqual(disp.read_edid_model("DP-9", d), "")
-
-    @unittest.skipIf(os.name == "nt", "needs a POSIX shell to stand in for kscreen-doctor")
-    def test_kde_main_applies_once_and_records(self):
-        with tempfile.TemporaryDirectory() as d:
-            fake = os.path.join(d, "kscreen-doctor")
-            log = os.path.join(d, "calls.txt")
-            fixture = os.path.join(d, "out.json")
-            json.dump({"outputs": [self.HDMI]}, open(fixture, "w"))
-            script = "\n".join([
-                "#!/bin/sh",
-                'if [ "$1" = -j ]; then cat ' + fixture + '; else echo "$@" >> ' + log + "; fi",
-                "",
-            ])
-            open(fake, "w").write(script)
-            os.chmod(fake, 0o755)
-            env = dict(os.environ, LABYRINTH_KSCREEN=fake, XDG_CONFIG_HOME=d, LABYRINTH_DRM_ROOT=d)
-            r = subprocess.run([sys.executable, TOOL, "--kde"], env=env, capture_output=True, text=True)
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertIn("output.HDMI-A-1.mode.2", open(log).read())
-            r = subprocess.run([sys.executable, TOOL, "--kde"], env=env, capture_output=True, text=True)
-            self.assertEqual(open(log).read().count("output.HDMI-A-1.mode.2"), 1)
-
-
-class Tiling(unittest.TestCase):
-    def test_the_dualup_is_the_tiling_screen(self):
-        rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
-        self.assertEqual(disp.tiling_target([ACER, DUALUP_K], rules, MODELS), ("HDMI-A-1", "GSM LG SDQHD"))
-
-    def test_no_rule_no_tiling_screen(self):
-        rules = json.load(open(RULES, encoding="utf-8"))["monitors"]
-        self.assertIsNone(disp.tiling_target([ACER], rules, MODELS))
-        self.assertIsNone(disp.tiling_target([DUALUP_K], rules, {"HDMI-A-1": "DEL U2720Q"}))
-        self.assertIsNone(disp.tiling_target([dict(DUALUP_K, enabled=False)], rules, MODELS))
-
-    @unittest.skipIf(os.name == "nt", "needs a POSIX shell to stand in for kscreen-doctor")
-    def test_kde_main_turns_tiling_on_once(self):
-        with tempfile.TemporaryDirectory() as d:
-            log = os.path.join(d, "calls.txt")
-            fixture = os.path.join(d, "out.json")
-            # Both monitors already at their best modes, so only the tiling step runs.
-            json.dump({"outputs": [dict(DUALUP_K, currentModeId="3", scale=1.25)]}, open(fixture, "w"))
-            for name, body in (("kscreen-doctor", 'if [ "$1" = -j ]; then cat ' + fixture + '; else echo "kscreen $*" >> ' + log + "; fi"),
-                               ("labyrinth-tiling", 'echo "tiling $*" >> ' + log + '; echo "$1 tiles"')):
-                path = os.path.join(d, name)
-                open(path, "w").write("#!/bin/sh\n" + body + "\n")
-                os.chmod(path, 0o755)
-            os.makedirs(os.path.join(d, "card1-HDMI-A-1"))
-            open(os.path.join(d, "card1-HDMI-A-1", "edid"), "wb").write(make_edid("GSM", "LG SDQHD"))
-            os.makedirs(os.path.join(d, "labyrinth"))
-            open(os.path.join(d, "labyrinth", "displays.json"), "w").write(open(RULES, encoding="utf-8").read())
-            env = dict(os.environ, LABYRINTH_KSCREEN=os.path.join(d, "kscreen-doctor"), XDG_CONFIG_HOME=d,
-                       LABYRINTH_DRM_ROOT=d, LABYRINTH_TILING=os.path.join(d, "labyrinth-tiling"))
-            for _ in range(2):
-                r = subprocess.run([sys.executable, TOOL, "--kde"], env=env, capture_output=True, text=True)
-                self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertEqual(open(log).read().count("tiling HDMI-A-1"), 1)
 
 
 if __name__ == "__main__":

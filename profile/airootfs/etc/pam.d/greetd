@@ -1,5 +1,5 @@
 #%PAM-1.0
-# greetd's login: the same as SDDM's, so the keyring is unlocked with the password at sign-in.
+# greetd's login: the keyring is unlocked with the password typed at sign-in.
 
 auth        include     system-login
 -auth       optional    pam_gnome_keyring.so

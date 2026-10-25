@@ -35,7 +35,7 @@ NVIDIA card, no physical keys, one screen).
 - [ ] **The package repo with `SigLevel = Optional TrustAll`** in `profile/pacman.conf`: find which repo it is
       and sign it, or remove it. Unsigned packages are the biggest hole I know of.
 - [ ] **The installed system must not inherit the live user's passwordless sudo, autologin, or empty
-      password.** Check `/etc/sudoers.d`, `/etc/sddm.conf.d`, `/etc/shadow` on a finished install.
+      password.** Check `/etc/sudoers.d`, `/etc/greetd` (no `live.toml`), `/etc/shadow` on a finished install.
 - [ ] **Firewall** is on (ufw: deny incoming) after install; nothing listens on the network that should not
       (`ss -tulpn`): no SSH, no Ollama or Sarina server open to the LAN (Ollama binds to 127.0.0.1).
 - [ ] **Secure Boot**: not set up; decide whether that is acceptable (it is for most Arch-based systems).

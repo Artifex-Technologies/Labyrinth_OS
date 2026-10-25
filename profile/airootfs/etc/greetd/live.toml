@@ -1,0 +1,16 @@
+# Live medium only (labyrinth-install-cleanup removes it): the login screen of config.toml, plus the live user signed
+# in by itself once per start-up. After signing out, the normal login screen comes (the account has no password).
+[terminal]
+# a console of its own, with nothing printed on it: between a session and the login screen the screen is black, not the
+# start-up messages left on the first console
+vt = 7
+
+[default_session]
+# the console is cleared before the login screen and again right after it (and what cage prints goes nowhere), so between
+# signing in and the desktop there is no text from it on the screen
+command = "sh -c 'printf \"\\033[2J\\033[3J\\033[H\\033[?25l\"; cage -s -- /usr/bin/yggdrasil-greeter >/dev/null 2>&1; s=$?; printf \"\\033[2J\\033[3J\\033[H\\033[?25l\"; exit $s'"
+user = "greeter"
+
+[initial_session]
+command = "env XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=Yggdrasil XDG_SESSION_DESKTOP=Yggdrasil /usr/bin/yggdrasil-session"
+user = "live"

@@ -1532,8 +1532,6 @@
   "calamares",
   "daedalus-cad-git",
   "heimdall-git",
-  "klassy",
-  "kwin-scripts-krohnkite",
   "yggdrasil-calculator",
   "yggdrasil-idle",
   "yggdrasil-keyring-sync",
@@ -1547,11 +1545,9 @@
   "yggdrasil-weather",
   "limbo-git",
   "mactahoe-icon-theme",
-  "plasma6-applets-window-title",
   "sarina-git",
   "whitesur-cursor-theme",
-  "whitesur-gtk-theme",
-  "whitesur-kde-theme"
+  "whitesur-gtk-theme"
  ],
  "aur_updates_ok": [
   "visual-studio-code-bin",

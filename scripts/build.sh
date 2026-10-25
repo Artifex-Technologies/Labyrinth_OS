@@ -54,7 +54,8 @@ sed -i "s|@@LABYRINTH_REPO_DIR@@|$repo_root/repo/x86_64|g" "$profile_build_dir/p
 sysd="$profile_build_dir/airootfs/etc/systemd/system"
 mkdir -p "$sysd/multi-user.target.wants" "$sysd/bluetooth.target.wants"
 ln -sf /usr/lib/systemd/system/graphical.target "$sysd/default.target"
-ln -sf /usr/lib/systemd/system/sddm.service "$sysd/display-manager.service"
+# the login screen: greetd with Yggdrasil's greeter (on the live medium it signs the live user in, see greetd.service.d/live.conf)
+ln -sf /usr/lib/systemd/system/greetd.service "$sysd/display-manager.service"
 ln -sf /usr/lib/systemd/system/NetworkManager.service "$sysd/multi-user.target.wants/NetworkManager.service"
 ln -sf /usr/lib/systemd/system/bluetooth.service "$sysd/bluetooth.target.wants/bluetooth.service"
 ln -sf /dev/null "$sysd/systemd-firstboot.service"
@@ -91,13 +92,6 @@ PY
   ln -sf "$src" "$dir/$name"
   echo "    enabled $kind unit $name"
 done
-# User services: drop KWin's stale compiled-script cache before KWin starts (labyrinth-kwin-cache).
-usd="$profile_build_dir/airootfs/etc/systemd/user/plasma-workspace.target.wants"
-mkdir -p "$usd"
-ln -sf /usr/lib/systemd/user/labyrinth-kwin-cache.service "$usd/labyrinth-kwin-cache.service"
-# KDE's password agent stays off: Labyrinth's own (yggdrasil-polkit, autostarted) answers password requests
-mkdir -p "$profile_build_dir/airootfs/etc/systemd/user"
-ln -sf /dev/null "$profile_build_dir/airootfs/etc/systemd/user/plasma-polkit-agent.service"
 
 # mkarchiso remembers the steps it finished in the work directory and skips them next time, so a second build in the same folder
 # would reuse the first build's packages and ignore everything changed since. Every build starts from nothing.

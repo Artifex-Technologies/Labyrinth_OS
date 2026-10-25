@@ -1,5 +1,5 @@
-# greetd runs the login screen inside a tiny compositor. Not enabled by default: SDDM is still the login manager.
-# To try it: pacman -S greetd cage; systemctl disable sddm; systemctl enable greetd (see docs/LOGIN_SCREEN.md).
+# The login screen: greetd runs Yggdrasil's greeter inside cage, a tiny compositor. On the live medium greetd reads
+# live.toml instead (the same, plus signing the live user in by itself; see greetd.service.d/live.conf).
 [terminal]
 # a console of its own, with nothing printed on it: between a session and the login screen the screen is black, not the
 # start-up messages left on the first console

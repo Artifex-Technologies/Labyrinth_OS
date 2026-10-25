@@ -37,7 +37,8 @@ rog-control-center
 intel-media-driver
 hyprland
 waybar
-sddm
+greetd
+cage
 xdg-desktop-portal-hyprland
 pciutils
 usbutils
@@ -70,33 +71,10 @@ cachyos-v3-mirrorlist
 archlinux-keyring
 bluez
 bluez-utils
-plasma-desktop
-plasma-workspace
-kwin
-kscreen
-plasma-nm
-plasma-pa
-powerdevil
-bluedevil
-kde-gtk-config
-xdg-desktop-portal-kde
-breeze
-kdeplasma-addons
-plasma-browser-integration
-plasma-systemmonitor
-kscreenlocker
-kwallet-pam
-kwin-scripts-krohnkite
-klassy
 ufw
-plasma-firewall
-kio-extras
 ghostty
-spectacle
-appmenu-gtk-module
 yggdrasil-theme
 liki-icon-theme
-plasma6-applets-window-title
 nwg-displays
 mako
 hyprlock
@@ -138,11 +116,10 @@ yggdrasil-panel
 yggdrasil-idle
 yggdrasil-keyring-sync
 yggdrasil-session
+yggdrasil-lock
 yggdrasil-xmove
 yggdrasil-installer
-# the boot screen (Settings > Appearance > Boot screen; theme labyrinth-rain)
 plymouth
-yggdrasil-lock
 gnome-keyring
 clamav
 python-dbus
@@ -196,7 +173,6 @@ brltty
 # component: creative
 krita
 darktable
-kdenlive
 obs-studio
 ardour
 # component: virtualization

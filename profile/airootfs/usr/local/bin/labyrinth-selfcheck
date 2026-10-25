@@ -5,10 +5,11 @@
   labyrinth-selfcheck --quiet    print only warnings and failures; exit status 1 on any FAIL, 2 on a warning
 
 What it looks at (read-only, nothing is changed):
-  * the session needs a log out: KWin or the panel stack started before the Plasma packages were last upgraded
-    (the lock screen then fails to start, and other things drift: this really happened on 2026-10-16)
+  * the session needs a log out: Hyprland started before it or Yggdrasil's session, lock screen or panel were last
+    upgraded (a lock screen newer than its session can fail to start: this really happened under Plasma on 2026-10-16)
   * the running kernel is not the newest installed one (reboot)
-  * kscreen reports the screen(s) in the form the panel reads, and the panel is running
+  * Hyprland reports the screen(s), and the panel is running
+  * greetd is the login screen and its greeter is installed
   * who owns the notification service (should be the Labyrinth panel)
   * Labyrinth's services (Ollama, Limbo, Heimdall, Sarina, per-app network and power limits) and failed units
   * Heimdall answers, and its file-integrity watch covers the binaries installed from the AUR
@@ -62,27 +63,21 @@ def stale_session(started, upgraded, slack=60):
     return started is not None and upgraded is not None and started + slack < upgraded
 
 
-def output_in_use(o):
-    """Same rule as the panel: Plasma 6.8 dropped the `enabled` key."""
-    if "enabled" in o:
-        return bool(o["enabled"])
-    return bool(o.get("connected")) and bool(o.get("currentModeId"))
-
-
 def newest_kernel_module_dir(base="/usr/lib/modules"):
     """The newest installed kernel's version string per `pacman`-style naming (one per flavour, compared by flavour)."""
     return sorted(os.listdir(base)) if os.path.isdir(base) else []
 
 
-def sddm_theme_problem(conf_text, main_qml_text, breeze_has_keyboard_loader):
-    """A login theme that cannot load blocks every login: the WhiteSur theme imports a Breeze component Plasma 6.8 removed.
-    Returns a sentence, or None when the theme should load."""
-    current = ""
-    for line in conf_text.splitlines():
-        if line.strip().startswith("Current="):
-            current = line.split("=", 1)[1].strip()
-    if current and current != "breeze" and "VirtualKeyboardLoader" in main_qml_text and not breeze_has_keyboard_loader:
-        return "the login theme %s needs Breeze's VirtualKeyboardLoader, which this Plasma no longer has; set Current=breeze in /etc/sddm.conf.d/theme.conf" % current
+def login_screen_problem(display_manager, greetd_config):
+    """What is wrong with the login screen, or None. `display_manager` is where display-manager.service points
+    (empty when it points nowhere), `greetd_config` the text of /etc/greetd/config.toml."""
+    if not display_manager:
+        return "no login screen is enabled; enable it: sudo systemctl enable greetd"
+    if os.path.basename(display_manager) != "greetd.service":
+        return "the login screen is %s, not greetd; switch: sudo systemctl enable -f greetd" % os.path.basename(display_manager)
+    m = re.search(r'^\s*command\s*=\s*"(.*)"\s*$', greetd_config, re.M)
+    if not m:
+        return "/etc/greetd/config.toml has no greeter command"
     return None
 
 
@@ -100,18 +95,18 @@ def checks():
     def add(status, name, detail=""):
         out.append((status, name, detail))
 
-    # the session predates the Plasma upgrade
-    started = process_start_epoch("kwin_wayland")
+    # the session predates an upgrade of the compositor or of Yggdrasil's own pieces
+    started = process_start_epoch("Hyprland")
     stale = []
-    for pkg in ("kwin", "kscreenlocker", "plasma-workspace"):
+    for pkg in ("hyprland", "yggdrasil-session", "yggdrasil-lock", "yggdrasil-panel"):
         if stale_session(started, last_upgrade_epoch(pkg)):
             stale.append(pkg)
     if stale:
-        add(FAIL, "session older than its Plasma packages", "%s upgraded after KWin started: the lock screen will not work. Log out and in (or reboot)." % ", ".join(stale))
+        add(WARN, "session older than its packages", "%s upgraded after the session started: log out and in (or reboot) soon." % ", ".join(stale))
     elif started is None:
-        add(WARN, "KWin", "kwin_wayland is not running (a Wayland session was expected)")
+        add(WARN, "Hyprland", "Hyprland is not running (run this inside the desktop)")
     else:
-        add(OK, "session matches the installed Plasma packages")
+        add(OK, "session matches the installed packages")
 
     # kernel
     rel = os.uname().release
@@ -124,24 +119,27 @@ def checks():
         add(OK, "kernel", rel)
 
     # screens and the panel
-    rc, js = run(["kscreen-doctor", "-j"])
+    rc, js = run(["hyprctl", "-j", "monitors"])
     try:
-        outs = [o for o in json.loads(js)["outputs"] if output_in_use(o)]
-    except (ValueError, KeyError):
+        outs = [o for o in json.loads(js) if not o.get("disabled")]
+    except (ValueError, TypeError):
         outs = []
     if not outs:
-        add(FAIL, "no screen found in kscreen-doctor -j", "the panel would place the dock as if the screen were 1920x1080")
+        add(FAIL if started else WARN, "no screen reported by Hyprland", "hyprctl -j monitors listed none")
     else:
-        add(OK, "screens", ", ".join("%s %sx%s" % (o.get("name"), o.get("size", {}).get("width"), o.get("size", {}).get("height")) for o in outs))
-    rc, _ = run(["pgrep", "-f", "^/usr/bin/yggdrasil-panel$"])
-    add(OK if rc == 0 else FAIL, "yggdrasil-panel running", "" if rc == 0 else "start it: labyrinth-panel-mode on")
+        add(OK, "screens", ", ".join("%s %sx%s" % (o.get("name"), o.get("width"), o.get("height")) for o in outs))
+    rc, _ = run(["pgrep", "-x", "yggdrasil-panel"])
+    add(OK if rc == 0 else FAIL, "yggdrasil-panel running", "" if rc == 0 else "log out and in to start it again")
 
-    # the login theme (a broken one blocks every login)
-    sddm_conf = read_text("/etc/sddm.conf.d/theme.conf")
-    cur = [l.split("=", 1)[1].strip() for l in sddm_conf.splitlines() if l.strip().startswith("Current=")]
-    qml = read_text("/usr/share/sddm/themes/%s/Main.qml" % cur[0]) if cur else ""
-    bad = sddm_theme_problem(sddm_conf, qml, os.path.exists("/usr/share/sddm/themes/breeze/components/VirtualKeyboardLoader.qml"))
-    add(FAIL if bad else OK, "login screen theme", bad or (cur[0] if cur else "default"))
+    # the login screen (a broken one blocks every login)
+    try:
+        dm = os.path.realpath("/etc/systemd/system/display-manager.service") if os.path.lexists("/etc/systemd/system/display-manager.service") else ""
+    except OSError:
+        dm = ""
+    bad = login_screen_problem(dm, read_text("/etc/greetd/config.toml"))
+    if not bad and not os.path.exists("/usr/bin/yggdrasil-greeter"):
+        bad = "yggdrasil-greeter is not installed (package yggdrasil-lock)"
+    add(FAIL if bad else OK, "login screen", bad or "greetd")
 
     # notification service owner
     rc, o = run(["busctl", "--user", "list", "--no-legend"])

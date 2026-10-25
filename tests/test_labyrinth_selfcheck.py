@@ -13,10 +13,10 @@ spec = importlib.util.spec_from_loader("labyrinth_selfcheck", loader)
 sc = importlib.util.module_from_spec(spec)
 loader.exec_module(sc)
 
-LOG = """[2026-10-14T10:00:00-0600] [ALPM] installed kwin (6.7.5-3.1)
-[2026-10-16T06:32:12-0600] [ALPM] upgraded kwin (6.7.5-3.1 -> 6.8.0-1.1)
-[2026-10-16T06:32:12-0600] [ALPM] upgraded plasma-workspace (6.7.5-3.1 -> 6.8.0-1.1)
-[2026-10-16T07:00:00-0600] [ALPM] upgraded kwin-extra (1 -> 2)
+LOG = """[2026-10-14T10:00:00-0600] [ALPM] installed hyprland (0.56.1-1)
+[2026-10-16T06:32:12-0600] [ALPM] upgraded hyprland (0.56.1-1 -> 0.56.2-1)
+[2026-10-16T06:32:12-0600] [ALPM] upgraded yggdrasil-lock (0.1.0-1 -> 0.1.0-2)
+[2026-10-16T07:00:00-0600] [ALPM] upgraded hyprland-extra (1 -> 2)
 """
 
 
@@ -25,9 +25,9 @@ class SelfCheck(unittest.TestCase):
         with tempfile.NamedTemporaryFile("w", delete=False) as f:
             f.write(LOG)
         want = time.mktime(time.strptime("2026-10-16T06:32:12", "%Y-%m-%dT%H:%M:%S"))
-        self.assertEqual(sc.last_upgrade_epoch("kwin", f.name), want)  # not kwin-extra, not the older install
+        self.assertEqual(sc.last_upgrade_epoch("hyprland", f.name), want)  # not hyprland-extra, not the older install
         self.assertIsNone(sc.last_upgrade_epoch("nothing", f.name))
-        self.assertIsNone(sc.last_upgrade_epoch("kwin", "/nonexistent"))
+        self.assertIsNone(sc.last_upgrade_epoch("hyprland", "/nonexistent"))
         os.unlink(f.name)
 
     def test_stale_session(self):
@@ -37,20 +37,12 @@ class SelfCheck(unittest.TestCase):
         self.assertFalse(sc.stale_session(None, 5000))
         self.assertFalse(sc.stale_session(1000, None))
 
-    def test_output_in_use_with_and_without_enabled(self):
-        self.assertTrue(sc.output_in_use({"enabled": True}))
-        self.assertFalse(sc.output_in_use({"enabled": False, "connected": True, "currentModeId": "6"}))
-        self.assertTrue(sc.output_in_use({"connected": True, "currentModeId": "6"}))  # Plasma 6.8
-        self.assertFalse(sc.output_in_use({"connected": False}))
-
-    def test_login_theme_that_cannot_load_is_flagged(self):
-        conf = "[Theme]\nCurrent=WhiteSur\n"
-        qml = "import components\nVirtualKeyboardLoader {}"
-        self.assertIn("WhiteSur", sc.sddm_theme_problem(conf, qml, False))
-        self.assertIsNone(sc.sddm_theme_problem(conf, qml, True))
-        self.assertIsNone(sc.sddm_theme_problem("[Theme]\nCurrent=breeze\n", qml, False))
-        self.assertIsNone(sc.sddm_theme_problem(conf, "no such import", False))
-
+    def test_login_screen(self):
+        conf = 'vt = 7\n[default_session]\ncommand = "cage -s -- /usr/bin/yggdrasil-greeter"\nuser = "greeter"\n'
+        self.assertIsNone(sc.login_screen_problem("/usr/lib/systemd/system/greetd.service", conf))
+        self.assertIn("enable", sc.login_screen_problem("", conf))
+        self.assertIn("sddm.service", sc.login_screen_problem("/usr/lib/systemd/system/sddm.service", conf))
+        self.assertIn("no greeter", sc.login_screen_problem("/usr/lib/systemd/system/greetd.service", "vt = 7\n"))
 
 if __name__ == "__main__":
     unittest.main()

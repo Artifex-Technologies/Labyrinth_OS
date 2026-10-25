@@ -32,8 +32,8 @@ Optional check: in PowerShell, `Get-FileHash <path to iso> -Algorithm SHA256` sh
 
 ## 3. Boot the stick
 
-Press F12 at the Dell logo, pick the stick's UEFI entry. The macOS-style desktop (KDE Plasma) comes up
-by itself: menu bar on top, a floating dock at the bottom, window buttons on the right (minimize,
+Press F12 at the Dell logo, pick the stick's UEFI entry. The Yggdrasil desktop comes up
+by itself (the live user is signed in without a password): menu bar on top, a floating dock at the bottom, window buttons on the right (minimize,
 maximize, close, as on Windows). Try it first
 without installing:
 
@@ -59,7 +59,7 @@ Desktop" in its power menu (SUPER + ESCAPE) comes back.
 
 ## 5. What to check after the first real boot
 
-- The GRUB menu appears for ~2 seconds, then the desktop login (SDDM, session "Plasma").
+- The GRUB menu appears for ~2 seconds, then the boot screen, then Yggdrasil's login screen (greetd, session "Yggdrasil").
 - `systemctl is-system-running` says `running`; `systemctl --failed` lists nothing.
 - `cat /proc/cmdline` contains `resume=UUID=...` and `resume_offset=...`; `swapon --show` lists
   `/swap/swapfile` (about 8 GB here) and zram.
@@ -116,7 +116,6 @@ to the other monitor. Turn it off with `labyrinth-tiling off`; DESKTOP.md has th
 
 **Settings** (Win + I, or the gear in the dock) is Labyrinth's own: Wi-Fi, Bluetooth, displays, sound,
 appearance (dark/light, accent colour, wallpaper), power, firewall, date and time, apps, shortcuts.
-KDE's System Settings is hidden; Plasma's "Configure..." links open the matching page here.
 
 In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in
 the Windows layout (`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.

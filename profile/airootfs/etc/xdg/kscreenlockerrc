@@ -1,5 +1,0 @@
-# Live medium only: do not lock or blank the screen during an install (labyrinth-install-cleanup
-# removes this file on the installed system).
-[Daemon]
-Autolock=false
-LockOnResume=false

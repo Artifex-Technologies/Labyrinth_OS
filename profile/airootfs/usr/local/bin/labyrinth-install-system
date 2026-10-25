@@ -292,15 +292,10 @@ def set_up(p):
     with open(f"{TARGET}/etc/sudoers.d/10-labyrinth-wheel", "w") as f:
         f.write("# Written by labyrinth-install-system: administrators (the wheel group) use sudo with their own password.\n%wheel ALL=(ALL:ALL) ALL\n")
     os.chmod(f"{TARGET}/etc/sudoers.d/10-labyrinth-wheel", 0o440)
-    # the login screen: Yggdrasil's (greetd) when the system has it; never leave the system without one
-    if os.path.exists(f"{TARGET}/usr/lib/systemd/system/greetd.service"):
-        inside(["systemctl", "disable", "sddm.service"], check=False)
-        inside(["systemctl", "enable", "greetd.service"])
-    elif os.path.exists(f"{TARGET}/usr/lib/systemd/system/sddm.service"):
-        say("WARN", "this system has no greetd; SDDM stays the login screen")
-        inside(["systemctl", "enable", "sddm.service"], check=False)
-    else:
-        raise Stop("the system has no login screen (neither greetd nor SDDM)")
+    # the login screen: greetd with Yggdrasil's greeter; never leave the system without one
+    if not os.path.exists(f"{TARGET}/usr/lib/systemd/system/greetd.service"):
+        raise Stop("the system has no login screen (greetd is missing)")
+    inside(["systemctl", "enable", "-f", "greetd.service"])
 
 
 def encryption_setup(dev):

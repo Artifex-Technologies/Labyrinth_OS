@@ -1,3 +1,0 @@
-[Plugins]
-# Keep windows out from under the dock (usr/share/kwin/scripts/labyrinth-fit-windows).
-labyrinth-fit-windowsEnabled=true

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Set how see-through the tiling desktop's top bar (waybar) is. The colour stays the theme's dark
-# purple (23, 13, 38); only the opacity changes. Blur behind it comes from Hyprland. (The
-# macOS-style desktop's bar and dock are Plasma panels: right-click one > Show Panel Configuration.)
+# purple (23, 13, 38); only the opacity changes. Blur behind it comes from Hyprland.
 #
 #   labyrinth-opacity 80           bar 80% opaque (0 = invisible, 100 = solid)
 #   labyrinth-opacity show         show the current value

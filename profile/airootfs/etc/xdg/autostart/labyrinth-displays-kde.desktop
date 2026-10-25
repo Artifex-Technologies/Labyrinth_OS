@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Labyrinth display modes
-Comment=Give each new monitor its best resolution and refresh rate
-Exec=labyrinth-displays --kde
-OnlyShowIn=KDE;
-NoDisplay=true
-X-KDE-autostart-phase=2

@@ -11,7 +11,7 @@
 #  * mkarchiso empties /boot, so there are no kernels to boot.
 #  * the initramfs presets and drop-in are archiso's, building an initramfs that
 #    looks for the live squashfs and cannot mount a real root.
-#  * the live account is passwordless: sudo, polkit and display-manager autologin
+#  * the live account is passwordless: sudo, polkit and the login screen's autologin
 #    were opened up for it.
 #
 # LABYRINTH_ROOT (default empty) prefixes every path so this can be tested against
@@ -35,19 +35,19 @@ fi
 # 2. Remove the live-only files and the account's home directory.
 live_only=(
   /etc/mkinitcpio.conf.d/archiso.conf
-  /etc/sddm.conf.d/autologin.conf
+  /etc/greetd/live.toml
+  /etc/systemd/system/greetd.service.d/live.conf
   /etc/systemd/system/getty@tty1.service.d/autologin.conf
   /etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf
   /etc/sudoers.d/00-live-nopasswd
   /etc/polkit-1/rules.d/49-live-nopasswd.rules
   /etc/sysusers.d/live.conf
   /etc/tmpfiles.d/live-home.conf
-  /etc/xdg/kscreenlockerrc
-  /etc/xdg/powerdevilrc
   /usr/share/applications/labyrinth-install.desktop
   /usr/share/yggdrasil/integrations/labyrinth-installer.conf
 )
 for f in "${live_only[@]}"; do rm -f -- "$R$f"; done
+rmdir -- "$R/etc/systemd/system/greetd.service.d" 2>/dev/null || true
 rm -rf -- "$R/home/live"
 say "removed live-only configuration"
 
@@ -62,22 +62,6 @@ install -d -m 0755 "$R/etc/systemd/system" && ln -sf /dev/null "$R/etc/systemd/s
 if [[ -z $R ]] && getent passwd live >/dev/null 2>&1; then
   userdel -f live >/dev/null 2>&1 && say "removed the live account" || say "WARNING: could not remove the live account"
 fi
-
-# Pick the session the login screen starts on: Plasma (the macOS-style desktop) when it is
-# installed, else Hyprland. SDDM would otherwise take the first one alphabetically and
-# remembers whatever the user picks afterwards.
-for session in plasma hyprland; do
-  if [[ -e $R/usr/share/wayland-sessions/$session.desktop ]]; then
-    install -d -m 0755 "$R/var/lib/sddm"
-    printf '[Last]
-Session=/usr/share/wayland-sessions/%s.desktop
-User=
-' "$session" >"$R/var/lib/sddm/state.conf"
-    if [[ -z $R ]] && getent passwd sddm >/dev/null 2>&1; then chown -R sddm:sddm /var/lib/sddm; fi
-    say "default login session: $session"
-    break
-  fi
-done
 
 # 3. Restore a stock initramfs preset for every installed kernel. Arch generates
 #    presets from mkinitcpio's own template (see /usr/share/libalpm/scripts/mkinitcpio)

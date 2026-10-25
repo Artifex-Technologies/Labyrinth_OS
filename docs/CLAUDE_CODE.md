@@ -16,7 +16,7 @@ updates it. It is not in the ISO itself: it is Anthropic's, updates itself, and 
 | Needs | Provided by |
 | --- | --- |
 | a terminal and a shell | Ghostty and bash (the base system) |
-| `~/.local/bin` on the PATH | `/etc/profile.d/labyrinth-path.sh` (login shells) and `/etc/xdg/plasma-workspace/env/labyrinth-path.sh` (the desktop session, so a terminal started from the dock has it). Before this the installer said the folder was not on the PATH. |
+| `~/.local/bin` on the PATH | `/etc/profile.d/labyrinth-path.sh`, for login shells and for the desktop session (greetd reads /etc/profile when it signs you in, so a terminal started from the dock has it). Before this the installer said the folder was not on the PATH. |
 | `git` | the base system (it was missing from the image before) |
 | `rg`, `ssh`, `curl`, `tar`, `unzip`, `gcc`, `make`, `python3` | already in the base system |
 | Node.js and npm (MCP servers are started with `npx`), `jq`, the GitHub CLI (`gh`), `pip`, `fd` | the `dev` component, on in every preset except `minimal` |

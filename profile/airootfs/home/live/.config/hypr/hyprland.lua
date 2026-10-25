@@ -96,7 +96,7 @@ o.bind("SUPER + I", "Settings", "uwsm-app -- yggdrasil-settings")
 o.bind("SUPER + L", "Lock screen", "pidof hyprlock || hyprlock")
 o.bind("SUPER + V", "Clipboard history", "cliphist list | fuzzel --dmenu | cliphist decode | wl-copy")
 o.bind("SUPER + SHIFT + S", "Screenshot region", "grim -g \"$(slurp)\" - | wl-copy")
-o.bind("CTRL + SHIFT + ESCAPE", "Task manager", "uwsm-app -- plasma-systemmonitor")
+o.bind("CTRL + SHIFT + ESCAPE", "Task manager", "uwsm-app -- ghostty -e btop")
 
 -- Screenshots, clipboard, media. Spotify is the default media target.
 o.bind("PRINT", "Screenshot region", "grim -g \"$(slurp)\" - | wl-copy")

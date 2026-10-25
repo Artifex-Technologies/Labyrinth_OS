@@ -54,8 +54,6 @@ partition (erase disk) -> mount (btrfs subvolumes) -> unpackfs (copy live squash
 - **Secure Boot**: not handled. Plan is to turn it off; see the next section.
 - **Disk encryption** is whatever the stock wizard offers; GRUB-unlocked LUKS is untested here.
 - **Dual boot**: `os-prober` is installed and enabled, so Windows and other systems already on the disks get a boot menu entry (with their emblem in the Labyrinth boot theme). The installer's Partitions page still has no "install alongside" wizard: shrink the disk by hand first (see ARCHITECTURE.md). Untested here with a real Windows disk.
-- **No desktop yet.** The live image has no Hyprland/SDDM configuration, so an install today
-  would boot to a text login. That is the next piece after the installer.
 - **Agent-assisted install** (Sarina) does not exist yet.
 - NVIDIA early module loading in the initramfs is deliberately off (see `grubcfg.conf`
   for what is set); add it only if the console flickers at boot.

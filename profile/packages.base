@@ -43,10 +43,11 @@ switcheroo-control
 asusctl
 rog-control-center
 intel-media-driver
-# desktop (Omarchy model)
+# desktop: Yggdrasil on Hyprland; the login screen is Yggdrasil's greeter, which greetd shows in cage
 hyprland
 waybar
-sddm
+greetd
+cage
 xdg-desktop-portal-hyprland
 # diagnostics for the driver lab
 pciutils
@@ -88,40 +89,13 @@ cachyos-v3-mirrorlist
 archlinux-keyring
 bluez
 bluez-utils
-# desktop 1: KDE Plasma (until Yggdrasil's own compositor replaces KWin) with the Yggdrasil look (yggdrasil-theme, built into the local repo)
-plasma-desktop
-plasma-workspace
-kwin
-kscreen
-plasma-nm
-plasma-pa
-powerdevil
-bluedevil
-kde-gtk-config
-xdg-desktop-portal-kde
-breeze
-# (KDE System Settings comes with plasma-desktop but is hidden; Labyrinth Settings replaces it)
-kdeplasma-addons
-plasma-browser-integration
-plasma-systemmonitor
-kscreenlocker
-# unlocks KDE Wallet with the login password, so apps stop asking for it
-kwallet-pam
-# tiling for one screen of the macOS-style desktop (labyrinth-tiling; ours, packages/pkgbuilds)
-kwin-scripts-krohnkite
-# window title bars for KDE apps: traffic lights, matches the app, no border (ours, packages/pkgbuilds)
-klassy
 # firewall: incoming blocked, outgoing allowed (like Windows); System Settings > Firewall
 ufw
-plasma-firewall
-kio-extras
 # terminal: Ghostty (GPU, tabs in the title bar, F12 drop-down); replaced Konsole and Yakuake
 ghostty
-spectacle
-appmenu-gtk-module
+# the Yggdrasil look: colours, GTK theme, icons
 yggdrasil-theme
 liki-icon-theme
-plasma6-applets-window-title
 # desktop 2, Omarchy-style tiling: Hyprland session, bar, launcher, terminal, notifications (no dock)
 nwg-displays
 mako
@@ -167,6 +141,13 @@ yggdrasil-calculator
 yggdrasil-panel
 yggdrasil-idle
 yggdrasil-keyring-sync
+# the session (Hyprland with Yggdrasil's settings), lock and login screen, dragging X11 windows, the installer
+yggdrasil-session
+yggdrasil-lock
+yggdrasil-xmove
+yggdrasil-installer
+# the boot screen (Settings > Appearance > Boot screen; theme labyrinth-rain)
+plymouth
 gnome-keyring
 clamav
 python-dbus

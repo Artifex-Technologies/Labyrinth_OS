@@ -108,12 +108,11 @@
     {
       "id": "creative",
       "name": "Creative apps",
-      "description": "Krita, Darktable (photo), Kdenlive, OBS Studio (video), Ardour (music).",
+      "description": "Krita, Darktable (photo), OBS Studio (video), Ardour (music).",
       "proprietary": false,
       "packages": [
         "krita",
         "darktable",
-        "kdenlive",
         "obs-studio",
         "ardour"
       ]

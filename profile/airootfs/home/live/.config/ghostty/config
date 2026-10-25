@@ -2,7 +2,7 @@
 # Reference: `ghostty +show-config --default --docs`, or /usr/share/ghostty/doc/ghostty.5.md
 
 # One row at the top: tabs and the window buttons share the title bar, like GNOME apps, Vivaldi
-# and Spotify. Ghostty draws it itself (client-side), so Plasma adds no title bar of its own.
+# and Spotify. Ghostty draws it itself (client-side), so the desktop adds no title bar of its own.
 window-decoration = client
 gtk-titlebar-style = tabs
 window-show-tab-bar = always
