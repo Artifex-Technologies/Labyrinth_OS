@@ -25,6 +25,7 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-shell"]="0:0:755"
   ["/usr/local/bin/labyrinth-quick-settings"]="0:0:755"
   ["/usr/local/bin/labyrinth-apps"]="0:0:755"
+  ["/usr/local/bin/labyrinth-first-components"]="0:0:755"
   ["/usr/local/bin/labyrinth-launch"]="0:0:755"
   ["/usr/local/bin/labyrinth-appnet"]="0:0:755"
   ["/usr/local/bin/labyrinth-appnet-ask"]="0:0:755"

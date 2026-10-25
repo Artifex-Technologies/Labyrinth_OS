@@ -1,0 +1,75 @@
+#!/usr/bin/python3 -I
+"""labyrinth-first-components: at the first login after installing, installs the optional parts chosen in the installer that
+the installer medium did not carry (Sarina, Heimdall...). The installer leaves their component ids in
+/var/lib/labyrinth/first-login-components.json, owned by the new user; this runs from the session's autostart, says what it is
+doing in notifications, and installs them with labyrinth-apps through Agora's password box (they are built or fetched, so they
+need the internet). When everything is in, the file is removed; otherwise it tries again at the next login, and Agora can
+install them at any time.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+LIST = os.environ.get("LABYRINTH_FIRST_COMPONENTS", "/var/lib/labyrinth/first-login-components.json")
+AGORA_SUDO = "/usr/lib/agora/sudo"
+
+
+def notify(title, body=""):
+    # no -A: notify-send would wait for an answer
+    subprocess.run(["notify-send", "-a", "Labyrinth", "-i", "system-software-install", title, body], check=False)
+
+
+def online(wait=120):
+    """True once NetworkManager says the internet is reachable (it may still be connecting just after login)."""
+    end = time.time() + wait
+    while True:
+        r = subprocess.run(["nmcli", "-t", "networking", "connectivity", "check"], capture_output=True, text=True)
+        if r.stdout.strip() == "full":
+            return True
+        if time.time() >= end:
+            return False
+        time.sleep(10)
+
+
+def todo(path=LIST, user=None):
+    """The component ids left for this user, or none (no file, or it is someone else's)."""
+    try:
+        data = json.load(open(path))
+    except (OSError, ValueError):
+        return []
+    if data.get("user") != (user or os.environ.get("USER")):
+        return []
+    return [c for c in data.get("components", []) if isinstance(c, str) and c.replace("-", "").isalnum()]
+
+
+def main():
+    ids = todo()
+    if not ids:
+        return 0
+    time.sleep(15)  # let the desktop settle first
+    if not online():
+        notify("Optional parts not installed yet", "No internet connection. They will be installed at the next login, or get them in Agora.")
+        return 0
+    notify("Installing what you chose", "Getting " + ", ".join(ids) + ". Your password is asked once; this can take a while.")
+    log_dir = os.path.expanduser("~/.local/state/labyrinth")
+    os.makedirs(log_dir, exist_ok=True)
+    env = dict(os.environ)
+    if os.path.exists(AGORA_SUDO):
+        env["AGORA_SUDO"] = AGORA_SUDO
+    with open(os.path.join(log_dir, "first-components.log"), "a") as log:
+        r = subprocess.run(["labyrinth-apps", "install"] + ids, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, env=env)
+    if r.returncode == 0:
+        try:
+            os.remove(LIST)
+        except OSError:
+            pass
+        notify("Installed", ", ".join(ids) + " are ready.")
+    else:
+        notify("Could not install " + ", ".join(ids), "It will be tried again at the next login; Agora can install them too. Details: ~/.local/state/labyrinth/first-components.log")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

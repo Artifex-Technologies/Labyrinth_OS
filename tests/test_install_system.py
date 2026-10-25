@@ -153,5 +153,58 @@ class Browsers(unittest.TestCase):
         self.assertEqual(inst.dock_with_browser(dock, ids, None), "# pins\nminos\nsteam\n")
 
 
+EXTRAS = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "installer-extras.json")
+COMPONENTS = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "components.json")
+FIRST = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "labyrinth-first-components")
+
+
+class Extras(unittest.TestCase):
+    def setUp(self):
+        self.cat = inst.extras_catalog(EXTRAS)
+        self.comps = inst.components(COMPONENTS)
+
+    def test_sarina_and_heimdall_are_offered_as_components(self):
+        self.assertEqual([e["id"] for e in self.cat], ["sarina", "heimdall"])
+        for e in self.cat:
+            self.assertTrue(e["components"] and all(c in self.comps for c in e["components"]), e["id"])
+            self.assertFalse(e.get("chosen"), "never chosen outright: only when the medium carries it")
+            self.assertTrue(e.get("chosen_if_exists", "").startswith("/usr/bin/"), e["id"])
+        self.assertEqual(inst.extras_catalog("/nonexistent.json"), [])
+
+    def test_on_the_medium_kept_or_removed_otherwise_left_for_the_first_login(self):
+        everything = {"sarina-git", "heimdall-git"}
+        p = inst.extras_plan(self.cat, ["heimdall"], self.comps, everything)
+        self.assertEqual((p["remove"], p["keep"], p["queue"]), (["sarina-git"], ["heimdall"], []))
+        p = inst.extras_plan(self.cat, ["sarina", "heimdall"], self.comps, set())
+        self.assertEqual((p["remove"], p["keep"], p["queue"]), ([], [], ["sarina", "heimdall"]), "an end-user medium: both at the first login")
+        p = inst.extras_plan(self.cat, [], self.comps, {"heimdall-git"})
+        self.assertEqual((p["remove"], p["keep"], p["queue"]), (["heimdall-git"], [], []))
+
+    def test_the_plan_names_known_parts_only(self):
+        base = {"disk": "/dev/vda", "mode": "erase", "encrypt": False, "user": {"name": "A", "login": "a", "password": "longenough"},
+                "hostname": "x", "timezone": "UTC", "locale": "en_US.UTF-8", "keymap": "us"}
+        old = inst.EXTRAS_FILE
+        inst.EXTRAS_FILE = EXTRAS
+        try:
+            self.assertIsNone(inst.check_plan(dict(base, extras=["sarina"])))
+            self.assertIsNone(inst.check_plan(dict(base, extras=[])))
+            self.assertEqual(inst.check_plan(dict(base, extras=["steam"])), "unknown optional part chosen")
+            self.assertEqual(inst.check_plan(dict(base, extras="sarina")), "unknown optional part chosen")
+        finally:
+            inst.EXTRAS_FILE = old
+
+    def test_the_first_login_list_is_only_the_new_users(self):
+        floader = importlib.machinery.SourceFileLoader("first_components", FIRST)
+        fspec = importlib.util.spec_from_loader("first_components", floader)
+        first = importlib.util.module_from_spec(fspec)
+        floader.exec_module(first)
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, "list.json")
+        open(f, "w").write('{"user": "ada", "components": ["sarina", "heimdall", "bad; rm -rf /"]}')
+        self.assertEqual(first.todo(f, "ada"), ["sarina", "heimdall"], "ids only")
+        self.assertEqual(first.todo(f, "bob"), [])
+        self.assertEqual(first.todo(os.path.join(d, "none.json"), "ada"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

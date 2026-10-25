@@ -7,7 +7,8 @@ so passwords never appear on a command line.
      "encrypt": true, "encrypt_password": "...",          (LUKS2; one password at start-up)
      "user": {"name": "Full Name", "login": "me", "password": "..."},
      "hostname": "labyrinth", "timezone": "America/Denver", "locale": "en_US.UTF-8", "keymap": "us", "keymap_variant": "",
-     "browsers": ["vivaldi", "librewolf"], "default_browser": "vivaldi"}      (optional; ids from installer-browsers.json)
+     "browsers": ["vivaldi", "librewolf"], "default_browser": "vivaldi",      (optional; ids from installer-browsers.json)
+     "extras": ["heimdall"]}                                                  (optional; ids from installer-extras.json)
 
     Partitions chosen by hand instead of the whole disk ("mode": "manual"; only on the chosen disk):
     {"disk": "/dev/nvme0n1", "mode": "manual", "new_table": false,
@@ -43,6 +44,10 @@ import sys
 import time
 
 BROWSERS_FILE = os.environ.get("LABYRINTH_INSTALL_BROWSERS", "/usr/share/labyrinth/installer-browsers.json")
+EXTRAS_FILE = os.environ.get("LABYRINTH_INSTALL_EXTRAS", "/usr/share/labyrinth/installer-extras.json")
+COMPONENTS_FILE = os.environ.get("LABYRINTH_INSTALL_COMPONENTS", "/usr/share/labyrinth/components.json")
+# chosen parts that were not on the medium, for the new user's first login (labyrinth-first-components)
+FIRST_LOGIN_FILE = "var/lib/labyrinth/first-login-components.json"
 # the keys that make a browser the default (as /etc/xdg/mimeapps.list sets them)
 BROWSER_MIME = ["x-scheme-handler/http", "x-scheme-handler/https", "x-scheme-handler/about", "x-scheme-handler/unknown", "text/html",
                 "application/xhtml+xml"]
@@ -147,6 +152,10 @@ def check_plan(p):
             return "unknown browser chosen"
         if p.get("default_browser") and p["default_browser"] not in chosen:
             return "the default browser must be one of those chosen"
+    if "extras" in p:
+        known = {e["id"] for e in extras_catalog()}
+        if not isinstance(p["extras"], list) or any(not isinstance(e, str) or e not in known for e in p["extras"]):
+            return "unknown optional part chosen"
     return None
 
 
@@ -303,6 +312,88 @@ def set_up_browsers(p):
             text = f.read()
         with open(dock, "w") as f:
             f.write(dock_with_browser(text, ids, default[:-len(".desktop")] if default else None))
+
+
+# ---------------------------------------------------------------- optional parts (AI and security)
+
+
+def extras_catalog(path=None):
+    """The optional parts the installer offers (installer-extras.json); none when the file is missing."""
+    try:
+        return [e for e in json.load(open(path or EXTRAS_FILE)).get("extras", []) if isinstance(e, dict) and e.get("id")]
+    except (OSError, ValueError):
+        return []
+
+
+def components(path=None):
+    """Labyrinth's optional components by id (components.json)."""
+    try:
+        return {c["id"]: c for c in json.load(open(path or COMPONENTS_FILE)).get("components", []) if c.get("id")}
+    except (OSError, ValueError):
+        return {}
+
+
+def component_packages(c):
+    """The names pacman knows a component by (as labyrinth-apps counts them: a pkgbuild component installs its own name)."""
+    return list(c.get("packages", [])) + list(c.get("aur", [])) + ([c["pkgbuild"]] if c.get("pkgbuild") else [])
+
+
+def extras_plan(catalog, chosen, comps, installed):
+    """What choosing `chosen` (extra ids) means for the new system, given what it has (`installed`, package names): the
+    packages of parts not chosen to remove, the chosen components it already has (kept: their services are switched on), and
+    the chosen components it lacks (installed at the first login; they are built or fetched, so they need the internet)."""
+    keep, queue, drop = [], [], []
+    for e in catalog:
+        for cid in e.get("components", []):
+            c = comps.get(cid)
+            if not c:
+                continue
+            if e["id"] in chosen:
+                if all(x in installed for x in component_packages(c)):
+                    keep.append(cid)
+                elif cid not in queue:
+                    queue.append(cid)
+            else:
+                drop.append(cid)
+    wanted = {x for cid in keep + queue for x in component_packages(comps[cid])}
+    remove = [x for cid in drop for x in component_packages(comps[cid]) if x in installed and x not in wanted]
+    return {"remove": list(dict.fromkeys(remove)), "keep": keep, "queue": queue}
+
+
+def set_up_extras(p):
+    """The optional parts chosen in the installer (Sarina, Heimdall): those on the medium are kept, with their services on, or
+    removed when not chosen; chosen ones the medium does not carry are left for the new user's first login, where
+    labyrinth-first-components installs them through Agora's password box. Never a reason to stop the install."""
+    if "extras" not in p:
+        return
+    catalog, comps = extras_catalog(), components()
+    names = [x for c in comps.values() for x in component_packages(c)]
+    installed = {x for x in names if inside(["pacman", "-Q", x], check=False).returncode == 0}
+    plan = extras_plan(catalog, p["extras"], comps, installed)
+    if plan["remove"]:
+        say("INFO", "removing what was not chosen: " + ", ".join(plan["remove"]))
+        r = inside(["pacman", "-Rns", "--noconfirm"] + plan["remove"], check=False)
+        if r.returncode != 0:
+            say("WARN", "could not remove " + ", ".join(plan["remove"]) + ": " + (r.stderr or r.stdout).strip()[-200:])
+    login = (p.get("user") or {}).get("login", "")
+    for cid in plan["keep"]:
+        c = comps[cid]
+        for unit in c.get("enable_system", []):
+            inside(["systemctl", "enable", unit], check=False)
+        if c.get("enable_global"):
+            inside(["systemctl", "--global", "enable"] + c["enable_global"], check=False)
+        if c.get("add_groups") and login:
+            inside(["usermod", "-aG", ",".join(c["add_groups"]), login], check=False)
+    if plan["keep"]:
+        say("INFO", "kept: " + ", ".join(comps[c].get("name", c) for c in plan["keep"]))
+    if plan["queue"]:
+        f = f"{TARGET}/{FIRST_LOGIN_FILE}"
+        os.makedirs(os.path.dirname(f), exist_ok=True)
+        with open(f, "w") as out:
+            json.dump({"user": login, "components": plan["queue"]}, out)
+        # the user's first login removes it once everything is installed
+        inside(["chown", login, "/" + FIRST_LOGIN_FILE], check=False)
+        say("INFO", "not on the installer, installed at the first login (needs the internet): " + ", ".join(comps[c].get("name", c) for c in plan["queue"]))
 
 
 def check_manual(p):
@@ -815,6 +906,7 @@ def install(p):
     write_fstab(fstab)
     set_up(p)
     set_up_browsers(p)
+    set_up_extras(p)
     if encrypted:
         encryption_setup(root_part)
         run(["cryptsetup", "luksAddKey", "--batch-mode", "--key-file=-", root_part, f"{TARGET}/crypto_keyfile.bin"], stdin=p["encrypt_password"])
