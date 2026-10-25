@@ -559,7 +559,11 @@ def command(question, cwd, write=False, shell=False, voice=False, resume=None, r
     cmd += ["--cwd", os.path.abspath(cwd), "--session-dir", SESSIONS]
     if voice:
         # a misheard word must never become a write anywhere else: only these tools exist for the question
-        cmd += ["--tools", VOICE_TOOLS, "--allow-write"]
+        # LABYRINTH_VOICE_EXTRA_TOOLS (sarina.env, comma-separated): tools an add-on of the owner's asks to be usable by voice too
+        # (sarina-tarot's tools, say); exact tool names only
+        extra = [t.strip() for t in (os.environ.get("LABYRINTH_VOICE_EXTRA_TOOLS") or env_file().get("LABYRINTH_VOICE_EXTRA_TOOLS", "")).split(",")
+                 if t.strip() and all(c.isalnum() or c in "_-" for c in t.strip())]
+        cmd += ["--tools", ",".join([VOICE_TOOLS] + extra), "--allow-write"]
         # the persona and the rules for spoken answers live in the system prompt, once, not repeated in every turn of the conversation
         persona = "\n\n".join(x for x in (persona_text(), rules) if x)
         if persona:
