@@ -39,6 +39,8 @@ package() {
   cd "$srcdir/yggdrasil/packages/timer"
   install -Dm755 "$srcdir/target/release/yggdrasil-timer" "$pkgdir/usr/bin/yggdrasil-timer"
   install -Dm644 timer.conf "$pkgdir/usr/share/yggdrasil/integrations/timer.conf"
+  # its logo, in the bar and on its notifications
+  install -Dm644 timer-symbolic.svg "$pkgdir/usr/share/yggdrasil/icons/timer-symbolic.svg"
   install -Dm644 yggdrasil-timer.desktop "$pkgdir/usr/share/applications/yggdrasil-timer.desktop"
   # at login: timers that ended while the computer was off are marked done, running ones get their alarm back
   install -Dm644 yggdrasil-timer-reconcile.desktop "$pkgdir/etc/xdg/autostart/yggdrasil-timer-reconcile.desktop"
