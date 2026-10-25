@@ -7,3 +7,16 @@ x-scheme-handler/about=vivaldi-stable.desktop
 x-scheme-handler/unknown=vivaldi-stable.desktop
 text/html=vivaldi-stable.desktop
 application/xhtml+xml=vivaldi-stable.desktop
+# Videos open in VLC, in Yggdrasil's look (yggdrasil-player)
+video/x-matroska=yggdrasil-player.desktop
+video/mp4=yggdrasil-player.desktop
+video/x-m4v=yggdrasil-player.desktop
+video/x-msvideo=yggdrasil-player.desktop
+video/quicktime=yggdrasil-player.desktop
+video/webm=yggdrasil-player.desktop
+video/x-ms-wmv=yggdrasil-player.desktop
+video/x-flv=yggdrasil-player.desktop
+video/mpeg=yggdrasil-player.desktop
+video/mp2t=yggdrasil-player.desktop
+video/ogg=yggdrasil-player.desktop
+video/3gpp=yggdrasil-player.desktop
