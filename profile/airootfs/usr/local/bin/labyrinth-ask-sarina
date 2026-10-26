@@ -319,6 +319,10 @@ CALLBACK_RX = re.compile(r"(?i)\b(remember|again|my name|funny|joke|laugh|that t
 JOKE_ASK_RX = re.compile(r"(?i)\b(tell|another|got|know|have|one more)\b.*\b(joke|pun|riddle)s?\b|make me laugh|something funny|cheer me up")
 
 # A closing offer of help is a help desk, not a friend; it is dropped from a chat answer that has something else in it.
+# She is told never to announce a check and stop (Persona: "Does, does not announce"), but a small model slips. With the answer
+# streamed to the voice, such a sentence would be spoken before the tool even runs, so it is not said aloud; the answer that
+# follows is. Only when it is the whole answer is it kept (then it is all she said).
+ANNOUNCE_RX = re.compile(r"(?i)^(ok(ay)?[,.]?\s*)?(let me|i'?ll|i am going to|i'?m going to|i will|allow me to|give me a (moment|second)|one (moment|second)|hold on|checking|looking( into| at)?|let'?s (check|look|see))\b")
 OFFER_RX = re.compile(r"(?i)^(would you like|do you want|want me to|want help|need help|is there anything|let me know|if you (need|want)|i'?m (always )?here (if|for)|feel free|or is there anything|anything (else|i can))")
 
 
@@ -648,6 +652,8 @@ class Streamer:
         if self.chat and (OFFER_RX.search(sentence) or re.search(r"(?i)\b(anything (else|i can do|specific)|help (ease|you with|with (something|anything)))\b", sentence)):
             if not (final and not self.out):  # an offer is not an answer, unless it is the whole answer
                 return None
+        if ANNOUNCE_RX.match(sentence) and not (final and not self.out):
+            return None  # "Let me check your system" before the tool runs: the answer itself follows
         n = len(sentence.split())
         if self.out and self.words + n > self.limit:
             return None

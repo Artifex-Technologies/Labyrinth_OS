@@ -177,6 +177,22 @@ if __name__ == "__main__":
         st = self.m.Streamer("", chat=True)
         self.assertEqual(st.feed("Want me to help with that?", final=True), ["Want me to help with that?"], "an offer that is the whole answer stays")
 
+    def test_an_announcement_before_a_tool_call_is_not_spoken(self):
+        st = self.m.Streamer("", chat=False)
+        got = []
+        for ch in "Let me check your system. Your disk is 47 percent full. ":
+            got += st.feed(ch)
+        got += st.finish()
+        self.assertEqual(got, ["Your disk is 47 percent full."], "the answer is said, the announcement before the tool is not")
+        for lead in ("I'll look at that. ", "Okay, let me see. ", "One moment. ", "Checking now. "):
+            st = self.m.Streamer("", chat=False)
+            got = []
+            for ch in lead + "It is fine. ":
+                got += st.feed(ch)
+            self.assertEqual(got + st.finish(), ["It is fine."], lead)
+        st = self.m.Streamer("", chat=False)
+        self.assertEqual(st.feed("Let me check.", final=True), ["Let me check."], "when it is the whole answer it stays")
+
     def test_a_word_or_two_is_routed_without_the_model(self):
         self.assertEqual(self.m.route("why?", {}), ["chat"])
         self.assertEqual(self.m.route("wifi down", {}), ["network"])
