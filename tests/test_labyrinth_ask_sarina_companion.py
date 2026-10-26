@@ -238,6 +238,15 @@ if __name__ == "__main__":
             got += st.feed(ch)
         self.assertEqual(got + st.finish(), ["A catnip toy for Pixel."])
 
+    def test_list_numbers_are_not_sentences(self):
+        st = self.m.Streamer("", chat=False)
+        got = []
+        for ch in "It crashed in 2026. To check: 1. Rebuild it. 2. Run it again. ":
+            got += st.feed(ch)
+        got += st.finish()
+        self.assertFalse(any(g.strip(" .").isdigit() for g in got), got)
+        self.assertTrue(any("Rebuild it" in g for g in got), got)
+
     def test_a_word_or_two_is_routed_without_the_model(self):
         self.assertEqual(self.m.route("why?", {}), ["chat"])
         self.assertEqual(self.m.route("wifi down", {}), ["network"])

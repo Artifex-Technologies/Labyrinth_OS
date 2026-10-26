@@ -647,7 +647,8 @@ class Streamer:
             text = text[:m.start()]
         elif m:
             text = text[:m.start()]
-        parts = re.split(r"(?<=[.!?])\s+", text)
+        # " 1. " starts a list item, it does not end a sentence (the numbers were said on their own: "To check: 1." ... "2.")
+        parts = re.split(r"(?<=[.!?])(?<!\s\d\.)(?<!\s\d\d\.)\s+", text)
         if not final and not re.search(r"[.!?]\s+$", text) and parts:
             parts = parts[:-1]  # the last one is still being written
         return [p for p in parts if p.strip()]
