@@ -231,6 +231,13 @@ if __name__ == "__main__":
         self.assertIn("about 60 words", system)
         self.assertNotIn("--append-system-prompt", self.m.command("hi", "/tmp"), "typed questions get no spoken rule")
 
+    def test_the_question_said_back_is_not_spoken(self):
+        st = self.m.Streamer("I'm stopping by the pet store later. Any ideas what to get?", chat=True)
+        got = []
+        for ch in "I'm stopping by the pet store later. Any ideas what to get? A catnip toy for Pixel. ":
+            got += st.feed(ch)
+        self.assertEqual(got + st.finish(), ["A catnip toy for Pixel."])
+
     def test_a_word_or_two_is_routed_without_the_model(self):
         self.assertEqual(self.m.route("why?", {}), ["chat"])
         self.assertEqual(self.m.route("wifi down", {}), ["network"])

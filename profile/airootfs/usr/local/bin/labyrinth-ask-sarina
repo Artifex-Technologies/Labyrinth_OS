@@ -658,6 +658,9 @@ class Streamer:
         sentence = clean_sentence(sentence)
         if not sentence:
             return None
+        # with its reasoning off a small model sometimes starts by saying the question's own sentences back: not an answer
+        if not self.out and len(sentence) > 12 and re.sub(r"\W+", " ", sentence.lower()).strip() in re.sub(r"\W+", " ", self.said.lower()):
+            return None
         if self.chat and (OFFER_RX.search(sentence) or re.search(r"(?i)\b(anything (else|i can do|specific)|help (ease|you with|with (something|anything)))\b", sentence)):
             if not (final and not self.out):  # an offer is not an answer, unless it is the whole answer
                 return None
