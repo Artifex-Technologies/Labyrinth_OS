@@ -62,6 +62,8 @@ HEIMDALL_REVIEW_URL=http://127.0.0.1:8930/v1/review
 SARINA_TEMPERATURE=0.6
 SARINA_REQUEST_MAX_TOKENS=6000
 SARINA_SEMANTIC=on
+# the cryptography and steganography tools, offered for questions about them (on: always; off: never)
+SARINA_CRYPTO=auto
 EOF
     chown root:sarina /etc/sarina/service.env; chmod 640 /etc/sarina/service.env
     say "sarina: wrote /etc/sarina/service.env (new token)"

@@ -33,7 +33,9 @@ def env_file():
 
 
 # What a spoken question may use: reading, and her vault (the only place it may write, through the vault's own safety gate).
-VOICE_TOOLS = "read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write,system_status,crash_detail,stage_binary,reverse_engineer"
+# the crypto and stego tools exist only when SARINA_CRYPTO offers them (auto: for a question about them); a name not offered is ignored
+VOICE_TOOLS = ("read_file,list_dir,glob_search,grep_search,vault_search,vault_read,vault_write,system_status,crash_detail,stage_binary,reverse_engineer,"
+               "crypto_identify,crypto_decode,crypto_classic,crypto_hash,crypto_modern,stego_inspect")
 
 
 def persona_text():
