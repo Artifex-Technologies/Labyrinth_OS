@@ -245,17 +245,42 @@ def security_review(env, vault, new):
 
 
 def note(vault, text):
+    """One check-up line in the day's note. The note also holds the status Sarina's `daily-report` keeps (its "## Status" and "## Numbers"
+    sections, see docs/VAULT.md in her repository): the check-up's lines stay above those, so a line is inserted there, never appended
+    after them."""
     if not vault or not os.path.isdir(vault):
         return
     d = os.path.join(vault, "Daily")
     os.makedirs(d, exist_ok=True)
     today = datetime.date.today().isoformat()
     p = os.path.join(d, today + ".md")
-    new = not os.path.exists(p)
-    with open(p, "a", encoding="utf-8") as f:
-        if new:
-            f.write("---\ncreated: %s\nsource: labyrinth-sarina-checkup\ntags: [daily]\n---\n\n# %s\n\n" % (today, today))
-        f.write("- %s check-up: %s\n" % (datetime.datetime.now().strftime("%H:%M"), text))
+    line = "- %s check-up: %s\n" % (datetime.datetime.now().strftime("%H:%M"), text)
+    try:
+        with open(p, encoding="utf-8") as f:
+            old = f.read()
+    except OSError:
+        old = "---\ncreated: %s\nsource: labyrinth-sarina-checkup\ntags: [daily]\n---\n\n# %s\n\n" % (today, today)
+    cut = len(old)
+    for marker in ("\n## Status (", "\n## Numbers"):
+        i = old.find(marker)
+        if i >= 0:
+            cut = min(cut, i + 1)
+    head = old[:cut]
+    if not head.endswith("\n"):
+        head += "\n"
+    with open(p, "w", encoding="utf-8") as f:
+        f.write(head + line + old[cut:])
+
+
+def refresh_status(vault):
+    """The day's status section (load, memory, disks, failed services, crashes, Heimdall's headline) and its numbers line, kept by Sarina
+    herself: a status question reads it instead of probing again, and `sarina trends` reads the numbers day by day."""
+    if not vault or not os.path.isdir(vault):
+        return
+    try:
+        subprocess.run(["sarina", "daily-report", "--path", vault], capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
 
 
 def main():
@@ -303,6 +328,7 @@ def main():
         if new:
             note(vault, security_review(env, vault, new))
         st["security_seen"] = sorted(keys)  # only what is still open: a hole that comes back is new again
+    refresh_status(vault)
     st["last"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
     with open(STATE, "w") as f:
