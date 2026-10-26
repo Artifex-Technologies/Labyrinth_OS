@@ -64,16 +64,43 @@ ROUTES = [
 ]
 
 
+def route_cache_path():
+    return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina", "route-cache.json")
+
+
 def route(question, env):
     """What the question needs looked up, decided by meaning (`sarina route`: the small embedding model compares it with example questions),
-    or None when that is not available (then the keyword rules decide)."""
+    or None when that is not available (then the keyword rules decide). A word or two ("why?", "okay") is not worth a model round trip:
+    the keyword rules decide, and with none it is talk. The answer for a phrase is kept for the session, so a repeat costs nothing."""
+    import json as _json
+    key = re.sub(r"[^a-z0-9 ]", "", question.lower()).strip()
+    if len(key.split()) <= 2:
+        return keyword_topics(question) or ["chat"]
+    cache_path, cache = route_cache_path(), {}
+    try:
+        with open(cache_path) as f:
+            cache = _json.load(f)
+        if key in cache:
+            return list(cache[key])
+    except (OSError, ValueError):
+        cache = {}
     try:
         r = subprocess.run(["sarina", "route", question], capture_output=True, text=True, timeout=8, env=env)
     except (OSError, subprocess.TimeoutExpired):
         return None
     if r.returncode != 0:
         return None
-    return [t for t in r.stdout.strip().split(",") if t]
+    topics = [t for t in r.stdout.strip().split(",") if t]
+    try:
+        os.makedirs(os.path.dirname(cache_path), mode=0o700, exist_ok=True)
+        if len(cache) > 300:
+            cache = {}
+        cache[key] = topics
+        with open(cache_path, "w") as f:
+            _json.dump(cache, f)
+    except OSError:
+        pass
+    return topics
 
 
 def keyword_topics(question):
@@ -104,8 +131,20 @@ def recent_crash(question):
 
 def prefetch(question, topics):
     """What the computer reports about the given topics (at most two), as text to place before the question; empty when there are none."""
-    topics = [t for t in topics if t not in ("guides", "chat")]
     out = []
+    topics = [t for t in topics if t not in ("guides", "chat")]
+    # "How's the system doing": the day's note answers it when fresh (sarina daily-report, docs/VAULT.md in her repo); the full
+    # reports only for a specific question, and crashes are still looked up below
+    general = re.search(r"(?i)\b(how('s| is| are|s)?|is|are|was) (the |my |this )?(system|computer|pc|machine|everything|things|it|all)\b|\b(status|check[- ]?up|health check)\b", question)
+    if general and topics and all(t in ("services", "performance", "disk") for t in topics):
+        try:
+            r = subprocess.run(["sarina", "daily-report", "--path", env_file().get("SARINA_VAULT", os.environ.get("SARINA_VAULT", "")), "--max-age", "15"],
+                               capture_output=True, text=True, timeout=20)
+            if r.returncode == 0 and r.stdout.strip():
+                out.append(r.stdout.strip()[:2500])
+                topics = []
+        except (OSError, subprocess.TimeoutExpired):
+            pass
     for t in topics[:2]:
         try:
             r = subprocess.run(["sarina", "system-status", t], capture_output=True, text=True, timeout=20)
@@ -431,6 +470,18 @@ def words_of(t):
     return set(re.findall(r"[a-z']{3,}", t.lower()))
 
 
+def is_echo(said, prev_answer):
+    """In a conversation her own voice reaches the microphone: what was "heard" is then her last answer (or a good part of it) coming back.
+    Four words or more, most of them in her last answer, in her order of magnitude: an echo, not the owner."""
+    if not prev_answer:
+        return False
+    a = words_of(re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", prev_answer))
+    h = words_of(said)
+    if len(h) < 4 or not a:
+        return False
+    return len(h & a) >= 0.7 * len(h)
+
+
 def a_repeat(answer, told):
     """The joke she already told that this answer repeats (most of its words again), or ""."""
     a = words_of(re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", answer))
@@ -553,6 +604,99 @@ def save_turn(state, question, answer):
         pass
 
 
+EMOJI_RX = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]")
+
+
+def clean_sentence(t):
+    """One spoken sentence as it is shown and said: no notes, no markdown, tags in brackets, no emoji."""
+    t = re.sub(r"\((?:They laughed|Style hint)[^)]*\)\s*", "", t)
+    t = re.sub(r"\((joking|unsure|urgent|gentle|serious)\)", r"[\1]", t, flags=re.I)
+    t = EMOJI_RX.sub("", flatten(t))
+    return re.sub(r"\s+", " ", t).strip()
+
+
+class Streamer:
+    """Turns the model's reply, as it arrives, into finished spoken sentences, so the first can be said while the rest is still being
+    written. Think blocks are dropped, a sentence is complete at .!? followed by a space or a line end, the first one is not the question
+    said back, a help-desk offer is left out of a chat answer (unless it is all there is), and after about 75 words the rest is not said.
+    feed() returns the sentences ready now; finish() the last one."""
+
+    def __init__(self, said="", chat=False, limit=75):
+        self.said, self.chat, self.limit = said.strip(), chat, limit
+        self.raw, self.pos, self.out, self.words = "", 0, [], 0
+
+    def _ready(self, final):
+        text = self.raw[self.pos:]
+        # a think block (or any <tag>..</tag>) is not spoken; one still open holds everything after it back
+        text = re.sub(r"<(\w+)>.*?</\1>", "", text, flags=re.S)
+        m = re.search(r"<(\w+)>", text)
+        if m and not final:
+            text = text[:m.start()]
+        elif m:
+            text = text[:m.start()]
+        parts = re.split(r"(?<=[.!?])\s+", text)
+        if not final and not re.search(r"[.!?]\s+$", text) and parts:
+            parts = parts[:-1]  # the last one is still being written
+        return [p for p in parts if p.strip()]
+
+    def _take(self, sentence, final):
+        if not self.out and self.words == 0 and len(self.said) > 12 and sentence.lower().startswith(self.said.lower()):
+            sentence = sentence[len(self.said):].lstrip(" .?!,")
+        sentence = clean_sentence(sentence)
+        if not sentence:
+            return None
+        if self.chat and (OFFER_RX.search(sentence) or re.search(r"(?i)\b(anything (else|i can do|specific)|help (ease|you with|with (something|anything)))\b", sentence)):
+            if not (final and not self.out):  # an offer is not an answer, unless it is the whole answer
+                return None
+        n = len(sentence.split())
+        if self.out and self.words + n > self.limit:
+            return None
+        self.words += n
+        self.out.append(sentence)
+        return sentence
+
+    def feed(self, chunk, final=False):
+        self.raw += chunk
+        ready = self._ready(final)
+        if not final and ready:
+            # how far the raw text is used up: up to the end of the last ready sentence
+            consumed = self.raw.find(ready[-1], self.pos)
+            self.pos = consumed + len(ready[-1]) if consumed >= 0 else len(self.raw)
+        elif final:
+            self.pos = len(self.raw)
+        emitted = []
+        for p in ready:
+            t = self._take(p, final)
+            if t:
+                emitted.append(t)
+        return emitted
+
+    def finish(self):
+        return self.feed("", final=True)
+
+    def text(self):
+        return "\n".join(self.out)
+
+
+def run_streaming(cmd, env, streamer):
+    """Runs her with the reply streamed, prints each spoken sentence the moment it is complete, and returns (exit code, the whole answer)."""
+    import io
+    try:
+        p = subprocess.Popen(cmd + ["-stream"], env=env, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    except OSError:
+        return 1, ""
+    dec = io.TextIOWrapper(p.stdout, encoding="utf-8", errors="replace")
+    while True:
+        chunk = dec.read(1)
+        if not chunk:
+            break
+        for s in streamer.feed(chunk):
+            print(s, flush=True)
+    for s in streamer.finish():
+        print(s, flush=True)
+    return p.wait(), streamer.text()
+
+
 def command(question, cwd, write=False, shell=False, voice=False, resume=None, rules=""):
     # `sarina resume ID "question"` continues a saved session (a conversation's later turns); otherwise a new one
     cmd = ["sarina", "resume", resume, question] if resume else ["sarina", "chat", question]
@@ -652,13 +796,44 @@ def main(argv):
         if state and LAUGH_RX.search(" ".join(a.question)):
             note_laugh(last_turn(state), env)
     if a.voice:
+        # her own voice coming back through the microphone is not a question (a conversation listens again right after she speaks)
+        prev = last_turn(state) if state else None
+        if prev and is_echo(spoken(" ".join(a.question)), prev[1]):
+            print("I did not catch that: it sounded like my own voice.")
+            return 3
         # an add-on already did what was asked (a tarot card recorded): its report replaces the usual notes, so the model reads less
         pre = addon_prefetch(spoken(" ".join(a.question)), env)
         if pre:
             question = pre + "\n\nWhat they said: " + " ".join(a.question)
+        # Qwen3's hidden reasoning before an answer costs a few seconds a turn. LABYRINTH_VOICE_THINK (sarina.env): "off" never (talk is
+        # talk), "computer" only when the turn is about the computer or an add-on (a tool is then likely, and the reasoning helps it pick
+        # the right step), "on" always.
+        think = (os.environ.get("LABYRINTH_VOICE_THINK") or env.get("LABYRINTH_VOICE_THINK") or "computer").lower()
+        if think == "off" or (think == "computer" and chat and not pre):
+            question += " /no_think"
     cmd = command(question, a.cwd, a.write, a.shell, a.voice, resume, env.get("LABYRINTH_VOICE_RULES", ""))
     if a.voice:
         # a spoken answer is cleaned here: a small model sometimes writes a tool call as text, which must not be read out or shown
+        # The answer is said sentence by sentence as it is written (the first is out while the rest is still coming); only a joke that may
+        # be a repeat waits for the whole answer, since a repeat is asked again
+        joke = chat and JOKE_ASK_RX.search(spoken(" ".join(a.question)))
+        if not joke and env.get("LABYRINTH_VOICE_STREAM", "1") != "0":
+            streamer = Streamer(spoken(" ".join(a.question)), chat)
+            rc, answer = run_streaming(cmd, env, streamer)
+            log_joke(" ".join(a.question), answer, env)
+            if chat and "[joking]" not in answer:
+                log_talk(" ".join(a.question), answer, env)
+            if state:
+                save_turn(state, spoken(" ".join(a.question)), answer)
+            if state and not resume:
+                sid = new_session(before, state)
+                if sid:
+                    try:
+                        with open(state, "w") as f:
+                            f.write(sid)
+                    except OSError:
+                        pass
+            return rc if answer or rc else 4
         p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, text=True, errors="replace")
         rc = p.returncode
         out = p.stdout

@@ -37,7 +37,7 @@ if ! command -v "${LABYRINTH_WHISPER:-whisper-cli}" >/dev/null 2>&1 || [[ -z $mo
 fi
 # Names it should expect: without them "Zlothra" comes out as "lothra" and "Sarina" as "serina". The owner can add more in ~/.config/labyrinth/stt-words (one line, commas).
 words=$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/stt-words" 2>/dev/null)
-heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "Matt, Matthew, Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
 # laughter comes out as [laughs], (laughing) or *chuckles*: she is told they laughed (what she said just before may become an inside joke)
 laughed=""
 printf '%s' "$heard" | grep -qiE '[[(*] *(laugh|laughs|laughing|laughter|chuckl|giggl)[a-z]* *[])*]' && laughed=1
@@ -45,7 +45,7 @@ printf '%s' "$heard" | grep -qiE '[[(*] *(laugh|laughs|laughing|laughter|chuckl|
 clean=$(printf '%s' "$heard" | sed -E 's/\[[^]]*\]//g; s/\*[^*]*\*//g; s/\([^)]*\)//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
 # on silence or noise whisper tends to "hear" a stock phrase; those are not questions
 lower=$(printf '%s' "$clean" | tr 'A-Z' 'a-z' | sed -E 's/[[:punct:]]//g; s/^[[:space:]]+//; s/[[:space:]]+$//')
-case $lower in you|thank\ you|thanks|thanks\ for\ watching|bye|okay|ok|uh|um|hmm|"") clean="" ;; esac
+case $lower in you|thank\ you|thanks|thanks\ for\ watching|thank\ you\ for\ watching|thanks\ for\ listening|please\ subscribe|subscribe|see\ you\ next\ time|see\ you|bye|bye\ bye|goodbye|okay|ok|uh|um|hmm|oh|yeah|"") clean="" ;; esac
 [[ -z $clean && -n $laughed ]] && clean="Haha."
 [[ -n $clean ]] || { echo "I did not catch that. Try again, a little closer to the microphone."; exit 1; }
 
@@ -76,8 +76,23 @@ export LABYRINTH_VOICE_RULES="$(cat /usr/share/labyrinth/sarina-voice-rules.txt 
 prompt="${laughed:+(They laughed.) }${tone:+(Style hint, never mention it or say how they sound: $tone) }$clean"
 # the desktop names a conversation's turns YGGDRASIL_CONVERSATION (older panels: LABYRINTH_CONVERSATION)
 conversation=${YGGDRASIL_CONVERSATION:-${LABYRINTH_CONVERSATION:-}}
-answer=$(labyrinth-ask-sarina --voice ${conversation:+--conversation "$conversation"} --cwd "$HOME" "$prompt" 2>/dev/null) || { echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; }
-# the answer without a <think> block, markdown emphasis, or empty lines at the ends
-answer=$(printf '%s' "$answer" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | sed -E 's/\*\*//g; s/`//g; s/^#+ *//' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
-[[ -n $answer ]] || { echo "Sarina had no answer."; exit 1; }
-printf '\n%s\n' "$answer"
+# Her answer comes a sentence per line as she writes it (the panel starts saying the first while the rest is still coming): each line is
+# passed on at once, without markdown marks. A line that is only a think block or empty is skipped.
+tmp=$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/sarina-ask.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+thinking=0
+labyrinth-ask-sarina --voice ${conversation:+--conversation "$conversation"} --cwd "$HOME" "$prompt" 2>/dev/null | while IFS= read -r line || [[ -n $line ]]; do
+  # a think block (her reasoning, when it is not stripped before) may span lines: nothing of it is said
+  if [[ $thinking -eq 1 ]]; then [[ $line == *'</think>'* ]] && { thinking=0; line=${line#*</think>}; } || continue; fi
+  if [[ $line == *'<think>'* && $line != *'</think>'* ]]; then thinking=1; line=${line%%<think>*}; fi
+  line=$(printf '%s' "$line" | sed -E 's/<think>.*<\/think>//g; s/\*\*//g; s/`//g; s/^#+ *//; s/^[[:space:]]+//; s/[[:space:]]+$//')
+  [[ -n $line ]] || continue
+  if [[ ! -s $tmp ]]; then printf '\n'; fi
+  printf '%s\n' "$line"
+  printf '%s\n' "$line" >> "$tmp"
+done
+rc=${PIPESTATUS[0]}
+if [[ $rc -eq 3 ]]; then echo "I did not catch that: it sounded like my own voice."; exit 1; fi
+if [[ $rc -ne 0 && ! -s $tmp ]]; then echo "Sarina could not answer (is her service set up? try: sarina doctor)."; exit 1; fi
+[[ -s $tmp ]] || { echo "Sarina had no answer."; exit 1; }
+exit 0

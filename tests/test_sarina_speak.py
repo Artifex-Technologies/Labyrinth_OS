@@ -72,3 +72,16 @@ class Speak(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_lines_are_said_one_by_one_as_they_arrive(self):
+        r = self.run_it("--lines", stdin="First **line**.\n\nSecond line.\n")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(open(self.played).read().count("played"), 2)
+        self.assertEqual(open(self.said).read().strip(), "Second line.")
+
+    def test_names_are_said_as_the_owner_spelled_them(self):
+        m = os.path.join(self.d, "say.json")
+        open(m, "w").write('{"Zlothra": "Zlawthra", "Fylgja": "Filgya"}')
+        r = self.run_it("Hi Zlothra, FYLGJA is open.", env={"LABYRINTH_SAY_MAP": m})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(open(self.said).read().strip(), "Hi Zlawthra, Filgya is open.")

@@ -9,6 +9,8 @@
 #   labyrinth-sarina-speak "Hello"          say it
 #   labyrinth-sarina-speak --stop           stop whatever is being said now
 #   labyrinth-sarina-speak --to FILE.wav    write the speech to a file instead of playing it (tests, choosing a voice)
+#   labyrinth-sarina-speak --lines          say each line of standard input as it arrives (the panel feeds her answer sentence by sentence)
+# Names are said the way ~/.config/labyrinth/sarina-say.json spells them ({"Zlothra": "Zlawthra", ...}; whole words, any case).
 # Setup: python3 -m venv ~/.local/share/labyrinth/tts/venv && ~/.local/share/labyrinth/tts/venv/bin/pip install piper-tts
 #        ~/.local/share/labyrinth/tts/venv/bin/python -m piper.download_voices --download-dir ~/.local/share/labyrinth/tts/voices en_US-amy-medium
 set -u
@@ -27,18 +29,74 @@ stop() {
 }
 
 to=""
+lines=""
 args=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     --stop) stop; exit 0 ;;
     --to) to=${2:-}; shift 2 ;;
+    --lines) lines=1; shift ;;
     *) args+=("$1"); shift ;;
   esac
 done
+
+# plain speech: no markdown marks, no think blocks, one line, a sensible length; names as the owner spelled them out
+plain() {
+  printf '%s' "$1" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | tr '\n' ' ' | sed -E 's/[*`#_]+//g; s/\[([^]]*)\]\([^)]*\)/\1/g; s/  +/ /g; s/^ +//; s/ +$//' | cut -c1-700 | say_names
+}
+say_names() {
+  local map=${LABYRINTH_SAY_MAP:-${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina-say.json}
+  if [[ -f $map ]]; then
+    python3 -c '
+import json, re, sys
+text = sys.stdin.read()
+try:
+    names = json.load(open(sys.argv[1]))
+except (OSError, ValueError):
+    names = {}
+for word, said in names.items():
+    if isinstance(word, str) and isinstance(said, str) and word.strip() and word != "_":
+        text = re.sub(r"\b" + re.escape(word) + r"\b", said, text, flags=re.I)
+sys.stdout.write(text)
+' "$map"
+  else
+    cat
+  fi
+}
+
+# the voice: Chatterbox through its service when it is up, else Piper
+say_voiced() {
+  [[ -z $to && ${LABYRINTH_SARINA_ENGINE:-} != piper && -S ${LABYRINTH_VOICED_SOCKET:-$run/voiced.sock} ]] || return 1
+  "$(dirname "$(readlink -f "$0")")/labyrinth-sarina-speak-voiced" "$1"
+}
+
+if [[ -n $lines ]]; then
+  # each line as it arrives: one voice at a time, this process holds the floor until the input ends
+  mkdir -p "$run" && chmod 700 "$run"
+  stop
+  echo $$ > "$pidfile"
+  trap 'rm -f "$pidfile"' EXIT
+  while IFS= read -r line; do
+    line=$(plain "$line")
+    [[ -n $line ]] || continue
+    say_voiced "$line" && continue
+    # Piper for this line
+    voice=${LABYRINTH_SARINA_VOICE:-$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina-voice" 2>/dev/null)}
+    voice=${voice:-en_US-amy-medium}
+    [[ $voice =~ ^[A-Za-z0-9_.-]+$ ]] || continue
+    model=$dir/voices/$voice.onnx
+    py=${LABYRINTH_TTS_PYTHON:-$dir/venv/bin/python}
+    [[ -x $py && -f $model ]] || continue
+    wav=$(mktemp "$run/speech.XXXXXX.wav")
+    printf '%s' "$line" | "$py" -m piper -m "$model" -f "$wav" >/dev/null 2>&1 && "${LABYRINTH_PLAYER:-pw-play}" "$wav" >/dev/null 2>&1
+    rm -f "$wav"
+  done
+  exit 0
+fi
+
 text="${args[*]:-}"
 [[ -n $text ]] || text=$(cat)
-# plain speech: no markdown marks, no think blocks, one line, a sensible length
-text=$(printf '%s' "$text" | sed -E ':a;$!{N;ba};s/<think>.*<\/think>//g' | tr '\n' ' ' | sed -E 's/[*`#_]+//g; s/\[([^]]*)\]\([^)]*\)/\1/g; s/  +/ /g; s/^ +//; s/ +$//' | cut -c1-700)
+text=$(plain "$text")
 [[ -n $text ]] || exit 0
 
 # The Chatterbox voice (labyrinth-voiced) when its service is up: it makes speech a sentence at a time and this plays them as they arrive.
@@ -47,7 +105,7 @@ if [[ -z $to && ${LABYRINTH_SARINA_ENGINE:-} != piper && -S ${LABYRINTH_VOICED_S
   mkdir -p "$run" && chmod 700 "$run"
   stop
   echo $$ > "$pidfile"
-  if "$(dirname "$(readlink -f "$0")")/labyrinth-sarina-speak-voiced" "$text"; then
+  if say_voiced "$text"; then
     rm -f "$pidfile"
     exit 0
   fi

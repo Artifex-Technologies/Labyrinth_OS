@@ -118,3 +118,18 @@ class SarinaAsk(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_her_own_voice_is_not_an_answer(self):
+        r = self.run_it(whisper="echo the sun is still up", ask="echo 'I did not catch that: it sounded like my own voice.'; exit 3")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("I did not catch that", r.stdout)
+
+    def test_the_answer_streams_a_sentence_per_line(self):
+        r = self.run_it(whisper="echo hello", ask="printf 'First **one**.\\n'; sleep 0.2; printf 'Second.\\n'")
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(r.stdout, 'Heard: "hello"\n\nFirst one.\nSecond.\n')
+
+    def test_stock_phrases_from_silence_are_not_questions(self):
+        r = self.run_it(whisper="echo Thanks for watching.")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("did not catch", r.stdout)
