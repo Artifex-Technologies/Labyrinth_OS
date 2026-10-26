@@ -193,6 +193,21 @@ if __name__ == "__main__":
         st = self.m.Streamer("", chat=False)
         self.assertEqual(st.feed("Let me check.", final=True), ["Let me check."], "when it is the whole answer it stays")
 
+    def test_a_withdrawn_draft_is_cut_off_and_corrected(self):
+        st = self.m.Streamer("", chat=False)
+        got = []
+        stream = ("Boot is slow because of fstrim. Disable heimdall-dns-blocklist during boot. Then"
+                  "\n[" + self.m.DRAFT_WITHDRAWN + "]\n" + "Run fstrim weekly instead of at boot. ")
+        for ch in stream:
+            got += st.feed(ch)
+        got += st.finish()
+        self.assertEqual(got, ["Boot is slow because of fstrim.", "Sorry, let me correct that.", "Run fstrim weekly instead of at boot."])
+        st = self.m.Streamer("", chat=False)
+        got = []
+        for ch in "\n[" + self.m.DRAFT_WITHDRAWN + "]\nIt is fine. ":
+            got += st.feed(ch)
+        self.assertEqual(got + st.finish(), ["It is fine."], "nothing was said yet: no correction to announce")
+
     def test_a_word_or_two_is_routed_without_the_model(self):
         self.assertEqual(self.m.route("why?", {}), ["chat"])
         self.assertEqual(self.m.route("wifi down", {}), ["network"])
