@@ -326,6 +326,7 @@ ANNOUNCE_RX = re.compile(r"(?i)^(ok(ay)?[,.]?\s*)?(let me|i'?ll|i am going to|i'
 # Sarina's own check (securityOffRE in her claims.go) sends such an answer back, but a streamed sentence is spoken before the check runs:
 # advice to turn a security piece off is never said aloud.
 SECURITY_OFF_RX = re.compile(r"(?i)\b(disabl(e|ing)|turn(ing)? off|switch(ing)? off|stop(ping)?|mask(ing)?|remov(e|ing)|uninstall(ing)?)\b[^.\n]{0,60}\b(ufw|firewall|firewalld|heimdall|apparmor|selinux|keyring|freshclam|clamav|antivirus|secure boot|limbo)\b")
+WARNED_RX = re.compile(r"(?i)\b(do not|don'?t|never|avoid|no need to|without|not)\s+(\w+\s+){0,2}$")  # "do not disable the firewall" is said
 # printed by `sarina -stream` where a check sent the streamed draft back and a new one follows (DraftWithdrawn in her cli/chat.go)
 DRAFT_WITHDRAWN = "\x1edraft withdrawn\x1e"
 OFFER_RX = re.compile(r"(?i)^(would you like|do you want|want me to|want help|need help|is there anything|let me know|if you (need|want)|i'?m (always )?here (if|for)|feel free|or is there anything|anything (else|i can))")
@@ -659,7 +660,8 @@ class Streamer:
                 return None
         if ANNOUNCE_RX.match(sentence) and not (final and not self.out):
             return None  # "Let me check your system" before the tool runs: the answer itself follows
-        if SECURITY_OFF_RX.search(sentence):
+        m = SECURITY_OFF_RX.search(sentence)
+        if m and not WARNED_RX.search(sentence[:m.start()]):
             return None
         n = len(sentence.split())
         if self.out and self.words + n > self.limit:
@@ -670,10 +672,11 @@ class Streamer:
 
     def feed(self, chunk, final=False):
         self.raw += chunk
-        i = self.raw.find(DRAFT_WITHDRAWN, self.pos)
+        # the marker is complete only with its "]": it arrives a character at a time (a "]" was said at the start of the new draft)
+        i = self.raw.find(DRAFT_WITHDRAWN + "]", self.pos)
         if i >= 0:
             # the rest of the withdrawn draft is not said; if part of it was, the new answer starts by saying it is a correction
-            self.raw, self.pos = self.raw[i + len(DRAFT_WITHDRAWN):].lstrip("]\n "), 0
+            self.raw, self.pos = self.raw[i + len(DRAFT_WITHDRAWN) + 1:].lstrip("\n "), 0
             if self.out and not self.corrected:
                 self.corrected = True
                 self.out.append("Sorry, let me correct that.")

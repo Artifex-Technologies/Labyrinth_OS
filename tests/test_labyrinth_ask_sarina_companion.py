@@ -203,6 +203,11 @@ if __name__ == "__main__":
         got += st.finish()
         self.assertEqual(got, ["Boot is slow because of fstrim.", "Sorry, let me correct that.", "Run fstrim weekly instead of at boot."])
         st = self.m.Streamer("", chat=False)
+        said = []
+        for ch in "Do not disable the firewall for a game. It will not help. ":
+            said += st.feed(ch)
+        self.assertEqual(said + st.finish(), ["Do not disable the firewall for a game.", "It will not help."], "a warning is said")
+        st = self.m.Streamer("", chat=False)
         got = []
         for ch in "\n[" + self.m.DRAFT_WITHDRAWN + "]\nIt is fine. ":
             got += st.feed(ch)
