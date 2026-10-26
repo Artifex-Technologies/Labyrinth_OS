@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """labyrinth-appusage: how long each app has been running, for Settings > Apps ("sort by usage").
 
-Every 30 seconds it looks at the running systemd scopes of this user (apps started by labyrinth-launch, by KDE, by Flatpak),
+Every 30 seconds it looks at the running systemd scopes of this user (apps started by labyrinth-launch, by other launchers, by Flatpak),
 works out which desktop entry each belongs to, and adds the time to ~/.local/share/labyrinth/app-usage.json
 (`seconds`, next to the launch count labyrinth-launch writes). Only app names and seconds are kept; nothing leaves the machine.
 

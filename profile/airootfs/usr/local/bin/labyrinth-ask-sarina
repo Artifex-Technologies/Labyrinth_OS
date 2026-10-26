@@ -723,6 +723,12 @@ def run_streaming(cmd, env, streamer):
     return p.wait(), streamer.text()
 
 
+# Said once in the system prompt (part of the cached prefix): the card and the voice stop after about 75 words anyway, and a long answer
+# was cut mid-list (eval voice-install-help, 2026-10-26: Agora, then pacman, the AUR and two helpers, 75 words of a recipe).
+SPOKEN_BRIEF = ("Your answer is spoken aloud: at most three short sentences, about 60 words. Lead with the one thing to do or the "
+                "answer itself; leave out alternatives and background unless asked, and offer more in a few words if there is more.")
+
+
 def command(question, cwd, write=False, shell=False, voice=False, resume=None, rules=""):
     # `sarina resume ID "question"` continues a saved session (a conversation's later turns); otherwise a new one
     cmd = ["sarina", "resume", resume, question] if resume else ["sarina", "chat", question]
@@ -735,7 +741,7 @@ def command(question, cwd, write=False, shell=False, voice=False, resume=None, r
                  if t.strip() and all(c.isalnum() or c in "_-" for c in t.strip())]
         cmd += ["--tools", ",".join([VOICE_TOOLS] + extra), "--allow-write"]
         # the persona and the rules for spoken answers live in the system prompt, once, not repeated in every turn of the conversation
-        persona = "\n\n".join(x for x in (persona_text(), rules) if x)
+        persona = "\n\n".join(x for x in (persona_text(), SPOKEN_BRIEF, rules) if x)
         if persona:
             cmd += ["--append-system-prompt", persona]
     elif write:

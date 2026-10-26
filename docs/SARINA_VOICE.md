@@ -5,8 +5,7 @@ Press **Super+S**: Fylgja (the notch) drops down, the microphone starts recordin
 **Esc**, or a click outside the card, cancels it and throws the recording away. Sarina's answer (or the
 reason there is none) appears in the same card; Esc or a click outside closes it.
 
-It is a press-to-start, press-to-send toggle, not hold-to-talk: KDE's global shortcuts only report the
-press, not the release.
+(That was the first version, a press-to-start, press-to-send toggle; hold-to-talk replaced it, below.)
 
 ## What is built (Labyrinth's side)
 
@@ -96,11 +95,10 @@ She stops when you press Super+S again, Esc, or click outside the card.
 
 ## Hold to talk, and the voice island (2026-10-16)
 
-- **Hold Super+S, talk, let go.** No card opens and there is no Send button. The panel registers the shortcut itself with KDE's global-shortcut
-  daemon (`org.kde.KGlobalAccel`, component `yggdrasil-panel`, action `assistant`; change it in System Settings > Shortcuts) because only
-  registered actions report the key coming UP (`globalShortcutReleased`). A tap shorter than a third of a second is not a question: it just stops her talking.
-  The old desktop-file shortcut (`labyrinth-sarina-ask.desktop`) is unregistered at startup. The D-Bus call `Ask` still works as a press-to-start,
-  press-to-send fallback.
+- **Hold Super+S (or Ctrl+Alt+S), talk, let go.** No card opens and there is no Send button. Yggdrasil's session (Hyprland) binds the key
+  down to `yggdrasil-panelctl ask-press` and the key up to `ask-release` (`packages/session/hyprland/yggdrasil.lua` in the Yggdrasil
+  repository). A tap shorter than a third of a second is not a question: it just stops Sarina talking. The D-Bus call `Ask` still works as a
+  press-to-start, press-to-send fallback. (Until 2026-10-26 the panel registered the shortcut with KDE's global-shortcut daemon; KDE is gone.)
 - **The island:** while you talk, while she thinks, and while she answers, the notch grows downwards into a black pill with a glowing wave in it
   (`packages/panel/src/voicewave.rs`, the iOS 9 Siri wave: sine curves squeezed at the ends, added together so crossings glow). The wave follows
   the microphone (the newest 120 ms of the recording as it is written) and, while she speaks, her voice: `labyrinth-sarina-speak` writes the

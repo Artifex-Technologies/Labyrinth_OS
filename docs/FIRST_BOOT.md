@@ -83,11 +83,11 @@ From a terminal: `labyrinth-sarina`, `labyrinth-sarina gui`, `labyrinth-sarina m
 
 ## 7. Monitors
 
-On first login each monitor is set to its native shape at the highest refresh rate it offers at 60 Hz
-or more. Your Acer ultrawide and the LG DualUp are recognised by name and get the layout from
-`/usr/share/labyrinth/displays.json` (Acer 3440x1440 at 144 Hz, LG at 125% placed to its right). It is
-done once per monitor; anything you change later in Settings is kept. To redo it:
-`rm ~/.config/labyrinth/displays-kde.json` and log in again.
+At each login `labyrinth-displays` gives every monitor its native shape at the highest refresh rate it offers at
+60 Hz or more. Your Acer ultrawide and the LG DualUp are recognised by name and get the layout from
+`/usr/share/labyrinth/displays.json` (Acer 3440x1440 at 144 Hz, LG at 125% placed to its right); the result is
+written to `~/.config/hypr/monitors.lua`. Your own rules go in `~/.config/labyrinth/displays.json`
+(`labyrinth-displays --list` shows what each monitor reports).
 
 ## 8. Coming from Windows
 

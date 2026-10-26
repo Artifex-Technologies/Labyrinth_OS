@@ -213,6 +213,12 @@ if __name__ == "__main__":
             got += st.feed(ch)
         self.assertEqual(got + st.finish(), ["It is fine."], "nothing was said yet: no correction to announce")
 
+    def test_spoken_answers_are_asked_to_be_brief(self):
+        cmd = self.m.command("How do I install Spotify?", "/tmp", voice=True)
+        system = cmd[cmd.index("--append-system-prompt") + 1]
+        self.assertIn("about 60 words", system)
+        self.assertNotIn("--append-system-prompt", self.m.command("hi", "/tmp"), "typed questions get no spoken rule")
+
     def test_a_word_or_two_is_routed_without_the_model(self):
         self.assertEqual(self.m.route("why?", {}), ["chat"])
         self.assertEqual(self.m.route("wifi down", {}), ["network"])

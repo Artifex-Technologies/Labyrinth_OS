@@ -26,7 +26,7 @@ Presentation {
             font.pixelSize: 22
             text: "Welcome to Labyrinth OS
 
-Built on Arch and CachyOS, with a Mac-style Plasma desktop and a tiling mode when you want one."
+Built on Arch and CachyOS, with its own desktop, Yggdrasil, and a tiling mode when you want one."
         }
     }
 
