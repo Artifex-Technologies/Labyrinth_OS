@@ -212,6 +212,18 @@ if __name__ == "__main__":
         for ch in "\n[" + self.m.DRAFT_WITHDRAWN + "]\nIt is fine. ":
             got += st.feed(ch)
         self.assertEqual(got + st.finish(), ["It is fine."], "nothing was said yet: no correction to announce")
+        st = self.m.Streamer("", chat=False)
+        got = []
+        for ch in ("The CPU is busy. Close the game. Then" + "\n[" + self.m.DRAFT_WITHDRAWN + "]\n" +
+                   "The CPU is busy. Close the game. It frees four cores. "):
+            got += st.feed(ch)
+        self.assertEqual(got + st.finish(), ["The CPU is busy.", "Close the game.", "Sorry, let me correct that.", "It frees four cores."],
+                         "what was said is not said again; the apology comes before the first new sentence")
+        st = self.m.Streamer("", chat=False)
+        got = []
+        for ch in "The CPU is busy. Then" + "\n[" + self.m.DRAFT_WITHDRAWN + "]\n" + "The CPU is busy. ":
+            got += st.feed(ch)
+        self.assertEqual(got + st.finish(), ["The CPU is busy."], "nothing new: no apology")
 
     def test_spoken_answers_are_asked_to_be_brief(self):
         cmd = self.m.command("How do I install Spotify?", "/tmp", voice=True)

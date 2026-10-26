@@ -636,6 +636,7 @@ class Streamer:
     def __init__(self, said="", chat=False, limit=75):
         self.said, self.chat, self.limit = said.strip(), chat, limit
         self.raw, self.pos, self.out, self.words, self.corrected = "", 0, [], 0, False
+        self.said_before, self.pending_apology = [], False
 
     def _ready(self, final):
         text = self.raw[self.pos:]
@@ -665,6 +666,12 @@ class Streamer:
         m = SECURITY_OFF_RX.search(sentence)
         if m and not WARNED_RX.search(sentence[:m.start()]):
             return None
+        if sentence in self.said_before:
+            return None
+        if self.said_before and not self.corrected:
+            self.corrected = True
+            self.out.append("Sorry, let me correct that.")
+            self.pending_apology = True
         n = len(sentence.split())
         if self.out and self.words + n > self.limit:
             return None
@@ -679,11 +686,9 @@ class Streamer:
         if i >= 0:
             # the rest of the withdrawn draft is not said; if part of it was, the new answer starts by saying it is a correction
             self.raw, self.pos = self.raw[i + len(DRAFT_WITHDRAWN) + 1:].lstrip("\n "), 0
-            if self.out and not self.corrected:
-                self.corrected = True
-                self.out.append("Sorry, let me correct that.")
-                self.words = 0
-                return ["Sorry, let me correct that."] + self.feed("", final)
+            # the new draft often repeats most of the old one: what was said already is not said again, and the apology comes only
+            # before the first sentence that is really new (none when nothing new is said); eval voice-slow, 2026-10-26
+            self.said_before, self.words = list(self.out), 0
             return self.feed("", final)
         ready = self._ready(final)
         if not final and ready:
@@ -696,6 +701,9 @@ class Streamer:
         for p in ready:
             t = self._take(p, final)
             if t:
+                if self.pending_apology:
+                    self.pending_apology = False
+                    emitted.append("Sorry, let me correct that.")
                 emitted.append(t)
         return emitted
 
