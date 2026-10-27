@@ -535,17 +535,18 @@ Still open, to ask at Phase 2: which game to use for the before/after measuremen
   hold and the GRUB fragment.
 - Rust tests for parsing the status and the hold.
 
-**Settings layout.** The Power page shows a "Graphics card · NAME" group with the three modes' watt sliders, then a
-"Processor" group with the three modes' clock sliders. This replaces the three per-mode groups. On a card in the table
-there is a "Tensor-rate unlock" row, and a "Power hold" row while a hold is on.
+**Settings layout (Matt, 2026-10-27; 0.1.0-9).** Everything is in the "Power mode" group, under the mode selector, for the
+mode that is selected: "Processor" (clock), then "Graphics card" (watts, its name in the line under it), each with Reset.
+Choosing another mode shows and changes that mode's limits. This replaces the three per-mode groups lower on the page. On a
+card in the table a "Tensor-rate unlock" row follows the Graphics card row, and a "Power hold" row while a hold is on.
+Section 5's "Graphics card group" means these rows.
 
 **Gate:**
 - Tests: 45 Python (all helpers) and 56 Rust tests pass, also inside `makepkg`'s check.
 - `gpuunlock status --json` on Orthanc gives `"state": "unsupported"`, `"reason": "No tested entry for MSI 1462:3711 with
   VBIOS 90.02.17.00.3E (tested: ASUS 1043:866a, VBIOS 90.02.17.00.47)"`. It reads BAR0 `0xde000000`, the open driver
   615.78.08, and Secure Boot off.
-- Settings with Developer options on shows the Graphics card group with only the power sliders, Performance at 290 W, and
-  no unlock row.
+- Settings with Developer options on shows Mode, Processor and Graphics card (Performance at 290 W), and no unlock row.
 - A debug build with a `supported` fixture shows the row and "Arm for next restart…".
 - The services are installed and disabled. The GRUB fragment prints nothing.
 - No reboot was needed for Phase 0. Heimdall's watch list gets the three files through step 13 of Matt's `finish-todo.sh`,
