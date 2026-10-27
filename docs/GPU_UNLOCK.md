@@ -31,12 +31,13 @@ inputs it needs, and its identity guards refuse any card that is not the exact t
 ways (section 3).
 
 **Therefore, the plan has gates.** Phase 0 builds the Settings option itself, with the support check and all the safety
-plumbing, and on Matt's card it shows **"Not supported on this card"** with the reason: nothing touches the GPU. Phases 1 and
-2 research and dry-run without writing to the GPU. A live attempt (Phase 3) happens only if Phase 1 produces evidence that the
-method applies to an MSI 2080 Ti with VBIOS 90.02.17.00.3E, only with Matt at the keyboard, and only after the measurements
-in Phase 4 are planned so we know whether it was worth it. It is entirely possible, and acceptable, that the plan stops after
-Phase 1 with the option permanently showing "Not supported". That outcome still delivers what was asked: a correct, gated
-feature that will light up for a card the method is proven on.
+plumbing. On a card that is not supported, which includes Matt's today, **the option does not appear at all** (Matt's
+decision, 2026-10-26); the helper still records why, for Opus and Heimdall. Nothing touches the GPU. Phases 1 and 2 research
+and dry-run without writing to the GPU. A live attempt (Phase 3) happens only if Phase 1 produces evidence that the method
+applies to an MSI 2080 Ti with VBIOS 90.02.17.00.3E, only with Matt at the keyboard, and only after the measurements in Phase
+4 are planned so we know whether it was worth it. If it works, Phase 5 reports the findings to Turing-unlock. It is entirely
+possible, and acceptable, that the plan stops after Phase 1 with the option never appearing on this computer. That outcome
+still delivers what was asked: a correct, gated feature that appears for a card the method is proven on.
 
 **Expected benefit, honestly.**
 
@@ -48,8 +49,8 @@ feature that will light up for a card the method is proven on.
 | Heimdall | None | It is a CPU process at 0.3% CPU; it does not use the GPU |
 | Voice (chatterbox ONNX, fp16) | Possibly faster; unmeasured | Transformer inference on tensor cores |
 
-For gaming, the lever that exists today is the per-mode GPU power limit already in Settings > Power (Developer options), and
-section 6 says how far the 750 W supply allows it to go.
+For gaming, the lever that exists today is the per-mode GPU power limit already in Settings > Power (Developer options).
+Performance mode may use the card's full 290 W (Matt's decision, 2026-10-26); section 6 checks that against the 750 W supply.
 
 ## 2. Facts about this machine (checked 2026-10-26)
 
@@ -59,7 +60,8 @@ section 6 says how far the 750 W supply allows it to go.
 | PCI identity | vendor:device `10de:1e07`, subsystem `1462:3711` (MSI) | `lspci -nn -vv -s 01:00.0` |
 | Bus address (BDF) | `0000:01:00.0` | same |
 | VBIOS | `90.02.17.00.3E` | `nvidia-smi --query-gpu=vbios_version` |
-| BAR0 / BAR1 | `0xde000000` (16 MiB) / `0xc0000000` (256 MiB) | `lspci -vv` |
+| BAR0 / BAR1 | `0xde000000` (16 MiB) / `0xc0000000` (256 MiB; a 256 MiB BAR1 means Resizable BAR is off) | `lspci -vv` |
+| BIOS settings | Above 4G Decoding and CSM: **not known yet**. The only Turing run had Above 4G off and CSM on; Phase 1 reads them | Matt, in the BIOS setup |
 | Driver | NVIDIA **open** kernel modules 615.78.08 (`nvidia-utils 615.78.08-2`, `linux-cachyos-nvidia-open 7.3.0-4`) | `/proc/driver/nvidia/version`, `pacman -Q` |
 | Module options | `NVreg_PreserveVideoMemoryAllocations=1`; `NVreg_OpenRmEnableUnsupportedGpus=1` is in effect | `/etc/modprobe.d`, `/sys/module/nvidia/parameters` |
 | Kernels | `linux-cachyos 7.3.0-4` (default), `linux-cachyos-lts 6.18.55-2` (spare) | `pacman -Q` |
@@ -144,14 +146,19 @@ machines, which is why section 6 treats "hangs before the OS" as the expected fa
 
 Location: **Settings > Power**, in a new group **"Graphics card"** that appears only while Developer options are on, only
 when an NVIDIA card is present, and only when the `powerlimit` tool already reports it (so the existing per-mode watt slider
-and this new group are the one place for GPU adjustments). The group has two rows.
+and this new group are the one place for GPU adjustments).
 
-**Row 1: "Tensor-rate unlock"** with one of four states, decided by the helper (section 7) from a support table:
+**On a card that is not supported, there is no unlock row at all** (Matt, 2026-10-26: "If the card is not supported, then the
+option should not be available"). The group then holds only the power slider, exactly as today. No greyed row, no "not
+supported" text; the reason is kept in `gpuunlock status --json` and the log, for Opus and Heimdall.
+
+**Row 1: "Tensor-rate unlock"**, shown only on a supported card, with one of these states, decided by the helper (section 7)
+from a support table:
 
 | State | Text under the row | Control |
 | --- | --- | --- |
-| Not supported | "Not supported on this card: MSI RTX 2080 Ti, VBIOS 90.02.17.00.3E. The only tested Turing card is an ASUS 2080 Ti with VBIOS ...47. Nothing can be changed here." | None (greyed) |
-| Supported, not validated here | "This card matches a tested one, but the unlock has not been run on this computer. Experimental." | "Arm for next restart..." (asks for the password, then confirms in a dialog that names every risk in one screen) |
+| Supported, not validated here | "This card matches a tested one, but the unlock has not been run on this computer. Experimental." | "Arm for next restart..." (asks for the password, then confirms in a dialog that names every risk in one screen and shows the date of the last Proton Drive backup of Sarina) |
+| Secure Boot on | "Needs Secure Boot off: the unlock runs a boot program that is not signed." | None |
 | Armed | "The next restart will try the unlock once, then boot normally. If the screen stays black for more than a minute, hold the power button, start again; the computer boots normally and this switch turns itself off." | "Cancel" |
 | Unlocked (this session) | "Unlocked since 09:12. FP16->FP32 tensor rate 2.0x of locked (checked). A restart or sleep locks it again." | "Benchmark", and "Do not try again" |
 
@@ -159,8 +166,9 @@ A fifth line appears after a failed attempt: "The last attempt (26 Oct 09:10) di
 Open the log." The tile never offers "always on". Persistence is deliberately out of scope until Phase 4 has evidence, for the
 reason the Turing author gives: a permanent GRUB default "can loop".
 
-**Row 2: the existing power-limit slider** moves into this group, unchanged, with one new rule: while the unlock is armed or
-active, the slider's maximum becomes the card's default (260 W), and the text says why.
+**Row 2: the existing power-limit slider** moves into this group, unchanged: Performance mode may go to the card's maximum,
+290 W. One rule is new: while the unlock is armed, and during the first unlocked session and the Phase 4 measurements, the
+slider's maximum is the card's default (260 W) and the text says why. After Phase 4 is recorded, the full range returns.
 
 Not shown anywhere: driver versions, register names, BAR addresses. Those go in the log and the `status --json` output for
 Opus and Heimdall.
@@ -186,17 +194,20 @@ Opus and Heimdall.
 4. **Snapshot first.** Arming takes a snapper snapshot "before GPU unlock" (same as `before-nvidia.sh` in Proton Drive >
    Labyrinth OS). The unlock does not touch the system, but the surrounding package work (a DKMS module, an EFI loader on the
    ESP) might, and the snapshot makes that reversible by the guide already written for Matt (`GPU driver recovery guide.md`).
+   Snapshots start as a normal desktop when chosen in the boot menu, because grub-btrfs' overlay hook is in the start-up
+   image (drop-in `/etc/mkinitcpio.conf.d/labyrinth-snapshot-overlay.conf`, added to the installer and to `before-nvidia.sh`
+   on 2026-10-26). Only snapshots taken after the drop-in is in place have it, since each snapshot carries its own `/boot`.
 5. **Never from inside Linux.** The helper never unbinds, resets or rebinds the NVIDIA driver on the display card. All GPU
    writes happen before the kernel (EFI loader) or before the driver binds (kernel module on the command line, if a Turing
    port ever exists). Loading such a module after boot "has no effect" (gpu-unlock) and is not attempted.
-6. **Power budget.** The unlock does not raise the card's power cap, but the feature enforces: while armed or unlocked, the
-   GPU limit for every mode is capped at the card's default (260 W), and the "performance" mode is not allowed to set 290 W.
-   The 750 W budget: i9-9900K up to about 200 W under all-core AVX (this board does not limit PL2), 2080 Ti 260 W sustained
-   with transient spikes to roughly 1.4x for milliseconds, drives, fans, the Corsair controller, USB and RGB about 60-80 W.
-   Sustained worst case about 540 W; transient about 650 W. That is inside 750 W with margin. At 290 W the sustained figure is
-   570 W and transients reach about 700 W: still inside, but with little margin for an ageing supply, so 290 W is allowed
-   only when the unlock is off and only in "performance" mode, and never with Sarina's model loaded at the same time as a
-   game (the helper reads `ollama ps` and refuses to raise above 260 W while a model is resident).
+6. **Power budget.** The unlock does not raise the card's power cap. The 750 W budget: i9-9900K up to about 200 W under
+   all-core AVX (this board does not limit PL2), the 2080 Ti at its limit with transient spikes to roughly 1.4x for
+   milliseconds, drives, fans, the Corsair controller, USB and RGB about 60-80 W. At 260 W: about 540 W sustained, transients
+   near 650 W. At 290 W: about 570 W sustained, transients near 700 W. Both are inside 750 W, so **Performance mode may use
+   290 W** (Matt, 2026-10-26). The limit caps the whole card, whatever runs on it, so a game and Sarina's model together still
+   draw no more than the limit; an earlier draft's "not while a model is loaded" rule was dropped for that reason. The only
+   extra rule: while the unlock is armed, and during the first unlocked session and the Phase 4 measurements, every mode is
+   held at the default 260 W, so the first run has margin and the locked and unlocked numbers are taken at the same limit.
 7. **Thermal watch.** For 15 minutes after a successful unlock the verifier samples `nvidia-smi` every 10 s; if the GPU
    passes 85 °C or reports `HW Slowdown: Active`, it logs, sets the power limit to 200 W for the session, and marks the state
    "throttled" so the tile says so.
@@ -286,7 +297,8 @@ The Settings tile is a pure function of this JSON.
 3. `snapper -c root create --type single --cleanup-algorithm "" --description "before GPU unlock"`.
 4. Write `loader.conf` (BDF, BAR0, ESP GUID, loader file name) and run `grub-mkconfig -o /boot/grub/grub.cfg`; assert entry
    0 is unchanged and the new entry id exists; otherwise roll `loader.conf` back and fail.
-5. Cap the GPU power limit at the default for every mode (`powerlimit set MODE gpu=260` where higher).
+5. Hold the GPU power limit at the card's default for every mode (`powerlimit set MODE gpu=260` where higher). The previous
+   values go into `state.json`; `disarm` restores them, and so does recording Phase 4 (Performance mode's 290 W returns).
 6. Write `armed` (time, entry id, current boot id), then `grub-reboot <entry id>`.
 7. Log, and return the text for the tile. The helper does **not** reboot; Matt restarts from the menu when ready.
 
@@ -303,9 +315,12 @@ The Settings tile is a pure function of this JSON.
 
 ### 7.6 Settings UI
 
-In `page_power`, after the idle rows and before the per-mode limits, when `p.limits.is_some() && p.gpu_unlock.is_some()`:
-a `ui::group(ui, pal, Some("Graphics card"), ...)` with `ui::row` for the tile (text from `reason` or the state sentence in
-section 5), a `ui::quiet` button whose label depends on the state, and the existing GPU slider moved inside. The confirmation
+In `page_power`, after the idle rows and before the per-mode limits, when `p.limits.is_some()`: a
+`ui::group(ui, pal, Some("Graphics card"), ...)` holding the existing GPU slider and, only when the helper's state is
+anything but `unsupported` or `no-nvidia`, a `ui::row` for the unlock (the state sentence in section 5) with a `ui::quiet`
+button whose label depends on the state. An unsupported card draws no unlock row. For tests and screenshots, a debug build
+(`cfg!(debug_assertions)`) reads the status JSON from `$YGGDRASIL_GPUUNLOCK_FIXTURE` instead of running the helper; release
+builds ignore it, and `arm` always re-checks everything as root. The confirmation
 dialog is an `egui::Window` like "Turn on Developer options?" with a checkbox "I have read this and I am at the computer" that
 must be ticked before "Arm" enables. Actions go through `sys::act("pkexec", &["/usr/lib/yggdrasil/gpuunlock", "arm"])`.
 
@@ -318,7 +333,9 @@ must be ticked before "Arm" enables. Actions go through `sys::act("pkexec", &["/
 - Power cap: `arm` with performance at 290 W results in 260 W for every mode; `disarm` restores the saved values.
 - GRUB: `41_gpu_unlock` prints nothing without `loader.conf`, and exactly one `menuentry` with it; `arm` aborts if entry 0 changes.
 - `status --json` validates against the schema in 7.3 for every state.
-- Settings: `parse_gpu_unlock` for each state; the tile text for `unsupported` contains the card's own subsystem and VBIOS.
+- Settings: `parse_gpu_unlock` for each state; no unlock row is drawn for `unsupported` or `no-nvidia` (the group shows only
+  the slider); the `status` reason for `unsupported` names the card's own subsystem and VBIOS (for the log).
+- Power: Performance mode accepts 290 W when nothing is armed; `arm` holds it at 260 W; recording Phase 4 restores 290 W.
 
 ## 8. Phases and gates
 
@@ -327,12 +344,14 @@ start a phase whose predecessor has no result.
 
 ### Phase 0: the gated feature, with no GPU change
 
-Everything in section 7 except a loader. On this machine the tile shows "Not supported on this card" with the reason. Deliver:
+Everything in section 7 except a loader. On this machine no unlock row appears; `gpuunlock status --json` records why. Deliver:
 the helper, table, policy, service, GRUB fragment, Settings rows, tests, PKGBUILD `pkgrel` bump, `docs/YGGDRASIL.md` line. The
 Heimdall watch-list addition is a line in Heimdall's `install.sh` (Heimdall owns security; see its repo).
 
 Gate: tests pass; `gpuunlock status --json` on Matt's PC says `unsupported` with the MSI/VBIOS reason; Settings shows the
-greyed row only with Developer options on; Heimdall shows no new alerts after a reboot. Nothing was written to the GPU.
+"Graphics card" group with only the power slider (no unlock row) while Developer options are on, and nothing new while they
+are off; a debug build with a `supported` fixture shows the row, for a screenshot; Heimdall shows no new alerts after a
+reboot. Nothing was written to the GPU.
 
 ### Phase 1: research, no GPU writes (read-only on the card)
 
@@ -347,14 +366,22 @@ greyed row only with Developer options on; Heimdall shows no new alerts after a 
    an MSI subsystem has ever been listed by anyone.
 4. Watch gpu-unlock issues #30 and #97 (Turing). A kernel-module Turing port from that project, if it appears, is the
    preferred method over the EFI loader, because it has a tested failure path, suspend handling and a Debian/Arch installer.
-5. Write the result: feasible with the current public material, feasible only with the author's help, or not feasible.
+5. Ask Matt to read two BIOS settings and note them here: Above 4G Decoding and CSM (the only Turing run had Above 4G off and
+   CSM on). Do not change them for this.
+6. Write the result: feasible with the current public material, feasible only with the author's help, or not feasible.
+7. If "only with the author's help": open an issue on Turing-unlock (Matt agreed, 2026-10-26) with the card's identity, the
+   board and BIOS settings, the Phase 1 analysis output and, if Phase 2's probe could be built, the probe log. Draft it in
+   `docs/gpu-unlock-upstream.md` following the rules in Phase 5, show Matt the exact text, and post it only after he says yes,
+   from his account: `gh issue create --repo haohervchb/Turing-unlock --title "..." --body-file docs/gpu-unlock-upstream.md`.
+   (On 2026-10-26 the repo had issues enabled and none opened yet.)
 
 Gate: a result section here. If "not feasible", the plan stops; the feature stays at Phase 0, which is a correct, shippable
 state. No GPU register was written in this phase.
 
 ### Phase 2: dry run (probe only)
 
-Only if Phase 1 says feasible. Build the EFI preflight in **probe mode** (Turing-unlock's `tu102_preflight.c` and
+Only if Phase 1 says feasible, or says the author's help is needed and the probe can still be built (it writes nothing to
+the GPU; its log is what the author would need). Build the EFI preflight in **probe mode** (Turing-unlock's `tu102_preflight.c` and
 `tu102_prom_capture.h` read descriptors and capture state; the payload write is a separate step and must be compiled out).
 Boot it once through the one-shot entry with Matt present. It must log the identity, BAR0, PCI command, firmware descriptors
 and the selector tuple, write nothing, and chainload the normal boot.
@@ -381,7 +408,34 @@ Run the section 9 measurements unlocked and compare with `baseline.json`. Decide
 the voice gain at least 20% does the "Experimental" state stay enabled for Matt's entry; otherwise the entry's `status`
 becomes `"measured-no-benefit"` and the tile says "Tested on 2026-..: no useful gain on this computer", with the arm button
 hidden. Persistence (re-arming automatically at every boot) is a separate decision after at least ten clean armed boots, and
-needs the author's five requirements (BOOT-STATUS.md) met, including the same-boot guard.
+needs the author's five requirements (BOOT-STATUS.md) met, including the same-boot guard. Recording this phase lifts the
+260 W hold: Performance mode's 290 W applies with the unlock too.
+
+### Phase 5: report the findings to Turing-unlock (Matt agreed, 2026-10-26)
+
+Only after Phase 3 succeeded and Phase 4 is recorded. The author published one run on one card, so a second board with a
+different VBIOS is exactly the evidence the project lacks, and a negative application result (no gain in games) is as useful
+as a positive one.
+
+**What goes in:**
+- Hardware: RTX 2080 Ti `10de:1e07`, subsystem `1462:3711` (MSI), VBIOS `90.02.17.00.3E`, 68 SMs, 11 GiB; BDF `0000:01:00.0`;
+  MSI Z370I (MS-7B43) BIOS 2.QJ, i9-9900K; Above 4G and CSM as read in Phase 1; Resizable BAR off; Secure Boot off.
+- Software: CachyOS-based Labyrinth OS, kernel `linux-cachyos` version at the time, NVIDIA open modules version at the time.
+- What had to differ from the author's build (FWSEC from this card's own ROM, any port-profile change), described in words.
+- The tensor results in the repo's own format, `results/2080ti-v4-comparison.json` (`baseline` and `unlocked`, each with
+  `mma_f16_acc_fp32`, `mma_f16_acc_fp16`, `cublas_f16_acc_fp32`, `cublas_fp32_acc_cpu_reference`, then `ratios`), produced
+  by the same benchmark sources (`tools/tensor_baseline.cu`, `tools/tensor_validate.cu`) with 7 samples each.
+- The application results from section 9: Sarina prefill and generation, voice, Whisper, the game, power and temperature.
+- The probe log and the verifier log for the successful boot.
+
+**What stays out:** the ROM dump, the FWSEC, the built loader, and any NVIDIA firmware (the repo's own manifest says
+`inputs_redistributed: false`); the GPU UUID (`GPU-924c...`), serial numbers, MAC addresses, the hostname, and anything from
+Matt's home folder. Opus checks the draft for these with `grep` before showing it.
+
+**How:** an issue first (the repo has no CONTRIBUTING file; a pull request adding a results file only if the author asks for
+one). Draft in `docs/gpu-unlock-upstream.md`, show Matt the exact text, post only after his yes, from his account:
+`gh issue create --repo haohervchb/Turing-unlock --title "Second TU102 board: MSI RTX 2080 Ti, VBIOS 90.02.17.00.3E" --body-file docs/gpu-unlock-upstream.md`.
+Record the issue link here, and answer follow-up questions from the author only with Matt's yes for each reply.
 
 ## 9. Measurements (before, in Phase 2; after, in Phase 4)
 
@@ -404,24 +458,29 @@ Each run three times; keep the median. The results go into this file and into `b
   loader to the normal kernel command line. One shot only, through `grub-reboot`.
 - Never weaken an identity guard, never add a wildcard to the support table, never copy another board's FWSEC or payload to
   make a build run. The Turing author: "Do not remove identity or DMA guards just to make a build run."
-- Never raise the power limit above the card's default while the unlock is armed or active; never allow 290 W with a model
-  resident.
+- Never raise the power limit above the card's default (260 W) while the unlock is armed, or during the first unlocked
+  session and the Phase 4 measurements. Outside those, Performance mode may use 290 W (Matt, 2026-10-26).
+- Never show the unlock row on a card that is not in the support table.
+- Never post anything to GitHub (issue, pull request, comment) before Matt has read the exact text and said yes. Never
+  attach the ROM dump, FWSEC, a built loader or any NVIDIA firmware; remove the GPU UUID and serial numbers.
 - Never let Sarina, a skill, `claude-sudo` or any service arm the unlock. Only Matt, with his password, in Settings or at a
   root shell.
 - Never ship a phase without its tests and its "Result" subsection here. Never run Phase 3 without Matt present and a cold boot.
 - Keep the ROM dump and any built loader off public repos (Proton Drive only). The repos involved are public.
 - If anything in the GPU's identity, driver series or VBIOS changes, the state goes back to `unsupported` until re-validated.
 
-## 11. Open questions for Matt
+## 11. Matt's decisions (2026-10-26)
 
-1. Phase 0 delivers a Settings row that says "Not supported on this card" and nothing else. Is that acceptable as the first
-   shipped state, with the rest gated on Phase 1?
-2. For gaming, the real control is the power-limit slider. Do you want "performance" mode allowed up to 290 W (when the
-   unlock is off and no model is loaded), or capped at 260 W for the supply's sake?
-3. The hourly snapshots and the "before GPU unlock" snapshot cover the system, not your home folder. Is the Proton Drive
-   backup of Sarina (made 2026-10-26) enough, or should the arm step also refresh it?
-4. If Phase 1 says "only with the author's help", do you want to open an issue on Turing-unlock with your card's identity and
-   the probe log, or stop there?
+1. **An unsupported card shows no option at all** ("If the card is not supported, then the option should not be
+   available"). Sections 5, 7.6, 7.7 and the Phase 0 gate follow this.
+2. **Performance mode may use 290 W.** Section 6 rule 6; the 260 W hold applies only around the experiment.
+3. **Backups:** the plan as written is fine. The arm dialog shows the date of the last Proton Drive backup of Sarina as a
+   reminder; it does not upload anything by itself.
+4. **Yes to an issue on Turing-unlock** with the card's identity and the probe log if Phase 1 needs the author (Phase 1,
+   step 7), and **yes to reporting the findings** if it works (Phase 5). Matt reads every text before it is posted.
+5. Matt wants to see the real-life numbers (section 9), which Phase 4 provides either way.
+
+Still open, to ask at Phase 2: which game to use for the before/after measurement.
 
 ## Results
 

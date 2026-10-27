@@ -141,3 +141,19 @@ if [[ " ${HOOKS[*]} " != *" resume "* && " ${HOOKS[*]} " != *" systemd "* ]]; th
 fi
 EOF
 say "added the resume hook drop-in"
+
+# 6b. Snapshots that start as a normal desktop: a snapshot chosen in the boot menu (grub-btrfs) is
+#     read-only, which stops services that write to /var/lib, so the desktop and network may not
+#     come up there. grub-btrfs' overlay hook puts a writable layer in memory over it; system
+#     changes in that session are lost at the next restart (/home is the real one). It does nothing
+#     on a normal boot. Added before the installer builds the initramfs, so the "Fresh Labyrinth OS
+#     install" snapshot already has it.
+cat >"$R/etc/mkinitcpio.conf.d/labyrinth-snapshot-overlay.conf" <<'EOF'
+# Labyrinth: a snapshot chosen in the boot menu starts with a writable layer in memory (grub-btrfs' overlay hook), so the
+# desktop, the network and Claude work there as usual. System changes made in that session are lost at the next restart;
+# /home is the real one. On a normal boot the hook does nothing (it only acts on a read-only btrfs snapshot).
+if [[ -e /usr/lib/initcpio/install/grub-btrfs-overlayfs && " ${HOOKS[*]} " != *" grub-btrfs-overlayfs "* ]]; then
+  HOOKS+=(grub-btrfs-overlayfs)
+fi
+EOF
+say "added the snapshot overlay hook drop-in"
