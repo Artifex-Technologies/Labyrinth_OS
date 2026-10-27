@@ -595,14 +595,14 @@ Prompt: Did any program crash on this computer recently? Look, then name the pro
 Took 11 s, exit 0. Heimdall alerts raised during it: none
 
 ```
-No program crashes were found in the latest logs. The system logs show Orthanc's ollama process loading GGUF V3 models repeatedly, but no crash events. However, there's a kernel warning about an MMIO Stale Data CPU bug with SMT enabled, which could cause data leaks if unresolved. 
+No program crashes were found in the latest logs. The system logs show the PC's ollama process loading GGUF V3 models repeatedly, but no crash events. However, there's a kernel warning about an MMIO Stale Data CPU bug with SMT enabled, which could cause data leaks if unresolved. 
 
 I cannot tell:
 - If any program actually crashed (logs show "not available here")
 - The exact cause of the MMIO warning (requires hardware analysis)
 
 I could tell:
-- The system is running Orthanc with ollama (process ID 989)
+- The system is running ollama (process ID 989)
 - The MMIO warning is a hardware vulnerability, not a software crash
 
 Recommend checking:

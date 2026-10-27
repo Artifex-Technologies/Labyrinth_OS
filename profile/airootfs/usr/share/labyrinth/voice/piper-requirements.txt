@@ -1,5 +1,5 @@
 # Piper text-to-speech for Sarina's voice (labyrinth-sarina-voice-setup), pinned with hashes: pip installs exactly these
-# files or nothing (pip install --require-hashes). Versions as installed and working on Orthanc, 2026-10-27; hashes from PyPI.
+# files or nothing (pip install --require-hashes). Versions as installed and working on the owner's PC, 2026-10-27; hashes from PyPI.
 # To update: change a version, take its sha256 values from https://pypi.org/pypi/NAME/VERSION/json, and test the voice.
 flatbuffers==25.12.19 \
     --hash=sha256:7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4

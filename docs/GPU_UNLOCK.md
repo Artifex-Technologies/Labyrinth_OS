@@ -576,7 +576,7 @@ asks.
 
 ### Phase 0, 2026-10-27: done; nothing was written to the GPU
 
-**Built** (Yggdrasil, `packages/settings`; installed on Orthanc as `yggdrasil-settings 0.1.0-8`):
+**Built** (Yggdrasil, `packages/settings`; installed on the owner's PC as `yggdrasil-settings 0.1.0-8`):
 - `helpers/gpuunlock`: `status [--json]`, `arm`, `disarm`, `reenable`, `release`, `boot`, `verify`, `bench` (the last says
   "Phase 2" and runs nothing). It reads the card from sysfs and the driver's `/proc` files, without running a program.
 - `data/gpu-unlock-supported.json`: the ASUS entry only.
@@ -599,7 +599,7 @@ Section 5's "Graphics card group" means these rows.
 
 **Gate:**
 - Tests: 45 Python (all helpers) and 56 Rust tests pass, also inside `makepkg`'s check.
-- `gpuunlock status --json` on Orthanc gives `"state": "unsupported"`, `"reason": "No tested entry for MSI 1462:3711 with
+- `gpuunlock status --json` on the owner's PC gives `"state": "unsupported"`, `"reason": "No tested entry for MSI 1462:3711 with
   VBIOS 90.02.17.00.3E (tested: ASUS 1043:866a, VBIOS 90.02.17.00.47)"`. It reads BAR0 `0xde000000`, the open driver
   615.78.08, and Secure Boot off.
 - Settings with Developer options on shows Mode, Processor and Graphics card (Performance at 290 W), and no unlock row.

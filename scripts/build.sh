@@ -27,7 +27,7 @@ python3 "$repo_root/scripts/gen-packages.py" --check
 
 echo "==> CachyOS keyring and mirrorlists on the build host"
 if [[ ! -f /etc/pacman.d/cachyos-mirrorlist ]]; then
-  # CachyOS's signing key, by its full fingerprint (a short id can be forged): the one trusted on Orthanc, as published at
+  # CachyOS's signing key, by its full fingerprint (a short id can be forged): the one trusted on the owner's PC, as published at
   # https://cachyos.org. The key is fetched, its fingerprint compared, and only then signed locally; pacman then checks the
   # keyring and mirrorlist packages below against it.
   CACHYOS_FPR=882DCFE48E2051D48E2562ABF3B607488DB35A47
