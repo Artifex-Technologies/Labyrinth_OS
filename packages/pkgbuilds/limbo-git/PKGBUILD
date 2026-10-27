@@ -10,7 +10,7 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Limbo" && pwd)"
 
 pkgname=limbo-git
-pkgver=0.1.0.r9.gacd1f17
+pkgver=0.1.0.r13.gfbb031f
 pkgrel=1
 pkgdesc='Limbo: run Windows and Linux guest apps as sandboxed host windows, with quarantine and validation runs (built from the local Limbo checkout)'
 arch=('x86_64')

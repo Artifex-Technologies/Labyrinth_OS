@@ -9,7 +9,7 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
 
 pkgname=heimdall-git
-pkgver=0.1.0.r23.gb790650
+pkgver=0.1.0.r40.g200b2c8
 pkgrel=1
 pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt injection, leaked credentials and permission escalation (built from the local Heimdall checkout)'
 arch=('x86_64')
