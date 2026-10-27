@@ -1,25 +1,31 @@
 #!/usr/bin/env bash
-# labyrinth-agent-setup [--owner USER] [--agent NAME]: give the engineering agent (Claude) its own account, so what it does
-# can be told apart from what the owner does. Run as root; idempotent. Undo the rules with --remove.
+# labyrinth-agent-setup [--owner USER] [--agent NAME] [--owner-login]: give the engineering agent (Claude) its own account, so
+# what it does can be told apart from what the owner does, and limit what it may do as root. Run as root; idempotent. Undo the
+# rules with --remove.
 #
 #   * the account (default `claude-agent`): a normal user whose password is locked, so nobody can log in as it with one;
-#   * /etc/sudoers.d/50-labyrinth-agent: the owner may run commands AS the agent without a password (that is how the agent is
-#     started from the owner's session), and the agent may run a fixed list of administration commands as root without a
-#     password: the package manager, services, logs, the Labyrinth tools, Heimdall's maintenance window, Limbo, install.
-#     Be clear about what that list is: pacman, systemd-run and install are, in effect, root. The point is NOT containment but
-#     attribution and review: every use is logged by sudo under the agent's name, and its terminal input and output are
-#     recorded for replay (`sudoreplay`, folder /var/log/sudo-io/AGENT);
+#   * /etc/sudoers.d/50-labyrinth-agent: the agent may run ONE program as root without a password, labyrinth-agent, which
+#     checks every action (installing the ecosystem's own packages, official-repository packages but no remote-access tools,
+#     the ecosystem's own services, reading the journal, Heimdall maintenance windows, Limbo test runs, the rollback tool's
+#     read-only commands, user-side desktop files). Anything broader (any pacman command, systemd-run, install anywhere, the
+#     firewall) needs the owner to open a window with his password: `sudo labyrinth-agent-window HOURS`.
+#     Installing a package the agent built still runs that package's code as root: the checks make root deliberate and
+#     visible, not impossible. Every use is logged by sudo under the agent's name and recorded for replay (`sudoreplay`,
+#     /var/log/sudo-io/AGENT), and labyrinth-agent writes each action to the journal for Heimdall;
+#   * --owner-login: the owner's session reaches the agent account only after the owner has typed his password (once per
+#     boot, kept 12 hours), so a program running as the owner cannot use the agent's rights while he has not;
 #   * Heimdall is told who may open a maintenance window (maintenance_actors in /etc/heimdall/config.json);
 #   * /usr/local/bin/claude-sudo CMD...: shorthand for `sudo -u AGENT sudo -n CMD...` (privileged, but as the agent).
 # The agent is never exempt from Heimdall's content checks (prompt injection, credentials, hidden characters).
 set -euo pipefail
-OWNER=${SUDO_USER:-}; AGENT=claude-agent; REMOVE=0
+OWNER=${SUDO_USER:-}; AGENT=claude-agent; REMOVE=0; OWNER_LOGIN=0
 while [[ $# -gt 0 ]]; do
   case $1 in
     --owner) OWNER=$2; shift 2 ;;
     --agent) AGENT=$2; shift 2 ;;
     --remove) REMOVE=1; shift ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    --owner-login) OWNER_LOGIN=1; shift ;;
+    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
 done
@@ -41,17 +47,21 @@ fi
 passwd -l "$AGENT" >/dev/null
 install -d -m750 -o root -g root /var/log/sudo-io
 
+for f in labyrinth-agent labyrinth-agent-window; do
+  [[ -x /usr/local/sbin/$f ]] || { echo "/usr/local/sbin/$f is missing (it comes with the Labyrinth profile)" >&2; exit 1; }
+done
+if [[ $OWNER_LOGIN -eq 1 ]]; then
+  OWNER_RULE="Defaults:$OWNER timestamp_type=global, timestamp_timeout=720
+$OWNER ALL=($AGENT) ALL"
+else
+  OWNER_RULE="$OWNER ALL=($AGENT) NOPASSWD: ALL"
+fi
 tmp=$(mktemp)
 cat >"$tmp" <<RULES
 # Written by labyrinth-agent-setup. See that script for what this means.
-Cmnd_Alias AGENT_PKG   = /usr/bin/pacman
-Cmnd_Alias AGENT_SVC   = /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/loginctl, /usr/bin/systemd-run
-Cmnd_Alias AGENT_ECO   = /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *
-Cmnd_Alias AGENT_LAB   = /usr/local/bin/labyrinth-*
-Cmnd_Alias AGENT_FILES = /usr/bin/install, /usr/bin/mkdir, /usr/bin/chown, /usr/bin/chmod
 Defaults:$AGENT !requiretty, log_input, log_output, iolog_dir=/var/log/sudo-io/$AGENT
-$AGENT ALL=(root) NOPASSWD: AGENT_PKG, AGENT_SVC, AGENT_ECO, AGENT_LAB, AGENT_FILES
-$OWNER ALL=($AGENT) NOPASSWD: ALL
+$AGENT ALL=(root) NOPASSWD: /usr/local/sbin/labyrinth-agent, /usr/local/sbin/labyrinth-agent *
+$OWNER_RULE
 RULES
 visudo -cf "$tmp" >/dev/null || { echo "the sudoers file did not validate; nothing changed" >&2; rm -f "$tmp"; exit 1; }
 install -m440 -o root -g root "$tmp" "$SUDOERS"; rm -f "$tmp"

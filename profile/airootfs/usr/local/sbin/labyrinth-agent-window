@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# labyrinth-agent-window [HOURS] | --close | --status: the owner lets the engineering agent (claude-agent) use the broad root
+# commands for a few hours, for big system work (the ones labyrinth-agent does not cover: any pacman command, systemd-run,
+# install/chown/chmod anywhere, the firewall, labyrinth-* tools). Run it yourself, with your password:
+#
+#     sudo labyrinth-agent-window 4        open for 4 hours (1-12)
+#     sudo labyrinth-agent-window --close  close now
+#
+# The window is a sudoers drop-in that a timer removes when the time is up (and that this script removes at --close). Opening
+# and closing are written to the journal (tag labyrinth-agent), where Heimdall reads them.
+set -euo pipefail
+FILE=/etc/sudoers.d/51-labyrinth-agent-window
+AGENT=claude-agent
+UNIT=labyrinth-agent-window-close
+note() { logger -t labyrinth-agent -p auth.warning -- "$*"; echo "$*"; }
+[[ $EUID -eq 0 ]] || { echo "run it with sudo: sudo labyrinth-agent-window HOURS" >&2; exit 1; }
+[[ -n ${SUDO_USER:-} && ${SUDO_USER} != "$AGENT" ]] || { echo "only the owner opens the window (not the agent itself)" >&2; exit 1; }
+
+case ${1:-4} in
+  --status)
+    if [[ -f $FILE ]]; then echo "open: $(systemctl list-timers --all --no-legend "$UNIT.timer" 2>/dev/null | awk '{print "closes " $1, $2, $3}')"; else echo "closed"; fi
+    exit 0 ;;
+  --close)
+    rm -f "$FILE"; systemctl stop "$UNIT.timer" 2>/dev/null || true
+    note "agent window closed by $SUDO_USER"; exit 0 ;;
+esac
+HOURS=${1:-4}
+[[ $HOURS =~ ^([1-9]|1[0-2])$ ]] || { echo "hours: 1 to 12" >&2; exit 2; }
+
+tmp=$(mktemp)
+cat >"$tmp" <<RULES
+# Written by labyrinth-agent-window for $SUDO_USER: removed by the timer $UNIT after $HOURS h, or by --close.
+Cmnd_Alias AGENT_WINDOW = /usr/bin/pacman, /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/loginctl, /usr/bin/systemd-run, \\
+    /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *, /usr/local/bin/labyrinth-*, \\
+    /usr/bin/install, /usr/bin/mkdir, /usr/bin/chown, /usr/bin/chmod
+$AGENT ALL=(root) NOPASSWD: AGENT_WINDOW
+RULES
+visudo -cf "$tmp" >/dev/null || { rm -f "$tmp"; echo "the window's rules did not validate; nothing changed" >&2; exit 1; }
+install -m440 -o root -g root "$tmp" "$FILE"; rm -f "$tmp"
+systemctl stop "$UNIT.timer" 2>/dev/null || true
+systemd-run --quiet --unit="$UNIT" --on-active="${HOURS}h" --timer-property=AccuracySec=1min /usr/bin/rm -f "$FILE"
+note "agent window opened by $SUDO_USER for $HOURS h"

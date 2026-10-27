@@ -1,0 +1,234 @@
+#!/usr/bin/python3 -I
+"""labyrinth-agent: the root actions the engineering agent (Claude, account claude-agent) may take without the owner, each one
+checked. sudo lets the agent run this program and nothing else as root (/etc/sudoers.d/50-labyrinth-agent); anything broader
+needs the owner to open a window with his password (labyrinth-agent-window). Every action is written to the journal (tag
+labyrinth-agent), where Heimdall reads it, and sudo records the session.
+
+  labyrinth-agent pkg-install FILE...        install packages built here: Artifex/Labyrinth names only (yggdrasil-*, labyrinth-*,
+                                             heimdall*, sarina*, limbo*, liki-*, agora*); opens a Heimdall maintenance window
+  labyrinth-agent pkg-add NAME...            install packages from the signed official repositories (never remote-access tools)
+  labyrinth-agent service ACTION [UNIT...]   start stop restart reload status is-active enable disable enable-now disable-now
+                                             user-enable user-disable daemon-reload, for the ecosystem's own units only
+  labyrinth-agent logs JOURNALCTL-ARGS...    read the journal (read-only flags only)
+  labyrinth-agent maintenance on|off|status [--for D] [--reason TEXT]
+  labyrinth-agent limbo up|down|doctor|status [MANIFEST]   manifests under /var/lib/limbo/build-agent or /etc/limbo/validation
+  labyrinth-agent rollback list|status|dry-run N
+  labyrinth-agent firewall-status
+  labyrinth-agent deploy SRC DEST            put one file in a user-side place of the desktop (never anything root runs)
+"""
+import os
+import re
+import stat
+import subprocess
+import sys
+
+OURS = re.compile(r"^(yggdrasil|labyrinth|heimdall|sarina|limbo|liki|agora)([-a-z0-9.+_]*)$")
+PKGNAME = re.compile(r"^[a-z0-9@._+-]{1,100}$")
+# remote-access and tunnel tools, and servers: not installed by the agent alone (Heimdall also watches for them)
+NEVER_ADD = re.compile(r"^(tailscale|zerotier.*|ngrok|cloudflared|anydesk.*|teamviewer.*|rustdesk.*|frp|chisel|rathole|meshagent|"
+                       r"openssh|dropbear|tigervnc|x11vnc|wayvnc|xrdp|sunshine|samba|ksmbd-tools|nfs-utils|vsftpd|.*-server)$")
+UNIT = re.compile(r"^(yggdrasil-|labyrinth-|heimdall|limbo|sarina|ollama|systemd-sysctl|greetd-test)[A-Za-z0-9@._:-]*$")
+SERVICE_ACTIONS = {"start", "stop", "restart", "reload", "status", "is-active", "enable", "disable", "enable-now", "disable-now",
+                   "user-enable", "user-disable", "daemon-reload"}
+LOG_VALUE = {"-u", "--unit", "-n", "--lines", "-o", "--output", "--since", "--until", "-p", "--priority", "-t", "--identifier",
+             "-g", "--grep"}
+LOG_BARE = {"-k", "--dmesg", "-q", "--quiet", "--no-pager", "-f", "--follow", "-r", "--reverse", "-x", "--catalog",
+            "--no-hostname", "-a", "--all", "--case-sensitive"}
+BOOT_ID = re.compile(r"^(-?[0-9]+|[0-9a-f]{32})$")
+LOG_MATCH = re.compile(r"^(_COMM|_PID|_UID|_TRANSPORT|_SYSTEMD_UNIT|_SYSTEMD_USER_UNIT|SYSLOG_IDENTIFIER|PRIORITY)=[A-Za-z0-9@._:/-]*$")
+LIMBO_DIRS = ("/var/lib/limbo/build-agent/", "/etc/limbo/validation/")
+DEPLOY = [  # (pattern, mode)
+    (re.compile(r"^/usr/bin/(yggdrasil-[a-z0-9-]+|minos|ygg-[a-z0-9-]+)$"), 0o755),
+    (re.compile(r"^/usr/share/(yggdrasil|labyrinth)/[A-Za-z0-9._/-]+$"), 0o644),
+    (re.compile(r"^/usr/share/icons/[A-Za-z0-9._/-]+\.(svg|png)$"), 0o644),
+    (re.compile(r"^/usr/share/(applications|wayland-sessions)/[A-Za-z0-9._-]+\.desktop$"), 0o644),
+    (re.compile(r"^/etc/yggdrasil/[A-Za-z0-9._-]+\.(json|conf)$"), 0o644),
+]
+
+
+class Refused(Exception):
+    pass
+
+
+def log(msg):
+    subprocess.run(["logger", "-t", "labyrinth-agent", "-p", "auth.notice", "--", msg], check=False)
+
+
+def run(argv):
+    log("run: " + " ".join(argv))
+    return subprocess.run(argv).returncode
+
+
+# ---------------------------------------------------------------- checks (pure, tested)
+
+
+def check_pkg_files(paths, name_of):
+    """The package files may be installed by the agent: regular files ending .pkg.tar.zst whose package is one of ours."""
+    if not paths:
+        raise Refused("no package files")
+    names = []
+    for p in paths:
+        if not p.startswith("/") or ".." in p.split("/") or not re.search(r"\.pkg\.tar\.(zst|xz)$", p):
+            raise Refused(f"{p}: not an absolute path to a package file")
+        st = os.lstat(p)
+        if not stat.S_ISREG(st.st_mode):
+            raise Refused(f"{p}: not a regular file")
+        n = name_of(p)
+        if not n or not OURS.match(n):
+            raise Refused(f"{p}: package {n or '?'} is not one of the ecosystem's own")
+        names.append(n)
+    return names
+
+
+def check_pkg_names(names):
+    if not names:
+        raise Refused("no package names")
+    for n in names:
+        if not PKGNAME.match(n) or n.startswith("-"):
+            raise Refused(f"{n!r}: not a package name")
+        if NEVER_ADD.match(n):
+            raise Refused(f"{n}: remote-access tools and servers need the owner (labyrinth-agent-window)")
+    return names
+
+
+def service_argv(action, units):
+    if action not in SERVICE_ACTIONS:
+        raise Refused(f"{action}: not a service action the agent may take")
+    if action == "daemon-reload":
+        if units:
+            raise Refused("daemon-reload takes no unit")
+        return ["systemctl", "daemon-reload"]
+    if not units:
+        raise Refused("name a unit")
+    for u in units:
+        if not UNIT.match(u):
+            raise Refused(f"{u}: not one of the ecosystem's own units")
+    base = {"enable-now": ["enable", "--now"], "disable-now": ["disable", "--now"], "user-enable": ["--global", "enable"],
+            "user-disable": ["--global", "disable"]}.get(action, [action])
+    return ["systemctl", *base, *units]
+
+
+def logs_argv(args):
+    """journalctl with read-only options only (never --vacuum, --rotate, --flush, --setup-keys, --directory and the like)."""
+    out, i = ["journalctl", "--no-pager"], 0
+    while i < len(args):
+        a = args[i]
+        flag, sep, _ = a.partition("=")
+        if a in LOG_BARE or LOG_MATCH.match(a) or (flag in LOG_VALUE and sep):
+            out.append(a)
+        elif a in LOG_VALUE:
+            if i + 1 >= len(args):
+                raise Refused(f"{a} needs a value")
+            out += [a, args[i + 1]]
+            i += 1
+        elif a in ("-b", "--boot"):
+            out.append(a)
+            if i + 1 < len(args) and BOOT_ID.match(args[i + 1]):
+                out.append(args[i + 1])
+                i += 1
+        else:
+            raise Refused(f"{a}: not a read-only journal option")
+        i += 1
+    return out
+
+
+def limbo_argv(verb, manifest):
+    if verb not in {"up", "down", "doctor", "status"}:
+        raise Refused(f"limbo {verb}: not allowed")
+    if verb in {"up", "down"}:
+        if not manifest or ".." in manifest.split("/") or not manifest.startswith(LIMBO_DIRS) or not manifest.endswith(".json"):
+            raise Refused("limbo up/down needs a manifest under " + " or ".join(LIMBO_DIRS))
+        return ["limbo", verb, manifest]
+    return ["limbo", verb] + ([manifest] if manifest else [])
+
+
+def deploy_mode(dest):
+    if ".." in dest.split("/") or "//" in dest:
+        raise Refused(f"{dest}: not a clean path")
+    for pattern, mode in DEPLOY:
+        if pattern.match(dest):
+            return mode
+    raise Refused(f"{dest}: not a place the agent may write (user-side desktop files only)")
+
+
+# ---------------------------------------------------------------- actions
+
+
+def pkg_name(path):
+    p = subprocess.run(["pacman", "-Qip", path], capture_output=True, text=True)
+    m = re.search(r"^Name\s*:\s*(\S+)", p.stdout, re.M)
+    return m.group(1) if m else ""
+
+
+def deploy(src, dest):
+    mode = deploy_mode(dest)
+    st = os.lstat(src)
+    if not stat.S_ISREG(st.st_mode):
+        raise Refused(f"{src}: not a regular file")
+    parent = os.path.dirname(dest)
+    for d in [parent] + [os.path.dirname(parent)]:
+        if os.path.islink(d):
+            raise Refused(f"{d} is a link")
+    os.makedirs(parent, mode=0o755, exist_ok=True)
+    tmp = dest + ".agent-tmp"
+    with open(src, "rb") as f:
+        data = f.read()
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, mode)
+    with os.fdopen(fd, "wb") as out:
+        out.write(data)
+    os.chmod(tmp, mode)
+    os.chown(tmp, 0, 0)
+    os.replace(tmp, dest)
+    log(f"deploy: {src} -> {dest} ({oct(mode)})")
+    return 0
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    if os.geteuid() != 0:
+        print("labyrinth-agent: runs as root through sudo (claude-sudo labyrinth-agent ...)", file=sys.stderr)
+        return 1
+    cmd, rest = argv[1], argv[2:]
+    try:
+        if cmd == "pkg-install":
+            names = check_pkg_files(rest, pkg_name)
+            run(["heimdalld", "maintenance", "on", "--for", "15m", "--reason", "agent installs " + ", ".join(names)])
+            return run(["pacman", "-U", "--noconfirm", *rest])
+        if cmd == "pkg-add":
+            check_pkg_names(rest)
+            for n in rest:
+                if subprocess.run(["pacman", "-Si", n], capture_output=True).returncode != 0:
+                    raise Refused(f"{n}: not in the official repositories")
+            return run(["pacman", "-S", "--needed", "--noconfirm", *rest])
+        if cmd == "service" and rest:
+            return run(service_argv(rest[0], rest[1:]))
+        if cmd == "logs":
+            return run(logs_argv(rest))
+        if cmd == "maintenance" and rest and rest[0] in ("on", "off", "status"):
+            extra = rest[1:]
+            if extra and not (len(extra) in (2, 4) and extra[0] in ("--for", "--reason") and (len(extra) == 2 or extra[2] in ("--for", "--reason"))):
+                raise Refused("maintenance [--for D] [--reason TEXT]")
+            return run(["heimdalld", "maintenance", *rest])
+        if cmd == "limbo" and rest:
+            return run(limbo_argv(rest[0], rest[1] if len(rest) > 1 else ""))
+        if cmd == "rollback" and rest:
+            if rest[0] in ("list", "status") and len(rest) == 1:
+                return run(["/usr/local/bin/labyrinth-rollback", rest[0]])
+            if rest[0] == "dry-run" and len(rest) == 2 and rest[1].isdigit():
+                return run(["/usr/local/bin/labyrinth-rollback", rest[1], "--dry-run"])
+            raise Refused("rollback list|status|dry-run N (a real rollback is the owner's, through labyrinth-agent-window)")
+        if cmd == "firewall-status":
+            return run(["ufw", "status", "verbose"])
+        if cmd == "deploy" and len(rest) == 2:
+            return deploy(rest[0], rest[1])
+        raise Refused("unknown command (see --help)")
+    except Refused as e:
+        log(f"refused: {cmd} {' '.join(rest)}: {e}")
+        print(f"labyrinth-agent: refused: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
