@@ -3,6 +3,11 @@
 Written 2026-10-26 for whoever implements it (Claude Opus in a later session) and for Matt, who decides at each gate.
 Everything below was checked against Matt's machine on that date; the "Facts" section says how.
 
+> **Method changed on 2026-10-27 (Matt's yes to the Phase 1 proposals).** The unlock now uses **nlzy/turing-unlock**, a
+> kernel module loaded from the initramfs before `nvidia`, and not haohervchb/Turing-unlock's EFI loader. The first try is
+> a boot-menu entry Matt picks by hand. Section 12 says what this replaces. Where sections 1-10 describe the EFI loader,
+> the ESP, `grub-reboot` or chainloading, section 12 rules.
+
 ## 1. The decision in one page
 
 **What was asked.** An option in Settings > Power, under the graphics-card controls, that "unlocks a GPU's performance" the way
@@ -512,7 +517,58 @@ Each run three times; keep the median. The results go into this file and into `b
    step 7), and **yes to reporting the findings** if it works (Phase 5). Matt reads every text before it is posted.
 5. Matt wants to see the real-life numbers (section 9), which Phase 4 provides either way.
 
+6. **2026-10-27: yes to all six Phase 1 proposals** (section 12), with one condition: **"wait for me"**. The plan and the
+   code may change now, but nothing is installed, built on this PC or benchmarked until Matt is home. Phase 2 starts with
+   him there.
+
 Still open, to ask at Phase 2: which game to use for the before/after measurement.
+
+## 12. The kernel-module method (approved 2026-10-27)
+
+What replaces what:
+
+| Before (EFI loader) | Now (nlzy/turing-unlock) |
+| --- | --- |
+| A boot program on the ESP, chainloaded by a one-time GRUB entry chosen with `grub-reboot` | The normal kernel and initramfs. `turing_unlock` loads before `nvidia` at every start and does nothing unless `turing_unlock.targets=` is on the command line |
+| `grub-reboot` (not one-shot on this btrfs `/boot`) | A boot-menu entry, "Labyrinth Linux, graphics card unlock", added by `arm` and **picked by hand** at the next restart. The default entry and `/etc/default/grub` are never touched, so a hang is followed by a normal start |
+| The loader's identity guards, FWSEC from a ROM dump | The module accepts TU102/TU104/TU106 by device id and reads FWSEC from the card's own VBIOS. Our own guard stays: the exact device, board, VBIOS and driver series must be in the support table |
+| `loader.conf`, the loader on the ESP | `entry.cfg`: a copy of the current first menu entry with the parameter added, which `41_gpu_unlock` prints only while it exists |
+| The attempt known by the boot that follows the arming one | The attempt known by `turing_unlock.targets=` in `/proc/cmdline`. A start without it, while armed, simply did not try, so the entry stays offered |
+| Success known by the benchmark only | First the module's own kernel log line (`TU102 FEAT UNLOCKED` or `unlock failed`), then the correctness check and benchmark (rule 8) before "Unlocked" |
+| An evidence link for a run on the exact board | Runs on the same chip and VBIOS family (the reports in the Phase 1 result), then Matt's own supervised Phase 3 run before anything is kept |
+
+**Unchanged:**
+- The snapshot first.
+- The power hold.
+- The two-step failure markers (rule 3).
+- The heat watch.
+- Developer options only.
+- No row on a card outside the table.
+- A password every time.
+- Never Sarina or `claude-sudo`.
+- Phase 3 only with Matt present and a cold boot.
+
+**Packaging (Phase 2, with Matt there).** Build `turing-unlock-dkms` and `turing-unlock-firmware` on this PC from the
+project's Arch PKGBUILD. It downloads NVIDIA's public 610.43.03 open-module source and the CachyOS `nvidia-utils` package,
+checks their SHA-256 and generates the firmware. The generated firmware is NVIDIA-licensed: it stays on this PC and never
+enters a repository. Install, rebuild the initramfs and restart normally. Without the parameter, `journalctl -k -b | grep
+turing_unlock` should show the module loaded and doing nothing, and the desktop should be unchanged. That restart is Phase
+2's first gate.
+
+**Rule 10, first line, reads:** never write to the GPU from a running session, after the driver has bound the card. A module
+in the initramfs, before `nvidia`, is the case rule 5 names. Never `insmod` it later, never unbind `nvidia` to give it a turn.
+
+**Code (2026-10-27, Yggdrasil 2e0a72a; not installed, by Matt's wish).**
+- `gpuunlock` follows this section.
+- Arming refuses until the module, its firmware (`/usr/lib/firmware/turing-unlock/610.43.03`) and its mkinitcpio drop-in
+  are installed, and while the boot menu is hidden. This PC has `GRUB_TIMEOUT=2` and style `menu`, so the menu shows.
+- The table has one entry: this card, `experimental`.
+- "Unlocked" still waits for the correctness check and benchmark, which Phase 2 builds. Until then a start through the
+  entry ends "not confirmed" even when the module reports success.
+
+**Phase 5's target** is nlzy/turing-unlock: a compatibility report for the first MSI board, in the format of its existing
+reports (card, VBIOS, driver, kernel, locked and unlocked numbers). Nothing goes to haohervchb/Turing-unlock unless Matt
+asks.
 
 ## Results
 
