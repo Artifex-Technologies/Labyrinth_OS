@@ -124,7 +124,8 @@ EOF
 SupplementaryGroups=limbo-heimdall
 ReadOnlyPaths=/var/lib/limbo/state
 EOF
-  # The connection log (which program talks to which address) reads other users' /proc entries: read-only capabilities.
+  # The connection log (which program talks to which address) reads other users' /proc entries. These capabilities can read
+  # any file and inspect any process; heimdall.service's sandbox (syscall filter, /proc read-only) keeps them to reading.
   [[ -f /etc/systemd/system/heimdall.service.d/connwatch.conf ]] || cat > /etc/systemd/system/heimdall.service.d/connwatch.conf <<'EOF'
 [Service]
 AmbientCapabilities=CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
