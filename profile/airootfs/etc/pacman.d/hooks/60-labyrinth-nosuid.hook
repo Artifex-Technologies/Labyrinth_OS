@@ -1,0 +1,14 @@
+# Setuid-root helpers nothing here uses: mount.cifs (users mounting SMB shares from fstab; root mounts with sudo still work,
+# and the file manager reaches shares without it) and ksu (Kerberos su). Each setuid program is a way to root if it has a
+# bug, so they lose the bit, again after every update of their packages.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = usr/bin/mount.cifs
+Target = usr/bin/ksu
+
+[Action]
+Description = Removing setuid from helpers Labyrinth does not use (mount.cifs, ksu)...
+When = PostTransaction
+Exec = /bin/sh -c 'for f in /usr/bin/mount.cifs /usr/bin/ksu; do [ -e "$f" ] && chmod u-s,g-s "$f"; done; true'

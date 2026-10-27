@@ -1,0 +1,12 @@
+# proton-cachyos-native ships some files writable by every account. Steam runs them inside games, so any program could change
+# what a game runs. They become writable by root only, again after every update.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = proton-cachyos-native
+
+[Action]
+Description = Making Proton's files writable by root only...
+When = PostTransaction
+Exec = /usr/bin/chmod -R go-w /usr/share/steam/compatibilitytools.d/proton-cachyos-native

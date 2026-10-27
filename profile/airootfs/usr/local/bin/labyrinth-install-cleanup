@@ -29,6 +29,10 @@ say() { printf 'labyrinth-install-cleanup: %s\n' "$*"; }
 if [[ -d $R/home/live/.config ]]; then
   install -d -m 0755 "$R/etc/skel"
   cp -a "$R/home/live/.config" "$R/etc/skel/"
+  # cp -a kept the live user's uid (1000), which is the first installed account's: the template every new account starts
+  # from would then be writable by that one person. It belongs to root and is readable by all.
+  chown -R 0:0 "$R/etc/skel/.config"
+  chmod -R u+rwX,go+rX,go-w "$R/etc/skel/.config"
   say "seeded /etc/skel from the live user's .config"
 fi
 
