@@ -349,13 +349,20 @@ OBS_RX = re.compile(r"^- (.+?) — seen (\d+)×, last (\d{4}-\d{2}-\d{2})\.")
 
 
 def learned(vault, today=None, n=6):
-    """What she has learned about the owner (Entities/About Zlothra.md, written by `sarina reflect`): the observations seen at least twice,
-    or seen in the last week, most seen first. Only the Observations section; what the owner moved under Forgotten is never read."""
+    """What she has learned about the owner (Entities/About <SARINA_OWNER_NAME>.md, written by `sarina reflect`; About Zlothra.md before
+    the name was set): the observations seen at least twice, or seen in the last week, most seen first. Only the Observations section;
+    what the owner moved under Forgotten is never read."""
     today = today or datetime.date.today()
-    try:
-        with open(os.path.join(vault, "Entities", "About Zlothra.md"), encoding="utf-8") as f:
-            text = f.read()
-    except OSError:
+    name = (os.environ.get("SARINA_OWNER_NAME") or env_file().get("SARINA_OWNER_NAME") or "the owner").strip()
+    text = None
+    for note in ("About %s.md" % name, "About Zlothra.md"):
+        try:
+            with open(os.path.join(vault, "Entities", note), encoding="utf-8") as f:
+                text = f.read()
+            break
+        except OSError:
+            continue
+    if text is None:
         return []
     out, section = [], ""
     for line in text.splitlines():
