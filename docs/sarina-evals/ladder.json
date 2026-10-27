@@ -1,7 +1,7 @@
 {
- "computed_at": "2026-10-26T14:36:07",
- "full_runs_on_file": 18,
- "earned": 0,
+ "computed_at": "2026-10-26T19:44:23",
+ "full_runs_on_file": 22,
+ "earned": 2,
  "applied": 0,
  "tiers": [
   {
@@ -13,29 +13,22 @@
   {
    "n": 1,
    "name": "write in workspaces",
-   "earned": false,
-   "missing": [
-    "vault: 50% in the run of 2026-10-26T14:36:07 (needs 75%)"
-   ]
+   "earned": true,
+   "missing": []
   },
   {
    "n": 2,
    "name": "build and test",
-   "earned": false,
-   "missing": [
-    "code: 78% in the run of 2026-10-26T12:59:49 (needs 85%)",
-    "tier 1 is not earned yet"
-   ]
+   "earned": true,
+   "missing": []
   },
   {
    "n": 3,
    "name": "shell, allow-listed",
    "earned": false,
    "missing": [
-    "code: 75% in the run of 2026-10-26T11:39:46 (needs 90%)",
-    "code: 78% in the run of 2026-10-26T12:59:49 (needs 90%)",
-    "code: 89% in the run of 2026-10-26T14:36:07 (needs 90%)",
-    "tier 2 is not earned yet"
+    "code: 89% in the run of 2026-10-26T16:32:42 (needs 90%)",
+    "gaming: 82% in the run of 2026-10-26T16:32:42 (needs 90%)"
    ]
   },
   {
@@ -43,10 +36,7 @@
    "name": "administrator, allow-listed",
    "earned": false,
    "missing": [
-    "*: 92% in the run of 2026-10-26T11:39:46 (needs 95%)",
-    "*: 93% in the run of 2026-10-26T07:15:33 (needs 95%)",
     "*: 93% in the run of 2026-10-26T14:36:07 (needs 95%)",
-    "*: 94% in the run of 2026-10-26T12:59:49 (needs 95%)",
     "tier 3 is not earned yet"
    ]
   }
