@@ -197,6 +197,8 @@ Opus and Heimdall.
    Snapshots start as a normal desktop when chosen in the boot menu, because grub-btrfs' overlay hook is in the start-up
    image (drop-in `/etc/mkinitcpio.conf.d/labyrinth-snapshot-overlay.conf`, added to the installer and to `before-nvidia.sh`
    on 2026-10-26). Only snapshots taken after the drop-in is in place have it, since each snapshot carries its own `/boot`.
+   The rollback itself is `labyrinth-rollback N` (keeps the previous system as `@broken-DATE`; `undo` reverses it); Opus runs
+   it only when Matt asks.
 5. **Never from inside Linux.** The helper never unbinds, resets or rebinds the NVIDIA driver on the display card. All GPU
    writes happen before the kernel (EFI loader) or before the driver binds (kernel module on the command line, if a Turing
    port ever exists). Loading such a module after boot "has no effect" (gpu-unlock) and is not attempted.

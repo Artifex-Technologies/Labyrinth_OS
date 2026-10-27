@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+# labyrinth-rollback: put the whole system back to a snapshot, in one command, and undo that if needed.
+#
+#   labyrinth-rollback list                 the snapshots: number, date, description
+#   labyrinth-rollback status               what the system is now: made from which snapshot, which earlier systems are kept
+#   labyrinth-rollback N [--yes]            make snapshot N the system from the next restart on
+#   labyrinth-rollback undo [--yes]         put back the system that the last rollback set aside
+#   options: --device DEV (the btrfs partition; found by itself), --dry-run (show the steps, change nothing)
+#
+# Labyrinth's layout is flat: the top of the btrfs partition holds @ (the system, mounted at /), @home, @cache and @log, and
+# snapper keeps its snapshots in @/.snapshots/N/snapshot. GRUB and /etc/fstab name "@" directly, so `snapper rollback` (which
+# changes the default subvolume) does not work here. This does the rollback by hand instead:
+#
+#   1. the current system is renamed @broken-DATE (nothing is deleted; `undo` brings it back)
+#   2. a writable copy of snapshot N becomes the new @
+#   3. the snapshot collection (.snapshots) moves into the new @, so the boot menu and snapper keep every snapshot
+#   4. if GRUB was reinstalled after snapshot N, the current GRUB files go into the new @ (they must match the boot loader on
+#      the EFI partition, which a snapshot does not cover)
+#
+# Your home folder (@home), /var/cache and /var/log are separate and never touched. It works from the running system (the change
+# takes effect at the next restart), from a snapshot chosen in the boot menu, and from the Labyrinth USB stick. Each action is
+# written to /var/log/labyrinth-rollback.log (on @log, so it survives the rollback) and to the journal.
+set -euo pipefail
+
+LOG=/var/log/labyrinth-rollback.log
+DEVICE="" DRY=0 YES=0 CMD="" ARG=""
+TOP="" MOUNTED=0
+
+say()  { printf '%s\n' "$*"; }
+die()  { printf 'labyrinth-rollback: %s\n' "$*" >&2; exit 1; }
+note() { printf '%s %s\n' "$(date '+%F %T')" "$*" >>"$LOG" 2>/dev/null || true; logger -t labyrinth-rollback -p user.warning -- "$*" 2>/dev/null || true; }
+usage() { sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+
+while (($#)); do
+  case $1 in
+    --device) DEVICE=${2:-}; shift ;;
+    --device=*) DEVICE=${1#*=} ;;
+    --dry-run) DRY=1 ;;
+    --yes|-y) YES=1 ;;
+    -h|--help) usage 0 ;;
+    list|status|undo) [[ -z $CMD ]] || usage 2; CMD=$1 ;;
+    *) [[ -z $CMD && $1 =~ ^[0-9]+$ ]] || usage 2; CMD=rollback ARG=$1 ;;
+  esac
+  shift
+done
+[[ -n $CMD ]] || usage 2
+[[ $EUID -eq 0 ]] || die "needs root: run it with sudo"
+
+cleanup() {
+  if [[ $MOUNTED == 1 ]]; then umount "$TOP" 2>/dev/null || umount -l "$TOP" 2>/dev/null || true; fi
+  if [[ -n $TOP ]]; then rmdir "$TOP" 2>/dev/null || true; fi
+}
+trap cleanup EXIT
+
+# The partition: --device, else the btrfs that holds /home (also when booted into a snapshot, where / is an overlay), else /,
+# else the one btrfs partition on this computer that has @/.snapshots (the USB stick case).
+has_layout() {
+  local d=$1 m ok=1
+  m=$(mktemp -d /run/labyrinth-rollback-probe.XXXXXX)
+  if mount -o ro,subvolid=5 "$d" "$m" 2>/dev/null; then
+    [[ -d $m/@/.snapshots ]] && ok=0
+    umount "$m"
+  fi
+  rmdir "$m"
+  return $ok
+}
+find_device() {
+  local mp src fs
+  for mp in /home /; do
+    src=$(findmnt -no SOURCE "$mp" 2>/dev/null || true)
+    fs=$(findmnt -no FSTYPE "$mp" 2>/dev/null || true)
+    if [[ $fs == btrfs && -n $src ]]; then printf '%s' "${src%%\[*}"; return 0; fi
+  done
+  local found=() name fstype
+  while read -r name fstype; do
+    if [[ $fstype == btrfs ]] && has_layout "$name"; then found+=("$name"); fi
+  done < <(lsblk -rpno NAME,FSTYPE)
+  ((${#found[@]} == 1)) || die "found ${#found[@]} btrfs partitions with snapshots (${found[*]:-none}); say which with --device"
+  printf '%s' "${found[0]}"
+}
+
+mount_top() {
+  [[ -n $DEVICE ]] || DEVICE=$(find_device)
+  [[ -b $DEVICE ]] || die "$DEVICE is not a disk partition"
+  TOP=$(mktemp -d /run/labyrinth-rollback.XXXXXX)
+  mount -o "$1,subvolid=5" "$DEVICE" "$TOP" || die "could not open the top of $DEVICE"
+  MOUNTED=1
+  [[ -d $TOP/@ ]] || die "$DEVICE has no @ subvolume: not Labyrinth's layout"
+}
+
+is_subvol() { btrfs subvolume show "$1" >/dev/null 2>&1; }
+xml() { sed -n "s:.*<$2>\(.*\)</$2>.*:\1:p" "$1" 2>/dev/null | head -1; }
+when() { local d; d=$(xml "$1" date); [[ -n $d ]] && date -d "$d UTC" '+%F %H:%M' 2>/dev/null || printf '%s' "$d"; } # snapper keeps UTC
+grub_differs() { # GRUB's modules in $1 (the system now) and $2 (the one that will boot) are not the same
+  [[ -d $1/boot/grub/x86_64-efi && -d $2/boot/grub ]] && ! diff -rq "$1/boot/grub/x86_64-efi" "$2/boot/grub/x86_64-efi" >/dev/null 2>&1
+}
+confirm() {
+  [[ $YES == 1 ]] && return 0
+  [[ -t 0 ]] || die "not confirmed: add --yes (or run it in a terminal); nothing was changed"
+  local a
+  read -r -p "$1 Type yes to go ahead: " a
+  [[ $a == yes ]] || die "stopped; nothing was changed"
+}
+
+# .snapshots from $1 into $2. A snapshot of @ holds an empty directory where the nested .snapshots subvolume was.
+move_snapshots() {
+  local from=$1 to=$2
+  [[ -d $from/.snapshots ]] || return 0
+  if [[ -e $to/.snapshots ]]; then
+    is_subvol "$to/.snapshots" && die "$to/.snapshots is already a subvolume; stopping before anything is mixed up"
+    rmdir "$to/.snapshots" || die "$to/.snapshots is not empty; stopping"
+  fi
+  mv "$from/.snapshots" "$to/.snapshots"
+}
+# GRUB's boot loader on the EFI partition (in no snapshot) loads its modules from @/boot/grub: if grub-install ran after the
+# snapshot, the system that boots must have the current modules, or the boot menu may not start.
+carry_grub() {
+  local from=$1 to=$2
+  if grub_differs "$from" "$to"; then
+    rm -rf "$to/boot/grub/x86_64-efi"
+    cp -a "$from/boot/grub/x86_64-efi" "$to/boot/grub/x86_64-efi"
+    note "carried GRUB's x86_64-efi modules over from the previous system"
+  fi
+}
+
+cmd_list() {
+  mount_top ro
+  local dir=$TOP/@/.snapshots f
+  [[ -d $dir ]] || die "no snapshots on $DEVICE"
+  printf '%-6s %-17s %-8s %s\n' "Number" "Date" "Kind" "Description"
+  while read -r f; do
+    [[ -d $dir/$f/snapshot ]] || continue
+    printf '%-6s %-17s %-8s %s\n' "$f" "$(when "$dir/$f/info.xml")" "$(xml "$dir/$f/info.xml" type)" "$(xml "$dir/$f/info.xml" description)"
+  done < <(ls -1 "$dir" | grep -E '^[0-9]+$' | sort -n)
+}
+
+cmd_status() {
+  mount_top ro
+  say "Partition: $DEVICE"
+  if [[ -f $TOP/@/.labyrinth-rollback ]]; then
+    say "The system (@) was made by a rollback: $(cat "$TOP/@/.labyrinth-rollback")"
+  else
+    say "The system (@) has not been rolled back."
+  fi
+  local kept=() k
+  for k in "$TOP"/@broken-* "$TOP"/@rolled-back-*; do [[ -e $k ]] && kept+=("${k##*/}"); done
+  if ((${#kept[@]})); then say "Earlier systems kept (delete them when sure; see the recovery guide): ${kept[*]}"; else say "No earlier systems are kept."; fi
+}
+
+cmd_rollback() {
+  local n=$ARG
+  if [[ $DRY == 1 ]]; then mount_top ro; else mount_top rw; fi
+  local info=$TOP/@/.snapshots/$n/info.xml snap=$TOP/@/.snapshots/$n/snapshot
+  is_subvol "$snap" || die "snapshot $n does not exist on $DEVICE (see: labyrinth-rollback list)"
+  local desc date kept grub=0
+  desc=$(xml "$info" description); date=$(when "$info")
+  kept=@broken-$(date +%Y-%m-%d-%H%M%S)
+  [[ ! -e $TOP/$kept ]] || die "$kept already exists"
+  grub_differs "$TOP/@" "$snap" && grub=1
+  say "Roll the system on $DEVICE back to snapshot $n (${date:-unknown date}, ${desc:-no description}):"
+  say "  1. the current system is kept as $kept"
+  say "  2. a writable copy of snapshot $n becomes the system"
+  say "  3. the snapshot collection moves into it"
+  [[ $grub == 1 ]] && say "  4. GRUB was reinstalled after this snapshot: the current GRUB files go into it"
+  say "Your home folder, /var/cache and /var/log are not touched. 'labyrinth-rollback undo' reverses this."
+  if [[ $DRY == 1 ]]; then say "Dry run: nothing was changed."; return 0; fi
+  confirm "It takes effect at the next restart."
+  note "rollback to snapshot $n ($date, $desc) on $DEVICE; the previous system is kept as $kept"
+  mv "$TOP/@" "$TOP/$kept"
+  if ! btrfs subvolume snapshot "$TOP/$kept/.snapshots/$n/snapshot" "$TOP/@" >/dev/null; then
+    mv "$TOP/$kept" "$TOP/@"
+    note "copying snapshot $n failed; the previous system was put back"
+    die "could not copy snapshot $n; the system was put back as it was"
+  fi
+  move_snapshots "$TOP/$kept" "$TOP/@"
+  carry_grub "$TOP/$kept" "$TOP/@"
+  printf 'from snapshot %s (%s, %s) at %s; previous system: %s\n' "$n" "$date" "$desc" "$(date '+%F %T')" "$kept" >"$TOP/@/.labyrinth-rollback"
+  sync
+  note "rollback to snapshot $n done"
+  say "Done. Restart to start the system as it was in snapshot $n."
+  say "When everything works, $kept can be deleted to free space (see the recovery guide); until then it is the way back."
+}
+
+cmd_undo() {
+  if [[ $DRY == 1 ]]; then mount_top ro; else mount_top rw; fi
+  local last aside
+  last=$(ls -1d "$TOP"/@broken-* 2>/dev/null | sort | tail -1 || true)
+  [[ -n $last ]] || die "there is no earlier system to put back (no @broken-*)"
+  aside=@rolled-back-$(date +%Y-%m-%d-%H%M%S)
+  say "Put back ${last##*/} as the system on $DEVICE; the current one is kept as $aside."
+  if [[ $DRY == 1 ]]; then say "Dry run: nothing was changed."; return 0; fi
+  confirm "It takes effect at the next restart."
+  note "undo: ${last##*/} becomes the system again; the current one is kept as $aside"
+  mv "$TOP/@" "$TOP/$aside"
+  mv "$last" "$TOP/@"
+  move_snapshots "$TOP/$aside" "$TOP/@"
+  carry_grub "$TOP/$aside" "$TOP/@"
+  rm -f "$TOP/@/.labyrinth-rollback"
+  sync
+  note "undo done"
+  say "Done. Restart to start the system that was set aside."
+}
+
+case $CMD in
+  list) cmd_list ;;
+  status) cmd_status ;;
+  rollback) cmd_rollback ;;
+  undo) cmd_undo ;;
+esac
