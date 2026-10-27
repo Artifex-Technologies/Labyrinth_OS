@@ -560,3 +560,96 @@ Section 5's "Graphics card group" means these rows.
 
 **Next:** Phase 1 (read-only research on the card: the ROM dump through the kernel's PCI ROM file, Turing-unlock's
 host-side analysis). It needs Matt's go, and Matt reads the two BIOS settings (Above 4G Decoding, CSM).
+
+### Phase 1, 2026-10-27: feasible, by another method (the change needs Matt's go)
+
+Everything below was read, not run on the card. No GPU register was written; no ROM was dumped (see "This PC").
+
+**haohervchb/Turing-unlock** (2 commits, last on 2026-10-22, no issues opened). Its EFI loader is pinned to the author's
+machine well beyond the card, and refuses this one several times over:
+- 91 bytes of the Alienware A14 firmware's `PciRootBridge.Map` (`tu102_direct_dma.h`);
+- the Xeon E5-1660 v3's CPU signature (`306f2`, 46 physical address bits; this i9-9900K is `906ed`, 39);
+- the ESP, BDF `02:00.0`, BAR0 `fa000000`, the ASUS subsystem;
+- the ASUS card's FWSEC by SHA-256.
+
+Porting it would mean auditing the MSI Z370I firmware and reworking the DMA path, which needs the author at least.
+
+The author's numbers explain the "double" headlines:
+
+| Measurement | Locked | Unlocked | Change |
+| --- | ---: | ---: | ---: |
+| FP16-input / FP32-accumulate MMA | 46.9 TFLOPS | 93.7 TFLOPS | 2.00× per clock |
+| cuBLAS GEMM, same maths | 48.1 TFLOPS | 85.2 TFLOPS | 1.77× |
+| FP16-accumulate | | | unchanged |
+| Mining | | | no gain |
+
+**xrip/cmp50hx-unlock** (`efi-unlock`), the CMP 50HX original:
+- Lists an MSI CMP 50HX (`1462:371f`), never `1e07` / `1462:3711`.
+- Uses `BootNext` as its one-shot, and wants Above 4G on and CSM off.
+- Its `extract_fwsec.py` walks any TU102 VBIOS.
+
+**gpu-unlock issues #30 and #97 (Turing)** both point to **nlzy/turing-unlock** (created 2026-10-24, 276 stars). It is the
+kernel-module Turing port that step 4 names as the preferred method:
+- **When it runs:** `turing_unlock` loads from the initramfs before `nvidia`, and does nothing without
+  `turing_unlock.targets=` on the kernel command line.
+- **Which cards:** it accepts TU102/TU104/TU106 by device id (`0x1e07` is listed).
+- **FWSEC:** it reads FWSEC from the card's own VBIOS with an independent byte parser (`vbios.c`).
+- **Firmware:** generated at build time from NVIDIA's public 610.43.03 open-module source and `nvidia-utils` package,
+  hash-pinned and not redistributed.
+- **What it writes:** the payload writes SS0 `0x88888888` / SS1 `0x8` and reads them back.
+- **Failure:** a failure ends in a PCIe FLR and a normal `nvidia` bind. A firmware that will not stop keeps its DMA
+  buffers until power-off.
+- **Packaging and licence:** GPL-2.0, with an Arch PKGBUILD and a mkinitcpio drop-in.
+
+**nlzy/turing-unlock's issues** (14 by 2026-10-27) are compatibility reports, none of a failure:
+- **#1:** 2080 Ti 22 GB on 615.71.09, 65.2→103.6 TFLOPS. The power stayed at the limit.
+- **#2:** two 2080 Ti, with and without NVLink.
+- **PR #8:** Gigabyte 2080 Ti (`1e04`) with VBIOS `90.02.17.00.7C` and `90.02.30.00.81` ("different ROM layouts, both unlock").
+- **#5:** an RTX 2080 that is the boot VGA driving a Wayland desktop, on driver **615.78.08**, a CachyOS-based kernel 7.3
+  and GRUB: 39.0→64.5 TFLOPS, on every boot since.
+- **#3, #4, #6:** 2070 and 2070 Super.
+- **#13:** Tesla T10, +0% (never locked).
+- **#14:** eGPUs are not supported (they appear on the bus too late).
+
+No MSI board yet. This card's VBIOS (`90.02.17.00.3E`) is of the same `90.02.17` family as the reports.
+
+**This PC, read from Linux:**
+- **Above 4G Decoding:** probably off (BAR1 at `c0000000`).
+- **CSM:** unclear. A UEFI GOP framebuffer was used, but a `0xC0000` ROM shadow exists.
+- **VT-d:** probably on in the firmware (a DMAR table), unused by Linux.
+- **Memory:** 62 GiB.
+- **No ROM dump:** this boot-VGA card's sysfs ROM file is the 128 KiB legacy shadow, without FWSEC, so step 1's dump was
+  skipped. TechPowerUp has no copy of `90.02.17.00.3E` for `1462:3711`.
+- **Not run:** the author's host tests (step 2). Installing `gnu-efi` to build them was refused by the session's safety
+  check; they test the author's simulated paths, not this card.
+
+**Result: feasible with current public material, through nlzy/turing-unlock rather than the EFI loader.** Step 7's issue
+on haohervchb/Turing-unlock is not needed. Phase 5's report would go to nlzy/turing-unlock (this would be the first MSI
+board), under the same rules: Matt reads the exact text first.
+
+**Proposed changes to this plan (not in force until Matt says yes):**
+1. **Method:** the kernel module. It has no motherboard-firmware dependency and no board pins that refuse this card. It
+   also has no EFI one-shot problem, and a failure ends in a normal boot.
+2. **One try:** `arm` adds a boot-menu entry, "Labyrinth Linux, graphics card unlock": the normal kernel with
+   `turing_unlock.targets=0000:01:00.0` added. Matt picks it by hand at the next restart.
+   - Picking by hand is one-time by nature, so rule 2's btrfs `grub-reboot` problem disappears: the start after it is the
+     normal entry.
+   - `gpuunlock boot` / `verify` recognise the attempt by the parameter in `/proc/cmdline`; failures are handled as in
+     rule 3.
+   - The entry goes away after the attempt.
+3. **The support table** gets the method `turing-unlock-module` and an entry for `1462:3711` / `90.02.17.00.3E` / open,
+   `experimental`, with the reports above as evidence. For this method, "a run on that exact board" becomes "runs on the
+   same chip and VBIOS family". Matt's own supervised Phase 3 run comes before anything is kept.
+4. **Rule 10's "never write to the GPU from a Linux session"** reads as rule 5 always meant: never from a running session
+   after the driver has bound the card. A module in the initramfs, before `nvidia`, is the case rule 5 names.
+5. **Packaging:** build turing-unlock on this PC from its Arch PKGBUILD. It downloads NVIDIA's public 610.43.03 files and
+   checks their hashes. The generated firmware stays on this PC under NVIDIA's licence, never in our repositories. The
+   module then loads at every start and does nothing without the parameter.
+6. **Phase 2 becomes:**
+   - Install the package; a normal restart without the parameter shows that nothing changes.
+   - Record the locked baseline at 260 W: the project's own GEMM benchmark (PR #8) and section 9, including Sarina's
+     prefill and generation.
+   - Then Phase 3 as written, with the hand-picked entry.
+
+**Still for Matt, in the BIOS (no change, only reading):** Above 4G Decoding and CSM, plus VT-d and Fast Boot if they are on
+the same screens. For the module method these are records, not requirements.
