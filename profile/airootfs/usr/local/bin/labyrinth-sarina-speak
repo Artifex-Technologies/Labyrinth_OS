@@ -11,7 +11,7 @@
 #   labyrinth-sarina-speak --to FILE.wav    write the speech to a file instead of playing it (tests, choosing a voice)
 #   labyrinth-sarina-speak --lines          say each line of standard input as it arrives (the panel feeds her answer sentence by sentence)
 # Names are said the way ~/.config/labyrinth/sarina-say.json spells them ({"Zlothra": "Zlawthra", ...}; whole words, any case).
-# Setup: python3 -m venv ~/.local/share/labyrinth/tts/venv && ~/.local/share/labyrinth/tts/venv/bin/pip install piper-tts
+# Setup: labyrinth-sarina-voice-setup (Piper pinned with hashes, /usr/share/labyrinth/voice/piper-requirements.txt)
 #        ~/.local/share/labyrinth/tts/venv/bin/python -m piper.download_voices --download-dir ~/.local/share/labyrinth/tts/voices en_US-amy-medium
 set -u
 

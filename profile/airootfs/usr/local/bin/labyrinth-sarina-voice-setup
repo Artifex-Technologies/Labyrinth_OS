@@ -8,7 +8,9 @@ set -euo pipefail
 dir=${LABYRINTH_TTS_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/labyrinth/tts}
 mkdir -p "$dir/voices"
 [[ -x $dir/venv/bin/python ]] || python3 -m venv "$dir/venv"
-"$dir/venv/bin/pip" install --quiet --upgrade piper-tts
+# exactly the pinned files, checked by hash, wheels only (no package's own build code runs), nothing upgraded on its own: a
+# poisoned release (LiteLLM 1.107.0, October 2026) ran at every interpreter start in the venv it was installed into
+"$dir/venv/bin/pip" install --quiet --require-hashes --only-binary :all: --no-deps -r /usr/share/labyrinth/voice/piper-requirements.txt
 if [[ $# -gt 0 ]]; then voices=("$@"); else voices=(en_US-amy-medium en_GB-jenny_dioco-medium en_US-lessac-medium); fi
 "$dir/venv/bin/python" -m piper.download_voices --download-dir "$dir/voices" "${voices[@]}" 2>&1 | tail -3
 echo "Done. Voices in $dir/voices: $(ls "$dir/voices" | grep -c '\.onnx$')"
