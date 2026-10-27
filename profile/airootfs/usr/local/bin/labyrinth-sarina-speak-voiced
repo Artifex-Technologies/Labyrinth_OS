@@ -15,7 +15,7 @@ import sys
 import time
 import wave
 
-RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")
+RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina")
 SOCK = os.environ.get("LABYRINTH_VOICED_SOCKET", os.path.join(RUN, "voiced.sock"))
 PLAYER = os.environ.get("LABYRINTH_PLAYER", "pw-play")
 

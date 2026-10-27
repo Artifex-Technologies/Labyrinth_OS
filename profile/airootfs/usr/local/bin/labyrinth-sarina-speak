@@ -16,7 +16,7 @@
 set -u
 
 dir=${LABYRINTH_TTS_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/labyrinth/tts}
-run=${XDG_RUNTIME_DIR:-/tmp}/labyrinth-sarina
+run=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/labyrinth-sarina  # never a shared /tmp folder another account could make first
 pidfile=$run/speaking.pid
 
 stop() {

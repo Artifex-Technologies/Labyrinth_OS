@@ -7,14 +7,15 @@
 set -u
 conf=${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth
 env_file=$conf/sarina.env
-mkdir -p "$conf"
+mkdir -p -m 0700 "$conf"
 
 env_get() { sed -n "s/^$1=//p" "$env_file" 2>/dev/null | tail -n1; }
-env_set() { # KEY VALUE (or VALUE empty: remove)
-  touch "$env_file"
-  grep -v "^$1=" "$env_file" >"$env_file.tmp"
-  [[ -n $2 ]] && echo "$1=$2" >>"$env_file.tmp"
-  mv "$env_file.tmp" "$env_file"
+env_set() { # KEY VALUE (or VALUE empty: remove); the file holds the AI provider's key, so it stays readable by you alone
+  (umask 077
+   touch "$env_file"
+   grep -v "^$1=" "$env_file" >"$env_file.tmp"
+   [[ -n $2 ]] && echo "$1=$2" >>"$env_file.tmp"
+   chmod 600 "$env_file.tmp" && mv "$env_file.tmp" "$env_file")
 }
 
 daily() { # UNIT status|on|off: a user timer installed from /usr/share/labyrinth once

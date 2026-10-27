@@ -27,7 +27,7 @@ import time
 
 sys.path.insert(0, os.environ.get("LABYRINTH_LIB", "/usr/local/lib/labyrinth"))
 
-RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")
+RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina")
 SOCK = os.environ.get("LABYRINTH_VOICED_SOCKET", os.path.join(RUN, "voiced.sock"))
 DIR = os.path.expanduser(os.environ.get("LABYRINTH_VOICE_DIR", "~/.local/share/labyrinth/tts/chatterbox"))
 DTYPE = os.environ.get("LABYRINTH_VOICE_DTYPE", "fp16")

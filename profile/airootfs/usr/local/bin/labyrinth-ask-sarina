@@ -67,7 +67,7 @@ ROUTES = [
 
 
 def route_cache_path():
-    return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina", "route-cache.json")
+    return os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina", "route-cache.json")
 
 
 def route(question, env):
@@ -418,7 +418,7 @@ def relevant(question, observations, env):
         return []
     said = set(w for w in re.findall(r"[a-z]{3,}", question.lower()) if w not in LEARN_STOP)
     out = [o for o in observations if said & set(w for w in re.findall(r"[a-z]{3,}", o.lower()) if w not in LEARN_STOP)]
-    cache_path = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina", "embed-cache.json")
+    cache_path = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina", "embed-cache.json")
     try:
         with open(cache_path) as f:
             cache = _json.load(f)
@@ -812,7 +812,7 @@ def main(argv):
     env.setdefault("SARINA_PRIVATE_DIRS", "~/.mozilla:~/.config/vivaldi:~/.config/chromium:~/.config/google-chrome:~/.local/share/keyrings:~/.password-store:~/.gnupg:~/.ssh")
     state, resume, before = None, None, set()
     if a.conversation and all(c.isalnum() or c in "-_" for c in a.conversation):
-        run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "labyrinth-sarina")
+        run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina")
         os.makedirs(run, mode=0o700, exist_ok=True)
         state = os.path.join(run, "conv-%s.session" % a.conversation)
         try:
