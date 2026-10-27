@@ -184,13 +184,26 @@ Opus and Heimdall.
    chainloads the loader, and the loader's success path chainloads the normal GRUB path; it must not re-enter the menu with
    `next_entry` still set (the author's loop warning). The helper verifies after `grub-mkconfig` that the normal entry is still
    entry 0.
-3. **Armed marker before, cleared after.** Before `grub-reboot`, the helper writes `/var/lib/yggdrasil/gpu-unlock/armed`
-   with the time and the entry id. A systemd unit `yggdrasil-gpu-unlock-verify.service` (after `nvidia-persistenced` or on
-   the first `nvidia-smi` success) removes it when the desktop session comes up. At boot, if the marker is **already there**
-   and its boot id is not this boot, the previous attempt did not reach the desktop: the helper sets state `failed`, disables
-   the arm button until Matt re-enables it, and logs. This is the "failure marker written before any GPU change, so a hang or
-   power loss causes the next boot to skip the experiment" that the Turing author lists as a requirement for any automatic
-   use.
+   **Found in Phase 0 (2026-10-27): on this PC `grub-reboot` is not one-shot.** GRUB clears `next_entry` by writing
+   `/boot/grub/grubenv` as it starts, and GRUB cannot write to btrfs. `/boot` is on the btrfs root here and `grubenv` names no
+   `env_block`, so the choice would stay set and the unlock entry would start at every restart: exactly the loop the author
+   warns about. `gpuunlock` therefore refuses to arm on btrfs without an `env_block` (`arm_blocker` in its status; tested).
+   Phase 2 must pick another one-shot and prove it with a harmless entry before anything else boots through it:
+   (a) **EFI `BootNext`** (recommended): `arm` adds a firmware boot entry for the loader and sets `BootNext` to it with
+   `efibootmgr`; the firmware clears `BootNext` itself before it starts the entry, so a hang cannot repeat; `verify` and
+   `disarm` delete the entry. It writes two small EFI variables, which is ordinary for boot managers.
+   (b) a GRUB `env_block` in btrfs's reserved area (this GRUB, 2.16, reads one: see `00_header`), set up once and proven.
+   (c) GRUB's environment on the EFI partition (FAT). Matt chooses at Phase 2; until then nothing can be armed.
+3. **Armed marker before, cleared after, in two steps.** Before `grub-reboot`, the helper writes
+   `/var/lib/yggdrasil/gpu-unlock/armed` with the time, the entry id and the boot id of the start that armed it. Early in the
+   next start (before `sysinit.target`), `yggdrasil-gpu-unlock-boot.service` turns it into `trying` with **that** start's boot
+   id: this start is the attempt. Once the desktop is up (`yggdrasil-gpu-unlock-verify.service`, after `graphical.target` and
+   `nvidia-persistenced`), `verify` checks the card and removes `trying`. If the attempt never gets that far (a hang, the
+   power button), the start after it finds `trying` from an earlier start: the helper sets state `failed`, disables the arm
+   button until Matt re-enables it, and logs. This is the "failure marker written before any GPU change, so a hang or power
+   loss causes the next boot to skip the experiment" that the Turing author lists as a requirement for any automatic use.
+   (The first draft compared `armed`'s boot id with the current one at the verify step only; the attempt itself is a new
+   start, so that would have called every attempt a failure. Both services start only while a marker exists.)
 4. **Snapshot first.** Arming takes a snapper snapshot "before GPU unlock" (same as `before-nvidia.sh` in Proton Drive >
    Labyrinth OS). The unlock does not touch the system, but the surrounding package work (a DKMS module, an EFI loader on the
    ESP) might, and the snapshot makes that reversible by the guide already written for Matt (`GPU driver recovery guide.md`).
@@ -243,6 +256,7 @@ the pattern: a Python helper in `packages/settings/helpers/`, a polkit policy in
 | `packages/settings/data/gpu-unlock-supported.json` | The support table (7.2). Installed to `/usr/share/yggdrasil/gpu-unlock/supported.json` |
 | `packages/settings/data/org.yggdrasil.gpuunlock.policy` | polkit: action `org.yggdrasil.gpuunlock.arm` with `auth_admin` for `arm`, `disarm`, `reenable`; `status` and `bench` need no root |
 | `packages/settings/data/yggdrasil-gpu-unlock-verify.service` | `Type=oneshot`, `After=graphical.target nvidia-persistenced.service`, runs `gpuunlock verify` |
+| `packages/settings/data/yggdrasil-gpu-unlock-boot.service` | Added in Phase 0: `Type=oneshot`, early (`Before=sysinit.target`), runs `gpuunlock boot` (rule 3). Both services start only while a marker exists; `arm` enables them |
 | `packages/settings/data/41_gpu_unlock` | `/etc/grub.d/41_gpu_unlock`: emits the one-shot menu entry only if `/var/lib/yggdrasil/gpu-unlock/loader.conf` exists (written by `arm`); otherwise nothing, so `grub-mkconfig` on a normal machine is unchanged |
 | `packages/settings/src/sys.rs` | `parse_gpu_unlock(json) -> Option<GpuUnlock>` with state, reason, since, ratio, log path |
 | `packages/settings/src/main.rs` | The "Graphics card" group: state text, buttons, the confirmation dialog, the slider cap |
@@ -299,8 +313,11 @@ The Settings tile is a pure function of this JSON.
 3. `snapper -c root create --type single --cleanup-algorithm "" --description "before GPU unlock"`.
 4. Write `loader.conf` (BDF, BAR0, ESP GUID, loader file name) and run `grub-mkconfig -o /boot/grub/grub.cfg`; assert entry
    0 is unchanged and the new entry id exists; otherwise roll `loader.conf` back and fail.
-5. Hold the GPU power limit at the card's default for every mode (`powerlimit set MODE gpu=260` where higher). The previous
-   values go into `state.json`; `disarm` restores them, and so does recording Phase 4 (Performance mode's 290 W returns).
+5. Hold the GPU power limit at the card's default for every mode. As built (Phase 0): `arm` writes
+   `/var/lib/yggdrasil/gpu-unlock/power-hold`, and `powerlimit` never sets more than the card's default while it exists
+   (or less, if the heat watch wrote a lower cap). The modes' own limits are not rewritten, so Performance mode's 290 W
+   comes back by itself when the hold ends: `disarm` before an attempt, or `gpuunlock release` after the measurements
+   (Settings: "End the hold…"). An unreadable hold file still holds.
 6. Write `armed` (time, entry id, current boot id), then `grub-reboot <entry id>`.
 7. Log, and return the text for the tile. The helper does **not** reboot; Matt restarts from the menu when ready.
 
@@ -308,12 +325,22 @@ The Settings tile is a pure function of this JSON.
 
 ### 7.5 Verify sequence (`gpuunlock verify`, the service, at every boot)
 
-1. If `armed` exists and its boot id is not this boot's: previous attempt failed to reach the desktop. State `failed`,
-   remove `armed`, Heimdall `critical` info line, done.
-2. If `armed` exists and is this boot's: remove it, then test. Read the selector state the way the Turing author does (the
-   microbenchmark ratio against `baseline.json`; there is no NVML field for it). Run the correctness check. Set `unlocked`
-   (with ratio and time) or `failed` (wrong results / no speed-up). Start the 15-minute thermal watch in the background.
-3. If nothing is armed: if `state` was `unlocked` from a previous boot, set it back to `supported` (volatile), done.
+As built in Phase 0 (two services, see rule 3):
+
+1. `gpuunlock boot`, early: if `trying` exists from an earlier start, that attempt never reached the desktop: state
+   `failed`, remove `trying`, log. Then, if `armed` exists from an earlier start, this start is the attempt: `armed`
+   becomes `trying` with this start's boot id.
+2. `gpuunlock verify`, once the desktop is up: if `armed` still exists, the attempt is the next start; do nothing. If
+   `trying` is this start's: test. Read the selector state the way the Turing author does (the microbenchmark ratio against
+   `baseline.json`; there is no NVML field for it). Run the correctness check. Set `unlocked` (with ratio and time) or
+   `failed` (wrong results / no speed-up), remove `trying`, take the entry out of the menu, then run the 15-minute heat
+   watch. Until Phase 2 builds the check, every attempt ends `failed` ("not built yet").
+3. In any other start where the one-try entry is still in the menu (after a failure), `verify` takes it out.
+4. `unlocked` is kept with its boot id, so `status` shows it only in that start: the unlock is volatile.
+
+Heimdall: each event is a line in `/var/lib/yggdrasil/gpu-unlock/log` and in the journal (tag `yggdrasil-gpu-unlock`).
+Heimdall has no way for another program to add an alert, so showing these on the Monitor page is a Heimdall change (its
+repository), not done in Phase 0.
 
 ### 7.6 Settings UI
 
@@ -390,6 +417,9 @@ and the selector tuple, write nothing, and chainload the normal boot.
 
 Record the locked baseline: `gpuunlock bench` writes `baseline.json` (tensor microbenchmark, cuBLAS GEMM, and the
 application numbers in section 9).
+
+Before the probe: the one-shot chosen in rule 2 is proven with a harmless entry (one that only chainloads the normal boot):
+the first start goes through it, the second start is a normal one by itself.
 
 Gate: the probe log shows a selector tuple that Turing-unlock's loader lists as a known pre-write state, and the machine
 chainloaded normally. If the tuple is unknown, stop: "Unknown pre-write states refuse the attempt" is the author's rule and ours.
@@ -487,3 +517,45 @@ Still open, to ask at Phase 2: which game to use for the before/after measuremen
 ## Results
 
 (Opus appends a dated subsection per phase: what was run, the numbers, the decision.)
+
+### Phase 0, 2026-10-27: done; nothing was written to the GPU
+
+**Built** (Yggdrasil, `packages/settings`; installed on Orthanc as `yggdrasil-settings 0.1.0-8`):
+- `helpers/gpuunlock`: `status [--json]`, `arm`, `disarm`, `reenable`, `release`, `boot`, `verify`, `bench` (the last says
+  "Phase 2" and runs nothing). It reads the card from sysfs and the driver's `/proc` files, without running a program.
+- `data/gpu-unlock-supported.json`: the ASUS entry only.
+- The polkit rule (`auth_admin`, a password every time).
+- `data/41_gpu_unlock` (prints nothing without `loader.conf`, never fails, checks every value's shape before it reaches
+  `grub.cfg`).
+- The two services.
+- In `powerlimit`: the power hold (section 7.4 step 5).
+- In Settings: the "Graphics card" group.
+- 34 new helper tests, `helpers/tests/test_gpuunlock.py`. They cover identity, the table refusing wildcards and missing
+  fields, Secure Boot, the one-shot check, arming with every program faked, the attempt markers, the heat watch, the power
+  hold and the GRUB fragment.
+- Rust tests for parsing the status and the hold.
+
+**Settings layout.** The Power page shows a "Graphics card · NAME" group with the three modes' watt sliders, then a
+"Processor" group with the three modes' clock sliders. This replaces the three per-mode groups. On a card in the table
+there is a "Tensor-rate unlock" row, and a "Power hold" row while a hold is on.
+
+**Gate:**
+- Tests: 45 Python (all helpers) and 56 Rust tests pass, also inside `makepkg`'s check.
+- `gpuunlock status --json` on Orthanc gives `"state": "unsupported"`, `"reason": "No tested entry for MSI 1462:3711 with
+  VBIOS 90.02.17.00.3E (tested: ASUS 1043:866a, VBIOS 90.02.17.00.47)"`. It reads BAR0 `0xde000000`, the open driver
+  615.78.08, and Secure Boot off.
+- Settings with Developer options on shows the Graphics card group with only the power sliders, Performance at 290 W, and
+  no unlock row.
+- A debug build with a `supported` fixture shows the row and "Arm for next restart…".
+- The services are installed and disabled. The GRUB fragment prints nothing.
+- No reboot was needed for Phase 0. Heimdall's watch list gets the three files through step 13 of Matt's `finish-todo.sh`,
+  because editing Heimdall's configuration is Matt's step.
+
+**Found:**
+1. On this PC `grub-reboot` would not be one-shot (rule 2): the attempt would repeat at every start. Arming is refused
+   until Phase 2 picks and proves another way; EFI `BootNext` is recommended.
+2. The first draft's single-marker check (7.5) would have marked every attempt as failed. It is now two steps (rule 3),
+   with tests.
+
+**Next:** Phase 1 (read-only research on the card: the ROM dump through the kernel's PCI ROM file, Turing-unlock's
+host-side analysis). It needs Matt's go, and Matt reads the two BIOS settings (Above 4G Decoding, CSM).
