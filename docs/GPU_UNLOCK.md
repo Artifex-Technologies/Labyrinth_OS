@@ -536,7 +536,7 @@ Still open, to ask at Phase 2: which game to use for the before/after measuremen
 - Rust tests for parsing the status and the hold.
 
 **Settings layout (Matt, 2026-10-27; 0.1.0-9).** Everything is in the "Power mode" group, under the mode selector, for the
-mode that is selected: "Processor" (clock), then "Graphics card" (watts, its name in the line under it), each with Reset.
+mode that is selected: "Processor" (clock), then "Graphics card" (watts, its name in the line under it), each with a reset icon left of its slider.
 Choosing another mode shows and changes that mode's limits. This replaces the three per-mode groups lower on the page. On a
 card in the table a "Tensor-rate unlock" row follows the Graphics card row, and a "Power hold" row while a hold is on.
 Section 5's "Graphics card group" means these rows.
