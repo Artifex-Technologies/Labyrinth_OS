@@ -108,6 +108,7 @@ is built and what is not.
 - [COMPONENTS.md](docs/COMPONENTS.md): optional software (Spotify, Obsidian, Steam, Proton Drive/Pass ...)
 - [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md): security
 - [DRIVER_LAB.md](docs/DRIVER_LAB.md): the Sarina + Limbo driver idea
+- [GPU_UNLOCK.md](docs/GPU_UNLOCK.md): the gated Settings option for a GeForce tensor-rate unlock (facts, risks, phases; Phase 0 changes nothing on the GPU)
 - [PROTON_GAMES.md](docs/PROTON_GAMES.md): Valve's Proton (Windows games in Steam); [PROTON_AG.md](docs/PROTON_AG.md): Proton AG's services
 - Yggdrasil's [DESKTOP.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/DESKTOP.md),
   [INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md) and
