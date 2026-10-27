@@ -65,7 +65,7 @@ EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F900-\U0001
 
 
 # How a sentence is delivered. She may start a sentence with [joking], [unsure], [urgent], [gentle] or [serious] (the voice prompt tells her to do so sparingly):
-# the voice changes how steady or lively it is, may add a small sound (a chuckle after a joke, a hesitation when unsure, a soft sigh before comfort), and
+# the voice changes how steady or lively it is, may add a small sound (a chuckle after a joke, a hesitation when unsure), and
 # the pause around it changes. Anything else in [brackets] is dropped, so she can never make the voice cough or laugh by accident.
 DELIVERY = {
     #            temperature, pause before (ms), pause after (ms)
@@ -104,8 +104,7 @@ def dress(sentence, name, rng):
         s = rng.choice(["Hmm... ", "Um... ", "Well... "]) + s[0].lower() + s[1:] if s else s
     elif name == "urgent":
         s = s.rstrip(".") + ("!" if not s.endswith(("!", "?")) else "")
-    elif name == "gentle" and rng.random() < 0.35:
-        s = "[sigh] " + s
+    # no sigh before a gentle sentence: it came as an exhale before most tarot answers (the owner, 2026-10-26)
     return s
 
 
