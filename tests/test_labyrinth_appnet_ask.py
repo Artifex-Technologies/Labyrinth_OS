@@ -40,12 +40,13 @@ class Fixture(unittest.TestCase):
 class RulesTests(unittest.TestCase):
     def test_ask_rules_pass_loopback_and_allowed_then_log_and_drop(self):
         r = appnet.rule_text(1000, "pdfcraft", "ask")
-        self.assertEqual(len(r), 5)
-        self.assertIn('oifname "lo" accept', r[0])
-        self.assertIn("@" + appnet.set_name(1000, "pdfcraft", 4), r[1])
-        self.assertIn("@" + appnet.set_name(1000, "pdfcraft", 6), r[2])
-        self.assertIn('log prefix "labask:pdfcraft " flags skuid', r[3])
-        self.assertIn(" drop ", r[4])
+        self.assertEqual(len(r), 6)
+        self.assertIn('oifname "lo" tcp dport { 8899, 8930, 11434 } drop', r[0])  # no relay through Ollama, Sarina, Heimdall
+        self.assertIn('oifname "lo" accept', r[1])
+        self.assertIn("@" + appnet.set_name(1000, "pdfcraft", 4), r[2])
+        self.assertIn("@" + appnet.set_name(1000, "pdfcraft", 6), r[3])
+        self.assertIn('log prefix "labask:pdfcraft " flags skuid', r[4])
+        self.assertIn(" drop ", r[5])
 
     def test_ruleset_declares_the_sets_with_what_you_allowed(self):
         rules = {"1000": {"pdfcraft": "ask", "x": "block"}}

@@ -25,7 +25,11 @@ class AppnetTests(unittest.TestCase):
     def test_modes(self):
         self.assertIsNone(appnet.rule_text(1000, "a", "allow"))
         block = appnet.rule_text(1000, "a", "block")
-        self.assertTrue(any("127.0.0.53" in r for r in block) and any('oifname != "lo" drop' in r for r in block))
+        # DNS to every resolver (the local one listens on 127.0.0.1 and ::1), then the loopback relays, then anything off loopback
+        self.assertIn("meta l4proto { tcp, udp } th dport 53 drop", block[0])
+        self.assertNotIn("daddr", block[0])
+        self.assertIn('oifname "lo" tcp dport { 8899, 8930, 11434 } drop', block[1])
+        self.assertIn('oifname != "lo" drop', block[2])
         eth = appnet.rule_text(1000, "a", "ethernet")[0]
         self.assertTrue('oifname != "lo"' in eth and 'oifname != "en*"' in eth and 'oifname != "eth*"' in eth and "wl*" not in eth)
         wifi = appnet.rule_text(1000, "a", "wifi")[0]

@@ -24,9 +24,14 @@ Rules live in /etc/labyrinth/app-network.json: {"rules": {"1000": {"firefox": "b
 by root only). The nftables rule needs the slice's cgroup to exist when it is loaded, which is why `prepare` keeps
 the slices alive, and `apply` skips an app whose slice is not running (nothing of it is running, so nothing to limit).
 
+A blocked app gets no DNS at all (any address, port 53: the resolver here listens on 127.0.0.1 and ::1, and a lookup
+can carry data out), and a blocked or ask-mode app cannot reach the local services that fetch from the internet or hold
+private data: Ollama (it downloads from any registry it is told to), Sarina and Heimdall (RELAY_PORTS).
+
 Honest limits: this matches programs the launcher started (dock, start menu, Settings); something started another way
-is not in the app's slice. A blocked app can still ask the system's DNS resolver to look up names, which is why
-lookups to the local resolver are refused too.
+is not in the app's slice, and an app that starts a program through `systemd-run --user` or asks the desktop to open a
+link (xdg-open, a portal) has that program run outside its slice. If the rules fail to load, nothing is limited: the
+failure is written to the journal (tag labyrinth-appnet) where Heimdall reads it.
 """
 import json
 import os
@@ -42,6 +47,7 @@ MODES = ("allow", "block", "ethernet", "wifi", "ask")
 ASK_STATE = os.environ.get("LABYRINTH_ASK_STATE", "/var/lib/labyrinth/app-ask.json")
 WIRED = ("en*", "eth*")
 WIRELESS = ("wl*",)
+RELAY_PORTS = (8899, 8930, 11434)  # Sarina, Heimdall, Ollama on loopback
 
 
 def slice_name(app_id):
@@ -124,11 +130,16 @@ def ask_rules(uid, app_id):
     path = cgroup_path(uid, app_id)
     m = 'socket cgroupv2 level %d "%s"' % (path.count("/") + 1, path)
     note = 'comment "%s: ask"' % re.sub(r"[^A-Za-z0-9._+-]", "_", app_id)
-    return [m + ' oifname "lo" accept ' + note,
+    return [relay_rule(m, note),
+            m + ' oifname "lo" accept ' + note,
             m + " ip daddr @%s accept %s" % (set_name(uid, app_id, 4), note),
             m + " ip6 daddr @%s accept %s" % (set_name(uid, app_id, 6), note),
             m + ' limit rate 4/second burst 8 packets log prefix "labask:%s " flags skuid %s' % (app_id, note),
             m + " drop " + note]
+
+
+def relay_rule(match, note):
+    return match + ' oifname "lo" tcp dport { %s } drop %s' % (", ".join(map(str, RELAY_PORTS)), note)
 
 
 def rule_text(uid, app_id, mode):
@@ -138,8 +149,9 @@ def rule_text(uid, app_id, mode):
     match = 'socket cgroupv2 level %d "%s"' % (level, path)
     note = 'comment "%s: %s"' % (re.sub(r"[^A-Za-z0-9._+-]", "_", app_id), mode)
     if mode == "block":
-        # no DNS through the local resolver either, then nothing but loopback
-        return [match + " ip daddr 127.0.0.53 meta l4proto { tcp, udp } th dport 53 drop " + note,
+        # no DNS to any resolver (127.0.0.1, ::1, 127.0.0.53 or outside), no loopback relays, then nothing but loopback
+        return [match + " meta l4proto { tcp, udp } th dport 53 drop " + note,
+                relay_rule(match, note),
                 match + ' oifname != "lo" drop ' + note]
     if mode == "ask":
         return ask_rules(uid, app_id)
@@ -178,7 +190,11 @@ def apply(rules=None):
     script = ruleset(rules)
     p = subprocess.run(["nft", "-f", "-"], input=script, text=True, capture_output=True)
     if p.returncode != 0:
-        print(p.stderr.strip() or "nft failed", file=sys.stderr)
+        msg = p.stderr.strip() or "nft failed"
+        print(msg, file=sys.stderr)
+        # the apps are not limited while this lasts: say so where Heimdall and the owner will see it
+        subprocess.run(["logger", "-t", "labyrinth-appnet", "-p", "auth.warning", "--",
+                        "per-app network rules did not load, apps are NOT limited: " + msg.splitlines()[0]], check=False)
     return p.returncode
 
 
