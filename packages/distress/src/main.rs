@@ -194,7 +194,8 @@ fn check_user(req: &Value, user: &str, prompts_only: bool) -> Value {
         use std::os::unix::process::CommandExt;
         if let Ok(exe) = std::env::current_exe() {
             let mut cmd = std::process::Command::new(exe);
-            cmd.arg("run-extra").arg(user).stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+            // without PKEXEC_UID: run-extra refuses anyone who came through pkexec, so only this helper can start it
+            cmd.arg("run-extra").arg(user).env_remove("PKEXEC_UID").stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
             unsafe {
                 cmd.pre_exec(|| {
                     libc::setsid();
@@ -216,9 +217,24 @@ fn run_extra(user: &str) {
     }
 }
 
+/// The commands only root itself may run, never anyone through pkexec (pkexec always sets PKEXEC_UID, and the session may run
+/// this helper through pkexec without a password): the distress actions, which the helper starts after a real distress check,
+/// and the PAM changes, which packaging runs.
+fn root_only(cmd: &str) -> bool {
+    matches!(cmd, "run-extra" | "pam-enable" | "pam-disable" | "check-for")
+}
+
+fn refused(cmd: &str, pkexec_uid: Option<std::ffi::OsString>, euid: u32) -> bool {
+    root_only(cmd) && (pkexec_uid.is_some() || (euid != 0 && !cfg!(feature = "test-paths")))
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.get(1).map(String::as_str).unwrap_or("");
+    if refused(cmd, std::env::var_os("PKEXEC_UID"), unsafe { libc::geteuid() }) {
+        println!("{}", fail("only the system itself may do that"));
+        std::process::exit(1);
+    }
     if cmd == "run-extra" {
         run_extra(args.get(2).map(String::as_str).unwrap_or(""));
         return;
@@ -248,6 +264,17 @@ mod tests {
 
     fn cfg() -> Config {
         Config { enabled: true, ..Config::default() }
+    }
+
+    #[test]
+    fn pkexec_callers_cannot_run_the_actions_or_change_pam() {
+        for c in ["run-extra", "pam-enable", "pam-disable", "check-for"] {
+            assert!(refused(c, Some("1000".into()), 0), "{c} through pkexec");
+            assert!(!refused(c, None, 0), "{c} by root itself");
+        }
+        for c in ["open", "save", "check", "plan"] {
+            assert!(!refused(c, Some("1000".into()), 0), "{c} is for the session");
+        }
     }
 
     #[test]
