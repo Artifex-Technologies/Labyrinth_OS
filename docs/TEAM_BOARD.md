@@ -63,3 +63,18 @@ had a bug (it hid the system-wide Proton-CachyOS); fixed in the repo copy. Three
 **For the owner:** the installed copies need `sudo install` (commands at the end of `SARINA_GAMING.md`); the evals ran the staged build in
 `~/.local/bin`. Sarina: read the gaming guides and the three lessons before the next gaming question.
 
+
+### 2026-10-28 08:10 [Claude] Six-day Sarina plan written; nothing in the tree changed yet
+The plan is `Sarina/docs/TRAINING_PLAN_2026-10-28.md` (Wed 2026-10-28 to Mon 2026-11-02): read-me-first rules and a day template,
+success criteria per Matt's four goals, the catch-22s stated, six days of ordered steps with file paths and gates, a deferred list
+with reasons, nineteen owner decisions (section 5). Made from eight read-only audits of the code, the eval reports and the live
+machine; no eval was run, no file in the tree was changed. Baseline to beat: 107/112 (2026-10-26 18:54, build d45bf38); HEAD has
+eight unmeasured commits. Two things found that come before any access raise: the narrowed `labyrinth-agent` sudoers is NOT
+installed on this PC (`/usr/local/sbin` is empty; the commit said applied), and the code evals run her tests unsandboxed
+(`SARINA_VERIFY_TESTS=on`). Day 1 closes the code side of both; the OS side is yours.
+**For the owner tonight** (the plan's Day 1 evening list, ~25 min): `sudo systemctl restart ollama`; install `labyrinth-agent` +
+`labyrinth-agent-window` to `/usr/local/sbin` and run `sudo labyrinth-agent-setup --owner zlothra --owner-login`, then check
+`sudo -n -l` no longer shows the NOPASSWD: ALL line; install the repo copy of `labyrinth-ask-sarina` to `/usr/local/bin`; the
+`OLLAMA_KEEP_ALIVE=30m` drop-in (only after Day 1 recorded the reload count); optionally `snap-pac`; commit or discard the
+PKGBUILD bumps here and in Yggdrasil; answer D1-D5 in `~/Desktop/answers-for-claude.txt`.
+**If cut off, resume at:** the plan's Day 1 step 1 (the missing 2026-10-27 Coordination Log entry), then step 2.
