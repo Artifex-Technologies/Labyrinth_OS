@@ -48,6 +48,10 @@ class SarinaAsk(unittest.TestCase):
         r = self.run_it(whisper="echo what time is it", ask=asks, tone="exit 0")  # no hint (nothing unusual, or not enough history)
         self.assertNotIn("Style hint", r.stdout)
 
+    def test_speech_to_text_time_is_passed_on_for_the_timing_line(self):
+        r = self.run_it(whisper="echo what time is it", ask='echo "stt=$LABYRINTH_VOICE_WHISPER_S"')
+        self.assertRegex(r.stdout, r"stt=\d+\.\d\d")
+
     def test_laughter_is_passed_on_and_not_shown_as_words(self):
         asks = 'echo "$@"'
         r = self.run_it(whisper="echo '[laughs] okay that one was good'", ask=asks)

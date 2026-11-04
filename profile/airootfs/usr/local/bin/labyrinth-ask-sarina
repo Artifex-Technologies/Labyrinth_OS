@@ -14,8 +14,44 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 SESSIONS = os.environ.get("SARINA_SESSION_DIR", "/var/lib/sarina/sessions")
+
+
+class Timing:
+    """LABYRINTH_VOICE_TIMING=1: when each stage of a turn ended, in seconds from the start of this script, as one line appended to
+    $XDG_RUNTIME_DIR/labyrinth-sarina/timing.log (route, prefetch, first_token = her first streamed character, first_sentence = the
+    first sentence printed for the voice, done). Speech to text runs before this script, in labyrinth-sarina-ask, which passes how
+    long it took as LABYRINTH_VOICE_WHISPER_S (whisper= on the line; absent for a typed question)."""
+
+    def __init__(self):
+        self.on, self.t0, self.marks = os.environ.get("LABYRINTH_VOICE_TIMING") == "1", time.monotonic(), {}
+        try:
+            self.whisper = float(os.environ.get("LABYRINTH_VOICE_WHISPER_S", ""))
+        except ValueError:
+            self.whisper = None
+
+    def mark(self, stage):
+        if self.on and stage not in self.marks:
+            self.marks[stage] = time.monotonic() - self.t0
+
+    def write(self):
+        if not self.on:
+            return
+        self.mark("done")
+        run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina")
+        marks = ([("whisper", self.whisper)] if self.whisper is not None else []) + list(self.marks.items())
+        line = time.strftime("%Y-%m-%dT%H:%M:%S") + " " + " ".join("%s=%.2f" % kv for kv in marks)
+        try:
+            os.makedirs(run, mode=0o700, exist_ok=True)
+            with open(os.path.join(run, "timing.log"), "a") as f:
+                f.write(line + "\n")
+        except OSError:
+            pass
+
+
+TIMING = Timing()
 
 
 def env_file():
@@ -737,9 +773,12 @@ def run_streaming(cmd, env, streamer):
         chunk = dec.read(1)
         if not chunk:
             break
+        TIMING.mark("first_token")
         for s in streamer.feed(chunk):
+            TIMING.mark("first_sentence")
             print(s, flush=True)
     for s in streamer.finish():
+        TIMING.mark("first_sentence")
         print(s, flush=True)
     return p.wait(), streamer.text()
 
@@ -832,6 +871,7 @@ def main(argv):
     if a.voice:
         said = spoken(question)
         topics = route(said, env)
+        TIMING.mark("route")
         if topics is None:  # no embedding model: keywords decide, and a question that sounds like "how do I" may need her guides
             topics = keyword_topics(said)
             if topics or HOWTO_RX.search(said):
@@ -858,6 +898,7 @@ def main(argv):
         pre = addon_prefetch(spoken(" ".join(a.question)), env)
         if pre:
             question = pre + "\n\nWhat they said: " + " ".join(a.question)
+        TIMING.mark("prefetch")  # her notes, the computer's state and an add-on's report, all read before the model starts
         # Qwen3's hidden reasoning before an answer costs a few seconds a turn. LABYRINTH_VOICE_THINK (sarina.env): "off" never (talk is
         # talk), "computer" only when the turn is about the computer or an add-on (a tool is then likely, and the reasoning helps it pick
         # the right step), "on" always.
@@ -936,4 +977,6 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    code = main(sys.argv)
+    TIMING.write()
+    sys.exit(code)

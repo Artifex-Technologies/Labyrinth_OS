@@ -37,7 +37,11 @@ if ! command -v "${LABYRINTH_WHISPER:-whisper-cli}" >/dev/null 2>&1 || [[ -z $mo
 fi
 # Names it should expect: without them "Zlothra" comes out as "lothra" and "Sarina" as "serina". The owner can add more in ~/.config/labyrinth/stt-words (one line, commas).
 words=$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/stt-words" 2>/dev/null)
+stt_start=$EPOCHREALTIME
 heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "Matt, Matthew, Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+# how long speech to text took, for labyrinth-ask-sarina's timing line (LABYRINTH_VOICE_TIMING=1)
+LABYRINTH_VOICE_WHISPER_S=$(awk -v a="${stt_start/,/.}" -v b="${EPOCHREALTIME/,/.}" 'BEGIN { printf "%.2f", b - a }')
+export LABYRINTH_VOICE_WHISPER_S
 # laughter comes out as [laughs], (laughing) or *chuckles*: she is told they laughed (what she said just before may become an inside joke)
 laughed=""
 printf '%s' "$heard" | grep -qiE '[[(*] *(laugh|laughs|laughing|laughter|chuckl|giggl)[a-z]* *[])*]' && laughed=1
