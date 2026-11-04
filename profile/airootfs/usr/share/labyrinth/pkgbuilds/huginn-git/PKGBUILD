@@ -11,7 +11,7 @@ pkgdesc="Huginn: videos without an account, in Yggdrasil's look"
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Yggdrasil'
 license=('MPL-2.0')
-depends=('gcc-libs' 'wayland' 'libxkbcommon' 'yt-dlp' 'curl' 'yggdrasil-player>=0.1.0-2')
+depends=('gcc-libs' 'wayland' 'libxkbcommon' 'yt-dlp' 'curl' 'yggdrasil-player>=0.1.0-3')
 optdepends=('ffmpeg: joins a downloaded picture and its sound into one file')
 makedepends=('cargo' 'git')
 provides=('huginn')
