@@ -165,3 +165,18 @@ in `~/.config/labyrinth/pronunciations` (`word = how to spell it so it is said r
 ## What she can look at (2026-10-20)
 
 Spoken questions use read-only tools: files, her vault, and `system_status` (performance, network, disk, logs, failed services, hardware; fixed commands, nothing changed; on with `SARINA_SYSTEM=on` in `~/.config/labyrinth/sarina.env`). The rules for spoken answers now live in her system prompt once (`LABYRINTH_VOICE_RULES`), not in every question, so a conversation no longer repeats the same paragraph and she is told not to repeat an earlier answer or claim she cannot do what she has not tried.
+
+## Keep-alive and per-stage timing (2026-11-04)
+
+- **The chat model's keep-alive is unchanged** (Matt's decision D4, 2026-11-02: no `OLLAMA_KEEP_ALIVE` drop-in). qwen3:8b unloads
+  after Ollama's default 5 minutes; the first turn after a longer pause pays a reload (a few seconds). Count the reloads of a day with
+  `journalctl -u ollama --since today | grep -c 'offloaded 37/37'`.
+- **The embedding model stays loaded 30 minutes** (decision D5 yes; Sarina `go/embed/embed.go`, `KeepAlive`, commit b9709d0). It is
+  small (~0.3 GB) and is what routes a spoken question and finds her notes by meaning.
+- **Timing a spoken turn:** `LABYRINTH_VOICE_TIMING=1` makes `labyrinth-ask-sarina` append one line per turn to
+  `$XDG_RUNTIME_DIR/labyrinth-sarina/timing.log`: seconds from the script's start to the end of `route`, `prefetch` (notes, the
+  computer's state, an add-on's report), `first_token` (her first streamed character), `first_sentence` (the first sentence handed
+  to the voice) and `done`; `whisper=` comes first when the question was spoken (passed on by `labyrinth-sarina-ask`). Off by default.
+- First numbers (10 typed spoken-style turns, idle card, no audio): route 0.02 s, prefetch 0.11 s, first token 4.22 s, first
+  sentence 4.56 s, done 5.20 s (medians). Nearly all of the wait is the model: thinking on computer questions, and prompt reading
+  before the first token (the prompt prefix is now reused between sessions, Sarina 43cff03 and 89a83ff).
