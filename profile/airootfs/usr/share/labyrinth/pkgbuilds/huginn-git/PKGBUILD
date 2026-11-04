@@ -1,0 +1,44 @@
+# Maintainer: Labyrinth OS
+#
+# Huginn, Yggdrasil's video app: videos without an account (search, subscriptions kept on this computer, playback in
+# yggdrasil-player, downloads), laid out like Agora. Built from Yggdrasil's public repository (packages/huginn). Agora installs it
+# (labyrinth-apps install huginn).
+# To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
+pkgname=huginn-git
+pkgver=0.1.0.r0.g0000000
+pkgrel=1
+pkgdesc="Huginn: videos without an account, in Yggdrasil's look"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Yggdrasil'
+license=('MPL-2.0')
+depends=('gcc-libs' 'wayland' 'libxkbcommon' 'yt-dlp' 'curl' 'yggdrasil-player>=0.1.0-2')
+optdepends=('ffmpeg: joins a downloaded picture and its sound into one file')
+makedepends=('cargo' 'git')
+provides=('huginn')
+conflicts=('huginn')
+options=('!lto')
+source=("yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/yggdrasil"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/huginn)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/yggdrasil/packages/huginn"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/yggdrasil/packages/huginn"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/yggdrasil/packages/huginn"
+  install -Dm755 "$srcdir/target/release/huginn" "$pkgdir/usr/bin/huginn"
+  install -Dm644 huginn.desktop "$pkgdir/usr/share/applications/huginn.desktop"
+  install -Dm644 huginn.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/huginn.svg"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/huginn/README.md"
+}
