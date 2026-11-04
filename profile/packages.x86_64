@@ -111,6 +111,7 @@ yggdrasil-minos
 yggdrasil-settings
 # spelling: the library and the user service that shares one word list between apps; English to start (more in Settings > Keyboard)
 yggdrasil-spell
+yggdrasil-spell-packs
 hunspell-en_us
 yggdrasil-polkit
 yggdrasil-portal
