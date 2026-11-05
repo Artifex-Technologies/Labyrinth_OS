@@ -34,7 +34,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 ORG = "Artifex-Technologies"
@@ -99,12 +98,15 @@ def build(src):
         if not (d / "PKGBUILD").is_file() or d.name in built_above or d.name in NOT_PUBLISHED:
             continue
         say(f"building the store's {d.name}")
-        with tempfile.TemporaryDirectory(prefix="labyrinth-store-") as tmp:
-            work = Path(tmp) / d.name
-            shutil.copytree(d, work)
-            run(["makepkg", "-f", "-s", "--noconfirm"], cwd=work)
-            for f in work.glob("*.pkg.tar.zst"):
-                shutil.copy2(f, repo_dir / f.name)
+        # always the same folder: a build path ends up inside the programs, and a new random one each time would make every
+        # build look changed (and be published again for nothing)
+        work = WORK / "store" / d.name
+        if work.exists():
+            shutil.rmtree(work)
+        shutil.copytree(d, work)
+        run(["makepkg", "-f", "-s", "--noconfirm"], cwd=work)
+        for f in work.glob("*.pkg.tar.zst"):
+            shutil.copy2(f, repo_dir / f.name)
     return repo_dir
 
 
