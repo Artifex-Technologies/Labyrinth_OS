@@ -1,0 +1,45 @@
+# Labyrinth's own frame generation (working name), a Vulkan layer for 64-bit and 32-bit games, and its launcher
+# (labyrinth-framegen %command% in a game's Steam launch options; Settings > Games chooses per game). Built from its public
+# repository. The layer does nothing unless a game is started with it switched on.
+pkgname=labyrinth-framegen-git
+pkgver=0.1.0.r6.gc0ba2b4
+pkgrel=1
+pkgdesc='Frame generation for games (Vulkan and Proton), Labyrinth OS preview'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/labyrinth-framegen'
+license=('MPL-2.0')
+depends=('vulkan-icd-loader' 'gcc-libs' 'glibc')
+optdepends=('lib32-vulkan-icd-loader: frame generation for 32-bit games (old Proton games)')
+makedepends=('git' 'rust' 'lib32-rust-libs' 'shaderc' 'lib32-gcc-libs' 'lib32-glibc')
+provides=('labyrinth-framegen')
+conflicts=('labyrinth-framegen')
+options=('!lto' '!debug')
+source=("labyrinth-framegen::git+${LABYRINTH_FRAMEGEN_SRC:-https://github.com/Artifex-Technologies/labyrinth-framegen.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/labyrinth-framegen"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/labyrinth-framegen"
+  cargo build --release --locked --target x86_64-unknown-linux-gnu
+  cargo build --release --locked --target i686-unknown-linux-gnu
+}
+
+check() {
+  cd "$srcdir/labyrinth-framegen"
+  cargo test --release --locked --target x86_64-unknown-linux-gnu
+  sh tests/launcher.sh
+}
+
+package() {
+  cd "$srcdir/labyrinth-framegen"
+  install -Dm755 target/x86_64-unknown-linux-gnu/release/liblabyrinth_framegen.so "$pkgdir/usr/lib/liblabyrinth_framegen.so"
+  install -Dm755 target/i686-unknown-linux-gnu/release/liblabyrinth_framegen.so "$pkgdir/usr/lib32/liblabyrinth_framegen.so"
+  install -Dm644 data/labyrinth_framegen.x86_64.json "$pkgdir/usr/share/vulkan/implicit_layer.d/labyrinth_framegen.x86_64.json"
+  install -Dm644 data/labyrinth_framegen.x86.json "$pkgdir/usr/share/vulkan/implicit_layer.d/labyrinth_framegen.x86.json"
+  install -Dm755 bin/labyrinth-framegen "$pkgdir/usr/bin/labyrinth-framegen"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

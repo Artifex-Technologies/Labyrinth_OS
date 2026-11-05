@@ -730,9 +730,30 @@
    ]
   },
   {
-   "id": "frame-generation",
+   "id": "labyrinth-framegen",
    "name": "Frame generation",
-   "subtitle": "Lossless Scaling for Linux games (lsfg-vk)",
+   "subtitle": "More frames in your games, made by Labyrinth (preview)",
+   "description": "Labyrinth's own frame generation for Vulkan and Proton games, old 32-bit ones too: the game draws, the graphics card estimates the motion and draws the frames in between. Nothing else to buy. Choose games and 2x, 3x or 4x in Settings > Games. An early preview.",
+   "category": "Play",
+   "subcategory": "Games",
+   "source": {
+    "type": "component",
+    "id": "labyrinth-framegen"
+   },
+   "icon": "applications-games",
+   "reviewed": true,
+   "tags": [
+    "frame generation",
+    "fps",
+    "gaming",
+    "fluid motion"
+   ],
+   "repo": "https://github.com/Artifex-Technologies/labyrinth-framegen"
+  },
+  {
+   "id": "frame-generation",
+   "name": "Lossless Scaling frame generation",
+   "subtitle": "lsfg-vk: Lossless Scaling for Linux games",
    "description": "More frames in any Vulkan or Proton game: Lossless Scaling's frame generation through lsfg-vk. Needs Lossless Scaling from Steam (a paid app). Choose the games in its window; Settings > Games shows what is set up.",
    "category": "Play",
    "subcategory": "Games",

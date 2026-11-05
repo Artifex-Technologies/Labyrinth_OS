@@ -26,8 +26,16 @@
       "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup"
     },
     {
+      "id": "labyrinth-framegen",
+      "name": "Frame generation (Labyrinth, preview)",
+      "description": "Labyrinth's own frame generation: more frames on the screen than the game draws, for Vulkan and Proton games, 64-bit and 32-bit. Nothing else to buy. Settings > Games switches it on per game (2x, 3x or 4x); in Steam, put labyrinth-framegen %command% in the game's launch options once. An early preview: watch for smearing on fast motion, and it adds about one game frame of delay.",
+      "proprietary": false,
+      "pkgbuild": "labyrinth-framegen-git",
+      "notes": "Settings > Games: choose games and multipliers. In Steam: Properties > Launch options: labyrinth-framegen %command%."
+    },
+    {
       "id": "frame-generation",
-      "name": "Frame generation (Lossless Scaling)",
+      "name": "Lossless Scaling frame generation (lsfg-vk)",
       "description": "lsfg-vk, which brings Lossless Scaling's frame generation to Linux games (a Vulkan layer: on for the games you choose in its window), built from its author's source at a released version (the AUR's lsfg-vk). Also vulkan-tools, so Settings > Games can name each graphics card exactly, and gamescope, which carries the extra frames to a second graphics card (Settings > Games, experimental). Its licence (CC BY-NC-ND 4.0) keeps it out of Labyrinth itself; Agora installs and updates it.",
       "proprietary": false,
       "packages": [
