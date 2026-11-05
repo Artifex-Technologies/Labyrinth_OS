@@ -42,6 +42,12 @@ NVIDIA card, no physical keys, one screen).
 - [ ] **Sandboxing**: AppArmor or similar is not in place; Flatpak apps get what they ask for.
 - [ ] **Updates**: how updates reach the machine (mirrors, who signs Labyrinth's own packages), and that a
       failed update can be rolled back.
+      Found 2026-11-05: the installed system's pacman.conf lists only Arch and CachyOS, so Yggdrasil's own packages (panel,
+      Settings, compositor, Agora...) never update after install, and store apps built from a PKGBUILD stay at the version
+      they were built at (Agora finds updates for repository packages only). Needed: a signed Labyrinth repository online
+      (a signing key, the key in the keyring package, the repo in the installed pacman.conf). Also, the store's components
+      limbo, daedalus-cad, huginn, proton-pass and vscode name PKGBUILDs that are not in
+      `profile/airootfs/usr/share/labyrinth/pkgbuilds`, so installing them from Agora would fail on an ISO built now.
 
 ## 3. Privacy (the stated goal)
 
