@@ -46,7 +46,7 @@ NVIDIA card, no physical keys, one screen).
       Settings, compositor, Agora...) never update after install, and store apps built from a PKGBUILD stay at the version
       they were built at (Agora finds updates for repository packages only). Needed: a signed Labyrinth repository online
       (a signing key, the key in the keyring package, the repo in the installed pacman.conf). Also, the store's components
-      limbo, daedalus-cad, huginn, proton-pass and vscode name PKGBUILDs that are not in
+      limbo, daedalus-cad, proton-pass and vscode name PKGBUILDs that are not in
       `profile/airootfs/usr/share/labyrinth/pkgbuilds`, so installing them from Agora would fail on an ISO built now.
 
 ## 3. Privacy (the stated goal)
