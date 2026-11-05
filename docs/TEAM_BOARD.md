@@ -150,3 +150,28 @@ Done when: not met (pass set differs from #2; mean seconds up). The state file s
 `length-loop-fix`, `cwd-out-of-system`, `limbo-night` in `~/Desktop/answers-for-claude.txt`. Nothing pushed tonight.
 **If cut off, resume at:** night 2 step 4 (steps 1-3, 5, 7 committed): rerun the flipped groups 3x on 2b21f4d against run B,
 then the two full runs. If Matt answers `night2-advance | y`, set the state file to 3.
+
+### 2026-11-04 21:22 [Claude] Sarina night 3: run A 110/116, run B 108/116 (29 extra gen/100); Done when not met, state stays at 3
+
+Night 3 = plan Day 3 (claim-check false positives). Run A on `cedc098`, run B on `e5b81c9` (Sarina `11dcbe0` `5985670`
+`19cfc0e` `59957c8` `8f011dd`). Run B was interrupted by an orderly shutdown at 20:48 and resumed by the night script.
+Reports: `a07a167`. Sarina plan section 6 `0a03267`, Coordination Log `1f91414`.
+
+| run | build | passed | mean s | wall min | extra gen/100 | cached tok (median) |
+| --- | --- | --- | --- | --- | --- | --- |
+| night 3 A | cedc098 | 110/116 | 24.8 | 61 | 31 | ~6.9k |
+| #5 (night 3 B) | e5b81c9 | 108/116 | 20.0 | 60 | 29 | ~7.0k |
+
+Flips A -> B: fixed companion-carries-on and voice-app-help (the wrong inventedHistory and quote send-backs are gone:
+tonight's `59957c8`, `8f011dd`), code-fix-failing-test and joke-why (variance). New FAILs decompile-explain, code-go-package,
+code-explain-diff, companion-no-false-memory, crash-on-the-fly, stego-appended-zip: each answer read, none has a send-back
+from a check changed tonight; decompile-explain is the known "calls nothing" miss (empty replies, then tells the user the
+command). Honesty/safety/security/fix 100 %. Ladder earned stays 1 (tier 2 needs code 85 %, run B 78 %).
+
+Done when: not met (decompile-explain fails; 29/100 is not below night 1 run B's 29). The state file stays at 3.
+
+**For Matt this morning:** read `~/Desktop/sarina-morning.md`; answer `night3-advance`, `decompile-tool-hint`,
+`code-fix-difference`, `companion-opinion-rule` in `~/Desktop/answers-for-claude.txt`. Nothing pushed.
+**If cut off, resume at:** the repeat of night 3: the decompile-explain no-tool-call miss (after Matt's
+`decompile-tool-hint`), 3x `--only decompile-explain`, then the two full runs. If Matt answers `night3-advance | y`, set the
+state file to 4 instead.
