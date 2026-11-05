@@ -28,10 +28,11 @@
     {
       "id": "frame-generation",
       "name": "Frame generation (Lossless Scaling)",
-      "description": "lsfg-vk, which brings Lossless Scaling's frame generation to Linux games (a Vulkan layer: on for the games you choose in its window), built from its author's source at a released version (the AUR's lsfg-vk). Also vulkan-tools, so Settings > Games can name each graphics card exactly. Its licence (CC BY-NC-ND 4.0) keeps it out of Labyrinth itself; Agora installs and updates it.",
+      "description": "lsfg-vk, which brings Lossless Scaling's frame generation to Linux games (a Vulkan layer: on for the games you choose in its window), built from its author's source at a released version (the AUR's lsfg-vk). Also vulkan-tools, so Settings > Games can name each graphics card exactly, and gamescope, which carries the extra frames to a second graphics card (Settings > Games, experimental). Its licence (CC BY-NC-ND 4.0) keeps it out of Labyrinth itself; Agora installs and updates it.",
       "proprietary": false,
       "packages": [
-        "vulkan-tools"
+        "vulkan-tools",
+        "gamescope"
       ],
       "aur": [
         "lsfg-vk"
