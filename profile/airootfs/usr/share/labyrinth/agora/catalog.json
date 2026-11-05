@@ -730,6 +730,28 @@
    ]
   },
   {
+   "id": "frame-generation",
+   "name": "Frame generation",
+   "subtitle": "Lossless Scaling for Linux games (lsfg-vk)",
+   "description": "More frames in any Vulkan or Proton game: Lossless Scaling's frame generation through lsfg-vk. Needs Lossless Scaling from Steam (a paid app). Choose the games in its window; Settings > Games shows what is set up.",
+   "category": "Play",
+   "subcategory": "Games",
+   "source": {
+    "type": "component",
+    "id": "frame-generation"
+   },
+   "icon": "gay.pancake.lsfg-vk-ui",
+   "reviewed": true,
+   "tags": [
+    "lossless scaling",
+    "lsfg",
+    "fps",
+    "frame generation",
+    "gaming"
+   ],
+   "launch": "gay.pancake.lsfg-vk-ui"
+  },
+  {
    "id": "lutris",
    "name": "Lutris",
    "subtitle": "Play any game",
@@ -1949,6 +1971,7 @@
   "visual-studio-code-bin",
   "proton-pass-bin",
   "proton-mail-bin",
-  "proton-authenticator-bin"
+  "proton-authenticator-bin",
+  "lsfg-vk"
  ]
 }

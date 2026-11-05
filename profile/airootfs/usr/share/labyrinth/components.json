@@ -26,6 +26,19 @@
       "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup"
     },
     {
+      "id": "frame-generation",
+      "name": "Frame generation (Lossless Scaling)",
+      "description": "lsfg-vk, which brings Lossless Scaling's frame generation to Linux games (a Vulkan layer: on for the games you choose in its window), built from its author's source at a released version (the AUR's lsfg-vk). Also vulkan-tools, so Settings > Games can name each graphics card exactly. Its licence (CC BY-NC-ND 4.0) keeps it out of Labyrinth itself; Agora installs and updates it.",
+      "proprietary": false,
+      "packages": [
+        "vulkan-tools"
+      ],
+      "aur": [
+        "lsfg-vk"
+      ],
+      "notes": "Needs Lossless Scaling from Steam (a paid Windows app; installing it is enough). Then open 'Configure lsfg-vk' and add your games. Settings > Games shows what is set up."
+    },
+    {
       "id": "spotify",
       "name": "Spotify",
       "description": "Arch's spotify-launcher, which downloads Spotify's own Linux client on first run. Spotify says its Linux client is not officially supported. The bar's media controls talk to it over MPRIS.",
