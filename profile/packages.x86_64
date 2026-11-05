@@ -75,6 +75,8 @@ ufw
 ghostty
 yggdrasil-theme
 liki-icon-theme
+labyrinth-keyring
+yay
 nwg-displays
 mako
 hyprlock
@@ -109,7 +111,6 @@ btop
 noto-fonts-emoji
 yggdrasil-minos
 yggdrasil-settings
-# spelling: the library and the user service that shares one word list between apps; English to start (more in Settings > Keyboard)
 yggdrasil-spell
 yggdrasil-spell-packs
 hunspell-en_us
@@ -169,8 +170,6 @@ yggdrasil-weather
 # component: proton-drive
 rclone
 fuse3
-# component: proton-pass
-proton-pass
 # component: proton-vpn
 proton-vpn-gtk-app
 # component: accessibility
@@ -197,8 +196,6 @@ bubblewrap
 binutils
 # component: limbo
 limbo-git
-# component: vscode
-visual-studio-code-bin
 # component: containers
 podman
 distrobox

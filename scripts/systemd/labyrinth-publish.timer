@@ -1,0 +1,12 @@
+# Once a day, after Sarina's night training (22:30-04:20) and the morning reflection, so the builds never compete with the
+# model for the machine. Does nothing when no repository changed.
+[Unit]
+Description=Publish Labyrinth's package repository daily
+
+[Timer]
+OnCalendar=*-*-* 05:30:00
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

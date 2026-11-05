@@ -90,14 +90,32 @@ def sudo(cmd):
     return cmd if getattr(os, "geteuid", lambda: 1)() == 0 else [gui_sudo() or "sudo"] + cmd
 
 
-def plan_install(chosen, comps, installed):
-    """List of (description, argv, cwd_pkgbuild) steps. Skips what is already installed."""
+def in_repos(name):
+    """Whether a package repository pacman knows has this package (Labyrinth's own [labyrinth] repository holds the builds of
+    the components' PKGBUILDs, signed, so they install and update like any other package)."""
+    try:
+        return subprocess.run(["pacman", "-Si", name], capture_output=True).returncode == 0
+    except OSError:
+        return False
+
+
+def plan_install(chosen, comps, installed, in_repos=in_repos):
+    """List of (description, argv, cwd_pkgbuild) steps. Skips what is already installed (a component's own build that a
+    repository has is asked for anyway: pacman's --needed leaves it alone when it is current and updates it when it is not)."""
     steps = []
     repo = []
     for i in chosen:
         for p in comps[i].get("packages", []):
             if p not in installed and p not in repo:
                 repo.append(p)
+    built_here = []
+    for i in chosen:
+        pb = comps[i].get("pkgbuild")
+        if pb and pb not in repo:
+            if in_repos(pb):
+                repo.append(pb)
+            elif pb not in installed:
+                built_here.append(pb)
     if repo:
         steps.append((f"install {len(repo)} package(s) with pacman", sudo(["pacman", "-S", "--needed"] + repo), None))
     aur = []
@@ -112,10 +130,8 @@ def plan_install(chosen, comps, installed):
             # from Agora (the app store) (no terminal, Labyrinth's reviewed catalog): no questions, and the password box instead of sudo
             cmd += ["--noconfirm", "--sudo", gui_sudo()]
         steps.append((f"build and install {len(aur)} package(s) from the AUR ({', '.join(aur)})", cmd + aur, None))
-    for i in chosen:
-        pb = comps[i].get("pkgbuild")
-        if pb and pb not in installed:
-            steps.append((f"build and install {pb} from its PKGBUILD", ["makepkg", "-si"], pb))
+    for pb in built_here:
+        steps.append((f"build and install {pb} from its PKGBUILD", ["makepkg", "-si"], pb))
     for i in chosen:
         # one-time setup commands of a component (root-owned components.json only), run as administrator after its packages
         for cmd in comps[i].get("after_install", []):

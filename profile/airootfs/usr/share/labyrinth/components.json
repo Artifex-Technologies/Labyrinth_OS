@@ -47,10 +47,12 @@
     {
       "id": "vscode",
       "name": "Visual Studio Code",
-      "description": "Microsoft's official VS Code build (their Linux tarball, repackaged and pinned with its published SHA-256), with the Microsoft extension marketplace. Microsoft's own Linux instructions cover Debian, Fedora, Snap and a community AUR package. Arch's repo has `code`, the open-source build, which uses the Open VSX marketplace and lacks Microsoft-only extensions; it conflicts with this one.",
+      "description": "Microsoft's official VS Code build, from the AUR's visual-studio-code-bin (Microsoft's Linux release, downloaded from Microsoft when it is installed), with the Microsoft extension marketplace. Agora's updates keep it current. Arch's repo has `code`, the open-source build, which uses the Open VSX marketplace and lacks Microsoft-only extensions; it conflicts with this one.",
       "proprietary": true,
-      "pkgbuild": "visual-studio-code-bin",
-      "notes": "Built on this machine with makepkg. Updating means changing the pinned version in its PKGBUILD."
+      "notes": "Microsoft's licence does not allow passing the app on, so it is not in Labyrinth's own repository.",
+      "aur": [
+        "visual-studio-code-bin"
+      ]
     },
     {
       "id": "weather",
@@ -78,10 +80,22 @@
     {
       "id": "proton-pass",
       "name": "Proton Pass",
-      "description": "Proton's official desktop app, repackaged from their RPM and pinned to one version with its published SHA-512. Built on this machine with makepkg.",
+      "description": "Proton's official desktop app, from the AUR's proton-pass-bin: Proton's own release, downloaded from Proton when it is installed. Agora's updates keep it current.",
       "proprietary": true,
-      "pkgbuild": "proton-pass",
-      "notes": "The browser extension installs from your browser's store."
+      "notes": "The browser extension installs from your browser's store.",
+      "aur": [
+        "proton-pass-bin"
+      ]
+    },
+    {
+      "id": "proton-mail",
+      "name": "Proton Mail",
+      "description": "Proton's official desktop app for Proton Mail and Proton Calendar, from the AUR's proton-mail-bin: Proton's own release, downloaded from Proton when it is installed. Agora's updates keep it current.",
+      "proprietary": false,
+      "aur": [
+        "proton-mail-bin"
+      ],
+      "notes": "Sign in with your Proton account. For Thunderbird or another mail program, Proton Mail Bridge is in Arch's repository (protonmail-bridge; paid plans)."
     },
     {
       "id": "proton-vpn",

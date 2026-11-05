@@ -1,0 +1,12 @@
+# Labyrinth's package repository: builds what changed on GitHub, signs it and publishes it (scripts/publish-repo.py).
+# A user unit on the build PC (the one holding the signing key). Install: see docs/PACKAGE_REPO.md.
+[Unit]
+Description=Publish Labyrinth's package repository
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/Documents/Github/Labyrinth_OS/scripts/publish-repo.py
+Nice=15
+IOSchedulingClass=idle
+TimeoutStartSec=4h

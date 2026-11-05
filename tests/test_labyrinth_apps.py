@@ -70,10 +70,29 @@ class Commands(unittest.TestCase):
         self.assertNotIn("obsidian", out.split("==>")[1])
         self.assertIn("pacman -S --needed", out)
 
-    def test_pkgbuild_component_uses_makepkg(self):
-        rc, out, _ = run(["install", "proton-pass", "--dry-run"], installed=set())
-        self.assertIn("makepkg -si", out)
-        self.assertIn("proton-pass", out)
+    def test_pkgbuild_component_uses_makepkg_when_no_repository_has_it(self):
+        comps, _ = apps.load(MANIFEST)
+        i = "limbo"
+        steps = apps.plan_install([i], comps, set(), in_repos=lambda name: False)
+        self.assertEqual([s[1] for s in steps if s[2]], [["makepkg", "-si"]])
+        self.assertEqual(steps[0][2], "limbo-git")
+
+    def test_pkgbuild_component_comes_from_the_repository_and_updates_there(self):
+        comps, _ = apps.load(MANIFEST)
+        i = "limbo"
+        steps = apps.plan_install([i], comps, {"limbo-git"}, in_repos=lambda name: name == "limbo-git")
+        self.assertFalse(any(s[2] for s in steps), "nothing is built on this machine")
+        pacman = [s[1] for s in steps if "pacman" in s[1]]
+        self.assertEqual(len(pacman), 1)
+        self.assertIn("--needed", pacman[0], "an installed, current build is left alone; an older one is updated")
+        self.assertIn("limbo-git", pacman[0], "asked for although installed: that is how its update arrives")
+
+    def test_proton_and_vscode_come_from_proton_and_microsoft_through_the_aur(self):
+        for comp, pkg in (("proton-pass", "proton-pass-bin"), ("proton-mail", "proton-mail-bin"), ("vscode", "visual-studio-code-bin")):
+            rc, out, _ = run(["install", comp, "--dry-run"], installed=set())
+            self.assertEqual(rc, 0)
+            self.assertIn(f"yay -S --needed {pkg}", out)
+            self.assertNotIn("makepkg", out)
 
     def test_makepkg_from_agora_asks_through_its_password_box(self):
         import tempfile

@@ -1,0 +1,11 @@
+# Adds (or refreshes) Labyrinth's key in pacman's keyring, once that keyring exists (the installer sets it up first and then
+# runs the same populate itself).
+post_install() {
+  if usr/bin/pacman-key -l >/dev/null 2>&1; then
+    usr/bin/pacman-key --populate labyrinth
+  fi
+}
+
+post_upgrade() {
+  post_install
+}

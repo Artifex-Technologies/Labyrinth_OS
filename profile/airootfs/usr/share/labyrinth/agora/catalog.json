@@ -581,6 +581,26 @@
    "flathub": "org.mozilla.Thunderbird"
   },
   {
+   "id": "proton-mail",
+   "name": "Proton Mail",
+   "subtitle": "Encrypted email and calendar",
+   "description": "Proton's end-to-end encrypted email, with Proton Calendar, in Proton's own desktop app.",
+   "category": "Work",
+   "subcategory": "Email & Calendar",
+   "source": {
+    "type": "component",
+    "id": "proton-mail"
+   },
+   "icon": "proton-mail",
+   "logo": "protonmail",
+   "reviewed": true,
+   "tags": [
+    "proton",
+    "email",
+    "calendar"
+   ]
+  },
+  {
    "id": "proton-pass",
    "name": "Proton Pass",
    "subtitle": "Password manager",
@@ -1927,6 +1947,8 @@
  ],
  "aur_updates_ok": [
   "visual-studio-code-bin",
-  "proton-pass"
+  "proton-pass-bin",
+  "proton-mail-bin",
+  "proton-authenticator-bin"
  ]
 }

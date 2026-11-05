@@ -10,7 +10,7 @@ Before=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/pacman-key --init
-ExecStart=/usr/bin/pacman-key --populate archlinux cachyos
+ExecStart=/usr/bin/pacman-key --populate archlinux cachyos labyrinth
 
 [Install]
 WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+# The key Labyrinth's own packages are signed with, for pacman's keyring: what lets an installed system take
+# updates from Labyrinth's package repository (see scripts/publish-repo.sh and docs/PACKAGE_REPO.md).
+pkgname=labyrinth-keyring
+pkgver=2026.11.05
+pkgrel=1
+pkgdesc="Labyrinth OS package signing key"
+arch=('any')
+url="https://github.com/Artifex-Technologies/Labyrinth_OS"
+license=('MPL-2.0')
+depends=('pacman')
+install=labyrinth-keyring.install
+source=('labyrinth.gpg' 'labyrinth-trusted' 'labyrinth-revoked')
+sha256sums=('f1a3297870061ccf4daef4ea83cc897e38ec3e48b765c32464eb57d0a20b9e02'
+            '9d6a98f0d681403a63e14c388e34d6b726e2603f00e0e5ed8e5a38a130613242'
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+
+package() {
+  install -Dm644 -t "$pkgdir/usr/share/pacman/keyrings" "$srcdir/labyrinth.gpg" "$srcdir/labyrinth-trusted" "$srcdir/labyrinth-revoked"
+}
