@@ -34,7 +34,6 @@ asusctl
 rog-control-center
 intel-media-driver
 hyprland
-waybar
 greetd
 cage
 xdg-desktop-portal-hyprland
@@ -75,15 +74,9 @@ liki-icon-theme
 labyrinth-keyring
 yay
 nwg-displays
-mako
-hyprlock
-hypridle
 hyprsunset
-fuzzel
-foot
 uwsm
 hyprpolkitagent
-cliphist
 grim
 slurp
 wl-clipboard
@@ -125,7 +118,6 @@ power-profiles-daemon
 poppler
 ffmpegthumbnailer
 unrar
-swaybg
 edk2-shell
 cups
 cups-filters

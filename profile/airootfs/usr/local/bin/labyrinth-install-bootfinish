@@ -105,7 +105,7 @@ fi
 
 # 2b'. Hibernate: a swap file on btrfs the size of RAM (~64 GiB here), plus the resume
 #      plumbing. All of it is optional; if any step fails the file is removed again and the
-#      bar's power menu simply does not offer Hibernate (labyrinth-quick-settings checks).
+#      power menu simply does not offer Hibernate.
 #      A swap file on btrfs must be NOCOW and live in a subvolume that is never snapshotted,
 #      so it gets its own nested subvolume (snapshots of @ skip nested subvolumes).
 #      LABYRINTH_SWAP_GIB overrides the size (tests and small VM disks).

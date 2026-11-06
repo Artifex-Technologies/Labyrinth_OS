@@ -44,7 +44,6 @@ rog-control-center
 intel-media-driver
 # desktop: Yggdrasil on Hyprland; the login screen is Yggdrasil's greeter, which greetd shows in cage
 hyprland
-waybar
 greetd
 cage
 xdg-desktop-portal-hyprland
@@ -100,15 +99,9 @@ labyrinth-keyring
 yay
 # desktop 2, Omarchy-style tiling: Hyprland session, bar, launcher, terminal, notifications (no dock)
 nwg-displays
-mako
-hyprlock
-hypridle
 hyprsunset
-fuzzel
-foot
 uwsm
 hyprpolkitagent
-cliphist
 grim
 slurp
 wl-clipboard
@@ -162,7 +155,6 @@ poppler
 ffmpegthumbnailer
 unrar
 # wallpaper
-swaybg
 edk2-shell
 # printing, built in (Settings > Printers): CUPS, network printers found by themselves (Avahi), USB printers that need no driver
 # (ipp-usb), drivers for HP, Epson, Canon and most others, and a "Print to PDF" printer
