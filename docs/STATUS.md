@@ -1,4 +1,12 @@
-# Status (updated 2026-10-11)
+# Status (updated 2026-11-05)
+
+> **2026-11-05:** a signed **package repository** keeps installed systems current from any ISO ([PACKAGE_REPO.md](PACKAGE_REPO.md));
+> the **ISO is slimmer** (about 1.5 GiB less installed): Vivaldi is the one browser, kernel headers and device software (Logitech,
+> gaming mice, Razer, Corsair, Xbox controllers, HP printers) come from the internet through the installer's Optional software
+> page (ticked when such a USB device is plugged in), ClamAV comes with Heimdall, the JetBrains Nerd Font and the old
+> Omarchy-style tiling desktop (waybar, mako, hyprlock, fuzzel, foot, hypridle, cliphist, swaybg and four helper scripts) are
+> gone; Yggdrasil is the one desktop. Agora: Proton Pass, Proton Mail and VS Code from the AUR, Labyrinth's own frame generation
+> (preview), lsfg-vk, Daedalus CAD, device components. All tests pass.
 
 > **2026-10-18:** WhiteSur (KDE theme, GTK theme, cursors) is replaced by **`yggdrasil-theme`** (Yggdrasil repository, docs/THEME.md): Yggdrasil's own colour scheme with Qt's Fusion style, GTK colours on Adwaita, and drawn cursors; no Kvantum or `breeze-gtk` either. The three WhiteSur recipes and the SDDM WhiteSur logo folder are gone.
 

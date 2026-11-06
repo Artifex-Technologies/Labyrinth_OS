@@ -51,6 +51,22 @@ rights) lists only USB drives, clears the write protection, wipes the stick and 
 leaves it empty for Rufus). Everything on the chosen stick is erased. A stick with a physical lock switch, or one that has worn
 out, cannot be fixed this way; the script says which.
 
+## Software and updates
+
+The ISO is kept small (under 4 GB): the base system, the Yggdrasil desktop, Vivaldi as the browser, and the drivers a computer
+needs to start. Everything else comes from the internet when it is wanted:
+
+- **The installer's Optional software page** offers Sarina and Heimdall, and device software (Logitech, gaming mice, Razer,
+  Corsair, Xbox controllers, HP printers), each ticked when such a device is plugged in. They are installed at the first login.
+  Its Browsers page installs other browsers (Firefox, Brave, LibreWolf ...).
+- **Agora**, the app store, has the rest: Labyrinth's own apps, Steam, Proton's apps, VS Code, ArtCraft, Daedalus CAD and more.
+- **Updates** reach every installed system, whatever ISO it came from: Labyrinth's own software is published, signed, to its
+  package repository ([docs/PACKAGE_REPO.md](docs/PACKAGE_REPO.md)), so `pacman -Syu` and Agora's updates keep the desktop, Sarina,
+  Heimdall and the apps current alongside Arch and CachyOS.
+
+For games, Settings > Games (Yggdrasil) has frame generation per game (Labyrinth's own, a preview), fixes for particular games
+(for example Dead Space 2 and Fallout 4 at ultrawide sizes), and running a game on a chosen graphics card.
+
 ## Security and privacy
 
 - **Heimdall** watches the computer from outside the programs it watches. It alerts on:
@@ -112,6 +128,7 @@ is built and what is not.
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md): decisions and rationale
 - [STATUS.md](docs/STATUS.md): what is built and what is not
 - [COMPONENTS.md](docs/COMPONENTS.md): optional software (Spotify, Obsidian, Steam, Proton Drive/Pass ...)
+- [PACKAGE_REPO.md](docs/PACKAGE_REPO.md): the signed package repository that keeps installed systems up to date
 - [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md): security
 - [DRIVER_LAB.md](docs/DRIVER_LAB.md): the Sarina + Limbo driver idea
 - [GPU_UNLOCK.md](docs/GPU_UNLOCK.md): the gated Settings option for a GeForce tensor-rate unlock (facts, risks, phases; Phase 0 changes nothing on the GPU)

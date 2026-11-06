@@ -34,13 +34,16 @@ NVIDIA card, no physical keys, one screen).
 
 - [ ] **The package repo with `SigLevel = Optional TrustAll`** in `profile/pacman.conf`: find which repo it is
       and sign it, or remove it. Unsigned packages are the biggest hole I know of.
+      **2026-11-05:** it is the build-time `file://` repository of packages built on the build PC (`repo/x86_64`), used only
+      while the ISO is made. Installed systems use the signed `[labyrinth]` repository (`SigLevel = Required`, key in
+      labyrinth-keyring). Left: sign the local repository too and trust the key on the build PC, then `Required` here.
 - [ ] **The installed system must not inherit the live user's passwordless sudo, autologin, or empty
       password.** Check `/etc/sudoers.d`, `/etc/greetd` (no `live.toml`), `/etc/shadow` on a finished install.
 - [ ] **Firewall** is on (ufw: deny incoming) after install; nothing listens on the network that should not
       (`ss -tulpn`): no SSH, no Ollama or Sarina server open to the LAN (Ollama binds to 127.0.0.1).
 - [ ] **Secure Boot**: not set up; decide whether that is acceptable (it is for most Arch-based systems).
 - [ ] **Sandboxing**: AppArmor or similar is not in place; Flatpak apps get what they ask for.
-- [ ] **Updates**: how updates reach the machine (mirrors, who signs Labyrinth's own packages), and that a
+- [x] **Updates**: how updates reach the machine (mirrors, who signs Labyrinth's own packages), and that a
       failed update can be rolled back.
       **Done 2026-11-05:** Labyrinth's signed package repository, docs/PACKAGE_REPO.md. What was found:
       the installed system's pacman.conf listed only Arch and CachyOS, so Yggdrasil's own packages (panel,
@@ -50,15 +53,16 @@ NVIDIA card, no physical keys, one screen).
       limbo, daedalus-cad, proton-pass and vscode name PKGBUILDs that are not in
       `profile/airootfs/usr/share/labyrinth/pkgbuilds`, so installing them from Agora would fail on an ISO built now.
       Now: Limbo has a GitHub recipe there and comes from the repository; Proton Pass, Proton Mail and VS Code install
-      from the AUR; Daedalus CAD stays unavailable to others while its repository is private.
+      from the AUR; Daedalus CAD is in the repository since its repository became public (2026-11-05).
+      Rollback of a failed update: snapper snapshots before every pacman transaction (see "A way back").
 
 ## 3. Privacy (the stated goal)
 
 - [ ] **Phone-home audit**: boot the installed system, leave it idle for ten minutes with a packet capture
       (`tcpdump` or `ss`/`nethogs`), list every host it talks to, and justify each one (mirrors, NTP,
       weather, Cloudflare for the speed test only when pressed, album art from the web when a song plays).
-- [ ] **No telemetry** in anything shipped: Vivaldi (default browser) has options to switch off; Firefox
-      is the backup. Decide the browser defaults and set the hardened ones.
+- [ ] **No telemetry** in anything shipped: Vivaldi (the one browser on the medium, 2026-11-05) has options to switch
+      off; other browsers come from the installer's Browsers page when online. Set Vivaldi's hardened defaults.
 - [ ] **DNS**: encrypted DNS and tracker blocking are not set up yet.
 - [ ] **Heimdall**: the package is listed ("watches Sarina") but I have not verified what it does for
       data brokers; say what is and is not claimed in the README before anyone relies on it.
@@ -84,6 +88,8 @@ NVIDIA card, no physical keys, one screen).
       after an icon pack change (restart it).
 - [ ] **Games and CAD**: Steam and a Proton game, Daedalus CAD, a large file, to see the machine stays
       smooth with the panel, Fylgja and Sarina's model server around (the model competes for VRAM).
+      2026-11-05, in a nested test desktop: Steam, Stray (Proton, UE4), Dead Space 2 (32-bit, at 3440x1440) and Fallout 4
+      (3440x1440) start and draw; Labyrinth's frame generation runs in Stray and Dead Space 2. Still to play on the real screen.
 
 ## 5. Known gaps to decide on
 
@@ -95,12 +101,12 @@ NVIDIA card, no physical keys, one screen).
 
 ## 6. Licences and names
 
-- [ ] Licence files shipped for: Klassy, Simple Icons (CC0; the logos
+- [ ] Licence files shipped for: Simple Icons (CC0; the logos
       remain trademarks of their owners), grub-evodevo (MIT), EdenExplorer (MIT).
 - [ ] **Icons from macosicons.com** and other community icons: their licences are not clear. Do not ship
       them in a public ISO until that is settled; the Artifex icon pack is meant to replace them.
-- [ ] The README says what the OS is built from (CachyOS, KDE) and does not claim to be, or look like, a
-      product that is not ours in a way that could confuse.
+- [x] The README says what the OS is built from (CachyOS, Hyprland; KDE is gone since 2026-10-24) and does not claim to be,
+      or look like, a product that is not ours in a way that could confuse.
 
 ## 7. Performance and size
 

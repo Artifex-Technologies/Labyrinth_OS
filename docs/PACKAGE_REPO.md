@@ -20,7 +20,7 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, the store's apps (Huginn, Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). **Daedalus CAD**: its repository is private. **Calamares**: being replaced by yggdrasil-installer. |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, labyrinth-framegen, Daedalus CAD, the store's apps (Huginn, Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). **Calamares**: being replaced by yggdrasil-installer. |
 
 ## The key
 
@@ -46,9 +46,11 @@ in `pkgver()`. A new build whose files and dependencies are the same as the publ
 `scripts/publish-repo.py` builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
 `~/.cache/labyrinth-publish`, then signs, uploads the packages, uploads the database last, and removes the files of the
 publish before last. It does nothing when no repository changed (`--force` to publish anyway, `--dry-run` to build and sign
-without uploading).
+without uploading). Builds run with `makepkg -c`, so no build files are left behind, and the store's apps build in a fixed
+folder, so an unchanged app is recognised as unchanged and not uploaded again. The source repositories are reset with
+`git clean`; anything a recipe keeps next to itself (the clone of a `-git` recipe) must be in `.gitignore` or it is wiped.
 
-On the build PC it runs daily at 05:30 (after Sarina's night training):
+On the build PC it can run daily at 05:30 (after Sarina's night training); switching the timer on is the owner's choice:
 
 ```
 cp scripts/systemd/labyrinth-publish.{service,timer} ~/.config/systemd/user/
