@@ -21,7 +21,6 @@ packages/pkgbuilds/*/*.tar.xz
 packages/pkgbuilds/*/*.zip
 packages/pkgbuilds/*/*.rpm
 packages/pkgbuilds/*/*.deb
-packages/pkgbuilds/*/*.kwinscript
 # bare clones made by git-based recipes
 packages/pkgbuilds/heimdall-git/heimdall/
 packages/pkgbuilds/limbo-git/limbo/

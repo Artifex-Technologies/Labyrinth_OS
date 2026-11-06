@@ -49,9 +49,8 @@ stamped_pkgbuild() {   # stamped_pkgbuild DIR NAME: prints the build script to u
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
   name="$(basename "$dir")"
-  # Packages that are not on the ISO are left out unless named: Daedalus CAD (only in the Marketplace, its repository is private),
-  # Proton Pass and VS Code (Agora installs them from the AUR: their licences do not let Labyrinth pass them on).
-  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git proton-pass visual-studio-code-bin} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
+  # Packages that are not on the ISO are left out unless named: Daedalus CAD (only in the Marketplace).
+  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
   if (( ${#only[@]} )) && [[ " ${only[*]} " != *" $name "* ]]; then continue; fi
   if (( ! ${#only[@]} )) && [[ " ${local_source[*]} " != *" $name "* ]]; then
     built=1

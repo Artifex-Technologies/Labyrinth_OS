@@ -45,6 +45,12 @@ encrypted by default. See [Yggdrasil's docs/INSTALLER.md](https://github.com/Art
 *The boot menu: Labyrinth's emblem, the UEFI firmware setting, and any other system found on the disks (Windows, another Linux).
 Theme: [grub-evodevo](https://github.com/ftonneau/grub-evodevo), MIT. (A picture from a virtual machine.)*
 
+**The USB stick afterwards, on Windows:** once a Linux ISO is written to it, Windows often sees the stick as unusable or
+write-protected, and Rufus or diskpart refuse it. `scripts/windows/Reset-UsbDrive.cmd` (double-click; it asks for administrator
+rights) lists only USB drives, clears the write protection, wipes the stick and formats it again (exFAT by default; `-Fs none`
+leaves it empty for Rufus). Everything on the chosen stick is erased. A stick with a physical lock switch, or one that has worn
+out, cannot be fixed this way; the script says which.
+
 ## Security and privacy
 
 - **Heimdall** watches the computer from outside the programs it watches. It alerts on:
