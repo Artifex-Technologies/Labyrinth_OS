@@ -104,7 +104,7 @@ def build(src):
         if work.exists():
             shutil.rmtree(work)
         shutil.copytree(d, work)
-        run(["makepkg", "-f", "-s", "--noconfirm"], cwd=work)
+        run(["makepkg", "-f", "-s", "-c", "--noconfirm"], cwd=work)
         for f in work.glob("*.pkg.tar.zst"):
             shutil.copy2(f, repo_dir / f.name)
     return repo_dir

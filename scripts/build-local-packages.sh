@@ -64,7 +64,8 @@ for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
     cd "$dir"
     rm -rf pkg src ./*.pkg.tar.zst
     script=$(stamped_pkgbuild "$dir" "$name")
-    makepkg -p "$script" -f -s --noconfirm
+    # -c: makepkg removes its src/ and pkg/ folders after a successful build (they held gigabytes of build files)
+    makepkg -p "$script" -f -s -c --noconfirm
     rm -f PKGBUILD.stamped
     cp -f ./*.pkg.tar.zst "$repo_dir/"
   )
