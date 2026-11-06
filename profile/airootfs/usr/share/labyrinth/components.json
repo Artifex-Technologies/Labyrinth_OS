@@ -4,7 +4,7 @@
     {
       "id": "steam",
       "name": "Steam and Proton",
-      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, ProtonUp-Qt, Protontricks, umu, Wine, GameMode, MangoHud, 32-bit NVIDIA, AMD and Vulkan libraries.",
+      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, ProtonUp-Qt, Protontricks, umu GameMode, MangoHud, 32-bit NVIDIA, AMD and Vulkan libraries.",
       "proprietary": true,
       "packages": [
         "steam",
@@ -16,8 +16,7 @@
         "proton-cachyos",
         "protonup-qt",
         "protontricks",
-        "umu-launcher",
-        "wine-staging"
+        "umu-launcher"
       ],
       "unverified_packages": [
         "proton-cachyos",
@@ -170,7 +169,7 @@
     {
       "id": "reverse-engineering",
       "name": "Reverse engineering (REA and Ghidra, sandboxed)",
-      "description": "REA (MIT, an MCP/CLI for reverse engineering) with the NSA's Ghidra, run by labyrinth-rea inside a bubblewrap sandbox (no network, no home, read-only files), for Sarina's reverse_engineer tool and for you. Static analysis only; analysing, not running, drivers, firmware and suspicious files.",
+      "description": "REA (MIT, an MCP/CLI for reverse engineering) with the NSA's Ghidra, run by labyrinth-rea inside a bubblewrap sandbox (no network, no home, read-only files), for Sarina's reverse_engineer tool and for you. Static analysis only; analysing, not running, drivers, firmware and suspicious files. Labyrinth bundles these with Sarina (her reverse-engineering tool); this component is for Chymaera.",
       "proprietary": false,
       "packages": [
         "jdk21-openjdk",
@@ -222,10 +221,17 @@
     {
       "id": "sarina",
       "name": "Sarina (local AI agent)",
-      "description": "Sarina, the local-model agent: a Go program that talks to any OpenAI-compatible model server (such as Ollama), calls tools, and keeps sessions on disk. Built here with makepkg from the Sarina repository.",
+      "description": "Sarina, the local-model agent: a Go program that talks to any OpenAI-compatible model server (such as Ollama), calls tools, and keeps sessions on disk. Built here with makepkg from the Sarina repository. Includes her reverse-engineering tools (Ghidra needs Java; REA needs Node; bubblewrap sandboxes them; binutils for objdump).",
       "proprietary": false,
       "pkgbuild": "sarina-git",
-      "notes": "Needs a model server. Install Ollama (the local-ai component, or the plain 'ollama' package on a machine without an NVIDIA card), pull a model, then: sarina chat --interactive. The web console is 'sarina gui'."
+      "notes": "Needs a model server. Install Ollama (the local-ai component, or the plain 'ollama' package on a machine without an NVIDIA card), pull a model, then: sarina chat --interactive. The web console is 'sarina gui'.",
+      "packages": [
+        "jdk21-openjdk",
+        "nodejs",
+        "npm",
+        "bubblewrap",
+        "binutils"
+      ]
     },
     {
       "id": "daedalus-cad",
@@ -310,12 +316,45 @@
       "notes": "Open ckb-next; the device appears once the daemon is running."
     },
     {
+      "id": "logitech",
+      "name": "Logitech devices (Solaar)",
+      "description": "Solaar: pairs Logitech Unifying and Bolt receivers, shows battery levels and sets up Logitech mice and keyboards.",
+      "proprietary": false,
+      "packages": [
+        "solaar"
+      ]
+    },
+    {
+      "id": "gaming-mice",
+      "name": "Gaming mice (Piper)",
+      "description": "Piper and libratbag: buttons, DPI and lights of gaming mice from Logitech, SteelSeries, Roccat and others.",
+      "proprietary": false,
+      "packages": [
+        "piper",
+        "libratbag"
+      ]
+    },
+    {
+      "id": "hp-printers",
+      "name": "HP printers and scanners (HPLIP)",
+      "description": "HP's own printer and scanner drivers and tools. Other printers work with the drivers already in the system.",
+      "proprietary": false,
+      "packages": [
+        "hplip"
+      ]
+    },
+    {
       "id": "razer",
       "name": "Razer keyboards and mice",
       "description": "OpenRazer (the driver) with Polychromatic for lighting, DPI and polling rate, and Input Remapper for the extra mouse buttons: give any button a key, a shortcut or a macro.",
       "proprietary": false,
       "packages": [
-        "openrazer-daemon"
+        "openrazer-daemon",
+        "openrazer-driver-dkms",
+        "python-openrazer",
+        "dkms",
+        "linux-cachyos-headers",
+        "linux-cachyos-lts-headers"
       ],
       "aur": [
         "polychromatic",
@@ -414,7 +453,10 @@
       "description": "xpadneo, the driver for Xbox One and Series controllers over Bluetooth, and for 8BitDo controllers in Xbox mode: working rumble, trigger rumble, battery level and correct buttons. A kernel module built for your kernels (DKMS).",
       "proprietary": false,
       "packages": [
-        "xpadneo-dkms"
+        "xpadneo-dkms",
+        "dkms",
+        "linux-cachyos-headers",
+        "linux-cachyos-lts-headers"
       ],
       "notes": "Reconnect the controller after installing. USB Xbox controllers, and 8BitDo controllers over USB or in Switch mode, work without it."
     },
@@ -463,7 +505,6 @@
       "accessibility",
       "creative",
       "virtualization",
-      "reverse-engineering",
       "limbo",
       "vscode",
       "containers",

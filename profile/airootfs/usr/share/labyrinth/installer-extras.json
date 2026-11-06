@@ -1,11 +1,23 @@
 {
- "_comment": "Optional parts the installer offers on one page (Yggdrasil's installer shows title, intro and each entry's id, name, note; an entry starts chosen when its chosen_if_exists path is on the live system, i.e. this medium carries it). labyrinth-install-system: components = ids in /usr/share/labyrinth/components.json; ones on the medium are kept (or removed when not chosen), ones not on it are installed at the new user's first login (labyrinth-first-components, through Agora's password box; they need the internet).",
- "title": "AI and security",
- "intro": "Optional. Both can be added or removed later in Agora.",
+ "_comment": "Optional parts the installer offers on one page, in groups (Yggdrasil's installer shows title, intro and each entry's group, id, name, note). An entry starts chosen when its chosen_if_exists path is on the live system (this medium carries it) or when a USB device from one of its chosen_if_usb vendors (hex ids, /sys/bus/usb/devices/*/idVendor) is plugged in. labyrinth-install-system: components = ids in /usr/share/labyrinth/components.json; ones on the medium are kept (or removed when not chosen), ones not on it are installed at the new user's first login (labyrinth-first-components, through Agora's password box; they need the internet).",
+ "title": "Optional software",
+ "intro": "Added from the internet at your first login, unless this medium carries it. Everything here can be added or removed later in Agora.",
  "extras": [
-  {"id": "sarina", "name": "Sarina", "components": ["sarina"], "chosen_if_exists": "/usr/bin/sarina",
+  {"id": "sarina", "name": "Sarina", "components": ["sarina"], "chosen_if_exists": "/usr/bin/sarina", "group": "AI and security",
    "note": "Your local AI assistant: answers about this computer, fixes, voice. Runs only on this computer; works best with a graphics card with 8 GB or more. The first time you use her she fetches her model server and AI model (several GB)."},
-  {"id": "heimdall", "name": "Heimdall", "components": ["heimdall"], "chosen_if_exists": "/usr/bin/heimdalld",
-   "note": "Watches this computer for attacks, holds suspicious files and explains what it found. Works on its own; with Sarina it can also explain things in conversation."}
+  {"id": "heimdall", "name": "Heimdall", "components": ["heimdall"], "chosen_if_exists": "/usr/bin/heimdalld", "group": "AI and security",
+   "note": "Watches this computer for attacks, holds suspicious files and explains what it found. Works on its own; with Sarina it can also explain things in conversation."},
+  {"id": "logitech", "group": "Devices", "name": "Logitech", "components": ["logitech"], "chosen_if_usb": ["046d"],
+   "note": "Solaar: pairs Unifying and Bolt receivers, battery levels, mouse and keyboard settings."},
+  {"id": "gaming-mice", "group": "Devices", "name": "Gaming mice", "components": ["gaming-mice"], "chosen_if_usb": ["046d", "1038", "1e7d"],
+   "note": "Piper: buttons, DPI and lights for Logitech, SteelSeries, Roccat and other gaming mice."},
+  {"id": "razer", "group": "Devices", "name": "Razer", "components": ["razer"], "chosen_if_usb": ["1532"],
+   "note": "OpenRazer: lighting, DPI and polling rate for Razer keyboards and mice (builds its driver for your kernels)."},
+  {"id": "ckb-next", "group": "Devices", "name": "Corsair keyboards and mice", "components": ["ckb-next"], "chosen_if_usb": ["1b1c"],
+   "note": "ckb-next: lighting, macros and DPI for Corsair keyboards and mice. (Corsair fan and pump controllers need nothing extra: Settings > Power > Cooling.)"},
+  {"id": "xbox-controllers", "group": "Devices", "name": "Xbox controllers over Bluetooth", "components": ["xbox-controllers"], "chosen_if_usb": ["045e"],
+   "note": "xpadneo: rumble, battery and the right layout for Xbox and 8BitDo (Xbox mode) controllers over Bluetooth."},
+  {"id": "hp-printers", "group": "Devices", "name": "HP printers and scanners", "components": ["hp-printers"], "chosen_if_usb": ["03f0"],
+   "note": "HP's own drivers (HPLIP). Other printers work with the drivers already in the system."}
  ]
 }

@@ -164,12 +164,26 @@ class Extras(unittest.TestCase):
         self.comps = inst.components(COMPONENTS)
 
     def test_sarina_and_heimdall_are_offered_as_components(self):
-        self.assertEqual([e["id"] for e in self.cat], ["sarina", "heimdall"])
+        ai = [e for e in self.cat if e.get("group") == "AI and security"]
+        self.assertEqual([e["id"] for e in ai], ["sarina", "heimdall"])
         for e in self.cat:
             self.assertTrue(e["components"] and all(c in self.comps for c in e["components"]), e["id"])
-            self.assertFalse(e.get("chosen"), "never chosen outright: only when the medium carries it")
+            self.assertFalse(e.get("chosen"), "never chosen outright: only when the medium carries it or the device is plugged in")
+        for e in ai:
             self.assertTrue(e.get("chosen_if_exists", "").startswith("/usr/bin/"), e["id"])
         self.assertEqual(inst.extras_catalog("/nonexistent.json"), [])
+
+    def test_device_software_is_offered_only_online_and_ticked_by_the_device(self):
+        devices = [e for e in self.cat if e.get("group") == "Devices"]
+        self.assertTrue({"logitech", "gaming-mice", "razer", "xbox-controllers", "hp-printers"} <= {e["id"] for e in devices})
+        for e in devices:
+            self.assertTrue(e.get("chosen_if_usb") and all(len(v) == 4 for v in e["chosen_if_usb"]), e["id"])
+            self.assertNotIn("chosen_if_exists", e, "device software is never on the medium")
+        # nothing of it is on the medium, so choosing it queues it for the first login (online)
+        p = inst.extras_plan(self.cat, ["razer"], self.comps, set())
+        self.assertEqual(p["queue"], ["razer"])
+        razer = self.comps["razer"]["packages"]
+        self.assertTrue({"dkms", "linux-cachyos-headers", "linux-cachyos-lts-headers"} <= set(razer), "a driver built on the machine brings what it needs")
 
     def test_on_the_medium_kept_or_removed_otherwise_left_for_the_first_login(self):
         everything = {"sarina-git", "heimdall-git"}

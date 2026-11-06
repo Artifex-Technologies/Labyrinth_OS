@@ -1718,6 +1718,68 @@
    "logo": "corsair"
   },
   {
+   "id": "logitech",
+   "name": "Logitech devices",
+   "subtitle": "Solaar: receivers, batteries, settings",
+   "description": "Pairs Logitech Unifying and Bolt receivers, shows battery levels, and sets up Logitech mice and keyboards.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "logitech"
+   },
+   "icon": "solaar",
+   "reviewed": true,
+   "tags": [
+    "logitech",
+    "mouse",
+    "keyboard",
+    "unifying",
+    "bolt"
+   ]
+  },
+  {
+   "id": "gaming-mice",
+   "name": "Gaming mice",
+   "subtitle": "Piper: buttons, DPI and lights",
+   "description": "Set up the buttons, DPI and lights of gaming mice from Logitech, SteelSeries, Roccat and others (libratbag).",
+   "category": "Play",
+   "subcategory": "Gaming Gear",
+   "source": {
+    "type": "component",
+    "id": "gaming-mice"
+   },
+   "icon": "org.freedesktop.Piper",
+   "reviewed": true,
+   "tags": [
+    "mouse",
+    "dpi",
+    "rgb",
+    "piper",
+    "libratbag"
+   ]
+  },
+  {
+   "id": "hp-printers",
+   "name": "HP printers and scanners",
+   "subtitle": "HP's own drivers (HPLIP)",
+   "description": "HP's printer and scanner drivers and tools. Other printers work with the drivers already in the system.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "hp-printers"
+   },
+   "icon": "hplip",
+   "reviewed": true,
+   "tags": [
+    "hp",
+    "printer",
+    "scanner",
+    "hplip"
+   ]
+  },
+  {
    "id": "razer",
    "name": "Razer keyboards and mice",
    "subtitle": "Lighting, DPI and extra buttons",

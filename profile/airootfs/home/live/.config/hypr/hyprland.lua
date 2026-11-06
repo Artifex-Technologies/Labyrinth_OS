@@ -80,7 +80,6 @@ hl.window_rule({
 o.bind("SUPER + RETURN", "Terminal", "uwsm-app -- foot")
 o.bind("SUPER + SHIFT + RETURN", "Browser", "uwsm-app -- vivaldi")
 o.bind("SUPER + SHIFT + B", "Browser", "uwsm-app -- vivaldi")
-o.bind("SUPER + SHIFT + ALT + B", "Backup browser (Firefox)", "uwsm-app -- firefox")
 o.bind("SUPER + SHIFT + F", "File manager", "uwsm-app -- minos")
 o.bind("SUPER + SHIFT + N", "Notes", "uwsm-app -- obsidian")
 o.bind("SUPER + SPACE", "Launcher", "fuzzel")

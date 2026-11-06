@@ -16,12 +16,11 @@ pipewire-alsa
 pipewire-pulse
 pipewire-jack
 wireplumber
-# kernels: default and the LTS fallback, each with headers and open NVIDIA modules
+# kernels: default and the LTS fallback, each with open NVIDIA modules (prebuilt: no headers or dkms needed; the device
+# drivers that build their own module, Razer and Xbox controllers, bring headers and dkms from Agora)
 linux-cachyos
-linux-cachyos-headers
 linux-cachyos-nvidia-open
 linux-cachyos-lts
-linux-cachyos-lts-headers
 linux-cachyos-lts-nvidia-open
 nvidia-utils
 nvidia-settings
@@ -52,7 +51,6 @@ xdg-desktop-portal-hyprland
 # diagnostics for the driver lab
 pciutils
 usbutils
-dkms
 glmark2
 iperf3
 vulkan-tools
@@ -115,7 +113,6 @@ grim
 slurp
 wl-clipboard
 playerctl
-firefox
 vivaldi
 vivaldi-ffmpeg-codecs
 xdg-utils
@@ -123,13 +120,8 @@ curl
 libnotify
 pavucontrol
 blueman
-# input devices: Logitech (Solaar), gaming mice (Piper), Razer (OpenRazer)
-solaar
-piper
-libratbag
-openrazer-daemon
-openrazer-driver-dkms
-python-openrazer
+# device software (Logitech, gaming mice, Razer, HP printers, Xbox controllers) is not on the medium: the installer offers it
+# (ticked when such a device is plugged in) and installs it at the first login, online; Agora has it too
 nm-connection-editor
 ttf-jetbrains-mono-nerd
 # extra desktop tools
@@ -185,4 +177,3 @@ nss-mdns
 gutenprint
 foomatic-db
 foomatic-db-engine
-hplip

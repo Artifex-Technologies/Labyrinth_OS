@@ -16,10 +16,8 @@ pipewire-pulse
 pipewire-jack
 wireplumber
 linux-cachyos
-linux-cachyos-headers
 linux-cachyos-nvidia-open
 linux-cachyos-lts
-linux-cachyos-lts-headers
 linux-cachyos-lts-nvidia-open
 nvidia-utils
 nvidia-settings
@@ -42,7 +40,6 @@ cage
 xdg-desktop-portal-hyprland
 pciutils
 usbutils
-dkms
 glmark2
 iperf3
 vulkan-tools
@@ -91,7 +88,6 @@ grim
 slurp
 wl-clipboard
 playerctl
-firefox
 vivaldi
 vivaldi-ffmpeg-codecs
 xdg-utils
@@ -99,12 +95,6 @@ curl
 libnotify
 pavucontrol
 blueman
-solaar
-piper
-libratbag
-openrazer-daemon
-openrazer-driver-dkms
-python-openrazer
 nm-connection-editor
 ttf-jetbrains-mono-nerd
 btop
@@ -148,7 +138,6 @@ nss-mdns
 gutenprint
 foomatic-db
 foomatic-db-engine
-hplip
 # component: steam
 steam
 lib32-nvidia-utils
@@ -160,7 +149,6 @@ proton-cachyos
 protonup-qt
 protontricks
 umu-launcher
-wine-staging
 # component: spotify
 spotify-launcher
 # component: obsidian
@@ -188,12 +176,6 @@ libvirt
 edk2-ovmf
 dnsmasq
 nftables
-# component: reverse-engineering
-jdk21-openjdk
-nodejs
-npm
-bubblewrap
-binutils
 # component: limbo
 limbo-git
 # component: containers
@@ -202,6 +184,11 @@ distrobox
 # component: flatpak
 flatpak
 # component: sarina
+jdk21-openjdk
+nodejs
+npm
+bubblewrap
+binutils
 sarina-git
 # component: heimdall
 heimdall-git
