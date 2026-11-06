@@ -15,6 +15,7 @@ url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
 depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'networkmanager' 'dnsmasq' 'nftables')
 makedepends=('go' 'git')
+optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)')
 provides=('heimdall')
 conflicts=('heimdall')
 backup=('etc/heimdall/dns-allow.txt' 'etc/NetworkManager/dnsmasq.d/heimdall-blocklist.conf')

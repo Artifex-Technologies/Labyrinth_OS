@@ -186,7 +186,7 @@ class Extras(unittest.TestCase):
         self.assertTrue({"dkms", "linux-cachyos-headers", "linux-cachyos-lts-headers"} <= set(razer), "a driver built on the machine brings what it needs")
 
     def test_on_the_medium_kept_or_removed_otherwise_left_for_the_first_login(self):
-        everything = {"sarina-git", "heimdall-git"}
+        everything = {"sarina-git", "heimdall-git", "clamav"}
         p = inst.extras_plan(self.cat, ["heimdall"], self.comps, everything)
         self.assertEqual((p["remove"], p["keep"], p["queue"]), (["sarina-git"], ["heimdall"], []))
         p = inst.extras_plan(self.cat, ["sarina", "heimdall"], self.comps, set())

@@ -242,10 +242,16 @@
     {
       "id": "heimdall",
       "name": "Heimdall (security watcher)",
-      "description": "Heimdall watches this computer for attacks: file changes, open ports and connections, firewall and SSH logins, known holes in installed packages and kernels, Wi-Fi and network impersonation, and malware (ClamAV, held and fingerprinted). It explains every alert in plain language and tells you what to do; Settings > Security shows the alerts and the held files. Works on its own; with Sarina he can also explain in conversation and watch her sessions for prompt injection. Built here with makepkg from Heimdall's repository.",
+      "description": "Heimdall watches this computer for attacks: file changes, open ports and connections, firewall and SSH logins, known holes in installed packages and kernels, Wi-Fi and network impersonation, and malware (ClamAV, held and fingerprinted). It explains every alert in plain language and tells you what to do; Settings > Security shows the alerts and the held files. Works on its own; with Sarina he can also explain in conversation and watch her sessions for prompt injection. Comes with ClamAV (its malware scanning) and keeps ClamAV's signatures up to date.",
       "proprietary": false,
       "pkgbuild": "heimdall-git",
-      "notes": "Switches itself on when installed. Alerts appear as notifications and in Settings > Security."
+      "notes": "Switches itself on when installed. Alerts appear as notifications and in Settings > Security.",
+      "packages": [
+        "clamav"
+      ],
+      "enable_system": [
+        "clamav-freshclam.service"
+      ]
     },
     {
       "id": "dev",

@@ -123,7 +123,6 @@ blueman
 # device software (Logitech, gaming mice, Razer, HP printers, Xbox controllers) is not on the medium: the installer offers it
 # (ticked when such a device is plugged in) and installs it at the first login, online; Agora has it too
 nm-connection-editor
-ttf-jetbrains-mono-nerd
 # extra desktop tools
 btop
 # emoji font for the bar's weather icons
@@ -154,7 +153,6 @@ yggdrasil-player
 # the boot screen (Settings > Appearance > Boot screen; theme labyrinth-rain)
 plymouth
 gnome-keyring
-clamav
 python-dbus
 # power modes (Performance / Balanced / Power saver) for Settings and the battery applet
 power-profiles-daemon

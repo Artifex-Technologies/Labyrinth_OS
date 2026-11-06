@@ -96,7 +96,6 @@ libnotify
 pavucontrol
 blueman
 nm-connection-editor
-ttf-jetbrains-mono-nerd
 btop
 noto-fonts-emoji
 yggdrasil-minos
@@ -120,7 +119,6 @@ yggdrasil-installer
 yggdrasil-player
 plymouth
 gnome-keyring
-clamav
 python-dbus
 power-profiles-daemon
 7zip
@@ -189,6 +187,7 @@ bubblewrap
 binutils
 sarina-git
 # component: heimdall
+clamav
 heimdall-git
 # component: dev
 jq
