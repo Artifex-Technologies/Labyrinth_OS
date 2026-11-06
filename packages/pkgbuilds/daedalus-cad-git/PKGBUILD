@@ -1,8 +1,8 @@
 # Maintainer: Labyrinth OS
 #
-# Daedalus CAD: a SketchUp-style modeler in Rust (3D push/pull modeling, solid inspector, sheet-metal flat patterns), built from the
-# Daedalus_CAD repository. The source is the public repository; until that is public (or to build a local checkout) point
-# DAEDALUS_SRC at it, for instance: DAEDALUS_SRC=file://$HOME/Documents/Github/Daedalus_CAD makepkg -si
+# Daedalus CAD: a SketchUp-style modeler in Rust (3D push/pull modeling, solid inspector, sheet-metal flat patterns), built from
+# its public repository; the desktop entry and icon are the project's own (packaging/). To build a local checkout instead:
+# DAEDALUS_SRC=file://$HOME/Documents/Github/Daedalus_CAD makepkg -si
 pkgname=daedalus-cad-git
 pkgver=0.1.0.r0.g0000000
 pkgrel=1
@@ -34,21 +34,10 @@ check() {
 }
 
 package() {
-  install -Dm755 "$srcdir/target/release/daedalus-viewer" "$pkgdir/usr/bin/daedalus-cad"
-  install -Dm755 "$srcdir/target/release/daedalus-app" "$pkgdir/usr/bin/daedalus-cad-cli"
-  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/daedalus-cad.desktop" <<'DESKTOP'
-[Desktop Entry]
-Type=Application
-Name=Daedalus CAD
-GenericName=3D Modeler
-Comment=SketchUp-style 3D modeling, solid inspector and sheet-metal flat patterns
-Exec=daedalus-cad %f
-Icon=daedalus-cad
-Terminal=false
-Categories=Graphics;3DGraphics;Engineering;
-MimeType=model/stl;model/obj;
-Keywords=cad;3d;model;sheet metal;sketchup;
-StartupWMClass=daedalus-viewer
-DESKTOP
-  install -Dm644 "$srcdir/daedalus-cad/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  cd "$srcdir/daedalus-cad"
+  install -Dm755 "$srcdir/target/release/daedalus-viewer" "$pkgdir/usr/bin/daedalus"
+  install -Dm755 "$srcdir/target/release/daedalus-app" "$pkgdir/usr/bin/daedalus-cli"
+  install -Dm644 packaging/daedalus.desktop "$pkgdir/usr/share/applications/daedalus.desktop"
+  install -Dm644 packaging/daedalus.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/daedalus.svg"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

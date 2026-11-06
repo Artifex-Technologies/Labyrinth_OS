@@ -1632,16 +1632,16 @@
    "id": "daedalus-cad",
    "name": "Daedalus CAD",
    "subtitle": "SketchUp-style 3D modeling and sheet metal",
-   "description": "A 3D modeler written from scratch in Rust by Artifex: draw and push/pull faces, check a model is a valid solid and repair it, and turn bent sheet-metal profiles into flat patterns for laser, waterjet and bending services (DXF with cut and bend layers). Opens and saves STL, OBJ, DXF and DAE. Early software: many modeling tools are still on the way.",
+   "description": "A 3D modeler written from scratch in Rust by Artifex, laid out like SketchUp: draw lines, rectangles, circles and polygons, push/pull faces into solids, check a model is a valid solid and repair it, and turn bent sheet-metal profiles into flat patterns for laser, waterjet and bending services (DXF with cut and bend layers). Saves its own .daedalus files; opens and exports STL, OBJ, DXF and DAE; works in mm, cm, m, inches or feet and inches.",
    "category": "Create",
    "subcategory": "3D & CAD",
    "source": {
     "type": "component",
     "id": "daedalus-cad"
    },
-   "icon": "daedalus-cad",
+   "icon": "daedalus",
    "reviewed": true,
-   "note": "Made by Artifex, built from source on your computer (a few minutes). It is early software: the viewer, push/pull, undo and the solid inspector work; drawing tools, groups and materials are still to come.",
+   "note": "Made by Artifex. Early software: drawing, push/pull, undo, units and the solid inspector work; move/rotate, arcs, groups and materials are still to come.",
    "tags": [
     "artifex",
     "cad"

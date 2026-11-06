@@ -234,10 +234,10 @@
     {
       "id": "daedalus-cad",
       "name": "Daedalus CAD",
-      "description": "Daedalus CAD, a SketchUp-style modeler in Rust: 3D push/pull modeling, a solid inspector and sheet-metal flat patterns (DXF with cut and bend layers). Built here with makepkg from the Daedalus_CAD repository.",
+      "description": "Daedalus CAD, a SketchUp-style modeler in Rust: drawing tools, 3D push/pull, a solid inspector and sheet-metal flat patterns (DXF with cut and bend layers). From Labyrinth's package repository (signed), or built from its repository when that cannot be reached.",
       "proprietary": false,
       "pkgbuild": "daedalus-cad-git",
-      "notes": "Early software: push/pull, undo and the inspector work; many tools are still planned. Opens STL, OBJ, DXF and DAE."
+      "notes": "Early software. Saves its own .daedalus files; opens and exports STL, OBJ, DXF and DAE; lengths in mm, cm, m, inches or feet and inches."
     },
     {
       "id": "heimdall",
