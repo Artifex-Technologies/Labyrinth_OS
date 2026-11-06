@@ -21,8 +21,6 @@ packages/pkgbuilds/*/*.tar.xz
 packages/pkgbuilds/*/*.zip
 packages/pkgbuilds/*/*.rpm
 packages/pkgbuilds/*/*.deb
-# bare clones made by git-based recipes
-packages/pkgbuilds/heimdall-git/heimdall/
-packages/pkgbuilds/limbo-git/limbo/
-packages/pkgbuilds/sarina-git/sarina/
-packages/pkgbuilds/daedalus-cad-git/daedalus-cad/
+# bare clones made by git-based recipes (any folder makepkg clones next to a -git recipe)
+packages/pkgbuilds/*-git/*/
+profile/airootfs/usr/share/labyrinth/pkgbuilds/*-git/*/
