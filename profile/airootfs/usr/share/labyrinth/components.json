@@ -144,13 +144,11 @@
     {
       "id": "creative",
       "name": "Creative apps",
-      "description": "Krita, Darktable (photo), OBS Studio (video), Ardour (music).",
+      "description": "Darktable (photo) and OBS Studio (video recording and streaming). Krita, GIMP, Ardour and more are in Agora one by one.",
       "proprietary": false,
       "packages": [
-        "krita",
         "darktable",
-        "obs-studio",
-        "ardour"
+        "obs-studio"
       ]
     },
     {

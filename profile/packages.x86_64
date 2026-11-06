@@ -166,10 +166,8 @@ speech-dispatcher
 espeak-ng
 brltty
 # component: creative
-krita
 darktable
 obs-studio
-ardour
 # component: virtualization
 qemu-desktop
 libvirt
