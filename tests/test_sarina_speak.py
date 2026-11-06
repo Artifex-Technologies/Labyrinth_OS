@@ -24,8 +24,8 @@ class Speak(unittest.TestCase):
         self.said = os.path.join(self.d, "said.txt")
         self.played = os.path.join(self.d, "played.log")
         self.piper = os.path.join(self.d, "py")
-        # "python -m piper -m MODEL -f WAV": record the text and the model, write a file
-        make(self.piper, 'cat > %s; echo "$4" > %s.model; echo wav > "$6"' % (self.said, self.said))
+        # "python -P -m piper -m MODEL -f WAV" (-P: no script folder on the module path): record the text and the model, write a file
+        make(self.piper, 'cat > %s; echo "$5" > %s.model; echo wav > "$7"' % (self.said, self.said))
         self.player = os.path.join(self.d, "player")
         make(self.player, 'echo "played $1" >> %s' % self.played)
         self.env = {"PATH": "/usr/bin:/bin", "HOME": self.d, "XDG_RUNTIME_DIR": self.d, "LABYRINTH_TTS_DIR": self.tts, "LABYRINTH_TTS_PYTHON": self.piper, "LABYRINTH_PLAYER": self.player, "LABYRINTH_NO_ENVELOPE": "1"}
