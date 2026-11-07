@@ -4,15 +4,45 @@ Decided with the owner 2026-10-16: the engineering agent (Claude) works under th
 Heimdall. To tell its actions apart from the owner's (and Sarina's), and to avoid passing the owner's password around, it gets its own
 audited account. This is for attribution and review, not containment.
 
-## Built, in the repository (nothing below is active on this machine until the owner runs it)
+## Where it stands (2026-11-07)
+
+Three things happened, in this order:
+
+1. **2026-10-16, broad rules.** The first `labyrinth-agent-setup` let `claude-agent` run pacman, systemctl, journalctl,
+   loginctl, systemd-run, `heimdalld maintenance`, limbo, ufw, `labyrinth-*`, install, mkdir, chown and chmod as root, without a
+   password. pacman, systemd-run and install are in effect root: the safeguard was the record, not a fence.
+2. **2026-10-27, narrowed (commit 63d68d4).** A security audit found that any process running as the owner reached that root
+   access silently. `labyrinth-agent-setup` now writes `/etc/sudoers.d/50-labyrinth-agent`, which lets the agent run one program
+   as root: `/usr/local/sbin/labyrinth-agent`. It checks each action and logs it for Heimdall:
+   - `pkg-install FILE...`: packages built here, the ecosystem's own names only (yggdrasil-*, labyrinth-*, heimdall, sarina,
+     limbo, liki, agora);
+   - `pkg-add NAME...`: packages from the signed official repositories, never remote-access tools, tunnels or servers;
+   - `service ACTION UNIT...`: the ecosystem's own services (and ollama);
+   - `logs ...`: the journal, read-only options only;
+   - `maintenance on|off|status`: Heimdall's maintenance window;
+   - `limbo up|down|doctor|status`: manifests from the agent's folders only;
+   - `rollback list|status|dry-run N`, `firewall-status`;
+   - `deploy SRC DEST`: one file into a user-side place of the desktop, never anything root runs.
+
+   Anything broader needs the owner: `sudo labyrinth-agent-window HOURS` opens the old broad list for 1 to 12 hours
+   (`/etc/sudoers.d/51-labyrinth-agent-window`), and a timer closes it. `--owner-login` makes the owner's own session reach the
+   agent account only after the owner's password (once per boot, kept 12 hours).
+3. **2026-11-02, broad rules kept on my PC.** The narrowed rules were applied on my PC without my asking, and they stopped
+   work I need done. My choice: claude-agent keeps the broad list, permanently, in `/etc/sudoers.d/52-claude-agent-broad`, while
+   the work continues. `labyrinth-agent` stays installed beside it. That file is written by a script outside this repository
+   (on my Desktop), not by `labyrinth-agent-setup`; removing it puts the narrowed rules back in force. Nobody narrows or widens
+   these rules again without asking me first.
+
+So today, on my PC, both are live: `labyrinth-agent` and the broad list. What the repository ships (`labyrinth-agent-setup`)
+is the narrowed design. In both cases every use is logged by sudo under the agent's name, with its terminal input and output
+(`sudoreplay -d /var/log/sudo-io/claude-agent -l`), and `claude-sudo CMD` is shorthand for `sudo -n -u claude-agent sudo -n CMD`.
+
+## Built, in the repository
+
 - `profile/airootfs/usr/local/bin/labyrinth-agent-setup` (read it first): creates `claude-agent` (password locked), writes
-  `/etc/sudoers.d/50-labyrinth-agent` (validated with visudo), installs `claude-sudo`, tells Heimdall who may open a maintenance
-  window. `sudo labyrinth-agent-setup --owner zlothra`; undo the rules with `--remove`.
-  - the agent may run as root, without a password: pacman; systemctl, journalctl, loginctl, systemd-run; `heimdalld maintenance`, limbo, ufw;
-    `labyrinth-*`; install, mkdir, chown, chmod. pacman, systemd-run and install are in effect root: the safeguard is the record, not a fence.
-  - every use is logged by sudo under the agent's name with its terminal input and output (`sudoreplay -d /var/log/sudo-io/claude-agent -l`).
-  - the owner can run commands as the agent without a password (`sudo -u claude-agent ...`); `claude-sudo CMD` is shorthand for
-    `sudo -u claude-agent sudo -n CMD`.
+  `/etc/sudoers.d/50-labyrinth-agent` (validated with visudo), installs `claude-sudo`, and tells Heimdall who may open a
+  maintenance window. `sudo labyrinth-agent-setup --owner USER [--owner-login]`; undo the rules with `--remove`.
+- `profile/airootfs/usr/local/sbin/labyrinth-agent` and `labyrinth-agent-window` (above).
 - Heimdall (commit "Maintenance window..."): 
   - **Maintenance window:** `sudo heimdalld maintenance on --for 2h --reason "why"`, `off`, `status`. At most 4 hours, a reason is required,
     root only, and only the users listed in `maintenance_actors` (empty = any root user). The file lives in /etc/heimdall (Heimdall only reads
@@ -25,16 +55,13 @@ audited account. This is for attribution and review, not containment.
     critical. The old behaviour (every change critical) is kept for the plain detector.
   - The ArtCraft binaries are added to the integrity list by the deploy steps below.
 
-## To switch it on (the owner, or Claude once its tool permissions allow)
+## To switch it on (the owner)
 ```
-cd ~/Documents/Github/Heimdall && go build -o /tmp/heimdalld ./cmd/heimdalld
-sudo install -m755 /tmp/heimdalld /usr/bin/heimdalld && sudo systemctl restart heimdall
-sudo labyrinth-agent-setup --owner zlothra      # after reading it
+sudo install -m755 profile/airootfs/usr/local/sbin/labyrinth-agent{,-window} /usr/local/sbin/
+sudo labyrinth-agent-setup --owner USER --owner-login      # after reading it
 ```
 and add the ArtCraft binaries to `fim_paths` in /etc/heimdall/config.json (/usr/bin/pdfcraft, pdfcraft-cli, and the same for
 cadcraft, deckcraft, designcraft, filmcraft, gridcraft, photocraft, soundcraft, vectorcraft, wordcraft).
-Heimdall's integrity detector will flag the swapped /usr/bin/heimdalld once (expected; open a window first to see it softened:
-`sudo heimdalld maintenance on --for 30m --reason "deploying Heimdall update"` needs the NEW binary, so on this one deploy it will simply alert).
 
 ## Why this design
 - Not an exemption: the content checks apply to everyone, and the log keeps every softened alert.

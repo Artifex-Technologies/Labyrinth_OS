@@ -1,7 +1,7 @@
 # Labyrinth OS
 
 **Labyrinth OS** is a privacy- and security-first Linux distribution (CachyOS-based) with the Artifex ecosystem built in. Its desktop
-is **Yggdrasil**, developed in its own repository and built to be reused: [Niflheim OS](https://github.com/ChymaeraLabs) (formerly
+is **Yggdrasil**, developed in its own repository and built to be reused: [Niflheim OS](https://github.com/Artifex-Technologies/Niflheim_OS) (formerly
 Chymaera OS) will use it too. The aim is the most secure Linux desktop that is still a normal, fun computer to use: games, music,
 photo and video work, CAD, everyday browsing.
 

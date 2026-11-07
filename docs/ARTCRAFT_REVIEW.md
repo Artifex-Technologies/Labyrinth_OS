@@ -39,5 +39,7 @@ parsers (PDF, Office files and images are hostile input), and an update check th
 3. Open untrusted documents only after that, ideally with the sandbox switch on.
 4. Heimdall can watch the binaries (file-integrity list) so a changed binary raises an alert.
 
-## Status
-Packages are built in /tmp/claude-1000/aur-review but NOT installed: the install step was blocked by the tool's permission check and needs the owner's go-ahead.
+## Status (2026-11-07)
+The ten `-bin` packages are installed on my PC (since 2026-11-03; `pacman -Qs craft`), at newer versions than the ones reviewed
+(0.15 to 0.21). FigCraft is not installed. The binaries are on Heimdall's file-integrity list. Agora lists the apps under
+ArtCraft, with this review as its note. The newer versions were not reviewed again.

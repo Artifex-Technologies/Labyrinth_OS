@@ -11,5 +11,5 @@ Labyrinth package recipes, the brand icon pack, and the security parts that belo
 
 ## How the two fit together
 - `scripts/build-local-packages.sh` builds the desktop's packages from a Yggdrasil checkout next to this repository (`../Yggdrasil`, or `YGGDRASIL_DIR`).
-- Chymaera OS will use Labyrinth as a template (installer, boot theme, its own branding) and Yggdrasil as its desktop.
-- **Icons:** the system's icon pack is **Liki** (`liki-icon-theme`, in the Yggdrasil repository: [LIKI.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/LIKI.md)), the same for Labyrinth and Chymaera. No KDE (Breeze) or macOS (MacTahoe) icons are used.
+- Niflheim OS (formerly Chymaera OS; [Artifex-Technologies/Niflheim_OS](https://github.com/Artifex-Technologies/Niflheim_OS)) will use Labyrinth as a template (installer, boot theme, its own branding) and Yggdrasil as its desktop.
+- **Icons:** the system's icon pack is **Liki** (`liki-icon-theme`, in the Yggdrasil repository: [LIKI.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/LIKI.md)), the same for Labyrinth and Niflheim. No KDE (Breeze) or macOS (MacTahoe) icons are used.

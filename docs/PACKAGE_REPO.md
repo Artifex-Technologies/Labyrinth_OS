@@ -20,7 +20,7 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, labyrinth-framegen, Daedalus CAD, the store's apps (Huginn, Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). **Calamares**: being replaced by yggdrasil-installer. |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, labyrinth-framegen, Daedalus CAD, the store's apps (Huginn, Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## The key
 
@@ -50,6 +50,10 @@ without uploading). Builds run with `makepkg -c`, so no build files are left beh
 folder, so an unchanged app is recognised as unchanged and not uploaded again. The source repositories are reset with
 `git clean`; anything a recipe keeps next to itself (the clone of a `-git` recipe) must be in `.gitignore` or it is wiped.
 
+Recipes that build from the publish copy itself (`git+file://`: heimdall-git, sarina-git, limbo-git) take its `main` branch, so
+each copy's `main` is moved to GitHub's on every publish. Until 2026-11-07 (6238b19) the copies were checked out detached, `main`
+stayed at the first clone, and the published Heimdall and Sarina were days behind.
+
 On the build PC it can run daily at 05:30 (after Sarina's night training); switching the timer on is the owner's choice:
 
 ```
@@ -57,6 +61,20 @@ cp scripts/systemd/labyrinth-publish.{service,timer} ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now labyrinth-publish.timer
 journalctl --user -u labyrinth-publish     # what the last publish did
 ```
+
+## The ISO build's own packages
+
+The ISO takes Labyrinth's software from packages built on the build PC from the same recipes (`scripts/build-local-packages.sh`
+puts them in `repo/x86_64`). Since
+2026-11-07 they are signed too, and checked like any repository:
+
+- `build-local-packages.sh` signs every package and the database with the Labyrinth key, from the same keyring as above
+  (`LABYRINTH_GNUPGHOME` points elsewhere). Without the key it stops and says so.
+- `scripts/build.sh` adds the key to the build host's pacman from this checkout's `labyrinth-keyring` package, checks its full
+  fingerprint, and only then signs it locally.
+- `profile/pacman.conf` has `SigLevel = Required` for the local `[labyrinth]` repository.
+- `LABYRINTH_UNSIGNED=1` (for both scripts) builds once without signatures on a host that does not have the key; `build.sh`
+  then trusts the local packages unsigned for that build, and says so.
 
 ## Agora
 

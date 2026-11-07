@@ -56,9 +56,11 @@ repos into pacman. They tend to break on library versions, and uninstalling leav
 
 ## Two ways to use them
 
-- **On an installed system:** `labyrinth-apps list | info ID | install ID... | remove ID...`
-  (add `--dry-run` to see the commands). It uses pacman, and makepkg for `proton-pass`,
-  so it needs network and sudo.
+- **On an installed system:** Agora, or `labyrinth-apps list | info ID | install ID... | remove ID...`
+  (add `--dry-run` to see the commands). It uses pacman (Labyrinth's signed repository for its own
+  software), yay for the AUR packages (Proton Pass, Proton Mail, VS Code: yay shows each build file
+  and asks first), and makepkg for a recipe only when the repository cannot be reached. It needs the
+  network and the administrator password.
 - **When building an ISO:** `scripts/gen-packages.py --preset everything` (or
   `--preset minimal`, or `--components steam,obsidian`) writes `profile/packages.x86_64`
   from `profile/packages.base` plus the chosen components. Choosing at build time puts
@@ -66,14 +68,13 @@ repos into pacman. They tend to break on library versions, and uninstalling leav
   `everything` preset, which is what your ISO would be; `python tests/test_labyrinth_apps.py`
   fails if the committed file goes stale.
 
+## Choosing at install time
+
+The installer's **Optional software** page (`/usr/share/labyrinth/installer-extras.json`) offers Sarina and Heimdall under "AI
+and security", and the device components under "Devices", each ticked when such a USB device is plugged in. What the medium
+does not carry is installed at the first login, online (`labyrinth-first-components`). Its **Browsers** page
+(`installer-browsers.json`) does the same for browsers.
+
 ## Not done
 
-- **A chooser in the installer.** Calamares can show a component page, but its
-  `packagechooser` module is switched off in our package build, and installing chosen
-  components at install time needs either network or an ISO that already contains them.
-  For now: build the ISO you want, or install components after first boot.
-- **PKGBUILDs under `/usr/share/labyrinth/pkgbuilds/`.** `labyrinth-apps` builds
-  `proton-pass` from there, but nothing copies `packages/pkgbuilds/` into the image yet
-  (no build script exists).
-- **A graphical front end** (a "Labyrinth Apps" window, or a tab in the file explorer).
 - Sizes are not listed: none has been measured.
