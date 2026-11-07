@@ -35,7 +35,8 @@ and encrypted; the desktop runs on my main PC every day. `scripts/release-check.
 
 - Sarina's night training: `sarina-night.timer`, 22:30 to 04:20. Reports in `docs/sarina-evals/`, wrap-ups in
   [TEAM_BOARD.md](TEAM_BOARD.md).
-- Frame generation for games: Labyrinth's own Vulkan layer (`labyrinth-framegen`, a preview; the name is a working name), with
+- Frame generation for games: Kairos, Labyrinth's own Vulkan layer (`kairos-git`, a preview; named 2026-11-07, it was
+  `labyrinth-framegen`; the old package is replaced on update and its launcher name still works), with
   lsfg-vk as the stopgap. Settings > Games chooses the games.
 - The GPU unlock ([GPU_UNLOCK.md](GPU_UNLOCK.md)): Phases 0 and 1 are done. Phase 2 waits on my go, four BIOS readings and a game
   to measure with.

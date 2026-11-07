@@ -1,0 +1,49 @@
+# Kairos, Labyrinth's own frame generation (named 2026-11-07; it was labyrinth-framegen): a Vulkan layer for 64-bit and
+# 32-bit games, and its launcher (kairos %command% in a game's Steam launch options; Settings > Games chooses per game).
+# Built from its public repository. The layer does nothing unless a game is started with it switched on.
+pkgname=kairos-git
+pkgver=0.1.0.r10.g1ae20fe
+pkgrel=1
+pkgdesc='Kairos frame generation for games (Vulkan and Proton), Labyrinth OS preview'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Kairos'
+license=('MPL-2.0')
+depends=('vulkan-icd-loader' 'gcc-libs' 'glibc')
+optdepends=('lib32-vulkan-icd-loader: frame generation for 32-bit games (old Proton games)')
+makedepends=('git' 'rust' 'lib32-rust-libs' 'shaderc' 'lib32-gcc-libs' 'lib32-glibc')
+# the package before the rename: pacman -Syu swaps it for this one
+provides=('kairos' 'labyrinth-framegen' 'labyrinth-framegen-git')
+conflicts=('kairos' 'labyrinth-framegen' 'labyrinth-framegen-git')
+replaces=('labyrinth-framegen-git')
+options=('!lto' '!debug')
+source=("kairos::git+${KAIROS_SRC:-https://github.com/Artifex-Technologies/Kairos.git}")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/kairos"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "$srcdir/kairos"
+  cargo build --release --locked --target x86_64-unknown-linux-gnu
+  cargo build --release --locked --target i686-unknown-linux-gnu
+}
+
+check() {
+  cd "$srcdir/kairos"
+  cargo test --release --locked --target x86_64-unknown-linux-gnu
+  sh tests/launcher.sh
+}
+
+package() {
+  cd "$srcdir/kairos"
+  install -Dm755 target/x86_64-unknown-linux-gnu/release/libkairos.so "$pkgdir/usr/lib/libkairos.so"
+  install -Dm755 target/i686-unknown-linux-gnu/release/libkairos.so "$pkgdir/usr/lib32/libkairos.so"
+  install -Dm644 data/kairos.x86_64.json "$pkgdir/usr/share/vulkan/implicit_layer.d/kairos.x86_64.json"
+  install -Dm644 data/kairos.x86.json "$pkgdir/usr/share/vulkan/implicit_layer.d/kairos.x86.json"
+  install -Dm755 bin/kairos "$pkgdir/usr/bin/kairos"
+  # the launcher's name before the rename: Steam launch options written then still start their game
+  ln -s kairos "$pkgdir/usr/bin/labyrinth-framegen"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -25,12 +25,12 @@
       "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup"
     },
     {
-      "id": "labyrinth-framegen",
-      "name": "Frame generation (Labyrinth, preview)",
-      "description": "Labyrinth's own frame generation: more frames on the screen than the game draws, for Vulkan and Proton games, 64-bit and 32-bit. Nothing else to buy. Settings > Games switches it on per game (2x, 3x or 4x); in Steam, put labyrinth-framegen %command% in the game's launch options once. An early preview: watch for smearing on fast motion, and it adds about one game frame of delay.",
+      "id": "kairos",
+      "name": "Kairos frame generation (preview)",
+      "description": "Kairos, Labyrinth's own frame generation: more frames on the screen than the game draws, for Vulkan and Proton games, 64-bit and 32-bit. Nothing else to buy. Settings > Games switches it on per game (2x, 3x or 4x); in Steam, put kairos %command% in the game's launch options once. An early preview: watch for smearing on fast motion, and it adds about one game frame of delay.",
       "proprietary": false,
-      "pkgbuild": "labyrinth-framegen-git",
-      "notes": "Settings > Games: choose games and multipliers. In Steam: Properties > Launch options: labyrinth-framegen %command%."
+      "pkgbuild": "kairos-git",
+      "notes": "Settings > Games: choose games and multipliers. In Steam: Properties > Launch options: kairos %command%."
     },
     {
       "id": "frame-generation",

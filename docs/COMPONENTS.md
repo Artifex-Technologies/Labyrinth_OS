@@ -23,7 +23,7 @@ the machine only when that cannot be reached.
 | `dev` | Node.js, npm, jq, the GitHub CLI, pip, fd, bubblewrap and socat: what Claude Code and most command-line development want (git is in the base system) | See [CLAUDE_CODE.md](CLAUDE_CODE.md); on in every preset except `minimal` |
 | `sarina` | Sarina, with her reverse-engineering tools (Java for Ghidra, Node for REA, bubblewrap, binutils) | Optional; the installer offers her |
 | `heimdall` | Heimdall, with ClamAV (its malware scanning) and ClamAV's signature updates | Optional; the installer offers it. It dissects malware inside Limbo's sealed guest, not on the host |
-| `labyrinth-framegen` | Labyrinth's own frame generation (preview): a Vulkan layer for 64- and 32-bit games and its launcher | Settings > Games chooses games and 2x/3x/4x |
+| `kairos` | Kairos, Labyrinth's own frame generation (preview; `labyrinth-framegen` until 2026-11-07): a Vulkan layer for 64- and 32-bit games and its launcher | Settings > Games chooses games and 2x/3x/4x |
 | `frame-generation` | lsfg-vk (Lossless Scaling's frame generation), from its source in the AUR | Needs Lossless Scaling from Steam; CC BY-NC-ND, so not part of Labyrinth itself |
 | `daedalus-cad` | Daedalus CAD, Artifex's SketchUp-style modeler | From the package repository |
 | Devices: `logitech`, `gaming-mice`, `razer`, `ckb-next`, `xbox-controllers`, `hp-printers` | Solaar; Piper + libratbag; OpenRazer; ckb-next (Corsair); xpadneo; HPLIP | Not on the ISO: the installer offers them (ticked when such a USB device is plugged in) and installs them at the first login. Razer and xpadneo bring dkms and both kernels' headers, which only drivers built on the machine need |

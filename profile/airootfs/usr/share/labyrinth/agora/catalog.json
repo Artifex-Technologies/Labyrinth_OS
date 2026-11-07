@@ -730,15 +730,15 @@
    ]
   },
   {
-   "id": "labyrinth-framegen",
-   "name": "Frame generation",
+   "id": "kairos",
+   "name": "Kairos frame generation",
    "subtitle": "More frames in your games, made by Labyrinth (preview)",
-   "description": "Labyrinth's own frame generation for Vulkan and Proton games, old 32-bit ones too: the game draws, the graphics card estimates the motion and draws the frames in between. Nothing else to buy. Choose games and 2x, 3x or 4x in Settings > Games. An early preview.",
+   "description": "Kairos, Labyrinth's own frame generation for Vulkan and Proton games, old 32-bit ones too: the game draws, the graphics card estimates the motion and draws the frames in between. Nothing else to buy. Choose games and 2x, 3x or 4x in Settings > Games. An early preview.",
    "category": "Play",
    "subcategory": "Games",
    "source": {
     "type": "component",
-    "id": "labyrinth-framegen"
+    "id": "kairos"
    },
    "icon": "applications-games",
    "reviewed": true,
@@ -748,7 +748,7 @@
     "gaming",
     "fluid motion"
    ],
-   "repo": "https://github.com/Artifex-Technologies/labyrinth-framegen"
+   "repo": "https://github.com/Artifex-Technologies/Kairos"
   },
   {
    "id": "frame-generation",
