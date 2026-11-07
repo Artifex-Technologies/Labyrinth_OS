@@ -6,6 +6,9 @@
 pkgname=yggdrasil-agent-usage-git
 pkgver=0.1.0.r0.g0000000
 pkgrel=1
+# 1 since 2026-11-07: the version names the app folder's last commit (it named Yggdrasil's newest commit, so two builds with
+# the same count were ordered at random), and the rebuild for any 64-bit CPU must reach installed systems as an update
+epoch=1
 pkgdesc="Yggdrasil bar add-on: Claude's weekly and 5-hour usage from Claude Code's own sign-in"
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Yggdrasil'
@@ -20,7 +23,7 @@ sha256sums=('SKIP')
 
 pkgver() {
   cd "$srcdir/yggdrasil"
-  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/agent-usage)" "$(git rev-parse --short HEAD)"
+  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD -- packages/agent-usage)" "$(git log -1 --format=%h -- packages/agent-usage)"
 }
 
 build() {

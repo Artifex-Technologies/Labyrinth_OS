@@ -5,7 +5,7 @@
 # DAEDALUS_SRC=file://$HOME/Documents/Github/Daedalus_CAD makepkg -si
 pkgname=daedalus-cad-git
 pkgver=0.1.0.r0.g0000000
-pkgrel=1
+pkgrel=2
 pkgdesc='Daedalus CAD: SketchUp-style 3D modeling, solid inspector and sheet-metal flat patterns (Rust)'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Daedalus_CAD'

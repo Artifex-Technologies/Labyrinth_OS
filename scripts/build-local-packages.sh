@@ -23,6 +23,8 @@ if [[ ! -d "$ygg_dir/packages/pkgbuilds" ]]; then
 fi
 repo_dir="$repo_root/repo/x86_64"
 mkdir -p "$repo_dir"
+# compiler settings for any 64-bit PC, not this machine's CPU (scripts/makepkg.conf)
+makepkg_conf="$repo_root/scripts/makepkg.conf"
 
 # Packages built from source in this repo (or the Yggdrasil or Sarina checkout next to it): their version does
 # not change when the code does, so they are always rebuilt. Every other package is pinned to a
@@ -56,7 +58,7 @@ for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
     built=1
     while read -r f; do
       [[ -e "$repo_dir/$(basename "$f")" ]] || built=0
-    done < <(cd "$dir" && makepkg --packagelist 2>/dev/null)
+    done < <(cd "$dir" && makepkg --config "$makepkg_conf" --packagelist 2>/dev/null)
     if (( built )); then echo "==> $name: this version is already built, skipping"; continue; fi
   fi
   echo "==> Building $name"
@@ -65,7 +67,7 @@ for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
     rm -rf pkg src ./*.pkg.tar.zst
     script=$(stamped_pkgbuild "$dir" "$name")
     # -c: makepkg removes its src/ and pkg/ folders after a successful build (they held gigabytes of build files)
-    makepkg -p "$script" -f -s -c --noconfirm
+    makepkg --config "$makepkg_conf" -p "$script" -f -s -c --noconfirm
     rm -f PKGBUILD.stamped
     cp -f ./*.pkg.tar.zst "$repo_dir/"
   )

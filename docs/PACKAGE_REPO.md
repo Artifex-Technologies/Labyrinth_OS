@@ -41,6 +41,19 @@ A package built from source here keeps the version its PKGBUILD names until some
 `0.1.0.r405-27`, which pacman orders after `0.1.0-27` and after every earlier stamp. `-git` recipes already do this
 in `pkgver()`. A new build whose files and dependencies are the same as the published one is not published again.
 
+The store's Yggdrasil apps (`huginn-git`, `yggdrasil-2048-git` and the other plugins) have `epoch=1` since 2026-11-07: their
+version ended in Yggdrasil's newest commit, so two builds with the same count were ordered at random; it now ends in the app
+folder's own last commit.
+
+## Build settings
+
+Everything here is built for any 64-bit PC: both build scripts give makepkg `scripts/makepkg.conf`, which takes the build
+machine's settings and replaces only the compiler's CPU target (`-march=x86-64`, Rust's default CPU). A plain `makepkg` on
+CachyOS builds for the machine's own CPU (`-march=native`, `target-cpu=native`), and the program then stops with "illegal
+instruction" on other processors. Until 2026-11-07 every Rust program in the repository was built that way, for an i9-9900K;
+the rebuilds went out as updates (new commit counts, `pkgrel` 2 for daedalus-cad-git and labyrinth-framegen-git). Go programs
+were never affected (`CGO_ENABLED=0`, Go's own baseline CPU).
+
 ## Publishing
 
 `scripts/publish-repo.py` builds from fresh copies of each repository's `main` on GitHub (never a working tree), in

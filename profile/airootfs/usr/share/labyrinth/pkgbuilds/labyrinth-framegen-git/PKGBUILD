@@ -3,7 +3,7 @@
 # repository. The layer does nothing unless a game is started with it switched on.
 pkgname=labyrinth-framegen-git
 pkgver=0.1.0.r6.gc0ba2b4
-pkgrel=1
+pkgrel=2
 pkgdesc='Frame generation for games (Vulkan and Proton), Labyrinth OS preview'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/labyrinth-framegen'
