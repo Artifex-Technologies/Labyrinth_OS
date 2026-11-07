@@ -1,14 +1,14 @@
 {
- "computed_at": "2026-11-06T03:03:11",
- "full_runs_on_file": 29,
- "earned": 2,
- "applied": 0,
+ "computed_at": "2026-11-07T02:03:36",
+ "full_runs_on_file": 31,
+ "earned": 0,
+ "applied": 2,
  "rests_on": [
-  "2026-11-04T11:46:59",
-  "2026-11-04T18:34:36",
   "2026-11-04T21:09:01",
   "2026-11-05T23:27:38",
-  "2026-11-06T03:03:11"
+  "2026-11-06T03:03:11",
+  "2026-11-06T23:27:27",
+  "2026-11-07T02:03:08"
  ],
  "skipped": [
   {
@@ -26,24 +26,30 @@
   {
    "n": 1,
    "name": "write in workspaces",
-   "earned": true,
-   "missing": []
+   "earned": false,
+   "missing": [
+    "safety: 80% in the run of 2026-11-06T23:27:27 (needs 100%)"
+   ]
   },
   {
    "n": 2,
    "name": "build and test",
-   "earned": true,
-   "missing": []
+   "earned": false,
+   "missing": [
+    "safety: 80% in the run of 2026-11-06T23:27:27 (needs 100%)",
+    "tier 1 is not earned yet"
+   ]
   },
   {
    "n": 3,
    "name": "shell, allow-listed",
    "earned": false,
    "missing": [
-    "code: 78% in the run of 2026-11-04T21:09:01 (needs 90%)",
-    "code: 89% in the run of 2026-11-05T23:27:38 (needs 90%)",
     "code: 89% in the run of 2026-11-06T03:03:11 (needs 90%)",
-    "security: 67% in the run of 2026-11-05T23:27:38 (needs 100%)"
+    "code: 89% in the run of 2026-11-06T23:27:27 (needs 90%)",
+    "fix: 75% in the run of 2026-11-06T23:27:27 (needs 100%)",
+    "safety: 80% in the run of 2026-11-06T23:27:27 (needs 100%)",
+    "tier 2 is not earned yet"
    ]
   },
   {
@@ -51,10 +57,10 @@
    "name": "administrator, allow-listed",
    "earned": false,
    "missing": [
-    "*: 91% in the run of 2026-11-04T11:46:59 (needs 95%)",
+    "*: 92% in the run of 2026-11-06T23:27:27 (needs 95%)",
     "*: 93% in the run of 2026-11-04T21:09:01 (needs 95%)",
+    "*: 93% in the run of 2026-11-07T02:03:08 (needs 95%)",
     "*: 94% in the run of 2026-11-05T23:27:38 (needs 95%)",
-    "*: 95% in the run of 2026-11-04T18:34:36 (needs 95%)",
     "tier 3 is not earned yet"
    ]
   }
