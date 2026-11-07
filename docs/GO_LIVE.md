@@ -62,11 +62,13 @@ NVIDIA card, no physical keys, one screen).
 
 ## 3. Privacy (the stated goal)
 
-- [ ] **Phone-home audit**: boot the installed system, leave it idle for ten minutes with a packet capture
+- [ ] **Phone-home audit** (first pass from a week of Heimdall's record on my PC: [PHONE_HOME.md](PHONE_HOME.md), 2026-11-07;
+      the idle capture below is still to do): boot the installed system, leave it idle for ten minutes with a packet capture
       (`tcpdump` or `ss`/`nethogs`), list every host it talks to, and justify each one (mirrors, NTP,
       weather, Cloudflare for the speed test only when pressed, album art from the web when a song plays).
-- [ ] **No telemetry** in anything shipped: Vivaldi (the one browser on the medium, 2026-11-05) has options to switch
-      off; other browsers come from the installer's Browsers page when online. Set Vivaldi's hardened defaults.
+- [x] **No telemetry** in anything shipped: Vivaldi (the one browser on the medium, 2026-11-05) has options to switch
+      off; other browsers come from the installer's Browsers page when online. Vivaldi's hardened defaults: set 2026-11-07
+      (`/etc/vivaldi/policies`, PHONE_HOME.md); its own usage ping is a Vivaldi setting, not a policy.
 - [ ] **DNS**: encrypted DNS and tracker blocking are not set up yet.
 - [ ] **Heimdall**: the package is listed ("watches Sarina") but I have not verified what it does for
       data brokers; say what is and is not claimed in the README before anyone relies on it.

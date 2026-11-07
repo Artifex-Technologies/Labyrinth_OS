@@ -1,0 +1,4 @@
+{
+  "NetworkPredictionOptions": 2,
+  "WebRtcIPHandling": "default_public_interface_only"
+}
