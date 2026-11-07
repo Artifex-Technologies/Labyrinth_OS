@@ -35,10 +35,12 @@ if ! command -v "${LABYRINTH_WHISPER:-whisper-cli}" >/dev/null 2>&1 || [[ -z $mo
   echo "Listening is not set up yet: it needs whisper-cpp and a speech model (see docs/SARINA_VOICE.md)."
   exit 1
 fi
-# Names it should expect: without them "Zlothra" comes out as "lothra" and "Sarina" as "serina". The owner can add more in ~/.config/labyrinth/stt-words (one line, commas).
+# Names it should expect: without them "Zlothra" comes out as "lothra" and "Sarina" as "serina". The owner's name comes from
+# SARINA_OWNER_NAME in ~/.config/labyrinth/sarina.env; more go in ~/.config/labyrinth/stt-words (one line, commas).
 words=$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/stt-words" 2>/dev/null)
+owner=${SARINA_OWNER_NAME:-$(sed -n 's/^SARINA_OWNER_NAME=//p' "${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env" 2>/dev/null | head -n1)}
 stt_start=$EPOCHREALTIME
-heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "Matt, Matthew, Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
+heard=$("${LABYRINTH_WHISPER:-whisper-cli}" -m "$model" -f "$wav" -nt -np -l "${LABYRINTH_STT_LANG:-en}" --prompt "${owner:+$owner, }Zlothra, Sarina, Labyrinth, Heimdall, Fylgja, Minos, Niflheim, Chymaera, Limbo, Obsidian, Hyprland${words:+, $words}." 2>/dev/null | tr '\n' ' ' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/  */ /g')
 # how long speech to text took, for labyrinth-ask-sarina's timing line (LABYRINTH_VOICE_TIMING=1)
 LABYRINTH_VOICE_WHISPER_S=$(awk -v a="${stt_start/,/.}" -v b="${EPOCHREALTIME/,/.}" 'BEGIN { printf "%.2f", b - a }')
 export LABYRINTH_VOICE_WHISPER_S

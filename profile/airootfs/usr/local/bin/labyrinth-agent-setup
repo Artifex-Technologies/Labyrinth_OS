@@ -8,12 +8,12 @@
 #     checks every action (installing the ecosystem's own packages, official-repository packages but no remote-access tools,
 #     the ecosystem's own services, reading the journal, Heimdall maintenance windows, Limbo test runs, the rollback tool's
 #     read-only commands, user-side desktop files). Anything broader (any pacman command, systemd-run, install anywhere, the
-#     firewall) needs the owner to open a window with his password: `sudo labyrinth-agent-window HOURS`.
+#     firewall) needs the owner to open a window with their password: `sudo labyrinth-agent-window HOURS`.
 #     Installing a package the agent built still runs that package's code as root: the checks make root deliberate and
 #     visible, not impossible. Every use is logged by sudo under the agent's name and recorded for replay (`sudoreplay`,
 #     /var/log/sudo-io/AGENT), and labyrinth-agent writes each action to the journal for Heimdall;
-#   * --owner-login: the owner's session reaches the agent account only after the owner has typed his password (once per
-#     boot, kept 12 hours), so a program running as the owner cannot use the agent's rights while he has not;
+#   * --owner-login: the owner's session reaches the agent account only after the owner has typed their password (once per
+#     boot, kept 12 hours), so a program running as the owner cannot use the agent's rights while they have not;
 #   * Heimdall is told who may open a maintenance window (maintenance_actors in /etc/heimdall/config.json);
 #   * /usr/local/bin/claude-sudo CMD...: shorthand for `sudo -u AGENT sudo -n CMD...` (privileged, but as the agent).
 # The agent is never exempt from Heimdall's content checks (prompt injection, credentials, hidden characters).

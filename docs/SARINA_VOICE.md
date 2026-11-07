@@ -168,7 +168,7 @@ Spoken questions use read-only tools: files, her vault, and `system_status` (per
 
 ## Keep-alive and per-stage timing (2026-11-04)
 
-- **The chat model's keep-alive is unchanged** (Matt's decision D4, 2026-11-02: no `OLLAMA_KEEP_ALIVE` drop-in). qwen3:8b unloads
+- **The chat model's keep-alive is unchanged** (my decision D4, 2026-11-02: no `OLLAMA_KEEP_ALIVE` drop-in). qwen3:8b unloads
   after Ollama's default 5 minutes; the first turn after a longer pause pays a reload (a few seconds). Count the reloads of a day with
   `journalctl -u ollama --since today | grep -c 'offloaded 37/37'`.
 - **The embedding model stays loaded 30 minutes** (decision D5 yes; Sarina `go/embed/embed.go`, `KeepAlive`, commit b9709d0). It is

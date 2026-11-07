@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -I
 """labyrinth-agent: the root actions the engineering agent (Claude, account claude-agent) may take without the owner, each one
 checked. sudo lets the agent run this program and nothing else as root (/etc/sudoers.d/50-labyrinth-agent); anything broader
-needs the owner to open a window with his password (labyrinth-agent-window). Every action is written to the journal (tag
+needs the owner to open a window with their password (labyrinth-agent-window). Every action is written to the journal (tag
 labyrinth-agent), where Heimdall reads it, and sudo records the session.
 
   labyrinth-agent pkg-install FILE...        install packages built here: Artifex/Labyrinth names only (yggdrasil-*, labyrinth-*,
