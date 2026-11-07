@@ -9,13 +9,13 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
 
 pkgname=heimdall-git
-pkgver=0.1.0.r53.gb1da589
+pkgver=0.1.0.r71.g67d87fc
 pkgrel=1
 pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt injection, leaked credentials and permission escalation (built from the local Heimdall checkout)'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
-depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'networkmanager' 'dnsmasq' 'nftables')
+depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'iw' 'networkmanager' 'dnsmasq' 'nftables')
 makedepends=('go' 'git')
 optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)')
 provides=('heimdall')
