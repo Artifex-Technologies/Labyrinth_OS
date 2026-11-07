@@ -742,3 +742,11 @@ Code's safety check refuses running code from outside; section 12 has me there f
 4. The game for the section 9 before/after measurement (still open).
 
 Then Phase 3 as written: me at the keyboard, a cold boot, the hand-picked entry.
+
+**2026-11-07, later: the pinned input is gone.** My first run of step 3 stopped at the download: CachyOS has removed
+`nvidia-utils-610.43.03-1-x86_64_v3.pkg.tar.zst` from its archive (404; only 610.57.04 is there). The Arch Linux Archive still has
+`nvidia-utils-610.43.03-1-x86_64.pkg.tar.zst`, with a good signature from an Arch developer, and its `gsp_tu10x.bin` is the
+pinned file byte for byte (29,352,832 bytes, SHA-256 `73065619…`), as is its licence (`c692fb14…`); only the package around them
+differs (SHA-256 `c3367ff6…`). Step 3 now points the recipe and `generate_v67.py`'s package pin at Arch's file, committed in my
+local clone only (branch `labyrinth-arch-utils`); the generator's own checks of the firmware, the generated payload and the
+licence are unchanged. Worth telling nlzy/turing-unlock (their recipe no longer builds for anyone): a short issue, if I say yes.
