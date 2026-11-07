@@ -99,27 +99,6 @@
    "flathub": "org.darktable.Darktable"
   },
   {
-   "id": "kdenlive",
-   "name": "Kdenlive",
-   "subtitle": "Video editing",
-   "description": "A multi-track video editor with effects, titles and proxy clips.",
-   "category": "Create",
-   "subcategory": "Video",
-   "source": {
-    "type": "pacman",
-    "packages": [
-     "kdenlive"
-    ]
-   },
-   "icon": "kdenlive",
-   "reviewed": true,
-   "tags": [
-    "premiere",
-    "video editor"
-   ],
-   "flathub": "org.kde.kdenlive"
-  },
-  {
    "id": "obs-studio",
    "name": "OBS Studio",
    "subtitle": "Recording and streaming",
@@ -705,6 +684,30 @@
    "reviewed": true,
    "tags": [],
    "flathub": "net.cozic.joplin_desktop"
+  },
+  {
+   "id": "ghostwriter",
+   "name": "ghostwriter",
+   "subtitle": "Read and write Markdown",
+   "description": "A distraction-free Markdown editor with a live preview: open any .md file (notes, a project's README or docs) and read it formatted, or write in it. Made by the KDE community; it brings part of KDE's libraries with it.",
+   "category": "Work",
+   "subcategory": "Notes & Writing",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "ghostwriter"
+    ]
+   },
+   "icon": "ghostwriter",
+   "reviewed": true,
+   "tags": [
+    "markdown",
+    "md",
+    "notes",
+    "writing",
+    "preview"
+   ],
+   "flathub": "io.github.wereturtle.ghostwriter"
   },
   {
    "id": "steam",

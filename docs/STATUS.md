@@ -51,8 +51,8 @@ and encrypted; the desktop runs on my main PC every day. `scripts/release-check.
    [GO_LIVE.md](GO_LIVE.md) §2: no live-user sudo or autologin carried over, ufw on.
 2. The rest of GO_LIVE §1: a way back (a snapshot after install, the GRUB snapshot menu, a rescue USB).
 3. Privacy (GO_LIVE §3): the phone-home audit, hardened Vivaldi defaults, encrypted DNS. Then AppArmor.
-4. Decisions still open ([CATCH_UP_2026-11-07.md](CATCH_UP_2026-11-07.md) §A): saved passwords from gnome-keyring to oo7;
-   kdenlive or ghostwriter; Secure Boot with my own keys; how Super+S stops recording; frame generation's name.
+4. Decisions ([CATCH_UP_2026-11-07.md](CATCH_UP_2026-11-07.md) §A), all made 2026-11-07: GNOME Keyring stays; ghostwriter
+   stays and Kdenlive goes; Secure Boot left alone for now; Super+S tap to start and stop; frame generation is Kairos.
 5. The installer: shrink a partition to make room, partitions on more than one disk, the keyboard layout at the disk password.
 6. The desktop: a Yggdrasil task manager, a global menu, accessibility (sticky keys, magnifier, on-screen keyboard, screen reader).
 
