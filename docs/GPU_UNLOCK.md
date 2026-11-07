@@ -709,3 +709,36 @@ board), under the same rules: I read the exact text first.
 
 **Still for me, in the BIOS (no change, only reading):** Above 4G Decoding and CSM, plus VT-d and Fast Boot if they are on
 the same screens. For the module method these are records, not requirements.
+
+### Phase 2, 2026-11-07: started (my go); the parts that need me at the PC are in my to-do script
+
+**Built** (Yggdrasil fcd457e, `packages/settings`): rule 8's correctness check and the tensor benchmark.
+- `helpers/gpuunlock-bench.cu`, our own: on the card named by its PCI address, the cuBLAS FP16 x FP16 -> FP32 GEMM at 1024 to
+  8192, the raw tensor-core rate with FP32 accumulate (what GeForce halves) and with FP16 accumulate (never halved, so a control
+  that must not move), and 4,096 GEMM outputs compared with the processor's sums of the same inputs (exact by construction).
+  `gpuunlock` compiles it with the CUDA toolkit's nvcc on first use (`cuda` is an optional dependency of yggdrasil-settings).
+- `gpuunlock bench [--quick]`, and `gpuunlock bench --baseline` (root): the locked run, kept in
+  `/var/lib/yggdrasil/gpu-unlock/baseline.json`. Refused while anything computes on the card, away from the default 260 W, or on a
+  start where the module reported the unlock.
+- Arming now waits for a full, correct baseline of this card and VBIOS.
+- `verify` shows "Unlocked" only with correct results, the FP16-accumulate control within 15 % of the baseline's (otherwise the
+  card was busy or held back and nothing is compared), and the FP32-accumulate rate at least 1.5x the baseline's.
+- 41 `gpuunlock` tests pass (rule 8's cases, the baseline's conditions, the verifier with and without a benchmark).
+
+**First reading, locked, quick mode** (while the card was also encoding a stream, so not the baseline): FP32 accumulate
+**49.9 TFLOPS**, FP16 accumulate **99.6 TFLOPS**: the 1:2 lock the unlock removes, as the reports describe. 4,096 of 4,096
+outputs correct. cuBLAS at 1024: 39.7 TFLOPS.
+
+**Not done by Claude:** building turing-unlock. Its recipe runs the project's own scripts (the firmware generator), and Claude
+Code's safety check refuses running code from outside; section 12 has me there for that anyway.
+
+**For me, at the PC** (`~/Desktop/finish-todo.sh`, steps 3 and 4):
+1. In the BIOS, only reading: Above 4G Decoding, CSM, VT-d, Fast Boot.
+2. Step 3 builds and installs nlzy/turing-unlock at commit 417f333 (its newest on 2026-11-07): `turing-unlock-dkms` and
+   `turing-unlock-firmware`, the firmware generated here and kept here.
+3. A normal restart. Step 4 shows the module's kernel-log lines (loaded, did nothing) and, with Sarina stopped and the card at
+   260 W, records the baseline (`sudo /usr/lib/yggdrasil/gpuunlock bench --baseline`; needs the Settings package from the
+   2026-11-08 publish).
+4. The game for the section 9 before/after measurement (still open).
+
+Then Phase 3 as written: me at the keyboard, a cold boot, the hand-picked entry.
