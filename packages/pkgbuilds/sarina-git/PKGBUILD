@@ -11,7 +11,7 @@ _agent_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Sarina" && pwd)"
 
 pkgname=sarina-git
 pkgver=0.1.0.r131.g87da39f
-pkgrel=1
+pkgrel=2
 pkgdesc='Local-model agent: Go core with an optional Python ML/voice helper (built from the local Sarina checkout)'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Sarina'

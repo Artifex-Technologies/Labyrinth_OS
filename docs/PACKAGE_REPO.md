@@ -54,10 +54,18 @@ instruction" on other processors. Until 2026-11-07 every Rust program in the rep
 the rebuilds went out as updates (new commit counts, `pkgrel` 2 for daedalus-cad-git and labyrinth-framegen-git). Go programs
 were never affected (`CGO_ENABLED=0`, Go's own baseline CPU).
 
+No account name in the packages (2026-11-07): a program records the source paths it was built from (Rust and C++ panic and
+assertion messages), and each package's `.BUILDINFO` records the folder it was built in. Both were under the builder's home
+folder, so every published package named the account. `scripts/makepkg.conf` now writes the home folder as `/build` inside
+programs (`--remap-path-prefix`, `-ffile-prefix-map`), and the publish builds in `/var/lib/labyrinth-publish` instead of
+`~/.cache/labyrinth-publish`. Every recipe's `pkgrel` went up by one so the clean builds replace the old files online; the
+publish keeps an unchanged program's published file only when that file was not built under `/home` or `/root`.
+
 ## Publishing
 
 `scripts/publish-repo.py` builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
-`~/.cache/labyrinth-publish`, then signs, uploads the packages, uploads the database last, and removes the files of the
+`/var/lib/labyrinth-publish` (outside the home folder, see above; made once with
+`sudo install -d -o $USER -g $USER /var/lib/labyrinth-publish`, or set `LABYRINTH_PUBLISH_DIR`), then signs, uploads the packages, uploads the database last, and removes the files of the
 publish before last. It does nothing when no repository changed (`--force` to publish anyway, `--dry-run` to build and sign
 without uploading). Builds run with `makepkg -c`, so no build files are left behind, and the store's apps build in a fixed
 folder, so an unchanged app is recognised as unchanged and not uploaded again. The source repositories are reset with

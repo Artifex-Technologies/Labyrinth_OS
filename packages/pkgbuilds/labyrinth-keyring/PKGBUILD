@@ -2,7 +2,7 @@
 # updates from Labyrinth's package repository (see scripts/publish-repo.sh and docs/PACKAGE_REPO.md).
 pkgname=labyrinth-keyring
 pkgver=2026.11.05
-pkgrel=1
+pkgrel=2
 pkgdesc="Labyrinth OS package signing key"
 arch=('any')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"

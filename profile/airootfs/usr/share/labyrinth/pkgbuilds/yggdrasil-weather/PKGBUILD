@@ -7,7 +7,7 @@
 # To build a local checkout instead: YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
 pkgname=yggdrasil-weather
 pkgver=0.1.0.r0.g0000000
-pkgrel=1
+pkgrel=2
 pkgdesc="Yggdrasil weather: multi-model consensus and rain nowcast in the top bar, with a notification before rain"
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Yggdrasil'

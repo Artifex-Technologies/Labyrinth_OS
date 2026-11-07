@@ -8,7 +8,7 @@
 
 pkgname=heimdall-git
 pkgver=0.1.0.r0.g0000000
-pkgrel=1
+pkgrel=2
 pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt injection, leaked credentials and permission escalation'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'

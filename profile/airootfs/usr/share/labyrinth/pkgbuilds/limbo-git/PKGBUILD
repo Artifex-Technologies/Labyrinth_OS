@@ -8,7 +8,7 @@
 
 pkgname=limbo-git
 pkgver=0.1.0.r0.g0000000
-pkgrel=1
+pkgrel=2
 pkgdesc='Limbo: run Windows and Linux guest apps as sandboxed host windows, with quarantine and validation runs'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Limbo'

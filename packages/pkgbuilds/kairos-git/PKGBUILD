@@ -3,7 +3,7 @@
 # Built from its public repository. The layer does nothing unless a game is started with it switched on.
 pkgname=kairos-git
 pkgver=0.1.0.r10.g1ae20fe
-pkgrel=1
+pkgrel=2
 pkgdesc='Kairos frame generation for games (Vulkan and Proton), Labyrinth OS preview'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Kairos'

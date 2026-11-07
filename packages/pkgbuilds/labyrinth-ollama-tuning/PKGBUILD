@@ -4,7 +4,7 @@
 # updates as usual and keeps these settings. Nothing of Ollama is copied or replaced.
 pkgname=labyrinth-ollama-tuning
 pkgver=1.0
-pkgrel=1
+pkgrel=2
 pkgdesc="Labyrinth's Ollama settings: the context Sarina needs, and about half the graphics memory per conversation"
 arch=('any')
 license=('MIT')

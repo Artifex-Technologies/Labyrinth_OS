@@ -1,7 +1,7 @@
 # Labyrinth distress password helper (root, runs through pkexec): built from packages/distress in this repository.
 pkgname=labyrinth-distress
 pkgver=0.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc="Labyrinth's distress password: a second password that quietly does something else when it is typed"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"

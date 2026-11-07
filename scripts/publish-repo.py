@@ -45,7 +45,9 @@ NOT_PUBLISHED = set()
 # asset names GitHub keeps as they are (anything else it renames, and pacman would ask for a file that is not there)
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 
-WORK = Path(os.environ.get("LABYRINTH_PUBLISH_DIR", Path.home() / ".cache" / "labyrinth-publish"))
+# Outside the home folder: each package's .BUILDINFO names the folder it was built in, and a path under /home names the
+# account (the folder is made once, owned by the account that publishes: docs/PACKAGE_REPO.md)
+WORK = Path(os.environ.get("LABYRINTH_PUBLISH_DIR", "/var/lib/labyrinth-publish"))
 GNUPGHOME = os.environ.get("LABYRINTH_GNUPGHOME", str(Path.home() / ".local" / "share" / "labyrinth-signing" / "gnupg"))
 
 
@@ -148,9 +150,19 @@ def content(path):
     return hashlib.sha256("\n".join(sorted(files) + sorted(meta)).encode()).hexdigest()
 
 
+def built_at_home(path):
+    """Whether the package was built in a folder under /home or /root (its .BUILDINFO says where): such a package names the
+    account that built it, so it is not kept online even when the program is the same."""
+    try:
+        info = out(["bsdtar", "-xOf", str(path), ".BUILDINFO"])
+    except subprocess.CalledProcessError:
+        return False
+    return any(l.split(" = ", 1)[1].startswith(("/home/", "/root/")) for l in info.splitlines() if l.startswith(("builddir = ", "startdir = ")))
+
+
 def choose(repo_dir, published_dir):
     """{name: path} of what this publish holds: of each package the newest build, or the published one when the newest build
-    is the same program."""
+    is the same program (and the published one was not built at home)."""
     newest = {}
     for f in repo_dir.glob("*.pkg.tar.zst"):
         name, ver, _ = pkginfo(f)
@@ -165,7 +177,7 @@ def choose(repo_dir, published_dir):
     chosen = {}
     for name, (ver, f) in sorted(newest.items()):
         old = published.get(name)
-        if old and (vercmp(ver, old[0]) <= 0 or content(f) == content(old[1])):
+        if old and (vercmp(ver, old[0]) <= 0 or content(f) == content(old[1]) and not built_at_home(old[1])):
             chosen[name] = old[1]
         else:
             chosen[name] = f
