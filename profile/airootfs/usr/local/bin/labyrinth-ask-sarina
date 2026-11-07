@@ -549,6 +549,16 @@ def a_repeat(answer, told):
     return ""
 
 
+def test_refuses(vault, env):
+    """Sarina's eval runner sets SARINA_TEST=1: then her notes are written only inside SARINA_TEST_ROOT or the temporary folder
+    (go/testguard in Sarina), never into the owner's own vault."""
+    if env.get("SARINA_TEST") != "1":
+        return False
+    p = os.path.realpath(vault)
+    roots = [r for r in env.get("SARINA_TEST_ROOT", "").split(":") if r] + [env.get("TMPDIR") or "/tmp"]
+    return not any(p == os.path.realpath(r) or p.startswith(os.path.realpath(r) + os.sep) for r in roots)
+
+
 def log_talk(question, answer, env):
     """Talk that is not about the computer is kept in her vault (Talks/YYYY-MM.md), one line each, so she can remember it later the way a friend
     does and inside jokes can grow from it. Short acknowledgements and anything that looks like a secret are not kept. LABYRINTH_TALK_LOG=0 turns this off, and the joke and laugh notes too."""
@@ -556,7 +566,7 @@ def log_talk(question, answer, env):
         return
     vault = env.get("SARINA_VAULT", "")
     q = spoken(question)
-    if not vault or not os.path.isdir(vault) or len(q.split()) < 3 or SECRET_RX.search(q) or SECRET_RX.search(answer):
+    if not vault or not os.path.isdir(vault) or test_refuses(vault, env) or len(q.split()) < 3 or SECRET_RX.search(q) or SECRET_RX.search(answer):
         return
     now = datetime.datetime.now()
     try:
@@ -576,7 +586,7 @@ def note_laugh(prev, env):
     """They laughed at what she said just before: that line goes into Entities/Inside jokes (date, what she said, what it answered), so it can
     become a callback. Done here, not left to the model. prev is (question, answer) of the turn before."""
     vault = env.get("SARINA_VAULT", "")
-    if env.get("LABYRINTH_TALK_LOG", "1") == "0" or not prev or not vault or not os.path.isdir(vault):
+    if env.get("LABYRINTH_TALK_LOG", "1") == "0" or not prev or not vault or not os.path.isdir(vault) or test_refuses(vault, env):
         return
     q, ans = prev
     ans = re.sub(r"\[(joking|unsure|urgent|gentle|serious)\]\s*", "", ans)
@@ -611,7 +621,7 @@ def log_joke(question, answer, env):
     if "[joking]" not in answer and not re.search(r"\b(joke|funny|pun|humou?r)\b", question, re.I):
         return
     vault = env.get("SARINA_VAULT", "")
-    if not vault or not os.path.isdir(vault):
+    if not vault or not os.path.isdir(vault) or test_refuses(vault, env):
         return
     clean = lambda t, n: re.sub(r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]", " ", t).strip()[:n]
     now = datetime.datetime.now()
