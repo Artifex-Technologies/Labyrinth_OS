@@ -10,9 +10,12 @@
   update; `sudo pacman -S linux-cachyos-bore linux-cachyos-bore-headers` adds it back.)
 - Do not hand-roll a kernel. Rewriting Linux is out of scope; CachyOS already
   tracks and patches it.
-- Build system: archiso profile (same as Chymaera_OS) with CachyOS repos in
-  `profile/pacman.conf`. Installer: Calamares copying the live image, adapted from
-  Chymaera's; decided and described in [INSTALLER.md](INSTALLER.md).
+- Build system: archiso profile with CachyOS repos in `profile/pacman.conf`. Labyrinth's own
+  packages come from a local `[labyrinth]` repository, signed with the Labyrinth key and checked
+  (`SigLevel = Required`; [PACKAGE_REPO.md](PACKAGE_REPO.md)).
+- Installer: Yggdrasil's installer window (`yggdrasil-installer`) with Labyrinth's install
+  program (`labyrinth-install-system`), which copies the live image onto the disk. Calamares, the
+  first plan ([INSTALLER.md](INSTALLER.md), kept for its reasoning), was removed on 2026-11-07.
 
 ## 2. GPU (RTX 2080 Ti)
 
@@ -26,12 +29,16 @@
   the 2080 Ti (see DRIVER_LAB.md).
 - Gaming: Steam, Proton-CachyOS, gamemode, mangohud, lib32 NVIDIA/Vulkan.
 
-## 3. Desktop: Omarchy model
+## 3. Desktop: Yggdrasil
 
-Hyprland session with Omarchy keybindings, as already done in Chymaera_OS
-(`docs/DESKTOP.md` there). Reuse that work: factor the shared desktop config
-into a package both distros consume. Do **not** adopt `omarchy-settings` (it
-overwrites `/etc/os-release` on upgrade; see Chymaera's notes).
+Yggdrasil, our own desktop, in its own repository
+([Artifex-Technologies/Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil)), runs as a
+session on Hyprland (0.57 today) until its own compositor is ready. Login is greetd with
+Yggdrasil's greeter. KDE (Plasma, KWin, SDDM) left on 2026-10-24, and the Omarchy-style tiling
+desktop on 2026-11-05; Omarchy remains a source of ideas (keyboard-first shortcuts, plugins rebuilt
+for Yggdrasil). Yggdrasil is shared with Niflheim OS (formerly Chymaera OS), which is moving to it.
+What Labyrinth adds to the desktop (Heimdall, Sarina, the installer's steps) plugs in through
+integration files in `/usr/share/yggdrasil/integrations`.
 
 Speed targets (to be measured, not promised): GRUB with a 2 s timeout,
 a `systemd-analyze` budget tracked per release, no unneeded boot services,
@@ -39,9 +46,9 @@ zram, Btrfs (zstd; `@`, `@home`, `@cache`, `@log`) with snapper and grub-btrfs
 snapshot entries (GRUB, not Limine; reasons in INSTALLER.md) so a bad update rolls
 back from the boot menu.
 
-Creative / CAD / gaming layer: Krita, Darktable (photo); Kdenlive, OBS (video);
-Ardour with PipeWire-JACK and realtime tuning (music); Steam + Proton;
-Daedalus_CAD (native Rust).
+Creative / CAD / gaming layer, all optional ([COMPONENTS.md](COMPONENTS.md)): the `creative`
+component (Darktable, OBS Studio); Krita, GIMP, Ardour and more one by one in Agora; Steam +
+Proton; Daedalus_CAD (native Rust).
 
 ## 4. File explorer: `minos`
 
@@ -68,7 +75,7 @@ A Sarina hook ("organize these photos", "find duplicate takes") is a later phase
 
 | App | Packaging | Notes |
 | --- | --- | --- |
-| Sarina | `sarina-git` PKGBUILD, vendored from Chymaera_OS | Local model on the 2080 Ti (11 GB VRAM) competes with games for VRAM: needs a policy |
+| Sarina | `sarina-git` PKGBUILD | Local model on the 2080 Ti (11 GB VRAM) competes with games for VRAM: needs a policy |
 | Limbo | PKGBUILD, needs libvirt/QEMU/KVM | Linux guests verified; **Windows guests never run** |
 | Heimdall | PKGBUILD | Watches Sarina |
 | Daedalus_CAD | cargo build, wgpu/Vulkan | Needs working Vulkan on NVIDIA |

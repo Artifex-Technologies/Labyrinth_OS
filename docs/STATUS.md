@@ -1,379 +1,61 @@
-# Status (updated 2026-11-05)
-
-> **2026-11-05:** a signed **package repository** keeps installed systems current from any ISO ([PACKAGE_REPO.md](PACKAGE_REPO.md));
-> the **ISO is slimmer** (about 1.5 GiB less installed): Vivaldi is the one browser, kernel headers and device software (Logitech,
-> gaming mice, Razer, Corsair, Xbox controllers, HP printers) come from the internet through the installer's Optional software
-> page (ticked when such a USB device is plugged in), ClamAV comes with Heimdall, the JetBrains Nerd Font and the old
-> Omarchy-style tiling desktop (waybar, mako, hyprlock, fuzzel, foot, hypridle, cliphist, swaybg and four helper scripts) are
-> gone; Yggdrasil is the one desktop. Agora: Proton Pass, Proton Mail and VS Code from the AUR, Labyrinth's own frame generation
-> (preview), lsfg-vk, Daedalus CAD, device components. All tests pass.
-
-> **2026-10-18:** WhiteSur (KDE theme, GTK theme, cursors) is replaced by **`yggdrasil-theme`** (Yggdrasil repository, docs/THEME.md): Yggdrasil's own colour scheme with Qt's Fusion style, GTK colours on Adwaita, and drawn cursors; no Kvantum or `breeze-gtk` either. The three WhiteSur recipes and the SDDM WhiteSur logo folder are gone.
-
-> **2026-10-18:** the icon pack "Labyrinth Brands" is now **Liki** (in the Yggdrasil repository, shared with Chymaera); MacTahoe, the `Labyrinth` theme and the icon scripts (`labyrinth-brand-pack`, `labyrinth-icon`, `labyrinth-minos-icon`, ...) left this repository (the old command names still work through links in `liki-icon-theme`).
-
-> **2026-10-18:** the desktop environment (panel, Settings, Minos, Marketplace, lock and login screens, idle manager, polkit, portal, compositor, calculator, weather, keyring sync) moved to its own repository, [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil). Paths such as `packages/panel` in the entries below now live there; the history of those folders was carried over.
-
-
-## Verified (built and tested on Windows)
-
-`packages/minos` (`cargo test`: 20 pass; `cargo build` clean):
-- Core logic: history/tabs, listing + sort + filter, file operations
-  (copy/move/rename/new folder, never overwrite, refuses folder-into-itself),
-  persistent state (tabs, favorites, tags, colors, view; atomic save, corrupt
-  file falls back to defaults), background recursive search, mount parsing,
-  Proton Drive link verification logic.
-- The egui app builds, opens, and writes `state.json` on exit (session restore
-  data). `minos-cloud` CLI builds and handles arguments.
-- `tests/test_steam_playall.py` (Steam config editor): 7 tests pass.
-
-## Written but never exercised
-
-- The explorer's **interactive behavior**: nobody has clicked through it. That
-  covers drag and drop, context menus, selection, split pane, gallery thumbnails,
-  rename dialog, live updates, and the Cloud badges. Thumbnails decode full-size
-  images, so very large photo folders may be slow or memory-hungry.
-- Trash on Linux (the `trash` crate), drive list from `/proc/mounts` (parser
-  tested, real mounts not), udisks2/MTP (not implemented).
-- `labyrinth-gaming` shell script (syntax-checked only), `proton-drive.service`,
-  `probe.sh`, the archiso profile and all package names.
-- Verification against a real Proton Drive remote (real rclone output on local folders: tested).
-- WSL has no distribution installed, so none of the Linux-side pieces have run.
-
-## Installer (see INSTALLER.md)
-
-Calamares config generated from the real 3.4.2 samples, YAML-checked; the cleanup
-script is tested against a mock root (20 checks); bootfinish is syntax-checked
-only; nothing has been installed or booted.
-
-## Not built yet
-
-Folder-size toggle, multi-column sort, font picker, interface languages,
-benchmarking tools, raw/unmounted drive detection, phone (MTP) support, network
-devices, Sarina hook, a desktop in the live image (Hyprland/SDDM), Calamares branding, most PKGBUILDs, Limbo `driver-test` profile.
-
-## Desktop, components, weather, displays (2026-10-10)
-
-Tested here: `tests/test_labyrinth_apps.py` (20), `test_bar_tools.py` (7), `test_displays.py` (13),
-`test_desktop_scripts.sh` (16), `test_install_cleanup.sh` (20); `cargo test` in
-`packages/minos` (22) and `packages/yggdrasil-weather` (34).
-Not done: everything that needs Linux or the real machine. See DESKTOP.md, COMPONENTS.md,
-WEATHER.md, INSTALLER.md, and the "what is missing for an ISO" list below.
-
-### Missing before an ISO can be built
-- `profile/pacman.conf` has no `[labyrinth]` local repo for the packages we build ourselves
-  (calamares, minos, yggdrasil-weather, proton-pass, visual-studio-code-bin).
-- No `scripts/build.sh` or `scripts/build-local-packages.sh` (Chymaera has these to port).
-- No live-session setup in `airootfs`: live user, SDDM + session files, os-release, hostname,
-  locale, `efiboot`/bootloader entries. The profile is a skeleton.
-- CachyOS keyring and mirrorlist provisioning for the build.
-
-## Linux (Arch in WSL) verification, 2026-10-10
-
-Ran on real Arch Linux under WSL2 (no GPU session, so no Hyprland, installer or boot):
-- All script/Python suites and both Rust suites pass (`scripts/wsl-test.sh tests`).
-- Package names: all found in Arch's repos (core/extra/multilib) except CachyOS's own
-  (`linux-cachyos*`, `proton-cachyos`), `protonup-qt` (AUR), and our own packages.
-- `makepkg` built `proton-pass`, `visual-studio-code-bin`, `yggdrasil-weather` and
-  `minos` successfully; checksums verified; packages inspected.
-- `yggdrasil-weather` run live on Linux; `labyrinth-apps`, `probe.sh`, `labyrinth-gaming check`
-  and `labyrinth-displays` (clean failure without Hyprland) run for real.
-- `minos` run as a real window under WSLg and driven with mouse and keyboard:
-  navigation, hidden files, tabs, split pane, gallery thumbnails, rename, copy/paste,
-  cut/paste, new folder, delete to the freedesktop Trash all verified on the real filesystem.
-  Bugs found by this and fixed: Wayland app id contained a space (WSLg dropped the
-  connection), Enter in the Rename dialog did nothing, Ctrl+C/X/V shortcuts never fired,
-  and arrow glyphs drew as empty boxes.
-- GUI checks now run on a virtual display (`scripts/xvfb/xv.sh`), which never takes over the
-  screen; the old WSLg script (`tests/gui_smoke_wsl.*`) was removed.
-- Native Wayland run of the explorer works under WSLg (after the app-id fix) with software
-  rendering; GPU rendering is untested.
-
-## ISO build and first boot (2026-10-10)
-
-Done, on Arch under WSL:
-- Local `[labyrinth]` repo built by `scripts/build-local-packages.sh`: calamares, yggdrasil-minos,
-  yggdrasil-weather, proton-pass, visual-studio-code-bin all build.
-- `scripts/build.sh` builds the ISO with mkarchiso (CachyOS keyring and mirrorlists provisioned on
-  the host; the generated package list resolves against the CachyOS v3 repos). Result: a ~9.7 GB
-  UEFI ISO with the "everything" component preset (it is big because of cosmic, cuda/ollama, qemu,
-  wine; trim with `scripts/gen-packages.py --components ...`).
-- `scripts/vm/run-iso.sh` boots it in QEMU with OVMF; `scripts/vm/serial.py` runs commands in the
-  live system over a serial root shell (live medium only).
-- The live ISO boots: CachyOS kernel 7.2.9, systemd reports `running` with no failed units, live
-  user autologs into Hyprland, bar and dock are up, Calamares starts with admin rights and
-  reaches the install step on an erase-disk layout (1 GiB EFI + Btrfs). One earlier boot of an
-  otherwise identical ISO stopped in the initramfs ("no root file system image found"); it did not
-  repeat. Not explained yet.
-- Hibernate: `labyrinth-install-bootfinish` creates a RAM-sized swap file (nested btrfs subvolume),
-  resume parameters and hook. Not yet confirmed by an install.
-- `labyrinth-opacity` (dock/bar opacity), bar layout change, installer branding and the logo set (`scripts/gen-logo.sh`, from `assets/logo/labyrinth-source.jpg`).
-
-### First full install in a VM (2026-10-10): what it found
-
-Install (Calamares, erase disk) -> reboot -> GRUB -> kernel -> SDDM -> Hyprland desktop works in
-QEMU/UEFI. Bugs the test found, all fixed in the tree:
-- `squashfs-tools` missing from the image (unpackfs failed), `python-toml` missing (displaymanager
-  failed), no active pacman mirrors, no pacman keyring on the live image (pacman-init.service added).
-- **GRUB could not boot the LTS kernel**: GRUB's btrfs driver reads zstd-compressed files whose size
-  is not a multiple of 4096 512 bytes short ("premature end of file"). Reproduced with `grub-fstest`.
-  Fix: `labyrinth-install-cleanup` marks `/boot` NOCOW (so never compressed) before kernels are written.
-  This would have hit the real machine too.
-- `resume=` never reached the kernel command line (GRUB file uses single quotes); GRUB default entry
-  was the LTS kernel; timeout was 5 not 2. Fixed in `labyrinth-install-bootfinish`.
-- grub-btrfsd needs `inotify-tools`; `hostname` needs `inetutils`; the live account lingered on the
-  installed system; the login screen defaulted to COSMIC. All fixed.
-- The VM screenshot of a GRUB graphical menu is stale while GRUB shows an error ("Press any key"):
-  it looked like a hang. Use a text console / serial to see GRUB errors.
-Still unconfirmed on a real install: the hibernate resume parameters (the test disk was patched by
-hand), snapshot entries in the GRUB menu, NVIDIA, the two real monitors.
-
-### Real hardware (2026-10-11)
-
-On a Dell OptiPlex 3080 (i5, 8 GB, 2 x 256 GB, Intel graphics), installed from the USB:
-- The live session boots (DD-mode USB; ISO-mode in Rufus does not work), Wi-Fi sets up, the
-  installer opens (once the launcher was fixed; see `labyrinth-install`), the system installs.
-- **Hibernate works end to end** (power off, power on, session restored). The VM reset after
-  resume seen in the nested-QEMU test was an artifact of that environment.
-- Found on hardware: the dock covered the bottom of other windows (fixed: `-x`), the refresh rate
-  stayed at 30 Hz on a monitor that can do 120 Hz (fixed: `labyrinth-displays` picks the best
-  mode), tapping SUPER did nothing (to do).
-- Direction change: the macOS-style desktop becomes KDE Plasma with the WhiteSur (SmallSur) look;
-  Hyprland stays as the Omarchy-style tiling mode, chosen at login (`labyrinth-switch-mode`).
-
-### Where things stand (2026-10-11, end of session)
-
-Latest ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.11-x86_64.iso` (6.0 GB, sha256
-`e19469a5...cfaf246b6`, in SHA256SUMS next to it). Built from the working tree; **nothing from
-2026-10-11 is committed yet** (the GitHub repo Artifex-Technologies/Labyrinth_OS has the earlier work).
-
-Done on 2026-10-11 and verified in the VM (screenshots), unless marked otherwise:
-- **Windows feel.** Window buttons on the right in Windows order (minimize, maximize, close), macOS
-  look. Shortcuts: Win+E Minos, Win+R run, Win+I settings, Win+L lock, Win+V clipboard,
-  Win+Shift+S screenshot, Ctrl+Shift+Esc task manager. Terminal commands `cls` and `ipconfig`
-  (/all, /release, /renew, /flushdns) in the Windows layout.
-- **Dock like a taskbar.** Maximized and new windows stop above it (KWin script
-  `labyrinth-fit-windows`); Win+F full screen hides dock and bar; Win+Space brings them up over a
-  full-screen app, Esc hides them. The Hyprland (Omarchy) session has no dock any more.
-- **One screen macOS-style, one Omarchy-style** (DESKTOP.md has the full key table): the LG DualUp
-  tiles with Krohnkite (`kwin-scripts-krohnkite`, our PKGBUILD), has its own workspaces 1-9 and a
-  slim bar; keys change meaning by screen (KWin script `labyrinth-screen-keys`);
-  `labyrinth-tiling OUTPUT|off`; labyrinth-displays turns it on for the DualUp once per port.
-  Verified in a two-monitor VM at half size; **not yet on the real monitors**.
-- **Faster, smaller install.** ~2 min in the VM (was ~6): resume hook added before the initramfs is
-  built (no second `mkinitcpio -P`), one grub-mkconfig, keyring made on first boot. 15 GB installed
-  / 6 GB ISO (was 21 / 10): Ollama+CUDA no longer in the image (Sarina offers `ollama-cuda` or
-  `ollama-vulkan` on first use), COSMIC dropped, bore kernel dropped (cachyos + lts remain).
-- **From CachyOS's installer, adopted into ours:** firewall on by default (ufw: deny incoming, allow
-  outgoing; System Settings > Firewall) and a permanent "Fresh Labyrinth OS install" snapshot.
-  Decision: keep our upstream Calamares build (cachyos-calamares collides with our config).
-- **Cleanup:** duplicate gaming tools and Proton Drive unit removed; old VM scripts and the WSLg GUI
-  test removed; already-built local packages are skipped (scripts/build-local-packages.sh).
-- Daedalus CAD (separate repo) builds on Arch: 39 tests pass, `flatten` numbers hand-checked.
-
-Later on 2026-10-11 (in the working tree, VM-tested unless noted; not yet in a copied ISO):
-- Window frames: Klassy replaces WhiteSur's aurorae (traffic lights, title bar in the app's colour,
-  no chin, invisible resize edges); Kvantum WhiteSurDark so KDE toolbars are dark. Minos draws its
-  own title bar (chrome.rs). Konsole + Yakuake replaced by Ghostty (tabs in the title bar,
-  traffic-light CSS, F12 drop-down pre-approved in kglobalshortcutsrc, systemd drop-in fixing
-  "lacks handler for reload signal USR2" on systemd 262). Krohnkite floats portal/polkit dialogs.
-- **Tile border (working):** four strips drawn as Plasma OSD dialogs around the focused tile
-  (`labyrinth-tile-border`). The earlier failures were a stale QML cache: KWin keeps compiled script
-  QML in ~/.cache/kwin/qmlcache across logins. `labyrinth-kwin-cache` (user service) now clears it
-  whenever Labyrinth's KWin scripts change.
-- **Top bar and dock** keep the translucent look with a purple tint (whitesur-kde-theme pkgrel 2,
-  `labyrinth-plasma-colors`).
-- **Labyrinth Settings (packages/settings + packages/labyrinth-ui):** Rust/egui, GNOME-style pages
-  (network, Bluetooth, displays incl. the tiling-screen switch, sound, appearance, power, firewall,
-  date and time, apps, shortcuts, about). KDE System Settings/Info Center and their ~72 entries are
-  hidden (`labyrinth-hide-kde-settings`), `systemsettings MODULE` redirects to the matching page
-  (`/usr/local/bin/systemsettings`), a few deep options open a single `kcmshell6` panel.
-  Untested on real hardware: Wi-Fi/Bluetooth pages (the VM has neither), power profiles.
-- Owner decisions: Ghostty stays (own terminal on hold); Settings app first. Open question put to
-  the owner: replace Plasma's shell (top bar and dock) with our own Rust panel; keep KWin for now.
-
-Still to do, most important first:
-1. **Commit and push** today's work (ask first; the owner has not said to commit yet).
-2. **Real hardware on the main PC** (i9-9900K, RTX 2080 Ti, Acer X34 GS + LG DualUp): boot the live
-   USB, check NVIDIA, both monitors at the right mode/scale/position, the DualUp tiling screen and
-   the per-screen keys, then install. Secure Boot off; BitLocker recovery key at hand.
-3. **Tiling screen polish:** coloured border on the active tile (Omarchy style); check heavy apps
-   (CAD, games) tiled; maybe an on/off toggle in the top bar.
-4. Plasma lock screen in the "Split" style; SDDM logo not showing.
-5. Minos as the file picker for all apps (xdg-desktop-portal FileChooser backend), owner approved.
-6. Confirm on a screen: kwallet-pam (no wallet prompt at login), easier window-edge resizing,
-   Yakuake colours.
-7. Dual-boot support in the installer (BitLocker note); Claude Code on Linux; icon packs for Minos.
-8. Optional: package Daedalus CAD as a component (like sarina-git) with .stl/.dxf file associations.
-
-How to build and test (WSL distro `archlinux`): `scripts/build-local-packages.sh` as builder (copy new
-PKGBUILDs to /home/builder/labyrinth/packages first), then `LABYRINTH_WORK_DIR=/root/isowork
-LABYRINTH_OUT_DIR=/root/isoout scripts/build.sh` as root. VM: `scripts/vm/run-iso.sh new|iso|disk`;
-two monitors with `VGA_ARGS="-device virtio-vga,id=vga0,xres=1720,yres=720 -device
-virtio-gpu-pci,id=vga1,xres=1280,yres=1440"` (QEMU 11.1.2 crashes on per-screen `screendump`; take
-screenshots in the guest with `spectacle -b -n -f`). Tests: `bash tests/test_desktop_scripts.sh`,
-`bash tests/test_install_cleanup.sh`, `python3 -m unittest tests.test_displays tests.test_bar_tools
-tests.test_labyrinth_apps tests.test_steam_playall`.
-
-## Rust shell, calculator, installer (2026-10-12)
-- **yggdrasil-panel (packages/panel):** Rust top bar + dock (Wayland layer-shell, plasma-window-management for the task list). Opt-in: `labyrinth-panel-mode on|off|status` (Settings → Appearance → "Top bar and dock"). Missing for parity: system tray (StatusNotifier), global menu, quick-settings popover, launcher, notifications, fractional scaling, dock context menus/previews.
-- **panel.conf (packages/labyrinth-conf):** `~/.config/labyrinth/panel.conf` (dock size 32-72, dock/bar opacity 0-100 where 0 = invisible, colour = match theme or plain dark/light). Settings writes it; the panel re-reads it about once a second.
-- **yggdrasil-calculator (packages/calculator):** standard pad plus history at >= 600 px, scientific pad at >= 860 px. The equation stays at the top and editable after "="; the result shows below. One decimal point per number. History persists.
-- **Installer:** Calamares kept; branding `stylesheet.qss` uses the Minos/Settings palette. Needs a visual check in a VM install.
-- Not yet verified in a VM: Settings dock controls end-to-end, the installer look, panel on real NVIDIA hardware.
-- Candidates to rewrite next: launcher/KRunner, notification daemon, lock screen, SDDM login, screenshot tool, task manager, volume/brightness OSD, clipboard history.
-
-## Icons (2026-10-12)
-- System icon theme is **MacTahoe (purple)**, dark flavour, via package `mactahoe-icon-theme` (replaces WhiteSur icons). KDE/GTK use the overlay theme **Labyrinth** (`/usr/share/icons/Labyrinth`, inherits MacTahoe-purple-dark) so per-app overrides work everywhere.
-- Minos now draws folders, files, drives, Home and This PC from the theme (`labyrinth-ui::sysicon`); folders with a colour tag keep the tinted drawn icon, and every icon falls back to the old vector one.
-- `labyrinth-icon APP FILE`, `labyrinth-icon --import FOLDER`, `labyrinth-icon --reset APP`: give apps other icons (png/svg/macOS .icns; `labyrinth-icns` extracts the PNG from an .icns). Used for the dark macOS 27 icons from macosicons.com, which are not redistributed with the ISO.
-- Not done: Settings' own sidebar icons are still hand-drawn; icon theme does not switch to a light flavour with the light theme; the Golden Gate flat set has no public pack.
-
-## Rename (2026-10-12)
-The file explorer is now **Minos** (was Finder, and Labyrinth Files before): `packages/minos`, package `yggdrasil-minos`, binary `minos`, config folder `~/.config/minos` (reads fall back to `finder` and `labyrinth-files`). `/usr/bin/finder` stays as a link, and pins named `finder` in the dock file still work. The macOS Finder icon (a dark macOS icon you may import) is unaffected: `labyrinth-icon` still matches files named `Finder_...` and `Minos_...`.
-
-## Dock (2026-10-12)
-`panel.conf` has `dock_pos` (bottom, left, right) and `dock_gap` (0 to 40 px, default 4; 0 is right on the edge); Settings > Appearance > Dock has both. The Trash is the last dock item (empty or full; opens the trash folder in Minos).
-
-How it is placed (found by testing in the VM): KWin lays a layer-shell surface out above any room reserved on its edge, including its own exclusive zone, so a layer-shell dock floated off the edge by its own height, and negative margins or zone -1 did not help. The dock is therefore a **Plasma panel window** (xdg toplevel with the `org_kde_plasma_surface` panel role and an explicit position), which KWin puts exactly where it is told. KWin takes no strut from such a window in Plasma 6, so an invisible layer-shell strip (`Kind::Strut`, Background layer, anchored along the edge) reserves the room; maximized windows stop at the dock. The top bar stays a layer-shell surface (flush at the top).
-
-## Minos Storage (2026-10-12)
-Storage lists the physical disks (`lsblk`), with one usage bar each; selecting a disk shows its partitions (`Disk:vda` is a virtual location like This PC). A partition that is not mounted is listed but cannot be opened yet. The computer's name replaces "This PC" once it is set. This PC, My User Home and the drives use Minos' own drawn icons; folders and files use the MacTahoe theme.
-
-## Installer (2026-10-12)
-Title bar: the installer runs as root and does not read the user's colour scheme, so KWin drew it grey. The live image ships `LabyrinthInstaller.colors` and a KWin window rule (`~/.config/kwinrulesrc`) that gives the Calamares window that scheme, so the title bar blends in. The slideshow gets a dark background and says Plasma, not Hyprland.
-
-## Boot menu (2026-10-12)
-GRUB uses grub-evodevo (MIT, vendored in `usr/share/labyrinth/grub-evodevo`) through `labyrinth-grub-theme`: black background, Labyrinth purple, 1920x1080, an emblem per system. `data/Labyrinth` is the logo as a 24x24 emblem, sized like the CachyOS one. The installer's boot step (2e) runs it last and puts the old menu back if the result has no entries. `os-prober` is installed and enabled for dual boot. Verified in a VM install: the menu shows "Labyrinth Linux" with the emblem, Advanced options, UEFI Firmware Settings (gear) and the other firmware boot entries; the entry boots to the login screen. Not tested with a real Windows disk, on real hardware, or at other GRUB resolutions (it asks for 1920x1080 and falls back to auto).
-
-## Top bar, pill style (2026-10-12)
-`yggdrasil-panel`'s bar has no strip of its own now: floating pills over the wallpaper (their backdrop is Settings > Appearance > Top bar > Background; 0% leaves floating text). Left: the Labyrinth button, the desktops (1..9 with a "+"; click to switch, "+" adds a plain desktop), the focused app. Middle: a pure-black tab where the notch will open (inert for now). Right: network and Bluetooth icons (read with nmcli and bluetoothctl on a worker thread), the date ("Sun 19 Dec") and the time in 24 hours. The quick power button is gone (its job moves to the notch's Power tab). Not done yet: the start-menu dropdown, the workspace profile chooser, weather, the notch itself. Design notes: see docs in the memory note "Bar and workspaces design".
-Calendar (2026-10-12): clicking the date and time (one pill) opens a month view; the wheel changes the month, a click on its header returns to this month, a click outside or Escape closes it. The header reads "Sunday, December 19, 2026   16:41:23" in 24-hour mode; with `clock_24h = no` (Settings > Date & Time > 24-hour clock) it shows AM/PM and the month is abbreviated ("Dec"). The bar's logo is a solid arrowhead (`assets/logo/labyrinth-solid.svg`, drawn from the user's own tracing of the logo), reusable for Chymaera OS.
-Start menu (2026-10-12): the Labyrinth button opens it (it takes the keyboard at once, so typing searches). Search box, pinned apps (the dock's), every app A to Z (wheel scrolls), your name, and Lock / Sleep / Restart / Shut down. Enter opens the best match; Escape or a click outside closes it. Apps meant for other desktops (OnlyShowIn/NotShowIn) are not listed. Same palette as Minos and Settings. The Super key still opens KRunner; pointing it at this menu is the next step. Typing uses xkbcommon (libxkbcommon is a dependency now).
-Start menu themes (2026-10-12): `start_theme = windows | folders` in panel.conf; Settings > Appearance > Start menu picks it. "Windows" is the grid-and-list menu. "Folders" is narrow: search, Favorites (the dock's apps), then Folders by kind (Accessories, Development, Games, Graphics, Internet, Multimedia, Office, Settings, System, ... from each app's Categories); a folder opens to the side while the pointer is on it. A power button at the bottom opens Lock / Sleep / Hibernate (only on machines that can hibernate: real swap at least the size of RAM plus resume=) / Restart / Shut down.
-
-Super key (2026-10-12): the panel now serves `org.yggdrasil.Panel` on the session bus (`ToggleStart`), and `labyrinth-panel-mode on` points KWin's bare-Super shortcut at it (`kwinrc [ModifierOnlyShortcuts] Meta`); `off` puts Plasma's launcher back. Verified: the D-Bus call opens and closes the menu, the setting is written and survives a fresh login, Meta+Return (another shortcut) fires. NOT verified: the bare Super tap itself; the VM's simulated key presses never triggered KWin's modifier-only shortcut (not even with KRunner as the target), so it needs a check on a real keyboard. Also seen: Meta+E (Minos) did not launch anything in the VM; check on real hardware.
-
-Fylgja, the notch (2026-10-12, first slice): hover the black tab in the top bar's middle and it opens; the wheel moves through the sections (Controls, Today, Stats, Clipboard, Apps, Wallpaper, Power), the dots jump to one, moving the pointer away closes it. Built: Controls (what is playing via MPRIS with previous/play/next, the main volume and each app's volume as sliders via `wpctl`/`pactl`), Today, Stats (processor, memory, disk, temperature), Apps (the dock's pinned apps), Power. Not built: Clipboard, Wallpaper (placeholders), album art, hover-for-music-card on the closed tab, keyboard use. Readings are taken once a second only while it is open. Verified in the VM: opening, closing, wheel through all sections, Stats and Apps and Power drawing; NOT verified: media buttons and sliders against a real player (the VM has no audio), per-app volume rows, temperature (the VM has no sensor).
-
-Fylgja, second slice (2026-10-12): the small music card with the cover on hover (after a short rest on the tab), the bar's tab widening into the card, the slide down and up, the Clipboard section (Super+V, Settings switch), the Wallpaper section, and a push-to-ask voice card for Sarina (Super+S; see docs/SARINA_VOICE.md, built without a microphone or Sarina to test against). Details and what is unverified: docs/FYLGJA.md.
-
-Minos's icon (2026-10-13): the dark and light logos you drew, traced into scalable SVG shapes (`profile/airootfs/usr/share/labyrinth/minos-icon/{dark,light}.svg`, lines marked `@LINE@`). `labyrinth-minos-icon` fills the lines with the desktop's accent colour (a darker shade for the light icon) and picks the dark or light icon from the style, writing `~/.local/share/icons/Labyrinth/apps/scalable/minos.svg`; Settings runs it when the accent or Light/Dark changes, the Dark mode tile in Fylgja does too, and the panel redraws the dock's icon within a few seconds of the file changing. `minos.desktop` now says `Icon=minos`; the system theme ships the dark purple one. Checked in the VM: the dock showed purple, blue and light versions as the script was run. NOT checked: Plasma's own title bars and task switcher picking up the changed file at once, and Settings actually triggering it (built, not run through the UI).
-
-Minos's icon on a tile (2026-10-13): the logo now sits, shrunk to 70%, on a rounded macOS-style tile (dark or light gradient) like the other dock icons: `tile-dark.svg` / `tile-light.svg` next to the bare `dark.svg` / `light.svg` in `/usr/share/labyrinth/minos-icon/`, which are all kept. `labyrinth-minos-icon` uses the tile by default; `echo plain > ~/.config/labyrinth/minos-icon-shape` (or a third argument `plain`) gives the bare logo. The bare dark logo is also installed as the system's fallback icon (`hicolor/scalable/apps/minos.svg`), which an icon pack with no Minos icon falls back to.
-
-Pop-up, lock screen, login, KRunner (2026-10-13):
-- **Volume / brightness pop-up:** Plasma loads it from a compiled QML module, so it can not be themed through a look-and-feel package (tried; that route is for the shell and lock screen only). Instead `/etc/xdg/plasma-workspace/env/labyrinth-osd.sh` builds, at each login, a module of the same name in `~/.cache/labyrinth/qml` that links the compiled parts from the system (so it always matches the installed Plasma) and adds our own `Osd.qml` (`usr/share/labyrinth/osd/`: black pill, accent-coloured level), and puts that first on `QML_IMPORT_PATH`. Checked in the VM through `org.kde.osdService.volumeChanged`. Not checked: a real volume key, brightness, or the key-layout message.
-- **Lock screen:** a solid near-black purple (12,12,17) with the clock, set at first login (`labyrinth-plasma-setup`, `kscreenlockerrc`). Seen in the VM. It shows the clock in 12-hour form (the system locale); not changed yet.
-- **Login screen (SDDM):** the WhiteSur theme set to the same colour (`type=color`) instead of the picture. Seen in the greeter's test mode; the logo did not show there and I have not found why.
-- **KRunner:** it can not be uninstalled (plasma-workspace, plasma-desktop and System Settings depend on it) but it is on demand and uses nothing when idle. Its shortcuts are removed, Alt+Space / Alt+F2 / Meta+R open the start menu's search instead (`labyrinth-start-menu.desktop`), and it is hidden from the launcher. NOT verified: those keys on real hardware.
-
-Decisions, not built yet: a Notification Center as a right-hand pane built into Labyrinth, with a Settings page (on/off, which tabs show); Fylgja stays built into Labyrinth for now (it is still being tested) and is meant to become a separate add-on in its own repository later; once it is, when it is installed the user chooses between the pane and Fylgja's notifications section (replacing its Apps section); our own screenshot and screen-recording tool in the manner of Snagit; our own system monitor in Rust (list, start, end tasks); Minos as the system's open/save dialog through the file-chooser portal.
-
-Volume / brightness pop-up, moved (2026-10-13): KWin puts Plasma's on-screen displays at two thirds of the screen's height and a theme cannot change that, so the panel now draws these two itself (`packages/panel/src/osd.rs`): a black pill a little above the dock (a layer-shell surface anchored to the bottom, which KWin places over the dock's reserved room; with the dock on a side it sits 64 px up), shown for 1.8 s, taking no clicks, and not shown while Fylgja is open or a slider is being dragged. Volume changes are read as PipeWire reports them (`pactl subscribe`, then `wpctl get-volume`), so keys, Fylgja and apps all show it; brightness comes from powerdevil's `brightnessChanged` signal. Plasma's own pop-up for those two is hidden by `usr/share/labyrinth/osd/Osd.qml` (opacity 0), which is installed only while the Labyrinth top bar is on (`panel-on`), at the next login; other messages (such as the keyboard layout) still use Plasma's pop-up, now in the black pill style. Checked in the VM with `wpctl set-volume`: the pill appeared above the dock at the right level, and none in the middle. NOT checked: a real volume key, mute, brightness (the VM has no backlight, and the signal name may differ on Plasma 6.3+ with `org.kde.ScreenBrightness`), a dock on the side.
-
-Icon packs (2026-10-13): the Labyrinth setup (MacTahoe in dark + Labyrinth's per-app icons + the Minos tile) is the "Labyrinth" icon pack, and switching to another pack no longer breaks anything. The panel (dock, top bar, Fylgja) and Minos look icons up in the chosen pack first, then hicolor, then Labyrinth's own, so gaps are filled; Settings is unchanged. Minos: the Labyrinth pack shows the tile; another pack with a `minos` icon its own; a pack without one, that pack's own file-manager icon; and only if it has none, your bare logos (dark/light, accent lines). `labyrinth-minos-icon` does this at login (autostart), when Settings changes the accent or style, and when the panel sees a new pack. Checked in the VM: choosing Breeze turned the whole dock to Breeze icons, Minos a Breeze folder; choosing Labyrinth again brought the tile back. Not checked: Minos itself (the app) reading a new pack (built; it reads the pack when it starts), a pack with only PNG icons, a pack that has its own `minos`. See docs/ICONS.md.
-
-Brand icon pack (2026-10-13): `labyrinth-brand-pack` builds an icon pack from the installed apps with Simple Icons logos (87 vendored in `usr/share/labyrinth/brand-icons`) in five shapes and three styles, plus Labyrinth's own Minos, Settings and Calculator glyphs. Previewed all shapes and styles; run in the VM as glyph + brand: 24 icons matched there and the dock showed the logos with Settings as our gear. Not done: a place in Settings to pick the shape and style (run the command, then pick the pack in KDE); flat folder and system icons to go with it (they still come from the macOS-style Labyrinth pack); the apps' names are matched by rule, so some will not find their logo.
-
-Claude Code (2026-10-13): installs and runs in the VM with Anthropic's own installer. Findings and fixes: `git` was missing from the image (now in the base list), Node/npm/jq/gh/pip/fd and the sandbox's bubblewrap and socat are a new `dev` component (in every preset but `minimal`), `~/.local/bin` was not on the PATH (now added for login shells and for the desktop session), and `labyrinth-claude-code` installs, updates and checks it. The package names were installed from the live repos in the VM. See docs/CLAUDE_CODE.md. Not checked: signing in and a real session.
-
-Build readiness (2026-10-13): the ISO in Downloads (2026.10.12, built 15:43 that day) is older than the repo: it has none of the top bar pills (17:15), start menu, calendar, Fylgja, the pop-up, the icon work, the lock screen colour, the `dev` tools or Claude Code. The repo's `Cargo.lock` for `labyrinth-ui` and `panel` were stale (the PKGBUILDs build with `--locked`, so the package build would have failed); refreshed. With that, every crate's tests pass with `--locked` (conf 3, ui 8, panel 25, settings 9, calculator 18, minos 53), `scripts/gen-packages.py --check` is current, and every script in `usr/local/bin` has an executable entry in `profiledef.sh`. Not done: an actual ISO build with all of this and a fresh install of it.
-
-ISO labyrinth-2026.10.13-x86_64.iso (built 2026-10-13 15:45, 6.09 GB, sha256 b9fe3600...8413; the 10.12 one is kept beside it): built from the working tree with all of the above. Tested in WSL/QEMU: it boots live to the desktop; every package and file added today is present; the generators run; a full automated Calamares install in the VM completed ("completion: succeeded") and the installed system has: the `test` user with a password-required sudo, no `live` account, no autologin, ufw active with nothing listening, `[core]/[extra]` signed (`SigLevel Required DatabaseOptional`), no failed units, two kernels, GRUB, a "Fresh Labyrinth OS install" snapper snapshot, git/node on the PATH. The first ISO build did NOT enable the Labyrinth top bar and dock by default; the 2026-10-13 rebuild does (first login runs `labyrinth-panel-mode on`, and the volume/brightness pop-up override applies from the first login), so the notch, start menu and pop-up show from the start. Seen in the live ISO in the VM: top bar, notch tab, dock. `labyrinth-panel-mode off` brings back Plasma's panels (and its system tray, which the Labyrinth bar does not have yet). The `nopasswdlogin` group was being added to every new user; nothing in PAM reads it, so it did nothing, and it is removed from the installer for the next build.
-
-## Planned (2026-10-14), not built yet
-
-**Screenshot tool.** Our own, in the manner of Snagit (already decided above). The tool in use today is KDE's Spectacle; the aim is a snappier one of our own.
-
-**Settings: Developer options.** Hidden, like Android's: in About, click the logo 5 times while holding a chosen key (the tilde was suggested) and a prompt offers to turn Developer options on. For now it only unlocks extra settings under Power:
-- CPU and GPU limits for each power mode (Performance, Balanced, Power saver), or a custom profile. Overclocking only where the hardware allows it.
-- The same switch adds the per-channel network choice on the Apps page (below).
-
-**Settings: Apps, in the manner of iOS and Android.**
-- The list: sort by Usage, Storage/Size or Alphabetical (control at the top). Each row has icon-only quick buttons: restart, close, remove. Remove asks for confirmation in a modal first.
-- Selecting an app opens its settings: Network, Location, Clear Data (needs sudo, so it asks for the password), Clear Cache, file access (everything, or chosen folders), permission to see other apps (all or chosen), storage used, average internet use (up and down), average running time, and whether it runs at startup.
-- Network is a plain switch (click the name to turn it off). With Developer options on it gains a drop-down at its left to allow only Ethernet and/or Wi-Fi, so the app can send data only while a chosen channel is up.
-- When Limbo is installed, a further option sandboxes the app.
-
-## Super key and start menu keyboard (2026-10-14)
-
-- **Super on its own** now opens the start menu on KWin 6.7. KWin no longer reads `kwinrc [ModifierOnlyShortcuts]`; a bare Super tap is handed to the global shortcut `plasmashell: activate application launcher` (still bound to `Meta`), and `kglobalacceld` announces it on the session bus (`org.kde.kglobalaccel.Component.globalShortcutPressed`). `yggdrasil-panel` listens for that signal and toggles the menu. Verified with simulated key presses (ydotool, uinput): Super opens it with the search box active. `labyrinth-panel-mode`'s `kwinrc` line is now harmless but no longer what does the work.
-- **Keyboard in the Folders start menu:** Tab goes Search → list → power choices → Search. Up/Down move in each; Right (or Enter) on a folder goes into its apps, Left comes back; Enter opens the selected app or power choice; typing from anywhere returns to the search box; with search results, Up/Down pick a result. Verified with simulated keys and screenshots. Not done for the Windows start-menu theme.
-
-See also [DESKTOP_ROADMAP.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/DESKTOP_ROADMAP.md): the decision to keep CachyOS as the base and replace KDE piece by piece, in order.
-
-## 2026-10-16 (overnight session, owner asleep; Claude Code worked on its own judgment)
-
-Built and installed on this machine, all committed in the repos here (nothing pushed):
-
-- **Settings > Apps** rebuilt: installed apps with sorting, restart / close / remove, a page per app (network, open at login,
-  storage, privacy sandbox), Developer options (About logo, five clicks with the ` key held), per-mode CPU and GPU limits.
-  Details, helpers, limits and what is not done: [APPS_SETTINGS.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/APPS_SETTINGS.md). Helpers: `labyrinth-launch`,
-  `labyrinth-appnet`, `labyrinth-powerlimit`, with polkit policies, units and tests (`tests/test_labyrinth_*.py`).
-- **Panel**: the dock and start menu now start apps through `labyrinth-launch`.
-- **Settings**: Lock the screen after (Power), pages refresh every 4 s, icon packs list / install / Labyrinth Brands maker.
-- **Sarina, Heimdall and Limbo are running together**: Ollama + `qwen3:8b`, Sarina's service, Heimdall (watching her sessions,
-  five files, four ports, Limbo's log), Limbo's control API, a Limbo validation profile (disposable guest, no network). Sarina
-  answered, and ran `uname -a` inside a Limbo guest in 21 s. How to use and check it, the rules, and the board where Claude and
-  Sarina talk: [TEAM.md](TEAM.md), [TEAM_BOARD.md](TEAM_BOARD.md), [SARINA_LESSONS.md](SARINA_LESSONS.md).
-  `labyrinth-ecosystem-setup` redoes the wiring on another machine. Sarina has a skill, `labyrinth-engineer`.
-- **Copied from ProtonDrive** (add-only): Heimdall, Labyrinth_OS, Limbo, Sarina, Argus_App, Argus_Firmware, Chymaera_OS,
-  Daedalus_CAD and the extras folder; summaries in `~/proton-sync/`. `github-recovery-codes.txt` was left on ProtonDrive.
-- Limbo: `limbo setup` creates its groups from a plain binary; the guest bridge is opened in UFW (`docs/HOST-FIREWALL.md`
-  in the Limbo repo); both committed in `~/Documents/Github/Limbo` (not pushed).
-
-### Sarina/Limbo/Heimdall state (2026-10-16, manual installs)
-/usr/bin/sarina and /usr/bin/heimdalld were replaced with locally built binaries (the pacman mirror DB was stale, so no full
-upgrade was done); Heimdall's file-integrity detector raised alerts for that, expected. Decompile image patched in place
-(`/var/lib/limbo/images/decompile.qcow2`, sha in `/etc/limbo/validation/decompile.json`). Sarina is read-only until the owner decides.
-Nothing from Sarina, Heimdall or Limbo has been pushed.
-
-### 2026-10-16 Full upgrade, Wireshark, connection log
-`pacman -Syu` done (no kernel change; all services healthy). wireshark-qt/-cli and tcpdump installed by hand (not in the ISO;
-use sudo). Heimdall has a per-process connection log (see Heimdall docs/ARCHITECTURE.md "Connection log"): installed as
-/usr/bin/heimdalld with drop-in /etc/systemd/system/heimdall.service.d/connwatch.conf; `labyrinth-ecosystem-setup` writes the same
-drop-in. See it with `curl -s 127.0.0.1:8930/v1/alerts?n=200` (detector connection-watch). Not yet: an owner-facing view in Settings.
-
-### 2026-10-16 Notification Center
-Built into the panel (docs/NOTIFICATIONS.md): our own org.freedesktop.Notifications service, grouped list (groups by newest, click to
-open out, click one to go to the app and send it its default action), bottom-right pop-ups, Fylgja's Apps section replaced by
-Notifications, optional right-hand pane that opens with the calendar, Clear all, Heimdall alerts as notifications, Settings >
-Appearance > Notifications. Live here: mako stopped, new panel and settings installed. The screen was locked so only rendered
-images were checked (offscreen tests write list/toast/pane PNGs: `NOTIFY_PNG_DIR=/tmp cargo test`); **please look at the pop-up
-position with your dock and the pane on the real screen**. Theme option (macOS vs Windows look) is on the later list.
-
-### 2026-10-16 After the full upgrade: what broke and what was added
-- **Plasma 6.7.5 -> 6.8.0 was installed while the session (KWin 6.7.5, started 2026-10-14) kept running.** Effects seen: `kscreen-doctor -j` lost its `enabled` key (the panel placed the dock as if the screen were 1920x1080 and dropped the screen layout; fixed in panel, settings, labyrinth-displays, labyrinth-tiling), and the lock screen cannot start ("kscreenlocker_greet: Unknown option 'ksldfd'", "Greeter process exit unregular"), so a lock leaves the screen locked with no password box. **A log out and in (or reboot) is still needed.**
-- **What locks the screen is still unknown** (Autolock is off, display-off and sleep are off in PowerDevil; it happened before the upgrade too, 05:03 and 07:09). `labyrinth-lockwatch` (autostarted for the owner) logs every lock/unlock request with the program that sent it to `~/.local/state/labyrinth/lockwatch.log`; with `--rescue` it unlocks again only while the lock screen cannot work (logged as RESCUE). Read the log after the next lock.
-- `labyrinth-selfcheck`: checks the session against the Plasma packages, the kernel, screens, the panel, who serves notifications, services, Heimdall and its integrity list for the AUR apps. A pacman hook (`90-labyrinth-relogin.hook`) tells you to log out after a Plasma upgrade. Run it after every upgrade.
-
-### Resume here (next things, in order)
-
-1. Owner: read TEAM.md; decide whether Sarina may also run with `--write` on the repos, and whether to push Limbo / Sarina /
-   Heimdall / Labyrinth_OS and make Daedalus public (MPL-2.0 file is in place, repo still private).
-2. Sarina's Task 2 (board): a plan for roadmap item 1, our own power and idle manager. Claude reviews it.
-3. Roadmap item 1 itself (replace PowerDevil), then the notification service and the portals backend (Minos as file chooser).
-4. Settings > Apps: right-click "App settings" in the dock (`yggdrasil-settings apps:ID` already works), Flatpak overrides for
-   location / other apps, a running-time logger.
-5. Check the sandbox on an Electron app (Vivaldi, VS Code) before offering it to more than the owner.
-6. Daedalus: drive the viewer by hand, then milestone 2 (drawing tools), keymaps for SketchUp and Fusion.
-7. Secret scanning + push protection on the public repos (needs the owner's yes); the GitGuardian email is unexplained.
-
-## 2026-10-16: login screen broke after the Plasma 6.8 upgrade
-
-SDDM's WhiteSur theme (`whitesur-kde-theme` r2026.08.07) failed with "VirtualKeyboardLoader is not a type" (Main.qml line 316): it imports a Breeze
-SDDM component that Plasma 6.8's Breeze theme no longer has. The login box still showed but the page was an error. Fix: `Current=breeze` in
-`/etc/sddm.conf.d/theme.conf` (repo: `profile/airootfs/etc/sddm.conf.d/theme.conf`). Lesson: a login theme from outside Plasma can break on any
-Plasma upgrade; keep Breeze as the default and test any other theme in a VM after each upgrade. `labyrinth-selfcheck` should check the SDDM theme (todo).
-
-## 2026-10-17: Minos, dock, polkit, portal
-- **Minos:** drive discovery moved off the startup path (a 2.3 s stall); keyboard use (arrows, Enter, type-to-find, tab keys: docs/MINOS_KEYS.md); Settings for where a window or tab opens; a see-through option (switch and slider, live); Ctrl+F opens search; `minos --pick open|save|dir` is a file-chooser mode (paths printed, exit 1 on cancel).
-- **Dock:** one dot per window (active lit, capped at the icon width, last two merge into an oval); resting on an app for 1 s lists its windows (titles, not thumbnails); right-click gives New window / Close / Keep in dock.
-- **Keys:** Super+Up full screen, Super+Down leaves full screen or hides (labyrinth-screen-keys).
-- **polkit agent (`yggdrasil-polkit`):** now the live agent (KDE's is disabled in ~/.config/autostart). The agent has no window; each request starts `yggdrasil-polkit --dialog` (a Wayland window cannot be hidden, so the first design left a black rectangle). Enter authenticates. Verified with `pkexec true` and the owner's password.
-- **File chooser portal (`yggdrasil-portal`):** the backend answers `org.freedesktop.impl.portal.FileChooser` by running Minos in pick mode; selected through /etc/xdg-desktop-portal/kde-portals.conf. The frontend reaches it and the backend starts Minos (checked by hand); Checked end to end on 2026-10-18 through the real `xdg-desktop-portal` frontend with a small client that keeps its D-Bus connection open (a one-shot `gdbus call` makes the frontend cancel the request as soon as the caller disconnects, which looks like "nothing happens"): `OpenFile` with `current_folder` opens Minos in that folder, Down + Enter answers `(0, {uris: [file:///.../Budget%202026.ods]})`, closing Minos answers `(1, ...)` (cancelled); `SaveFile` opens Minos in the home folder with the suggested name filled in. A real GTK app works too: `GTK_USE_PORTAL=1 zenity --file-selection` opened Minos and printed the chosen path. Not yet checked: Obsidian, Vivaldi, VS Code, multiple files, folders, and the Save button's reply.
-- **Wallpaper:** `own_wallpaper = yes`, so the panel draws labyrinth-purple.png. plasmashell was stopped for this session as a test; not yet made permanent.
-- baloo (file indexer) disabled: it was crash-looping.
-- CI: the release check no longer fails on systemd units in a runner without a user manager (and skips D-Bus service files).
-- plasmashell is masked for the user (`systemctl --user unmask plasma-plasmashell.service` brings it back).
+# Status (updated 2026-11-07)
+
+What Labyrinth OS is today, what is in progress, and what comes next. The older dated entries (the Windows and WSL builds,
+Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STATUS.md`.
+
+## What it is today
+
+- **Base:** CachyOS's `x86-64-v3` repositories, the `linux-cachyos` kernel with `linux-cachyos-lts` as the fallback, NVIDIA's
+  open modules. Built with archiso from `profile/` ([ARCHITECTURE.md](ARCHITECTURE.md)).
+- **Desktop:** Yggdrasil, in its own repository ([Artifex-Technologies/Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil)),
+  as a session on Hyprland 0.57. Top bar, dock, Fylgja (the notch), Settings, Agora (the app store), Minos (files), the lock
+  screen, notifications, the screenshot tool, the clipboard history, the colour picker, the video player and spell check. No KDE:
+  Plasma, KWin and SDDM left on 2026-10-24; the old Omarchy-style tiling desktop (waybar, mako, fuzzel and the rest) on 2026-11-05.
+- **Login:** greetd with Yggdrasil's greeter. On the live medium greetd signs the live user in by itself (`/etc/greetd/live.toml`,
+  which the install removes).
+- **Installer:** Yggdrasil's installer window (`yggdrasil-installer`) with Labyrinth's install program (`labyrinth-install-system`).
+  Erase a disk or choose partitions by hand (beside Windows, keeping its EFI partition); LUKS2 encryption on by default; btrfs with
+  snapper and grub-btrfs; GRUB with Labyrinth's theme. Calamares was removed on 2026-11-07 (df5b5a2); there is no fallback installer.
+- **Software:** the ISO stays under 4 GB. Vivaldi is the one browser on it. The installer's Browsers page adds others; its Optional
+  software page offers Sarina, Heimdall and device software, which install at the first login, online. Agora has the rest
+  ([COMPONENTS.md](COMPONENTS.md)).
+- **Updates:** Labyrinth's signed package repository (GitHub release "packages", [PACKAGE_REPO.md](PACKAGE_REPO.md)) keeps an
+  installed system current from any ISO. Since 2026-11-07 the ISO build's own packages are signed and checked too.
+- **Security:** Heimdall, Limbo, the hardening defaults, the firewall (ufw, incoming blocked), the distress password, a network
+  switch per app. Sarina is optional. See [SECURITY_ROADMAP.md](SECURITY_ROADMAP.md).
+
+**Seen working:** the ISO builds and boots (last built 2026-10-26); the installer completes on real hardware, also beside Windows
+and encrypted; the desktop runs on my main PC every day. `scripts/release-check.sh` runs every check that needs no root
+([RELEASE_CHECKS.md](RELEASE_CHECKS.md)); GitHub runs its quick part on every push. That run fails today on two shell tests
+(`test_install_cleanup.sh`, `test_labyrinth_rollback.sh`), which fail on this PC too; not looked into yet.
+
+## In progress
+
+- Sarina's night training: `sarina-night.timer`, 22:30 to 04:20. Reports in `docs/sarina-evals/`, wrap-ups in
+  [TEAM_BOARD.md](TEAM_BOARD.md).
+- Frame generation for games: Labyrinth's own Vulkan layer (`labyrinth-framegen`, a preview; the name is a working name), with
+  lsfg-vk as the stopgap. Settings > Games chooses the games.
+- The GPU unlock ([GPU_UNLOCK.md](GPU_UNLOCK.md)): Phases 0 and 1 are done. Phase 2 waits on my go, four BIOS readings and a game
+  to measure with.
+- Niflheim OS (formerly Chymaera OS): its repository was renamed on 2026-11-07
+  ([Artifex-Technologies/Niflheim_OS](https://github.com/Artifex-Technologies/Niflheim_OS)) and it is moving to Yggdrasil.
+- Settings > Wi-Fi & Network: Heimdall's list of devices on the network and its Wi-Fi checks (through the labyrinth-security
+  integration).
+
+## Next
+
+1. A clean ISO build from scratch: the first one without Calamares and with signed local packages. Then the install check in
+   [GO_LIVE.md](GO_LIVE.md) §2: no live-user sudo or autologin carried over, ufw on.
+2. The rest of GO_LIVE §1: a way back (a snapshot after install, the GRUB snapshot menu, a rescue USB).
+3. Privacy (GO_LIVE §3): the phone-home audit, hardened Vivaldi defaults, encrypted DNS. Then AppArmor.
+4. Decisions still open ([CATCH_UP_2026-11-07.md](CATCH_UP_2026-11-07.md) §A): saved passwords from gnome-keyring to oo7;
+   kdenlive or ghostwriter; Secure Boot with my own keys; how Super+S stops recording; frame generation's name.
+5. The installer: shrink a partition to make room, partitions on more than one disk, the keyboard layout at the disk password.
+6. The desktop: a Yggdrasil task manager, a global menu, accessibility (sticky keys, magnifier, on-screen keyboard, screen reader).
+
+## Known issues
+
+- Ctrl+Shift+Esc opens `btop` in a terminal; Yggdrasil has no task manager of its own yet.
+- No global menu: apps keep their own menus.
+- Secure Boot is not set up. Turn it off in the firmware before booting the stick.
+- Installing beside another system needs free space or a partition to give up; the installer cannot shrink one yet.

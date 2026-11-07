@@ -1,121 +1,121 @@
-# Flashing the ISO and the first test (Dell OptiPlex 3080)
+# Flashing the ISO and the first boot
 
-Written for: the owner, testing Labyrinth OS on a spare OptiPlex 3080 before touching the main PC.
-The OptiPlex has two 256 GB drives (one M.2, one SATA), 8 GB RAM and Intel graphics.
+How to write the ISO to a USB stick, try Labyrinth live, install it, and what to check after the first start. Updated
+2026-11-07: Yggdrasil is the desktop, greetd the login screen, and Yggdrasil's installer the only installer.
 
 ## What you need
 
-- The ISO: `C:\Users\grego\Downloads\Labyrinth-OS\labyrinth-2026.10.13-x86_64.iso` (about 6 GB;
-  `SHA256SUMS` next to it).
-- A USB stick of **8 GB or more** (16 GB to be safe). Everything on it is erased.
-- A DisplayPort or HDMI cable and a screen for the OptiPlex, a keyboard and a mouse.
-- A network cable for the OptiPlex (Wi-Fi may not be present on a 3080).
+- The ISO (`labyrinth-DATE-x86_64.iso`, under 4 GB) and its `SHA256SUMS`.
+- A USB stick of **8 GB or more**. Everything on it is erased.
+- A screen, a keyboard and a mouse. A network cable helps: the parts chosen on the installer's Optional software page come from
+  the internet at the first login.
 
 ## 1. Flash the USB stick (on Windows)
 
 1. Download **Rufus** (rufus.ie) and open it.
-2. Device: your USB stick. Boot selection: the ISO above.
+2. Device: your USB stick. Boot selection: the ISO.
 3. Partition scheme: **GPT**, target system: **UEFI (non CSM)**.
 4. Press START. If Rufus asks, choose **"Write in DD Image mode"**. Do not choose ISO mode.
-5. Wait for READY (~5 to 15 minutes), then eject the stick.
+5. Wait for READY (about 5 to 15 minutes), then eject the stick.
 
 Optional check: in PowerShell, `Get-FileHash <path to iso> -Algorithm SHA256` should match `SHA256SUMS`.
 
-## 2. OptiPlex BIOS settings (press F2 at the Dell logo)
+Afterwards Windows may call the stick unusable or write-protected. `scripts/windows/Reset-UsbDrive.cmd` fixes that (see the README).
 
-- **Storage / SATA Operation: AHCI** (Dell often ships "RAID On", under which Linux cannot see
-  the M.2 drive). Changing it stops an existing Windows install on that machine from booting;
-  that is fine if you are erasing it.
-- **Secure Boot: Disabled** (Boot Configuration or Secure Boot page).
-- **Boot mode: UEFI** (not Legacy).
-- Apply and exit.
+## 2. Firmware (BIOS) settings
 
-## 3. Boot the stick
+- **Boot mode: UEFI** (not Legacy or CSM). The installer needs UEFI.
+- **Secure Boot: off.** Labyrinth does not set up Secure Boot yet.
+- **Storage: AHCI.** Some PCs (Dell's often) ship with "RAID On", under which Linux cannot see an M.2 drive. Changing it stops an
+  existing Windows on that machine from booting, so only change it on a disk you will erase.
 
-Press F12 at the Dell logo, pick the stick's UEFI entry. The Yggdrasil desktop comes up
-by itself (the live user is signed in without a password): menu bar on top, a floating dock at the bottom, window buttons on the right (minimize,
-maximize, close, as on Windows). Try it first
-without installing:
+## 3. Boot the stick and try it live
 
-- Does the desktop appear on the screen at its full resolution and refresh rate? Is the network up?
-- Open a window (the terminal icon in the dock). Its menus (File, Edit, View...) should appear in the
-  top bar. Press F12 for the drop-down terminal (Ghostty, with tabs). Tap the Windows (SUPER) key for the launcher.
-- If you see "ERROR: no root file system image found" and a `[rootfs ~]#` prompt, power off and
-  boot the stick again. This happened on the first boot of a fresh ISO in the VM and not on the
-  second; if it happens every time on real hardware, tell me what the screen says.
+Pick the stick's UEFI entry in the firmware's boot menu (F12 on Dell, F11 or F8 on many others). The boot screen shows
+Labyrinth's logo, then the Yggdrasil desktop comes up by itself: the live user is signed in without a password. Try it before
+installing:
 
-## 4. Install (erases the target drive)
+- Does every screen come up at its full resolution and refresh rate? Is the network up (top bar)?
+- Tap the **Super** (Windows) key: the start menu opens. Super+Return opens a terminal (Ghostty), Super+E opens Minos.
+- If you see "ERROR: no root file system image found" and a `[rootfs ~]#` prompt, power off and boot the stick again.
 
-1. Start the installer: double-click **Install Labyrinth** on the desktop, or tap SUPER and type "install".
-2. Follow the pages. On **Partitions**, pick the drive to erase in "Select storage device"
-   (one of the two 256 GB drives; the other is left alone). Leave "Erase disk" selected.
-3. Choose a name and a password; click Install. It took 2 minutes in the VM; ~3 to 6 minutes from a
-   USB stick, depending on the stick.
-4. Restart when it says "All done", remove the USB stick, and log in.
+## 4. Install
 
-The first login builds the desktop layout (a few seconds). To try the tiling desktop (Hyprland), open
-the launcher and run "Switch to Tiling Desktop"; it logs you out and starts it. "Switch to macOS-style
-Desktop" in its power menu (SUPER + ESCAPE) comes back.
+1. Tap Super, type "install", and open **Install Labyrinth**.
+2. The pages, in order:
+   - **Welcome:** the language.
+   - **Keyboard:** first the arrangement (QWERTY, QWERTZ, AZERTY, Dvorak, Colemak or another alphabet), then the layout. Try it in
+     the box.
+   - **Time zone:** search by place.
+   - **Disk:** choose the disk, then erase all of it or choose partitions by hand (for example beside Windows, keeping its EFI
+     partition). Encryption is on by default: type its password twice.
+   - **Your account:** your name, the account name, the computer's name, the password twice.
+   - **Browsers:** Vivaldi is on the medium; tick others (Firefox, Brave, LibreWolf ...) and pick the default.
+   - **Optional software:** Sarina and Heimdall, and device software (Logitech, gaming mice, Razer, Corsair, Xbox controllers, HP
+     printers). An entry is ticked already when such a device is plugged in.
+   - **Summary:** check it, and tick the box that says the disk is erased.
+3. **Installing** shows each step. When it says it is done, press **Restart now** and remove the stick.
 
-## 5. What to check after the first real boot
+What it does: a 1 GiB EFI partition and the rest for the system (or the partitions you chose), LUKS2 if encryption is on, btrfs
+with `@`, `@home`, `@cache` and `@log`, the system copied from the stick, your account (an administrator with sudo; root stays
+locked), GRUB with Labyrinth's menu, snapper, a swap file for hibernation, and the firewall on. Details:
+[Yggdrasil's INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md).
 
-- The GRUB menu appears for ~2 seconds, then the boot screen, then Yggdrasil's login screen (greetd, session "Yggdrasil").
+## 5. The first start
+
+- With encryption, GRUB asks for the disk password first. You type it once: the system opens the disk with a key kept inside it.
+- The GRUB menu shows for about 2 seconds, then the boot screen, then Yggdrasil's login screen (greetd).
+- At the first login, the parts ticked on the Optional software page that were not on the stick are installed, online. Notifications
+  say what is happening, and the password box asks once. Without a network it tries again at the next login; Agora can install
+  them at any time.
+
+## 6. What to check
+
 - `systemctl is-system-running` says `running`; `systemctl --failed` lists nothing.
-- `cat /proc/cmdline` contains `resume=UUID=...` and `resume_offset=...`; `swapon --show` lists
-  `/swap/swapfile` (about 8 GB here) and zram.
-- **Hibernate** (power button in the bar, then Hibernate; or `systemctl hibernate`): the machine
-  powers off. Turn it on: it should come back to the same windows. This is the one thing the VM
-  could not prove (the VM reset right after resuming), so please report exactly what happens.
-- **Firewall**: `sudo ufw status` says active, incoming denied, outgoing allowed (Settings >
-  Firewall manages it).
-- **Snapshots**: `sudo snapper list` shows "Fresh Labyrinth OS install" (kept for good); after rebooting, look for a snapshots submenu in the GRUB menu (grub-btrfs adds it once a snapshot exists; the first one appears after snapper's timer runs, or create one with `sudo snapper create`).
-- Vivaldi opens (it is the default browser; Firefox is installed as the backup), Minos opens and
-  previews files, sound and the network work, and wireless keyboards do not drop keys.
+- No live leftovers: `ls /etc/sudoers.d` has no `00-live-nopasswd`, `/etc/greetd` has no `live.toml`, and there is no `live` user.
+- **Firewall:** `sudo ufw status` says active, incoming denied, outgoing allowed. Settings > Firewall shows the same.
+- **Snapshots:** `sudo snapper list` shows "Fresh Labyrinth OS install". A snapshots submenu appears in GRUB once a snapshot exists.
+- **Hibernate:** `swapon --show` lists `/swap/swapfile` and zram; `cat /proc/cmdline` has `resume=` and `resume_offset=`. Choose
+  Hibernate in the power menu: the machine powers off, and on the next start it comes back to the same windows.
+- Vivaldi (or the default you chose) opens web links, Minos previews files, sound and the network work, and wireless keyboards do
+  not drop keys.
 
-If anything fails, note what is on the screen (a photo works) and tell me.
+If anything fails, note what is on the screen (a photo works).
 
-## 6. Sarina (the local AI agent)
+## 7. Sarina (if you chose her)
 
-Open **Sarina** from the launcher (tap SUPER, type "sarina"). It starts the model server (Ollama) for
-you if it is not running, and if no model is installed it suggests one that fits your memory and asks
-before downloading it (a few gigabytes). **Sarina Console** opens her web console in the browser.
-From a terminal: `labyrinth-sarina`, `labyrinth-sarina gui`, `labyrinth-sarina model`.
+Open **Sarina** from the start menu. It starts the model server (Ollama) if it is not running, and if no model is installed it
+suggests one that fits your memory and asks before downloading it (a few gigabytes). **Sarina Console** opens her web console in
+the browser. From a terminal: `labyrinth-sarina`, `labyrinth-sarina gui`, `labyrinth-sarina model`. Super+S asks her a question by
+voice (tap to start, tap again to send).
 
-## 7. Monitors
+## 8. Monitors
 
-At each login `labyrinth-displays` gives every monitor its native shape at the highest refresh rate it offers at
-60 Hz or more. Your Acer ultrawide and the LG DualUp are recognised by name and get the layout from
-`/usr/share/labyrinth/displays.json` (Acer 3440x1440 at 144 Hz, LG at 125% placed to its right); the result is
-written to `~/.config/hypr/monitors.lua`. Your own rules go in `~/.config/labyrinth/displays.json`
-(`labyrinth-displays --list` shows what each monitor reports).
+Until you set them, every monitor runs at its fastest mode. Settings > Displays sets the resolution, refresh rate, scale, layout
+and Night Light; it saves them in `~/.config/yggdrasil/monitors.lua`.
 
-## 8. Coming from Windows
+## 9. Coming from Windows
 
-The Windows shortcuts work on both desktops:
+The Windows shortcuts work:
 
 | Keys | Does |
 |---|---|
-| Win + E | Minos (Explorer) |
-| Win + R | Run box (type an app or command) |
-| Win + I | Settings |
-| Win + L | Lock |
-| Win + V | Clipboard history |
-| Win + Shift + S | Screenshot of a region |
-| Ctrl + Shift + Esc | Task manager (System Monitor) |
-| Win + arrow keys | Snap the window (macOS-style desktop) |
+| Super (tap) | Start menu |
+| Super + E | Minos (files) |
+| Super + I | Settings |
+| Super + L | Lock |
+| Super + V | Clipboard history |
+| Super + Shift + S, Print | Screenshot (area, window or screen) |
+| Ctrl + Shift + Esc | Running programs (`btop`) |
+| Super + arrow keys | Snap the window (up maximizes, down minimizes) |
+| Super + T | Tile or float the window |
 | Alt + Tab, Alt + F4 | Switch windows, close a window |
-| Win + F | Full screen (hides the dock and top bar) |
-| Win + Space | In full screen: bring up the dock and top bar, Esc hides them again (on the tiling desktop it opens the launcher) |
+| Super + F | Full screen |
+| Super + N, Super + C | Notifications, calendar |
+| Super + / | Every shortcut |
 
-**Your DualUp is the Omarchy-style screen.** Windows dragged or opened there tile automatically
-(no title bars, gaps), it has its own workspaces 1-9, and on it some keys switch to their Omarchy
-meaning: Win + Arrows moves focus, Win + Shift + Arrows swaps tiles, Win + 1..9 switches workspace,
-Win + W closes the window, Win + Space opens the launcher, Win + T floats a window. On the Acer they
-keep the Windows meaning (snap, dock apps, overview). Win + Shift + Alt + Left/Right throws a window
-to the other monitor. Turn it off with `labyrinth-tiling off`; DESKTOP.md has the full table.
+**Settings** (Super + I) is Yggdrasil's own: Wi-Fi & Network, Bluetooth, displays, sound, keyboard, printers, power, appearance,
+apps, games, security, the firewall, restore points, users, date and time.
 
-**Settings** (Win + I, or the gear in the dock) is Labyrinth's own: Wi-Fi, Bluetooth, displays, sound,
-appearance (dark/light, accent colour, wallpaper), power, firewall, date and time, apps, shortcuts.
-
-In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in
-the Windows layout (`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.
+In the terminal, `cls` clears the screen and `ipconfig` / `ipconfig /all` print the network setup in the Windows layout
+(`/release`, `/renew` and `/flushdns` work too). `ip a` shows the Linux view.

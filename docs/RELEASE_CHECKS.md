@@ -21,8 +21,15 @@ side; they go away when those libraries move on. Re-run the audit before each re
 
 ## Not done yet (needs root and time: ask the owner)
 
-1. Build the ISO: `sudo scripts/build-local-packages.sh && sudo scripts/build.sh` (needs archiso, the CachyOS keyring and about 15 GB).
-2. Boot it in a VM (`scripts/vm`), run the Calamares installer, reboot, then `labyrinth-selfcheck` and the checklists in `docs/STATUS.md`.
-3. Secure Boot enrolment and the encrypted-disk path (`docs/INSTALLER.md`) have not been exercised.
-4. shellcheck is not installed on this machine (`sudo pacman -S shellcheck`).
-5. A CI workflow that runs `release-check.sh quick` on every push would catch things like the packages.base slip; not set up.
+1. Build the ISO: `scripts/build-local-packages.sh && sudo scripts/build.sh` (the first as a normal user, since makepkg refuses
+   root; needs archiso, the CachyOS keyring, the Labyrinth signing key or `LABYRINTH_UNSIGNED=1`, and about 15 GB).
+2. Boot it in a VM (`scripts/vm`), run the installer (Install Labyrinth: `yggdrasil-installer` with `labyrinth-install-system`),
+   reboot, then `labyrinth-selfcheck` and the checks in [FIRST_BOOT.md](FIRST_BOOT.md) §6.
+3. Secure Boot enrolment has not been exercised. The encrypted-disk install has (on real hardware, beside Windows).
+
+## Done
+
+- shellcheck is installed on the build PC, so the local run checks shell scripts too.
+- `.github/workflows/checks.yml` runs `release-check.sh quick` and the Rust tests on every push and pull request. As of
+  2026-11-07 the quick job fails on two shell tests (`tests/test_install_cleanup.sh`, `tests/test_labyrinth_rollback.sh`); they
+  fail locally too and still need looking into.

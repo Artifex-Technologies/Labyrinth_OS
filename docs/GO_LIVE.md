@@ -16,7 +16,8 @@ NVIDIA card, no physical keys, one screen).
 
 - [ ] **Back up what is on the machine** and keep Windows bootable (or a full image) until the new system
       has been used for a week.
-- [ ] **A clean ISO build from scratch** (not the VM's hand-installed binaries): `final3.sh`, checksum, then
+- [ ] **A clean ISO build from scratch** (not the VM's hand-installed binaries): `scripts/build-local-packages.sh`, then
+      `sudo scripts/build.sh`, checksum, then
       a fresh install of it in the VM and every item in `docs/FIRST_BOOT.md`. Many things this session were
       tried by copying files into the VM; the ISO must contain them (the Fylgja code, `labyrinth-minos-icon`,
       the brand-pack data, the OSD override, the start-menu key, the icons).
@@ -32,11 +33,14 @@ NVIDIA card, no physical keys, one screen).
 
 ## 2. Security
 
-- [ ] **The package repo with `SigLevel = Optional TrustAll`** in `profile/pacman.conf`: find which repo it is
+- [x] **The package repo with `SigLevel = Optional TrustAll`** in `profile/pacman.conf`: find which repo it is
       and sign it, or remove it. Unsigned packages are the biggest hole I know of.
       **2026-11-05:** it is the build-time `file://` repository of packages built on the build PC (`repo/x86_64`), used only
       while the ISO is made. Installed systems use the signed `[labyrinth]` repository (`SigLevel = Required`, key in
       labyrinth-keyring). Left: sign the local repository too and trust the key on the build PC, then `Required` here.
+      **Done 2026-11-07:** `scripts/build-local-packages.sh` signs every local package and the database with the Labyrinth
+      key, `scripts/build.sh` adds the key to the build host by its full fingerprint, and `profile/pacman.conf` says
+      `SigLevel = Required`. `LABYRINTH_UNSIGNED=1` relaxes it for one build on a host without the key, and says so.
 - [ ] **The installed system must not inherit the live user's passwordless sudo, autologin, or empty
       password.** Check `/etc/sudoers.d`, `/etc/greetd` (no `live.toml`), `/etc/shadow` on a finished install.
 - [ ] **Firewall** is on (ufw: deny incoming) after install; nothing listens on the network that should not
@@ -93,10 +97,14 @@ NVIDIA card, no physical keys, one screen).
 
 ## 5. Known gaps to decide on
 
-- No system tray (StatusNotifier), global menu, or notification centre yet; KDE's own notifications show.
-- Weather, the Wi-Fi/Bluetooth pages in Settings, workspaces profiles, the Notification Center, the
-  screenshot tool, the system monitor, and Minos as the file chooser are not built.
-- Sarina by voice (Super+S): the command line is a guess until her repository can be checked.
+Built since this list was written (all in Yggdrasil): the system tray (StatusNotifier), Yggdrasil's own notifications with
+a notification centre (KDE's are gone), weather, the Wi-Fi & Network and Bluetooth pages in Settings, workspace profiles,
+the screenshot tool (`yggdrasil-shot`), Minos as the file chooser (Yggdrasil's portal), and Sarina by voice (Super+S,
+[SARINA_VOICE.md](SARINA_VOICE.md)).
+
+Still open:
+- No global menu: apps keep their own menus.
+- No task manager of Yggdrasil's own: Ctrl+Shift+Esc opens `btop` in a terminal.
 - Fylgja is built in; it is meant to become a separate add-on later.
 
 ## 6. Licences and names
@@ -118,7 +126,7 @@ NVIDIA card, no physical keys, one screen).
 ## 8. Documentation
 
 - [ ] README screenshots refreshed (they predate the notch, the new dock icons and the lock screen).
-- [ ] `docs/STATUS.md` and `docs/FIRST_BOOT.md` brought up to date, with a "known issues" list.
+- [x] `docs/STATUS.md` and `docs/FIRST_BOOT.md` brought up to date, with a "known issues" list (2026-11-07).
 
 ## 9. Claude Code on this system
 
