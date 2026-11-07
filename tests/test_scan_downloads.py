@@ -60,6 +60,18 @@ class Scan(unittest.TestCase):
         self.assertIn("--exclude " + os.path.join(self.home, "Downloads/big"), args)
         self.assertTrue(args.endswith(os.path.join(self.home, "Downloads") + " " + extra), args)
 
+    def test_the_weekly_full_scan_covers_home_but_caches_and_reports_only(self):
+        r = subprocess.run(["python3", SCRIPT, "--full"], capture_output=True, text=True, env=self.env)
+        self.assertEqual(r.returncode, 1)
+        args = [c for c in self.calls() if c.startswith("heimdalld")][0]
+        self.assertIn("scan-full-state.json", args, "its own state: the Downloads scan's is not mixed in")
+        self.assertIn("--max-mb 100", args)
+        for e in [os.path.join(self.home, ".cache"), os.path.join(self.home, ".local/share/Steam"), "[n]ode_modules", "[.]git", "*.iso"]:
+            self.assertIn("--exclude " + e, args)
+        self.assertTrue(args.endswith(" " + self.home), args)
+        # the stand-in's find lies outside this home's download places: a warning, nothing moved
+        self.assertTrue([c for c in self.calls() if c.startswith("notify") and "Possible malware found" in c])
+
     def test_a_scanner_that_cannot_run_is_quiet(self):
         broken = stub(self.d, "heimdalld2", 'echo "heimdalld scan-files: ClamAV is not installed" >&2; exit 2')
         r = self.run_it(heim=broken)

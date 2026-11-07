@@ -17,6 +17,9 @@ To stop it looking at something, put a folder, file or pattern (one per line) in
     *.iso
 
   labyrinth-scan-downloads            one scan now
+  labyrinth-scan-downloads --full     the whole home folder (weekly, labyrinth-scan-full.timer): everything but caches, game libraries,
+                                      toolchains, build output and disk images (FULL_EXCLUDE); unchanged files are skipped, so after
+                                      the first run it is quick. A find outside the places above is reported, never moved.
   labyrinth-scan-downloads --watch    keep running: scan a folder a few seconds after new files land in it (labyrinth-scan-watch.service)
   labyrinth-scan-downloads --off      stop the timer;   --on  start it again
 Needs: ClamAV (clamscan) with its signatures (freshclam), and Heimdall's `heimdalld` with `scan-files`.
@@ -51,6 +54,14 @@ def inbound():
             seen.add(c)
             out.append(c)
     return out
+
+
+# What the weekly full scan leaves out: folders that are only caches or downloads of other programs' own files (they are checked
+# by those programs, or rebuilt), game libraries and disk images (large, and never opened as documents), and build output. A
+# "[x]name" pattern matches a folder of exactly that name anywhere (a glob, so Heimdall's scanner compares it with base names).
+FULL_EXCLUDE_HOME = [".cache", ".local/share/Steam", ".steam", "Games", ".ollama", ".local/share/containers", ".local/share/flatpak",
+                     ".var/app", ".cargo", ".rustup", ".npm", "go/pkg", ".local/share/labyrinth/quarantine"]
+FULL_EXCLUDE_ANYWHERE = ["[n]ode_modules", "[.]git", "[t]arget", "*.iso", "*.qcow2", "*.img", "*.vdi", "*.vmdk"]
 
 
 def lines(path):
@@ -180,15 +191,19 @@ def handle(found, roots):
     return len(found)
 
 
-def scan(folders):
+def scan(folders, full=False):
     if not folders:
         return 0
-    args = [HEIMDALLD, "scan-files", "--state", os.path.join(STATE, "scan-state.json")]
-    for e in lines(os.path.join(CONF, "scan-exclude")):
+    args = [HEIMDALLD, "scan-files", "--state", os.path.join(STATE, "scan-full-state.json" if full else "scan-state.json")]
+    excludes = lines(os.path.join(CONF, "scan-exclude"))
+    if full:
+        excludes = [os.path.join(HOME, e) for e in FULL_EXCLUDE_HOME] + FULL_EXCLUDE_ANYWHERE + excludes
+        args += ["--max-mb", "100"]  # past that, a file is a video, a model or a disk image, not something one opens
+    for e in excludes:
         args += ["--exclude", e]
     os.makedirs(STATE, exist_ok=True)
     try:
-        p = subprocess.run(args + folders, capture_output=True, text=True, timeout=1800)
+        p = subprocess.run(args + folders, capture_output=True, text=True, timeout=6 * 3600 if full else 1800)
     except (OSError, subprocess.TimeoutExpired) as e:
         log("scan did not run: %s" % e)
         return 0
@@ -268,14 +283,16 @@ def watch():
 
 def main(argv):
     if "--off" in argv:
-        return subprocess.run(["systemctl", "--user", "disable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service"]).returncode
+        return subprocess.run(["systemctl", "--user", "disable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service", "labyrinth-scan-full.timer"]).returncode
     if "--on" in argv:
-        return subprocess.run(["systemctl", "--user", "enable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service"]).returncode
+        return subprocess.run(["systemctl", "--user", "enable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service", "labyrinth-scan-full.timer"]).returncode
     if "--prompt" in argv and len(argv) >= 5:
         prompt_quarantined(argv[argv.index("--prompt") + 1], argv[argv.index("--prompt") + 2], argv[argv.index("--prompt") + 3])
         return 0
     if "--watch" in argv:
         return watch()
+    if "--full" in argv:
+        return scan([HOME], full=True)
     return scan(inbound())
 
 

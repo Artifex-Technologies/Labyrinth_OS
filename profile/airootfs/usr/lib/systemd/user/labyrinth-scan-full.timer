@@ -1,0 +1,10 @@
+[Unit]
+Description=Look for malware in the whole home folder once a week (Sunday afternoon; caught up after a missed week)
+
+[Timer]
+OnCalendar=Sun 13:00
+Persistent=true
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target
