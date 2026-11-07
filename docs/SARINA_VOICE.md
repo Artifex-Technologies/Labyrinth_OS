@@ -93,7 +93,7 @@ She stops when you press Super+S again, Esc, or click outside the card.
   (it is only for spoken ones, on purpose: she does not talk at you when you typed).
 
 
-## Hold to talk, and the voice island (2026-10-16)
+## Hold to talk, and the voice island (2026-10-16; superseded by tap to start, tap to send)
 
 - **Hold Super+S (or Ctrl+Alt+S), talk, let go.** No card opens and there is no Send button. Yggdrasil's session (Hyprland) binds the key
   down to `yggdrasil-panelctl ask-press` and the key up to `ask-release` (`packages/session/hyprland/yggdrasil.lua` in the Yggdrasil
@@ -149,7 +149,18 @@ from the spoken words (vault tools take a name inside the vault, like `Inbox/Voi
 in `~/.config/labyrinth/pronunciations` (`word = how to spell it so it is said right`). Tested with a copy of the vault: a spoken, misheard path is now turned into a note
 `Inbox/Voice test.md` (committed to git). Not tested: the pronunciation by ear.
 
-## Tap to start a conversation, hold for one question (2026-10-17)
+## Tap to start, tap again to send (2026-11-07; replaces the two sections below)
+
+- **Tap Super+S (or Ctrl+Alt+S), talk, tap again.** The second tap sends what was said; she thinks and answers. Only the key going
+  down counts, so it no longer matters which key is let go first (Hyprland reports a release only while Super is still held, and
+  a missed release used to leave the recording running).
+- A question asked within 3 minutes of the last one continues the same conversation (one Sarina session), so "and what about the
+  other one?" still works; after that a new conversation begins.
+- A tap while she is answering does nothing; a tap while she is talking stops her and starts recording. A recording forgotten
+  for 90 seconds is sent by itself.
+- Code: `convo::tap` and `convo::continues` in Yggdrasil's `packages/panel/src/convo.rs`; the session binds the press only.
+
+## Tap to start a conversation, hold for one question (2026-10-17) (superseded)
 
 - **Tap Super+S** (key held less than half a second): she listens until you stop talking (about a second of quiet after speech; a plain energy detector in
   `packages/panel/src/convo.rs` that learns the room's noise in the first moments, tested with synthetic levels), then thinks and answers aloud, then listens again.
