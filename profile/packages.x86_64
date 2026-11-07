@@ -44,10 +44,8 @@ iperf3
 vulkan-tools
 python
 git
-calamares
 rsync
 squashfs-tools
-python-toml
 grub
 librsvg
 os-prober

@@ -7,7 +7,6 @@
 #   assets/logo/labyrinth-{white,silver,grey,charcoal,black}.svg   traced vector
 #   profile/airootfs/usr/share/icons/hicolor/<size>/apps/labyrinthos.png   (white, for dark UIs)
 #   profile/airootfs/usr/share/labyrinth/logo/                    the PNG and SVG set, shipped on the OS
-#   profile/airootfs/etc/calamares/branding/labyrinth/{logo,welcome}.png   installer
 # Tones: white for dark backgrounds, black for light ones, silver/grey/charcoal for in-between.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -39,8 +38,4 @@ for s in 512 256 128 64 48 32; do
   mkdir -p "$d"
   magick "$out/labyrinth-white.png" -resize ${s}x${s} "$d/labyrinthos.png"
 done
-b=$root/profile/airootfs/etc/calamares/branding/labyrinth
-mkdir -p "$b"
-magick "$out/labyrinth-white.png" -resize 78x78 -background none -gravity center -extent 126x126 "$b/logo.png"   # dark sidebar (room around it so it is not clipped)
-magick "$out/labyrinth-white.png" -resize 190x190 -background none -gravity center -extent 480x190 "$b/welcome.png"   # dark page
 echo "logo set written to $out and the profile"

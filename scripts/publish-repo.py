@@ -18,7 +18,7 @@ This script fills that release:
      publish's stay a day, for systems that read the database just before this one replaced it).
 
 Left out on purpose: software whose licence does not allow passing it on (Proton Pass, VS Code: Agora installs those from
-the AUR, downloaded from Proton and Microsoft) and Calamares (being replaced by yggdrasil-installer). See docs/PACKAGE_REPO.md.
+the AUR, downloaded from Proton and Microsoft). See docs/PACKAGE_REPO.md.
 
     scripts/publish-repo.py            build and publish what changed
     scripts/publish-repo.py --force    build and publish even if nothing changed
@@ -41,7 +41,7 @@ TAG = "packages"
 REPO_NAME = "labyrinth"
 KEY = "C9CE784C8BD9B661042075972D3BD4B1E7CD07A5"
 SOURCES = ["Labyrinth_OS", "Yggdrasil", "Sarina", "Heimdall", "Limbo"]
-NOT_PUBLISHED = {"calamares"}
+NOT_PUBLISHED = set()
 # asset names GitHub keeps as they are (anything else it renames, and pacman would ask for a file that is not there)
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 

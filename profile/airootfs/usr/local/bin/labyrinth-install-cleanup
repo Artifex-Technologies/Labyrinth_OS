@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs inside the target system, right after Calamares' unpackfs has copied the
-# live image onto the disk (see /etc/calamares/settings.conf). Removes the
+# Runs inside the target system, right after the installer (labyrinth-install-system) has
+# copied the live image onto the disk. Removes the
 # live-medium-only pieces and restores what mkarchiso strips, so the installed
 # system boots on its own and has a real login.
 #
@@ -25,7 +25,7 @@ R="${LABYRINTH_ROOT:-}"
 say() { printf 'labyrinth-install-cleanup: %s\n' "$*"; }
 
 # 1. Seed new users with the live user's desktop config. /etc/skel is what
-#    useradd copies from, so Calamares' users job picks it up and handles ownership.
+#    useradd copies from, so the installer's useradd picks it up and handles ownership.
 if [[ -d $R/home/live/.config ]]; then
   install -d -m 0755 "$R/etc/skel"
   cp -a "$R/home/live/.config" "$R/etc/skel/"

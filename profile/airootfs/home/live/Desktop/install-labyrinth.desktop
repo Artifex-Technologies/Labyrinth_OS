@@ -8,6 +8,6 @@ Exec=labyrinth-install
 Icon=labyrinthos
 Terminal=false
 StartupNotify=true
-StartupWMClass=io.calamares.calamares
+StartupWMClass=yggdrasil-installer
 Categories=Qt;System;
 X-AppStream-Ignore=true

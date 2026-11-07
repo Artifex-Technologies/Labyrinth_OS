@@ -2030,7 +2030,6 @@
   "huginn": "#3b2f7a"
  },
  "local_builds": [
-  "calamares",
   "daedalus-cad-git",
   "heimdall-git",
   "yggdrasil-calculator",

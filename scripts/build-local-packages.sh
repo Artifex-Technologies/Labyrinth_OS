@@ -27,7 +27,7 @@ mkdir -p "$repo_dir"
 # Packages built from source in this repo (or the Yggdrasil or Sarina checkout next to it): their version does
 # not change when the code does, so they are always rebuilt. Every other package is pinned to a
 # released version and checksum, and is skipped when that exact version is already in the repo
-# (Calamares alone is a ~10-minute C++ build). Naming packages rebuilds them regardless.
+# Naming packages rebuilds them regardless.
 local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-spell yggdrasil-calculator yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove yggdrasil-installer yggdrasil-player yggdrasil-spell yggdrasil-clipboard yggdrasil-colorpicker labyrinth-distress labyrinth-ollama-tuning labyrinth-keyring labyrinth-framegen-git daedalus-cad-git sarina-git heimdall-git limbo-git)
 
 # A package built from source here keeps the version its PKGBUILD names (0.1.0-27) until someone raises it by hand, so an
@@ -71,6 +71,21 @@ for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
   )
 done
 
+# Every package and the database are signed with Labyrinth's key, so the ISO build checks them like any other repository
+# (profile/pacman.conf: SigLevel = Required). The key lives in its own keyring (docs/PACKAGE_REPO.md); a build host without it can
+# set LABYRINTH_UNSIGNED=1, and scripts/build.sh then trusts the local packages unsigned, saying so.
+KEY=C9CE784C8BD9B661042075972D3BD4B1E7CD07A5
+export GNUPGHOME=${LABYRINTH_GNUPGHOME:-$HOME/.local/share/labyrinth-signing/gnupg}
+sign=()
+if [[ ${LABYRINTH_UNSIGNED:-} != 1 ]]; then
+  gpg --batch --list-secret-keys "$KEY" >/dev/null 2>&1 \
+    || { echo "error: Labyrinth's signing key is not in $GNUPGHOME (restore it, or set LABYRINTH_UNSIGNED=1)" >&2; exit 1; }
+  for f in "$repo_dir"/*.pkg.tar.zst; do
+    [[ -e $f.sig && $f.sig -nt $f ]] && continue
+    gpg --batch --yes --local-user "$KEY" --detach-sign --no-armor --output "$f.sig" "$f"
+  done
+  sign=(--sign --key "$KEY")
+fi
 rm -f "$repo_dir"/labyrinth.db* "$repo_dir"/labyrinth.files*
-repo-add "$repo_dir/labyrinth.db.tar.gz" "$repo_dir"/*.pkg.tar.zst
-echo "Built and added to local repo: $repo_dir"
+repo-add --quiet "${sign[@]}" "$repo_dir/labyrinth.db.tar.gz" "$repo_dir"/*.pkg.tar.zst
+echo "Built and added to local repo: $repo_dir${sign:+ (signed)}"

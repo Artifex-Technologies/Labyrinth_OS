@@ -50,7 +50,7 @@ packages() {
       echo "   not found by pacman: $p"; missing=$((missing + 1))
     fi
   done < <(sed '/^[[:blank:]]*#.*/d;s/#.*//;/^[[:blank:]]*$/d' profile/packages.x86_64)
-  echo "   $missing name(s) not found (expected on plain Arch: linux-cachyos*, proton-cachyos, protonup-qt, and our own: calamares, labyrinth-*, proton-pass, visual-studio-code-bin)"
+  echo "   $missing name(s) not found (expected on plain Arch: linux-cachyos*, proton-cachyos, protonup-qt, and our own: labyrinth-*, proton-pass, visual-studio-code-bin)"
 }
 
 case "${1:-all}" in

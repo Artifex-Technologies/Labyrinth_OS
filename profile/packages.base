@@ -56,13 +56,9 @@ vulkan-tools
 python
 # git: Claude Code and every project need it
 git
-# installer: Calamares is built from packages/pkgbuilds/calamares into the local repo
-calamares
+# installer (yggdrasil-installer + labyrinth-install-system): rsync, and unsquashfs to copy the system from the medium
 rsync
-# Calamares unpackfs needs unsquashfs
 squashfs-tools
-# Calamares displaymanager imports toml
-python-toml
 grub
 librsvg
 # finds Windows and other systems on the disks for the boot menu (dual boot)

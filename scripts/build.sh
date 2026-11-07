@@ -25,6 +25,21 @@ command -v mkarchiso >/dev/null || { echo "error: install archiso: pacman -S --n
 echo "==> Checking the generated package list is current"
 python3 "$repo_root/scripts/gen-packages.py" --check
 
+echo "==> Labyrinth's package key on the build host"
+# The local packages are signed (scripts/build-local-packages.sh) and the build checks them (profile/pacman.conf). The key comes
+# from this checkout's labyrinth-keyring package, by its full fingerprint, and is signed locally only once it matches.
+LABYRINTH_FPR=C9CE784C8BD9B661042075972D3BD4B1E7CD07A5
+if [[ ${LABYRINTH_UNSIGNED:-} == 1 ]]; then
+  echo "    LABYRINTH_UNSIGNED=1: the local packages are trusted unsigned for this build"
+elif ! pacman-key --list-keys "$LABYRINTH_FPR" >/dev/null 2>&1; then
+  pacman-key --add "$repo_root/packages/pkgbuilds/labyrinth-keyring/labyrinth.gpg"
+  pacman-key --finger "$LABYRINTH_FPR" 2>/dev/null | tr -d ' ' | grep -q "$LABYRINTH_FPR" \
+    || { echo "error: labyrinth.gpg does not hold the key $LABYRINTH_FPR" >&2; exit 1; }
+  pacman-key --lsign-key "$LABYRINTH_FPR"
+else
+  echo "    already present"
+fi
+
 echo "==> CachyOS keyring and mirrorlists on the build host"
 if [[ ! -f /etc/pacman.d/cachyos-mirrorlist ]]; then
   # CachyOS's signing key, by its full fingerprint (a short id can be forged): the one trusted on the owner's PC, as published at
@@ -56,6 +71,7 @@ rm -rf --one-file-system "${profile_build_dir:?}"
 mkdir -p "$work_dir"
 cp -r "$repo_root/profile" "$profile_build_dir"
 sed -i "s|@@LABYRINTH_REPO_DIR@@|$repo_root/repo/x86_64|g" "$profile_build_dir/pacman.conf"
+[[ ${LABYRINTH_UNSIGNED:-} == 1 ]] && sed -i '/^\[labyrinth\]/,/^Server/ s/^SigLevel = Required$/SigLevel = Optional TrustAll/' "$profile_build_dir/pacman.conf"
 if [[ -n ${LABYRINTH_PRESET:-} ]]; then
   echo "==> A lighter medium: the $LABYRINTH_PRESET preset"
   python3 "$repo_root/scripts/gen-packages.py" --preset "$LABYRINTH_PRESET" --out "$profile_build_dir/packages.x86_64"
