@@ -73,7 +73,7 @@ eight unmeasured commits. Two things found that come before any access raise: th
 installed on this PC (`/usr/local/sbin` is empty; the commit said applied), and the code evals run her tests unsandboxed
 (`SARINA_VERIFY_TESTS=on`). Day 1 closes the code side of both; the OS side is yours.
 **For the owner tonight** (the plan's Day 1 evening list, ~25 min): `sudo systemctl restart ollama`; install `labyrinth-agent` +
-`labyrinth-agent-window` to `/usr/local/sbin` and run `sudo labyrinth-agent-setup --owner zlothra --owner-login`, then check
+`labyrinth-agent-window` to `/usr/local/sbin` and run `sudo labyrinth-agent-setup --owner "$USER" --owner-login`, then check
 `sudo -n -l` no longer shows the NOPASSWD: ALL line; install the repo copy of `labyrinth-ask-sarina` to `/usr/local/bin`; the
 `OLLAMA_KEEP_ALIVE=30m` drop-in (only after Day 1 recorded the reload count); optionally `snap-pac`; commit or discard the
 PKGBUILD bumps here and in Yggdrasil; answer D1-D5 in `~/Desktop/answers-for-claude.txt`.

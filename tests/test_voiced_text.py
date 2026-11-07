@@ -21,7 +21,7 @@ class Voiced(unittest.TestCase):
         self.assertEqual(v.clean("Okay [chuckle] **so** it's `fine` 🐍 <think>x</think>!"), "Okay so it's fine x!")
 
     def test_names_are_respelled_so_they_are_said_right(self):
-        self.assertEqual(v.clean("Sarina and Zlothra's Heimdall"), "Suhreenuh and Zlawthruh's Haymdawl")
+        self.assertEqual(v.clean("Sarina and Fylgja's Heimdall"), "Suhreenuh and Filyah's Haymdawl")
 
     def test_a_delivery_tag_belongs_to_its_sentence_and_is_never_joined_to_another(self):
         got = sentences("[joking] My script ate its own log. Very efficient. [unsure] I think the file is gone. [gentle] That is rough. [serious] Back it up.")

@@ -69,7 +69,7 @@ class Agent(unittest.TestCase):
     def test_limbo_manifests_from_the_agents_folders_only(self):
         self.assertEqual(self.m.limbo_argv("up", "/var/lib/limbo/build-agent/test.json"), ["limbo", "up", "/var/lib/limbo/build-agent/test.json"])
         self.assertEqual(self.m.limbo_argv("doctor", ""), ["limbo", "doctor"])
-        for verb, mf in [("up", "/home/zlothra/evil.json"), ("up", "/var/lib/limbo/build-agent/../../../etc/x.json"), ("hold", ""), ("up", "")]:
+        for verb, mf in [("up", "/home/alex/evil.json"), ("up", "/var/lib/limbo/build-agent/../../../etc/x.json"), ("hold", ""), ("up", "")]:
             with self.assertRaises(self.m.Refused, msg=(verb, mf)):
                 self.m.limbo_argv(verb, mf)
 

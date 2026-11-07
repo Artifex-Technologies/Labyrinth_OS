@@ -1,6 +1,6 @@
 # systemd USER unit, started by labyrinth-sarina-reflect.timer (both off until the owner switches them on).
 [Unit]
-Description=Sarina learns from your talks (Entities/About Zlothra in her vault)
+Description=Sarina learns from your talks (Entities/About <owner> in her vault)
 
 [Service]
 Type=oneshot

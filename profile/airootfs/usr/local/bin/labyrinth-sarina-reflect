@@ -1,6 +1,6 @@
 #!/bin/bash
 # labyrinth-sarina-reflect: once a day, Sarina reads what you talked about (Talks/ in her vault, kept only for talk that was not about
-# the computer) and updates what she has learned about you in Entities/About Zlothra.md: each observation with your own words as
+# the computer) and updates what she has learned about you in Entities/About <owner>.md: each observation with your own words as
 # evidence (checked against the talk log, so nothing is invented) and how often she has seen it. You can edit that note; anything you
 # move under "Forgotten" she will not add again. It also turns files you drop in the vault's Inbox/ into linked notes under Sources/.
 # Off until you switch it on in Settings > Sarina's agents. Local model only.

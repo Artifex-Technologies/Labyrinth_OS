@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     def test_names_are_said_as_the_owner_spelled_them(self):
         m = os.path.join(self.d, "say.json")
-        open(m, "w").write('{"Zlothra": "Zlawthra", "Fylgja": "Filgya"}')
-        r = self.run_it("Hi Zlothra, FYLGJA is open.", env={"LABYRINTH_SAY_MAP": m})
+        open(m, "w").write('{"Siobhan": "Shivawn", "Fylgja": "Filgya"}')
+        r = self.run_it("Hi Siobhan, FYLGJA is open.", env={"LABYRINTH_SAY_MAP": m})
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(open(self.said).read().strip(), "Hi Zlawthra, Filgya is open.")
+        self.assertEqual(open(self.said).read().strip(), "Hi Shivawn, Filgya is open.")

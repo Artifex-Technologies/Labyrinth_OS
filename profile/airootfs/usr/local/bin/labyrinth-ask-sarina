@@ -384,14 +384,18 @@ def drop_offers(text):
 OBS_RX = re.compile(r"^- (.+?) — seen (\d+)×, last (\d{4}-\d{2}-\d{2})\.")
 
 
+def owner_name():
+    """The owner's name from the local config (SARINA_OWNER_NAME), never from the code."""
+    return (os.environ.get("SARINA_OWNER_NAME") or env_file().get("SARINA_OWNER_NAME") or "the owner").strip()
+
+
 def learned(vault, today=None, n=6):
-    """What she has learned about the owner (Entities/About <SARINA_OWNER_NAME>.md, written by `sarina reflect`; About Zlothra.md before
-    the name was set): the observations seen at least twice, or seen in the last week, most seen first. Only the Observations section;
+    """What she has learned about the owner (Entities/About <SARINA_OWNER_NAME>.md, written by `sarina reflect`): the observations seen at least twice, or seen in the last week, most seen first. Only the Observations section;
     what the owner moved under Forgotten is never read."""
     today = today or datetime.date.today()
-    name = (os.environ.get("SARINA_OWNER_NAME") or env_file().get("SARINA_OWNER_NAME") or "the owner").strip()
+    name = owner_name()
     text = None
-    for note in ("About %s.md" % name, "About Zlothra.md"):
+    for note in ("About %s.md" % name,):
         try:
             with open(os.path.join(vault, "Entities", note), encoding="utf-8") as f:
                 text = f.read()
@@ -419,7 +423,7 @@ def learned(vault, today=None, n=6):
 # "prefers short answers" is close to every question; "has a cat" only to a few).
 NEUTRAL = ["What time is it?", "Tell me something interesting.", "How are you doing today?", "What do you think about that?", "Okay, sounds good.",
            "Good morning!", "Can you help me with something?", "I was just thinking about stuff.", "Tell me a short joke.", "Yes or no?"]
-LEARN_STOP = {"zlothra", "their", "about", "with", "they", "them", "from", "that", "this", "when", "have", "likes", "prefers", "wants", "being", "despite",
+LEARN_STOP = {"their", "about", "with", "they", "them", "from", "that", "this", "when", "have", "likes", "prefers", "wants", "being", "despite",
               "the", "and", "you", "are", "was", "for", "how", "its", "not", "but", "can", "did", "has", "had", "his", "her", "she", "him", "our",
               "who", "why", "way", "all", "any", "one", "out", "get", "got", "too", "now", "new", "day", "see", "say", "what", "think", "doing",
               "your", "just", "like", "some", "will", "would", "could", "should", "really", "today", "tell", "know", "want", "yes"}
@@ -452,8 +456,10 @@ def relevant(question, observations, env):
     import math
     if not observations:
         return []
-    said = set(w for w in re.findall(r"[a-z]{3,}", question.lower()) if w not in LEARN_STOP)
-    out = [o for o in observations if said & set(w for w in re.findall(r"[a-z]{3,}", o.lower()) if w not in LEARN_STOP)]
+    # the owner's name starts every observation ("Sam has a cat"): it says nothing about which one is meant
+    stop = LEARN_STOP | set(re.findall(r"[a-z]{3,}", owner_name().lower()))
+    said = set(w for w in re.findall(r"[a-z]{3,}", question.lower()) if w not in stop)
+    out = [o for o in observations if said & set(w for w in re.findall(r"[a-z]{3,}", o.lower()) if w not in stop)]
     cache_path = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina", "embed-cache.json")
     try:
         with open(cache_path) as f:

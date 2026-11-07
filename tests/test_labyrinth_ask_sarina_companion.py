@@ -27,12 +27,12 @@ class Companion(unittest.TestCase):
         os.makedirs(os.path.join(self.vault, "Entities"))
         os.makedirs(os.path.join(self.vault, "Jokes"))
         with open(os.path.join(self.vault, "Entities", "Inside jokes.md"), "w") as f:
-            f.write("# Inside jokes\n\n- 2026-10-17: Zlothra is Sloth plus Mothra.\n")
+            f.write("# Inside jokes\n\n- 2026-10-17: Slothmothra is Sloth plus Mothra.\n")
         with open(os.path.join(self.vault, "Jokes", "2026-10.md"), "w") as f:
             f.write("# Jokes\n\n- 2026-10-22 09:09 | they said: a printer joke | I said: It had a paper cut.\n")
         bin_ = os.path.join(self.d, "bin")
         os.makedirs(bin_)
-        for name, body in (("sarina", "printf 'Talks/2026-10.md  [meaning]\\n  - 2026-10-20 21:00 | they said: my cat knocked the mug over | I said: Gravity tests.\\nEntities/Inside jokes.md  [meaning]\\n  - 2026-10-17: Zlothra is Sloth plus Mothra.\\nHome.md  [keywords]\\n  - 2026-10-01 not a moment\\n'"),
+        for name, body in (("sarina", "printf 'Talks/2026-10.md  [meaning]\\n  - 2026-10-20 21:00 | they said: my cat knocked the mug over | I said: Gravity tests.\\nEntities/Inside jokes.md  [meaning]\\n  - 2026-10-17: Slothmothra is Sloth plus Mothra.\\nHome.md  [keywords]\\n  - 2026-10-01 not a moment\\n'"),
                            ("sarina-tone", "echo 'This week they have sounded low or tired in 5 of 12 questions.'")):
             p = os.path.join(bin_, name)
             with open(p, "w") as f:
@@ -41,9 +41,16 @@ class Companion(unittest.TestCase):
         self.path = os.environ["PATH"]
         os.environ["PATH"] = bin_ + ":" + self.path
         self.env = {"SARINA_VAULT": self.vault, "PATH": os.environ["PATH"]}
+        # the owner the tests are about, whatever this computer's own config says
+        self.owner = os.environ.get("SARINA_OWNER_NAME")
+        os.environ["SARINA_OWNER_NAME"] = "Sam"
 
     def tearDown(self):
         os.environ["PATH"] = self.path
+        if self.owner is None:
+            os.environ.pop("SARINA_OWNER_NAME", None)
+        else:
+            os.environ["SARINA_OWNER_NAME"] = self.owner
 
     def test_small_talk_gets_what_a_friend_would_know(self):
         c = self.m.companion("(They laughed.) the cat did it once more, tell me a joke about cats", self.env, datetime.datetime(2026, 10, 22, 22, 40))
@@ -81,18 +88,18 @@ class Companion(unittest.TestCase):
         self.assertEqual(d("Pixel ran gravity tests. Did the mug survive?"), "Pixel ran gravity tests. Did the mug survive?")
 
     def test_the_same_question_asked_before_is_not_recalled(self):
-        self.assertEqual(self.m.recall("my cat knocked the mug over", self.vault, self.env), ["2026-10-17: Zlothra is Sloth plus Mothra."])
+        self.assertEqual(self.m.recall("my cat knocked the mug over", self.vault, self.env), ["2026-10-17: Slothmothra is Sloth plus Mothra."])
         self.assertEqual(len(self.m.recall("what about my cat", self.vault, self.env)), 2)
 
     def test_what_she_learned_is_known_but_forgotten_is_not(self):
-        with open(os.path.join(self.vault, "Entities", "About Zlothra.md"), "w") as f:
-            f.write("# About Zlothra\n\n## Observations\n\n"
-                    "- Zlothra has a cat named Pixel — seen 3×, last 2026-10-01. Evidence: \"my cat Pixel\"\n"
-                    "- Zlothra is learning to draw — seen 1×, last 2026-10-20. Evidence: \"picking up drawing\"\n"
-                    "- Zlothra once mentioned rain — seen 1×, last 2026-09-01.\n"
-                    "\n## Forgotten\n\n- Zlothra's sister is called Ana — seen 4×, last 2026-10-21.\n")
+        with open(os.path.join(self.vault, "Entities", "About Sam.md"), "w") as f:
+            f.write("# About Sam\n\n## Observations\n\n"
+                    "- Sam has a cat named Pixel — seen 3×, last 2026-10-01. Evidence: \"my cat Pixel\"\n"
+                    "- Sam is learning to draw — seen 1×, last 2026-10-20. Evidence: \"picking up drawing\"\n"
+                    "- Sam once mentioned rain — seen 1×, last 2026-09-01.\n"
+                    "\n## Forgotten\n\n- Sam's sister is called Ana — seen 4×, last 2026-10-21.\n")
         got = self.m.learned(self.vault, datetime.date(2026, 10, 23))
-        self.assertEqual(got, ["Zlothra has a cat named Pixel", "Zlothra is learning to draw"])
+        self.assertEqual(got, ["Sam has a cat named Pixel", "Sam is learning to draw"])
         env = dict(self.env, LABYRINTH_TONE="0", SARINA_EMBED_URL="http://127.0.0.1:9/none")  # no embeddings: shared words decide
         c = self.m.companion("hello there friend", env, datetime.datetime(2026, 10, 23, 12, 0))
         self.assertNotIn("What you have learned", c)  # nothing in it is about this
