@@ -75,7 +75,10 @@ def fresh_copies(src):
         else:
             run(["git", "-C", str(d), "fetch", "--quiet", "origin"])
         branch = out(["git", "-C", str(d), "symbolic-ref", "--short", "refs/remotes/origin/HEAD"]).strip()
-        run(["git", "-C", str(d), "checkout", "--quiet", "--force", "--detach", branch])
+        # the local branch moves with GitHub: recipes that build from this copy (git+file://, heimdall-git, sarina-git,
+        # limbo-git) take its branch, not the checkout, so a detached checkout left them building the first clone's
+        # commit for days (2026-11-07: Heimdall two days behind, Sarina too)
+        run(["git", "-C", str(d), "checkout", "--quiet", "--force", "-B", branch.split("/", 1)[1], branch])
         # tracked files exactly as committed; ignored build output (the local repo, makepkg's folders) is kept
         run(["git", "-C", str(d), "clean", "--quiet", "-ffd"])
         heads[name] = out(["git", "-C", str(d), "rev-parse", "HEAD"]).strip()
