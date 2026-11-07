@@ -18,7 +18,9 @@ jobs:
         run: |
           useradd -m ci
           chown -R ci "$GITHUB_WORKSPACE"
-          su ci -c "cd '$GITHUB_WORKSPACE' && scripts/release-check.sh quick"
+          # the installer tests run Yggdrasil's install program with Labyrinth's settings (tests/test_install_system.py)
+          su ci -c "git clone --quiet --depth 1 https://github.com/Artifex-Technologies/Yggdrasil.git /home/ci/Yggdrasil"
+          su ci -c "cd '$GITHUB_WORKSPACE' && YGGDRASIL_DIR=/home/ci/Yggdrasil scripts/release-check.sh quick"
   rust:
     runs-on: ubuntu-latest
     container: archlinux:latest

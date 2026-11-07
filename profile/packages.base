@@ -56,7 +56,7 @@ vulkan-tools
 python
 # git: Claude Code and every project need it
 git
-# installer (yggdrasil-installer + labyrinth-install-system): rsync, and unsquashfs to copy the system from the medium
+# installer (yggdrasil-installer and its yggdrasil-install-system): rsync, and unsquashfs to copy the system from the medium
 rsync
 squashfs-tools
 grub

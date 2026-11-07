@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs inside the target system, right after the installer (labyrinth-install-system) has
+# Runs inside the target system, right after the installer (yggdrasil-install-system) has
 # copied the live image onto the disk. Removes the
 # live-medium-only pieces and restores what mkarchiso strips, so the installed
 # system boots on its own and has a real login.

@@ -26,7 +26,7 @@ installer's steps, the distress password) plugs in through integration files in 
 
 ## Installing
 
-Labyrinth has its own installer: Yggdrasil's installer window with Labyrinth's install steps (`labyrinth-install-system`). It asks
+Labyrinth installs with Yggdrasil's installer (the window and its `yggdrasil-install-system`, with Labyrinth's own clean-up and boot menu steps). It asks
 for the language, the keyboard (by type: QWERTY, QWERTZ, AZERTY, Dvorak, Colemak), the time zone, the disk and the account. The disk
 can be erased, or partitions chosen by hand, for example beside Windows, keeping its EFI partition. The system partition is
 encrypted by default. See [Yggdrasil's docs/INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md).

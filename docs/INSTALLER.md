@@ -1,8 +1,8 @@
 # Installer
 
 > **Superseded (2026-10-24):** Labyrinth no longer uses Calamares. It has its own installer: Yggdrasil's installer window
-> (`yggdrasil-installer`) with Labyrinth's install steps (`profile/airootfs/usr/local/bin/labyrinth-install-system`), including
-> manual partitioning beside Windows. Calamares itself was removed from the ISO on 2026-11-07. The current description is Yggdrasil's
+> (`yggdrasil-installer`) with Labyrinth's install steps (`labyrinth-install-system`; since 2026-11-07 Yggdrasil's
+> `yggdrasil-install-system`, configured by `labyrinth-installer.conf`), including manual partitioning beside Windows. Calamares itself was removed from the ISO on 2026-11-07. The current description is Yggdrasil's
 > [docs/INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md). What follows is the earlier
 > Calamares plan, kept for its reasoning.
 

@@ -23,7 +23,7 @@ side; they go away when those libraries move on. Re-run the audit before each re
 
 1. Build the ISO: `scripts/build-local-packages.sh && sudo scripts/build.sh` (the first as a normal user, since makepkg refuses
    root; needs archiso, the CachyOS keyring, the Labyrinth signing key or `LABYRINTH_UNSIGNED=1`, and about 15 GB).
-2. Boot it in a VM (`scripts/vm`), run the installer (Install Labyrinth: `yggdrasil-installer` with `labyrinth-install-system`),
+2. Boot it in a VM (`scripts/vm`), run the installer (Install Labyrinth: `yggdrasil-installer` with `yggdrasil-install-system`),
    reboot, then `labyrinth-selfcheck` and the checks in [FIRST_BOOT.md](FIRST_BOOT.md) §6.
 3. Secure Boot enrolment has not been exercised. The encrypted-disk install has (on real hardware, beside Windows).
 

@@ -2,7 +2,7 @@
 # Start the installer from the desktop (launcher, dock). Live medium only.
 #
 # Yggdrasil's installer (yggdrasil-installer) runs as the live user and asks pkexec for root only for the install itself
-# (labyrinth-install-system, named in the "installer" integration file). Calamares, the old installer, was removed on 2026-11-07.
+# (yggdrasil-install-system, named in the "installer" integration file). Calamares, the old installer, was removed on 2026-11-07.
 set -u
 if command -v yggdrasil-installer >/dev/null; then
   exec yggdrasil-installer "$@"

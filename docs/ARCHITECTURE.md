@@ -13,8 +13,9 @@
 - Build system: archiso profile with CachyOS repos in `profile/pacman.conf`. Labyrinth's own
   packages come from a local `[labyrinth]` repository, signed with the Labyrinth key and checked
   (`SigLevel = Required`; [PACKAGE_REPO.md](PACKAGE_REPO.md)).
-- Installer: Yggdrasil's installer window (`yggdrasil-installer`) with Labyrinth's install
-  program (`labyrinth-install-system`), which copies the live image onto the disk. Calamares, the
+- Installer: Yggdrasil's installer window (`yggdrasil-installer`) and its install program
+  (`yggdrasil-install-system`, Labyrinth's own until 2026-11-07), which copies the live image onto the disk; Labyrinth's
+  `labyrinth-installer.conf` names its clean-up, last checks and boot menu theme. Calamares, the
   first plan ([INSTALLER.md](INSTALLER.md), kept for its reasoning), was removed on 2026-11-07.
 
 ## 2. GPU (RTX 2080 Ti)

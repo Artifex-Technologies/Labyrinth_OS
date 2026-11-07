@@ -1,5 +1,5 @@
 {
- "_comment": "The browsers the installer offers (Yggdrasil's installer shows id, name, note, chosen; labyrinth-install-system installs them). packages: from the repositories (those already on the medium need no network); flatpak: from Flathub. desktop: the launcher names to look for when making it the default (the first one found).",
+ "_comment": "The browsers the installer offers (Yggdrasil's installer shows id, name, note, chosen; yggdrasil-install-system installs them). packages: from the repositories (those already on the medium need no network); flatpak: from Flathub. desktop: the launcher names to look for when making it the default (the first one found).",
  "browsers": [
   {"id": "vivaldi", "name": "Vivaldi", "note": "Chromium-based, very customisable: tabs, panels, mail and calendar built in", "chosen": true,
    "packages": ["vivaldi", "vivaldi-ffmpeg-codecs"], "desktop": ["vivaldi-stable.desktop"]},

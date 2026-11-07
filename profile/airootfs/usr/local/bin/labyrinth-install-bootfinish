@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs inside the target after the installer (labyrinth-install-system) has installed GRUB. Order of importance:
+# Runs inside the target after the installer (yggdrasil-install-system) has installed GRUB. Order of importance:
 #
 #   1. Verify the bootloader result. A machine with no usable grub.cfg does not
 #      boot, so this is the one fatal step.

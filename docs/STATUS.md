@@ -13,7 +13,9 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   Plasma, KWin and SDDM left on 2026-10-24; the old Omarchy-style tiling desktop (waybar, mako, fuzzel and the rest) on 2026-11-05.
 - **Login:** greetd with Yggdrasil's greeter. On the live medium greetd signs the live user in by itself (`/etc/greetd/live.toml`,
   which the install removes).
-- **Installer:** Yggdrasil's installer window (`yggdrasil-installer`) with Labyrinth's install program (`labyrinth-install-system`).
+- **Installer:** Yggdrasil's installer window (`yggdrasil-installer`) and its install program (`yggdrasil-install-system`; Labyrinth's
+  own `labyrinth-install-system` until 2026-11-07, moved to Yggdrasil so Niflheim installs the same way). Labyrinth's settings for it
+  (clean-up, last checks, boot menu theme, kernel options) are in `labyrinth-installer.conf`.
   Erase a disk or choose partitions by hand (beside Windows, keeping its EFI partition); LUKS2 encryption on by default; btrfs with
   snapper and grub-btrfs; GRUB with Labyrinth's theme. Calamares was removed on 2026-11-07 (df5b5a2); there is no fallback installer.
 - **Software:** the ISO stays under 4 GB. Vivaldi is the one browser on it. The installer's Browsers page adds others; its Optional
