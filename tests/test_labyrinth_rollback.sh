@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# needs: root
 # Tests labyrinth-rollback on a throwaway btrfs image with Labyrinth's layout (@, @home, @/.snapshots/N/snapshot), never on a
 # real disk. The image is built without root (mkfs.btrfs --rootdir) and attached with udisksctl; only the tool itself runs as
 # root, through $SUDO (default sudo).
@@ -24,10 +25,10 @@ info() { printf '<?xml version="1.0"?>\n<snapshot>\n  <type>single</type>\n  <nu
 
 # the layout: the system now, two snapshots of it, a home
 R=$W/root
-mkdir -p "$R/@/etc" "$R/@/boot/grub/x86_64-efi" "$R/@home/matt" "$R/@/.snapshots"
+mkdir -p "$R/@/etc" "$R/@/boot/grub/x86_64-efi" "$R/@home/user" "$R/@/.snapshots"
 echo current >"$R/@/etc/marker"
 echo grub-now >"$R/@/boot/grub/x86_64-efi/normal.mod"
-echo "Sarina lives here" >"$R/@home/matt/vault.md"
+echo "Sarina lives here" >"$R/@home/user/vault.md"
 for n in 1 2; do
   mkdir -p "$R/@/.snapshots/$n/snapshot/etc" "$R/@/.snapshots/$n/snapshot/boot/grub/x86_64-efi" "$R/@/.snapshots/$n/snapshot/.snapshots"
   echo "snap$n" >"$R/@/.snapshots/$n/snapshot/etc/marker"
@@ -72,7 +73,7 @@ check_rolled() {
   [[ -f $m/@/.snapshots/2/info.xml && -d $m/@/.snapshots/1/snapshot ]] || { echo "snapshots not moved"; return 1; }
   [[ ! -e $b/.snapshots ]] || { echo "snapshots left behind"; return 1; }
   [[ $(cat "$m/@/boot/grub/x86_64-efi/normal.mod") == grub-now ]] || { echo "grub not carried"; return 1; }
-  [[ $(cat "$m/@home/matt/vault.md") == "Sarina lives here" ]] || { echo "home touched"; return 1; }
+  [[ $(cat "$m/@home/user/vault.md") == "Sarina lives here" ]] || { echo "home touched"; return 1; }
   grep -q "from snapshot 2" "$m/@/.labyrinth-rollback" || { echo "no note"; return 1; }
 }
 look check_rolled || fail "after rollback"

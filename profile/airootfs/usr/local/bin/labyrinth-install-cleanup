@@ -31,7 +31,8 @@ if [[ -d $R/home/live/.config ]]; then
   cp -a "$R/home/live/.config" "$R/etc/skel/"
   # cp -a kept the live user's uid (1000), which is the first installed account's: the template every new account starts
   # from would then be writable by that one person. It belongs to root and is readable by all.
-  chown -R 0:0 "$R/etc/skel/.config"
+  # (only root can; the tests run this against a mock root as a normal user)
+  if [[ $EUID -eq 0 ]]; then chown -R 0:0 "$R/etc/skel/.config"; fi
   chmod -R u+rwX,go+rX,go-w "$R/etc/skel/.config"
   say "seeded /etc/skel from the live user's .config"
 fi

@@ -57,7 +57,11 @@ pass "PKGBUILDs parse"
 
 # python tests
 for t in tests/test_*.py; do step "python $t" python3 -W ignore "$t"; done
-for t in tests/test_*.sh; do step "shell $t" bash "$t"; done
+for t in tests/test_*.sh; do
+  # a test marked "# needs: root" (a loop device, sudo) runs only when asked: LABYRINTH_ROOT_TESTS=1
+  if grep -q '^# needs: root' "$t" && [[ ${LABYRINTH_ROOT_TESTS:-} != 1 ]]; then warn "skipped $t (needs root; LABYRINTH_ROOT_TESTS=1 runs it)"; continue; fi
+  step "shell $t" bash "$t"
+done
 
 if ((quick)); then warn "quick mode: Rust tests and the dependency audit were skipped"; else
   for c in packages/*/Cargo.toml; do
