@@ -750,3 +750,9 @@ pinned file byte for byte (29,352,832 bytes, SHA-256 `73065619…`), as is its l
 differs (SHA-256 `c3367ff6…`). Step 3 now points the recipe and `generate_v67.py`'s package pin at Arch's file, committed in my
 local clone only (branch `labyrinth-arch-utils`); the generator's own checks of the firmware, the generated payload and the
 licence are unchanged. Worth telling nlzy/turing-unlock (their recipe no longer builds for anyone): a short issue, if I say yes.
+
+**Then (same evening):** step 3 built and installed turing-unlock (DKMS for 7.3.3-1-cachyos and the LTS kernel; the firmware in
+`/usr/lib/firmware/turing-unlock/610.43.03`). The same `pacman -Syu` brought kernel 7.3.3 and NVIDIA's open driver **620.70.06**
+(615.78.08 still running until the restart). So the next start is the first with 7.3.3, driver 620 and the module (doing nothing
+without its option): at the PC, not from the iPad (I could not sign in from there). Before Phase 3, check turing-unlock's issues
+for driver 620: the reports so far go up to 615.78. The support table pins the series (open), so it still matches.
