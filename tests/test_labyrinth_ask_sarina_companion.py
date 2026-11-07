@@ -154,8 +154,8 @@ if __name__ == "__main__":
     unittest.main()
 
     def test_her_own_voice_coming_back_is_not_a_question(self):
-        prev = "[gentle] It is four in the afternoon, Matt. The sun is still up and the garden looks fine."
-        self.assertTrue(self.m.is_echo("it is four in the afternoon Matt the sun is still up", prev))
+        prev = "[gentle] It is four in the afternoon, Sam. The sun is still up and the garden looks fine."
+        self.assertTrue(self.m.is_echo("it is four in the afternoon Sam the sun is still up", prev))
         self.assertTrue(self.m.is_echo("The sun is still up and the garden looks fine", prev))
         self.assertFalse(self.m.is_echo("what about the garden", prev), "a short real question that shares a word is not an echo")
         self.assertFalse(self.m.is_echo("is the sun up", ""))
@@ -163,11 +163,11 @@ if __name__ == "__main__":
     def test_the_answer_is_said_sentence_by_sentence_as_it_is_written(self):
         st = self.m.Streamer("what time is it", chat=True)
         got = []
-        for ch in "<think>\nplanning.\n</think>\n\nIt is four in the afternoon, Matt. The sun is still up! Want me to set a reminder? Is there anything else I can help with?":
+        for ch in "<think>\nplanning.\n</think>\n\nIt is four in the afternoon, Sam. The sun is still up! Want me to set a reminder? Is there anything else I can help with?":
             got += st.feed(ch)
-        self.assertEqual(got, ["It is four in the afternoon, Matt.", "The sun is still up!"], "a sentence is out as soon as it is complete, offers are not")
+        self.assertEqual(got, ["It is four in the afternoon, Sam.", "The sun is still up!"], "a sentence is out as soon as it is complete, offers are not")
         self.assertEqual(st.finish(), [])
-        self.assertEqual(st.text(), "It is four in the afternoon, Matt.\nThe sun is still up!")
+        self.assertEqual(st.text(), "It is four in the afternoon, Sam.\nThe sun is still up!")
         st = self.m.Streamer("", chat=False)
         got = []
         for ch in "First. Second one... and a third? Yes":
