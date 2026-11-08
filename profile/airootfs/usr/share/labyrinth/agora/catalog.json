@@ -686,30 +686,6 @@
    "flathub": "net.cozic.joplin_desktop"
   },
   {
-   "id": "ghostwriter",
-   "name": "ghostwriter",
-   "subtitle": "Read and write Markdown",
-   "description": "A distraction-free Markdown editor with a live preview: open any .md file (notes, a project's README or docs) and read it formatted, or write in it. Made by the KDE community; it brings part of KDE's libraries with it.",
-   "category": "Work",
-   "subcategory": "Notes & Writing",
-   "source": {
-    "type": "pacman",
-    "packages": [
-     "ghostwriter"
-    ]
-   },
-   "icon": "ghostwriter",
-   "reviewed": true,
-   "tags": [
-    "markdown",
-    "md",
-    "notes",
-    "writing",
-    "preview"
-   ],
-   "flathub": "io.github.wereturtle.ghostwriter"
-  },
-  {
    "id": "steam",
    "name": "Steam and Proton",
    "subtitle": "Games from Steam",
@@ -2037,6 +2013,7 @@
   "heimdall-git",
   "yggdrasil-calculator",
   "yggdrasil-taskmanager",
+  "yggdrasil-reader",
   "yggdrasil-idle",
   "yggdrasil-keyring-sync",
   "yggdrasil-lock",

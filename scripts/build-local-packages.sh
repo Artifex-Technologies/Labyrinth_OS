@@ -30,7 +30,7 @@ makepkg_conf="$repo_root/scripts/makepkg.conf"
 # not change when the code does, so they are always rebuilt. Every other package is pinned to a
 # released version and checksum, and is skipped when that exact version is already in the repo
 # Naming packages rebuilds them regardless.
-local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-spell yggdrasil-calculator yggdrasil-taskmanager yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove yggdrasil-installer yggdrasil-player yggdrasil-spell yggdrasil-clipboard yggdrasil-colorpicker labyrinth-distress labyrinth-ollama-tuning labyrinth-keyring kairos-git daedalus-cad-git argus-git sarina-git heimdall-git limbo-git)
+local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-spell yggdrasil-calculator yggdrasil-taskmanager yggdrasil-reader yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove yggdrasil-installer yggdrasil-player yggdrasil-spell yggdrasil-clipboard yggdrasil-colorpicker labyrinth-distress labyrinth-ollama-tuning labyrinth-keyring kairos-git daedalus-cad-git argus-git sarina-git heimdall-git limbo-git)
 
 # A package built from source here keeps the version its PKGBUILD names (0.1.0-27) until someone raises it by hand, so an
 # installed system would never see a new build as an update. Its version is stamped with the number of commits in the

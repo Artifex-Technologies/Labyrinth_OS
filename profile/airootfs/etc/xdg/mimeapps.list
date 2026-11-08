@@ -7,6 +7,10 @@ x-scheme-handler/about=vivaldi-stable.desktop
 x-scheme-handler/unknown=vivaldi-stable.desktop
 text/html=vivaldi-stable.desktop
 application/xhtml+xml=vivaldi-stable.desktop
+# Markdown and text files open in the Markdown Reader (yggdrasil-reader)
+text/markdown=yggdrasil-reader.desktop
+text/x-markdown=yggdrasil-reader.desktop
+text/plain=yggdrasil-reader.desktop
 # Videos open in VLC, in Yggdrasil's look (yggdrasil-player)
 video/x-matroska=yggdrasil-player.desktop
 video/mp4=yggdrasil-player.desktop
