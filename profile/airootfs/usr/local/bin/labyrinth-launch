@@ -201,7 +201,10 @@ def bwrap_args(app_id, entry, policy, env=None):
         for d in policy.get("folders", []):
             if os.path.isdir(d) and os.path.realpath(d).startswith(HOME):
                 a += ["--bind", d, d]
-        for ro in (os.path.join(config_home(), "kdeglobals"), os.path.join(config_home(), "gtk-3.0"), os.path.join(config_home(), "gtk-4.0"),
+        # the look, read-only: Yggdrasil's own choice (style, accent, icon pack), GTK's settings, icons, fonts; kdeglobals exists only
+        # while a program built on KDE's libraries is installed (ygg-theme writes it for those alone)
+        for ro in (os.path.join(config_home(), "yggdrasil", "appearance.conf"), os.path.join(config_home(), "kdeglobals"),
+                   os.path.join(config_home(), "gtk-3.0"), os.path.join(config_home(), "gtk-4.0"),
                    os.path.join(data_home(), "icons"), os.path.join(data_home(), "fonts"), os.path.join(config_home(), "labyrinth")):
             if os.path.exists(ro):
                 a += ["--ro-bind", ro, ro]
