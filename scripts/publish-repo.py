@@ -166,7 +166,7 @@ def choose(repo_dir, published_dir):
     newest = {}
     for f in repo_dir.glob("*.pkg.tar.zst"):
         name, ver, _ = pkginfo(f)
-        if name in NOT_PUBLISHED or name.startswith("labyrinth-") and name not in allowed_labyrinth(repo_dir):
+        if name in NOT_PUBLISHED or name not in with_recipe(repo_dir):
             continue
         if name not in newest or vercmp(ver, newest[name][0]) > 0:
             newest[name] = (ver, f)
@@ -184,16 +184,31 @@ def choose(repo_dir, published_dir):
     return chosen
 
 
-_allowed = None
+_with_recipe = None
 
 
-def allowed_labyrinth(repo_dir):
-    """The labyrinth-* packages that still have a recipe (older names such as labyrinth-panel became yggdrasil-*)."""
-    global _allowed
-    if _allowed is None:
-        root = repo_dir.parent.parent
-        _allowed = {p.name for p in (root / "packages" / "pkgbuilds").iterdir() if p.name.startswith("labyrinth-")}
-    return _allowed
+def with_recipe(repo_dir):
+    """The packages that still have a recipe in the sources of this publish: Labyrinth's own (packages/pkgbuilds), the store's
+    (profile/.../labyrinth/pkgbuilds) and Yggdrasil's (packages/pkgbuilds), by folder name and by every pkgname a recipe
+    makes. Builds of anything else left in the repository folder from earlier publishes are not published: older names
+    (labyrinth-panel became yggdrasil-panel), and software taken out (2026-11-08: huginn-git, Huginn moved to a private
+    repository, was published again from an old build)."""
+    global _with_recipe
+    if _with_recipe is None:
+        labyrinth = repo_dir.parent.parent
+        dirs = [labyrinth / "packages" / "pkgbuilds", labyrinth / "profile" / "airootfs" / "usr" / "share" / "labyrinth" / "pkgbuilds",
+                labyrinth.parent / "Yggdrasil" / "packages" / "pkgbuilds"]
+        names = set()
+        for d in dirs:
+            for r in d.iterdir() if d.is_dir() else []:
+                names.add(r.name)
+                pk = r / "PKGBUILD"
+                if pk.is_file():
+                    m = re.search(r"^pkgname=\(?([^)\n]*)\)?", pk.read_text(errors="replace"), re.M)
+                    if m:
+                        names.update(n.strip("'\" ") for n in m.group(1).split() if n.strip("'\" "))
+        _with_recipe = names
+    return _with_recipe
 
 
 # --- 5: signing --------------------------------------------------------------------------------------------------------
