@@ -1,0 +1,10 @@
+# The live session's dock: the installer first (Yggdrasil draws no desktop icons, so the Desktop folder's
+# install-labyrinth.desktop is not seen), then etc/yggdrasil/dock's apps (those not on the image are left out).
+labyrinth-install
+minos
+vivaldi-stable
+com.mitchellh.ghostty
+obsidian
+spotify-launcher
+steam
+yggdrasil-settings
