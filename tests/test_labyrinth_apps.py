@@ -24,6 +24,11 @@ def load_module(name, path):
 apps = load_module("labyrinth_apps", os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "labyrinth-apps"))
 gen = load_module("gen_packages", os.path.join(ROOT, "scripts", "gen-packages.py"))
 apps.MANIFEST = MANIFEST
+# the commands below run as on a system that has fetched its package lists, whatever this machine has
+import tempfile as _tempfile
+_SYNC = _tempfile.mkdtemp()
+open(os.path.join(_SYNC, "core.db"), "w").close()
+os.environ["LABYRINTH_PACMAN_SYNC"] = _SYNC
 
 
 def run(argv, installed):
@@ -86,6 +91,21 @@ class Commands(unittest.TestCase):
         self.assertEqual(len(pacman), 1)
         self.assertIn("--needed", pacman[0], "an installed, current build is left alone; an older one is updated")
         self.assertIn("limbo-git", pacman[0], "asked for although installed: that is how its update arrives")
+
+    def test_a_fresh_install_fetches_the_package_lists_and_takes_builds_from_the_repository(self):
+        comps, _ = apps.load(MANIFEST)
+        steps = apps.plan_install(["limbo", "obsidian"], comps, set(), in_repos=lambda name: False, fresh=True)
+        self.assertFalse(any(s[2] for s in steps), "nothing is built on this machine")
+        pacman = [s[1] for s in steps if "pacman" in s[1]]
+        self.assertEqual(len(pacman), 1)
+        self.assertIn("-Syu", pacman[0], "lists fetched with a full update, never -Sy alone")
+        self.assertIn("limbo-git", pacman[0])
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertTrue(apps.never_synced(tmp))
+            self.assertTrue(apps.never_synced(os.path.join(tmp, "missing")))
+            open(os.path.join(tmp, "core.db"), "w").close()
+            self.assertFalse(apps.never_synced(tmp))
 
     def test_proton_and_vscode_come_from_proton_and_microsoft_through_the_aur(self):
         for comp, pkg in (("proton-pass", "proton-pass-bin"), ("proton-mail", "proton-mail-bin"), ("vscode", "visual-studio-code-bin")):

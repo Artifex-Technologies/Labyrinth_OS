@@ -99,9 +99,22 @@ def in_repos(name):
         return False
 
 
-def plan_install(chosen, comps, installed, in_repos=in_repos):
+def never_synced(sync_dir=None):
+    """True on a system that has never fetched its package lists (a fresh install: the image carries none). pacman -S then finds
+    nothing, and a component's own build looks as if no repository had it (a VM install, 2026-11-08: every optional part chosen
+    in the installer failed at the first login)."""
+    d = sync_dir or os.environ.get("LABYRINTH_PACMAN_SYNC", "/var/lib/pacman/sync")
+    try:
+        return not any(n.endswith(".db") for n in os.listdir(d))
+    except OSError:
+        return True
+
+
+def plan_install(chosen, comps, installed, in_repos=in_repos, fresh=False):
     """List of (description, argv, cwd_pkgbuild) steps. Skips what is already installed (a component's own build that a
-    repository has is asked for anyway: pacman's --needed leaves it alone when it is current and updates it when it is not)."""
+    repository has is asked for anyway: pacman's --needed leaves it alone when it is current and updates it when it is not).
+    fresh: the package lists were never fetched, so the install fetches them and brings the system up to date with it
+    (pacman -Syu: Arch's safe way, never -Sy alone), and a component's own build is taken from Labyrinth's repository."""
     steps = []
     repo = []
     for i in chosen:
@@ -112,12 +125,17 @@ def plan_install(chosen, comps, installed, in_repos=in_repos):
     for i in chosen:
         pb = comps[i].get("pkgbuild")
         if pb and pb not in repo:
-            if in_repos(pb):
+            if fresh or in_repos(pb):
                 repo.append(pb)
             elif pb not in installed:
                 built_here.append(pb)
     if repo:
-        steps.append((f"install {len(repo)} package(s) with pacman", sudo(["pacman", "-S", "--needed"] + repo), None))
+        # from Agora or the first login (no terminal): pacman's "Proceed?" would read nothing and stop, as yay and makepkg would
+        quiet = ["--noconfirm"] if gui_sudo() else []
+        if fresh:
+            steps.append((f"fetch the package lists, update the system and install {len(repo)} package(s) with pacman", sudo(["pacman", "-Syu", "--needed"] + quiet + repo), None))
+        else:
+            steps.append((f"install {len(repo)} package(s) with pacman", sudo(["pacman", "-S", "--needed"] + quiet + repo), None))
     aur = []
     for i in chosen:
         for p in comps[i].get("aur", []):
@@ -252,7 +270,10 @@ def main(argv, installed=None):
         except KeyError as e:
             print(f"error: unknown component {e}", file=sys.stderr)
             return 2
-        steps = (plan_install if cmd == "install" else plan_remove)(chosen, comps, installed)
+        if cmd == "install":
+            steps = plan_install(chosen, comps, installed, fresh=never_synced())
+        else:
+            steps = plan_remove(chosen, comps, installed)
         if not steps:
             print("nothing to do")
             return 0
