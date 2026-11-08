@@ -14,7 +14,7 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
 - **Login:** greetd with Yggdrasil's greeter. On the live medium greetd signs the live user in by itself (`/etc/greetd/live.toml`,
   which the install removes).
 - **Installer:** Yggdrasil's installer window (`yggdrasil-installer`) and its install program (`yggdrasil-install-system`; Labyrinth's
-  own `labyrinth-install-system` until 2026-11-07, moved to Yggdrasil so Niflheim installs the same way). Labyrinth's settings for it
+  own `labyrinth-install-system` until 2026-11-07, moved to Yggdrasil so LykanOS installs the same way). Labyrinth's settings for it
   (clean-up, last checks, boot menu theme, kernel options) are in `labyrinth-installer.conf`.
   Erase a disk or choose partitions by hand (beside Windows, keeping its EFI partition); LUKS2 encryption on by default; btrfs with
   snapper and grub-btrfs; GRUB with Labyrinth's theme. Calamares was removed on 2026-11-07 (df5b5a2); there is no fallback installer.
@@ -40,8 +40,8 @@ and encrypted; the desktop runs on my main PC every day. `scripts/release-check.
   lsfg-vk as the stopgap. Settings > Games chooses the games.
 - The GPU unlock ([GPU_UNLOCK.md](GPU_UNLOCK.md)): Phases 0 and 1 are done. Phase 2 waits on my go, four BIOS readings and a game
   to measure with.
-- Niflheim OS (formerly Chymaera OS): its repository was renamed on 2026-11-07
-  ([Artifex-Technologies/Niflheim_OS](https://github.com/Artifex-Technologies/Niflheim_OS)) and it is moving to Yggdrasil.
+- LykanOS (formerly Niflheim OS and Chymaera OS): its repository was renamed twice on 2026-11-07
+  ([Artifex-Technologies/LykanOS](https://github.com/Artifex-Technologies/LykanOS)) and it is moving to Yggdrasil.
 - Settings > Wi-Fi & Network: Heimdall's list of devices on the network and its Wi-Fi checks (through the labyrinth-security
   integration).
 

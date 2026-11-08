@@ -38,8 +38,8 @@ class Catalog(unittest.TestCase):
             if a["source"]["type"] == "component":
                 self.assertIn(a["source"]["id"], known, a["id"])
 
-    def test_niflheim_only_apps_are_not_listed_in_labyrinth(self):
-        lab, chy = listed_in("labyrinth"), listed_in("niflheim")
+    def test_lykanos_only_apps_are_not_listed_in_labyrinth(self):
+        lab, chy = listed_in("labyrinth"), listed_in("lykanos")
         self.assertFalse(any(a["id"] in ("ghidra", "wireshark") for a in lab))
         self.assertTrue(any(a["id"] == "ghidra" for a in chy) and any(a["id"] == "krita" for a in chy))
         for a in lab:

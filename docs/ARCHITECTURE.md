@@ -37,7 +37,7 @@ Yggdrasil, our own desktop, in its own repository
 session on Hyprland (0.57 today) until its own compositor is ready. Login is greetd with
 Yggdrasil's greeter. KDE (Plasma, KWin, SDDM) left on 2026-10-24, and the Omarchy-style tiling
 desktop on 2026-11-05; Omarchy remains a source of ideas (keyboard-first shortcuts, plugins rebuilt
-for Yggdrasil). Yggdrasil is shared with Niflheim OS (formerly Chymaera OS), which is moving to it.
+for Yggdrasil). Yggdrasil is shared with LykanOS (formerly Niflheim OS and Chymaera OS), which is moving to it.
 What Labyrinth adds to the desktop (Heimdall, Sarina, the installer's steps) plugs in through
 integration files in `/usr/share/yggdrasil/integrations`.
 

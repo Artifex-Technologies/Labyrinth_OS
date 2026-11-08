@@ -1,9 +1,9 @@
-# Argus for Niflheim OS, the app and the firmware as one package: the Argus app (a qFlipper fork: a console for the Flipper
+# Argus for LykanOS, the app and the firmware as one package: the Argus app (a qFlipper fork: a console for the Flipper
 # Zero with a capture store, Wireshark export and a local control API) and the Argus firmware for the Flipper, built here
 # as an update bundle the app installs (Install from file: /usr/share/argus/firmware/argus-firmware.tgz).
-# Niflheim's: its Agora lists it (Niflheim_OS profile/airootfs/usr/share/niflheim/agora/catalog.json), Labyrinth's does not,
+# LykanOS's: its Agora lists it (LykanOS profile/airootfs/usr/share/lykanos/agora/catalog.json), Labyrinth's does not,
 # and it is not on Labyrinth's ISO (scripts/build-local-packages.sh leaves it out); the publish puts it in [labyrinth], from
-# which Niflheim installs. The firmware build downloads Flipper's ARM toolchain once, next to this file by default
+# which LykanOS installs. The firmware build downloads Flipper's ARM toolchain once, next to this file by default
 # ($FBT_TOOLCHAIN_PATH; kept, like the clones, by .gitignore).
 pkgname=argus-git
 pkgver=18.3074
