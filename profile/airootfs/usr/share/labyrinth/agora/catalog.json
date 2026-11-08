@@ -686,6 +686,31 @@
    "flathub": "net.cozic.joplin_desktop"
   },
   {
+   "id": "saga-md",
+   "name": "Saga MD",
+   "subtitle": "Read Markdown and text files",
+   "description": "Yggdrasil's own Markdown reader: a Markdown or text file in one page, formatted (headings, lists, tables, pictures, code) or as its source, which you can also edit and save. Ctrl+E switches between the two; there is never a second pane. Links to other Markdown files open in it, pictures from the web are never fetched and HTML in a file is never run. Comes with Labyrinth, and opens .md and .txt files by default.",
+   "category": "Work",
+   "subcategory": "Notes & Writing",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "saga-md"
+    ]
+   },
+   "icon": "text-markdown",
+   "reviewed": true,
+   "tags": [
+    "markdown",
+    "md",
+    "readme",
+    "notes",
+    "text",
+    "reader"
+   ],
+   "repo": "https://github.com/Artifex-Technologies/Yggdrasil"
+  },
+  {
    "id": "steam",
    "name": "Steam and Proton",
    "subtitle": "Games from Steam",
@@ -2013,7 +2038,7 @@
   "heimdall-git",
   "yggdrasil-calculator",
   "yggdrasil-taskmanager",
-  "yggdrasil-reader",
+  "saga-md",
   "yggdrasil-idle",
   "yggdrasil-keyring-sync",
   "yggdrasil-lock",

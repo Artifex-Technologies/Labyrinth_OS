@@ -128,8 +128,8 @@ yggdrasil-portal
 yggdrasil-agora
 yggdrasil-calculator
 yggdrasil-taskmanager
-# Markdown and text files: one page, formatted or as the source (replaced ghostwriter, KDE's, 2026-11-08)
-yggdrasil-reader
+# Saga MD, the Markdown reader: one page, formatted or as the source (replaced ghostwriter, KDE's, 2026-11-08)
+saga-md
 yggdrasil-panel
 yggdrasil-clipboard
 yggdrasil-colorpicker
