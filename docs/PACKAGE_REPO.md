@@ -41,7 +41,7 @@ A package built from source here keeps the version its PKGBUILD names until some
 `0.1.0.r405-27`, which pacman orders after `0.1.0-27` and after every earlier stamp. `-git` recipes already do this
 in `pkgver()`. A new build whose files and dependencies are the same as the published one is not published again.
 
-The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn moved to a private repository) have `epoch=1` since 2026-11-07: their
+The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn moved to a private repository) have `epoch=1` since 2026-11-07 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08): their
 version ended in Yggdrasil's newest commit, so two builds with the same count were ordered at random; it now ends in the app
 folder's own last commit.
 

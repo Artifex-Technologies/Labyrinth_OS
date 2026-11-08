@@ -198,23 +198,32 @@ def allowed_labyrinth(repo_dir):
 
 # --- 5: signing --------------------------------------------------------------------------------------------------------
 
+def online_name(f):
+    """The file's name in the release. A package with an epoch (the store's apps have epoch=1 since 2026-11-07) is named
+    name-1:ver-rel-arch by makepkg, and GitHub turns the colon into a dot; so the repository gives it that name itself (pacman
+    downloads the name the database lists, and the version inside the package keeps its epoch). 2026-11-08 a publish stopped
+    on huginn-git-1:... for this."""
+    return f.name.replace(":", ".")
+
+
 def stage(chosen, stage_dir):
     if stage_dir.exists():
         shutil.rmtree(stage_dir)
     stage_dir.mkdir(parents=True)
     env = dict(os.environ, GNUPGHOME=GNUPGHOME)
     for name, f in chosen.items():
-        if not SAFE_NAME.match(f.name):
+        online = online_name(f)
+        if not SAFE_NAME.match(online):
             sys.exit(f"error: {f.name}: GitHub would rename this file; pacman could not find it")
-        shutil.copy2(f, stage_dir / f.name)
+        shutil.copy2(f, stage_dir / online)
         sig = f.with_name(f.name + ".sig")
         if sig.is_file() and f.parent != stage_dir:
-            shutil.copy2(sig, stage_dir / sig.name)
-        if not (stage_dir / (f.name + ".sig")).is_file():
-            run(["gpg", "--batch", "--yes", "--local-user", KEY, "--detach-sign", "--no-armor", "--output", str(stage_dir / (f.name + ".sig")), str(stage_dir / f.name)], env=env)
-        run(["gpg", "--batch", "--verify", str(stage_dir / (f.name + ".sig")), str(stage_dir / f.name)], env=env, capture_output=True)
+            shutil.copy2(sig, stage_dir / (online + ".sig"))
+        if not (stage_dir / (online + ".sig")).is_file():
+            run(["gpg", "--batch", "--yes", "--local-user", KEY, "--detach-sign", "--no-armor", "--output", str(stage_dir / (online + ".sig")), str(stage_dir / online)], env=env)
+        run(["gpg", "--batch", "--verify", str(stage_dir / (online + ".sig")), str(stage_dir / online)], env=env, capture_output=True)
     db = stage_dir / f"{REPO_NAME}.db.tar.gz"
-    run(["repo-add", "--quiet", "--sign", "--key", KEY, str(db)] + sorted(str(stage_dir / f.name) for f in chosen.values()), env=env)
+    run(["repo-add", "--quiet", "--sign", "--key", KEY, str(db)] + sorted(str(stage_dir / online_name(f)) for f in chosen.values()), env=env)
     # pacman asks for labyrinth.db and labyrinth.files: repo-add makes those as links, and a release holds files only
     for base in (f"{REPO_NAME}.db", f"{REPO_NAME}.files"):
         for ext in ("", ".sig"):
