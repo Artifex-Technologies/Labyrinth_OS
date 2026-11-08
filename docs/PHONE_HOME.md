@@ -36,7 +36,6 @@ loopback only; Heimdall makes any connection of hers off the computer a critical
 | Vivaldi | Google, Cloudflare, Amazon, others | Websites, plus Google's Safe Browsing and component updates. The image now sets Vivaldi's privacy policies (below). |
 | Steam, its web helper, games | Valve, Akamai (Valve's content network), Google, Amazon, EA | Store, downloads, game servers. |
 | VS Code, GitHub Copilot, `gh`, `cargo`, `git` | Microsoft, GitHub, Fastly | Extensions, Copilot, code hosting. |
-| Huginn (`yt-dlp`, the player) | Google (YouTube) | Only when a video is opened. |
 | Claude Code | Anthropic (on Amazon and Cloudflare) | The assistant I work with. |
 
 ## Vivaldi's privacy defaults (on the image since 2026-11-07)

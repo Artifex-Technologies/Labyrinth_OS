@@ -465,14 +465,6 @@
       "notes": "Reconnect the controller after installing. USB Xbox controllers, and 8BitDo controllers over USB or in Switch mode, work without it."
     },
     {
-      "id": "huginn",
-      "name": "Huginn (video app)",
-      "description": "Videos without an account: search, subscriptions kept on this computer, playback in Yggdrasil's player, downloads, and your subscriptions from NewPipe, FreeTube or OpenTubeX. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
-      "proprietary": false,
-      "pkgbuild": "huginn-git",
-      "notes": "Videos come through yt-dlp. YouTube's terms do not allow third-party apps or downloading."
-    },
-    {
       "id": "game-2048",
       "name": "2048",
       "description": "Slide the tiles and merge equal numbers to reach 2048: undo, stats, Classic, Fibonacci, Evil and Daily modes, boards from 3x3 to 6x6, colours from your accent. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",

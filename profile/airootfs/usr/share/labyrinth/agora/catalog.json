@@ -943,29 +943,6 @@
    "flathub": "com.spotify.Client"
   },
   {
-   "id": "huginn",
-   "name": "Huginn",
-   "subtitle": "Videos without an account",
-   "description": "Yggdrasil's video app. Subscribe to channels with no account (kept on this computer), search, play in Yggdrasil's player at up to 4K, listen to the sound only, jump to chapters, download a video or its sound, and bring your subscriptions from NewPipe, FreeTube or OpenTubeX. Written in Rust; videos come through yt-dlp. Note: YouTube's terms do not allow third-party apps or downloading.",
-   "category": "Play",
-   "subcategory": "Music & Video",
-   "source": {
-    "type": "component",
-    "id": "huginn"
-   },
-   "icon": "huginn",
-   "reviewed": true,
-   "tags": [
-    "video",
-    "youtube",
-    "subscriptions",
-    "newpipe",
-    "freetube",
-    "downloads"
-   ],
-   "launch": "huginn"
-  },
-  {
    "id": "vlc",
    "name": "VLC",
    "subtitle": "Media player",
@@ -2030,8 +2007,7 @@
   }
  ],
  "tile_colors": {
-  "sarina": "#1f8f95",
-  "huginn": "#3b2f7a"
+  "sarina": "#1f8f95"
  },
  "local_builds": [
   "daedalus-cad-git",

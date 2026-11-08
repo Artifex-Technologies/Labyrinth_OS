@@ -20,7 +20,7 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Huginn, Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## The key
 
@@ -41,7 +41,7 @@ A package built from source here keeps the version its PKGBUILD names until some
 `0.1.0.r405-27`, which pacman orders after `0.1.0-27` and after every earlier stamp. `-git` recipes already do this
 in `pkgver()`. A new build whose files and dependencies are the same as the published one is not published again.
 
-The store's Yggdrasil apps (`huginn-git`, `yggdrasil-2048-git` and the other plugins) have `epoch=1` since 2026-11-07: their
+The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn moved to a private repository) have `epoch=1` since 2026-11-07: their
 version ended in Yggdrasil's newest commit, so two builds with the same count were ordered at random; it now ends in the app
 folder's own last commit.
 
