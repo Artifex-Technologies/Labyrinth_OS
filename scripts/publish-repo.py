@@ -217,11 +217,16 @@ def stage(chosen, stage_dir):
             sys.exit(f"error: {f.name}: GitHub would rename this file; pacman could not find it")
         shutil.copy2(f, stage_dir / online)
         sig = f.with_name(f.name + ".sig")
+        staged, staged_sig = stage_dir / online, stage_dir / (online + ".sig")
         if sig.is_file() and f.parent != stage_dir:
-            shutil.copy2(sig, stage_dir / (online + ".sig"))
-        if not (stage_dir / (online + ".sig")).is_file():
-            run(["gpg", "--batch", "--yes", "--local-user", KEY, "--detach-sign", "--no-armor", "--output", str(stage_dir / (online + ".sig")), str(stage_dir / online)], env=env)
-        run(["gpg", "--batch", "--verify", str(stage_dir / (online + ".sig")), str(stage_dir / online)], env=env, capture_output=True)
+            shutil.copy2(sig, staged_sig)
+        # A signature found beside the package may belong to an earlier build of the same file name (2026-11-08: the store's
+        # apps are copied into the repository after build-local-packages.sh signed what was there): check it, and sign the
+        # package itself when there is none or it does not match.
+        good = staged_sig.is_file() and subprocess.run(["gpg", "--batch", "--verify", str(staged_sig), str(staged)], env=env, capture_output=True).returncode == 0
+        if not good:
+            run(["gpg", "--batch", "--yes", "--local-user", KEY, "--detach-sign", "--no-armor", "--output", str(staged_sig), str(staged)], env=env)
+        run(["gpg", "--batch", "--verify", str(staged_sig), str(staged)], env=env, capture_output=True)
     db = stage_dir / f"{REPO_NAME}.db.tar.gz"
     run(["repo-add", "--quiet", "--sign", "--key", KEY, str(db)] + sorted(str(stage_dir / online_name(f)) for f in chosen.values()), env=env)
     # pacman asks for labyrinth.db and labyrinth.files: repo-add makes those as links, and a release holds files only
