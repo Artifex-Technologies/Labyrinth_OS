@@ -221,3 +221,31 @@ untouched tonight): not explained yet. Step 3's code gate 27/27 was not met in t
 `voice-unknown-records`, D7 in `~/Desktop/answers-for-claude.txt`. Nothing needs sudo.
 **If cut off, resume at:** night 5 (plan Day 5) from its first step; the state file says 5. First check on night 5's run A
 whether the mean-seconds rise holds.
+
+### 2026-11-08 02:05 [Claude] Sarina night 5: run A 108/116, run B 112/120; four new ciphers pass, crypto 85 %, Done when not met, state stays at 5
+
+Night 5 (plan Day 5). Run A (#8) on `7967ab4`, run B (#9) on `bc83f5d` (Sarina `2bcccc2` `c9a4119` `3018fc2` `e4a8422`
+`a87c900` `bfcfab5` `5ba518b` `bc83f5d`; also `4cce302` `03b0cf2` from another session). Reports: `ca6aab3`. Sarina plan
+section 6 `698b6db`, Coordination Log `73c238e`. All pushed.
+
+| run | build | passed | mean s | wall min | extra gen/100 | cached tok (median) |
+| --- | --- | --- | --- | --- | --- | --- |
+| #8 night 5 A | 7967ab4 | 108/116 | 19.8 | 52 | 24 | ~7.0k |
+| #9 night 5 B | bc83f5d | 112/120 | 19.7 | 54 | 19 | ~6.9k |
+
+Affine, Beaufort, autokey and columnar landed with crackers that show their work ("How it fell"); `go test ./cryptotools`
+passes; the four new eval cases pass in run B. Night 4's mean-seconds rise did not hold (19.8 / 19.7). Flips A -> B: fixed
+code-add-function, companion-no-false-memory, tt-two-finger, stego-zero-width (model variance), decompile-triage (maybe
+`4cce302`); new FAILs stego-appended-zip and wm-folder (the carry-on nudge in agent.go sent her to crypto_identify, then she
+dropped the zip / notes.md), wm-clean (never called stego_clean), code-python-fix (edit_file loop), tt-code-test (edited
+rule11.py, the Day 4 miss). None traced to tonight's code; the same build went crypto 59/60 in the session's 3x. But run B's
+crypto is 17/20 = 85 %, and Done when needs >= 90 %, so night 5 is not done.
+
+Ladder (run B): earned 2, applied 2; tier 3 missing code 89 % (runs A and B) and crypto 85 % (run B); tier 4 needs 95 % overall.
+
+**For the owner this morning:** read `~/Desktop/sarina-morning.md`; answer `carry-on-advice`, `crypto-show-work-words`,
+`aes-no-key-regex`, `jwt-requires-key`, `hash-file-expected`, `missing-file-appear`, `night5-accept` in
+`~/Desktop/answers-for-claude.txt`. Nothing needs sudo. Uncommitted PKGBUILD edits (heimdall-git, limbo-git, sarina-git) in
+Labyrinth_OS are not from tonight; left as they are.
+**If cut off, resume at:** night 5 (plan Day 5) step 3 (the cryptotools commit exists): the 3x crypto reruns, then run B;
+the state file says 5.
