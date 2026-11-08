@@ -27,6 +27,9 @@ say "grub.cfg looks usable ($(grep -c '^[[:space:]]*menuentry ' "$cfg") entries)
 
 # 2a. Services. `systemctl enable` works in a chroot (it only creates symlinks).
 for unit in NetworkManager.service fstrim.timer ratbagd.service labyrinth-appnet.service labyrinth-appnet-ask.service yggdrasil-powerlimit.service; do
+  # ratbagd (gaming mice, libratbag) is on the full image only; the light one fetches it at first login when chosen, and
+  # D-Bus starts it when Piper asks, so its absence is no fault (it showed as a warning in a VM install, 2026-11-08)
+  if [[ $unit == ratbagd.service ]] && ! pacman -Qq libratbag >/dev/null 2>&1; then continue; fi
   systemctl enable "$unit" >/dev/null 2>&1 && say "enabled $unit" || warn "could not enable $unit"
 done
 
