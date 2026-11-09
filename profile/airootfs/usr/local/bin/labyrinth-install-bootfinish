@@ -77,7 +77,11 @@ fi
 if [[ -e /usr/lib/systemd/user/labyrinth-scan.timer ]]; then
   systemctl --global enable labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.timer >/dev/null 2>&1 && say "enabled the malware scan (watcher, timer and the weekly full scan)" || warn "could not enable the downloads malware scan"
 fi
-if [[ -e /usr/lib/systemd/system/clamav-freshclam.service ]]; then
+# With Yggdrasil's game time they come from ClamAV's once-timer (every 2 hours, waiting while a game runs), not the daemon.
+if [[ -e /usr/bin/yggdrasil-gametime && -e /usr/lib/systemd/system/clamav-freshclam-once.timer ]]; then
+  systemctl disable clamav-freshclam.service >/dev/null 2>&1 || true
+  systemctl enable clamav-freshclam-once.timer >/dev/null 2>&1 && say "enabled ClamAV signature updates (every 2 hours, after games)" || warn "could not enable ClamAV signature updates"
+elif [[ -e /usr/lib/systemd/system/clamav-freshclam.service ]]; then
   systemctl enable clamav-freshclam.service >/dev/null 2>&1 && say "enabled ClamAV signature updates" || warn "could not enable ClamAV signature updates"
 fi
 

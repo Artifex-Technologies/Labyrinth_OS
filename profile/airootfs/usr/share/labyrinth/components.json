@@ -250,7 +250,7 @@
         "clamav"
       ],
       "enable_system": [
-        "clamav-freshclam.service"
+        "clamav-freshclam-once.timer"
       ]
     },
     {
