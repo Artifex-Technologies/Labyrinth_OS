@@ -10,7 +10,7 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Limbo" && pwd)"
 
 pkgname=limbo-git
-pkgver=0.1.0.r53.ga44201f
+pkgver=0.1.0.r55.gc905bb2
 pkgrel=1
 pkgdesc='Limbo: run Windows and Linux guest apps as sandboxed host windows, with quarantine and validation runs (built from the local Limbo checkout)'
 arch=('x86_64')
@@ -27,6 +27,8 @@ optdepends=(
   'libisoburn: builds the cloud-init seed disk'
   'waypipe: seamless windows for Linux guests'
   'freerdp: seamless windows for Windows guests (RemoteApp)'
+  'bubblewrap: the sandbox of the Wine backend (limbo wine refuses to run without it)'
+  'wine: Windows programs on the desktop through limbo wine (or wine-staging)'
 )
 provides=('limbo')
 conflicts=('limbo')
@@ -48,7 +50,8 @@ build() {
 
 check() {
   cd "$srcdir/limbo"
-  go test ./...   # unit tests only: the integration scripts need a hypervisor and root
+  # unit tests only: the integration scripts need a hypervisor and root, and -short skips the real Wine run
+  go test -short ./...
 }
 
 package() {
@@ -63,6 +66,14 @@ package() {
   install -Dm644 packaging/arch/limbo.sysusers "$pkgdir/usr/lib/sysusers.d/limbo.conf"
   install -Dm644 examples/validation-profile.json "$pkgdir/usr/share/doc/$pkgname/examples/validation-profile.json"
   install -Dm644 examples/analysis-linux.json "$pkgdir/usr/share/doc/$pkgname/examples/analysis-linux.json"
+  install -Dm644 examples/wine-profile.json "$pkgdir/usr/share/doc/$pkgname/examples/wine-profile.json"
+  # Limbo's wine: programs that run `wine` from PATH land in Limbo's sandbox. Not on PATH by itself; it is linked from
+  # a folder before /usr/bin (sudo ln -s /usr/lib/limbo/bin/wine /usr/local/bin/wine). Wine's other command names are
+  # links to the shim, which runs the matching program inside the sandbox.
+  install -Dm755 packaging/wine/wine "$pkgdir/usr/lib/limbo/bin/wine"
+  for name in wineboot winecfg wineconsole winedbg winefile winemine winepath msiexec notepad regedit regsvr32; do
+    ln -s wine "$pkgdir/usr/lib/limbo/bin/$name"
+  done
   # validation profiles define what a run may do, so the directory is root-only writable
   install -dm755 "$pkgdir/etc/limbo/validation"
   install -dm700 "$pkgdir/etc/limbo/keys"
