@@ -37,7 +37,6 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-install"]="0:0:755"
   ["/usr/local/bin/labyrinth-sarina"]="0:0:755"
   ["/usr/local/bin/labyrinth-sarina-ask"]="0:0:755"
-  ["/usr/local/bin/labyrinth-crash-watch"]="0:0:755"
   ["/usr/local/bin/labyrinth-sarina-checkup"]="0:0:755"
   ["/usr/local/bin/labyrinth-hardware-setup"]="0:0:755"
   ["/usr/local/bin/labyrinth-sarina-speak"]="0:0:755"

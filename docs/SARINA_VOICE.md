@@ -12,6 +12,9 @@ reason there is none) appears in the same card; Esc or a click outside closes it
 - Sarina plugs into the desktop through `/usr/share/yggdrasil/integrations/sarina.conf` (from the `sarina-git` package; Yggdrasil's
   docs/INTEGRATIONS.md): which programs ask, speak and warm, her runtime folder, the key, and her page in Settings (voice, tone,
   forget, forge, daily checkup and learning, agents, all through `labyrinth-sarina-setting`). Yggdrasil names no assistant itself.
+  Its `question` (`labyrinth-ask-sarina --voice`) and `crash_question` keys give Yggdrasil's crash watch (`yggdrasil-crashwatch`,
+  a user service that is off until turned on) its "Ask Sarina" button on crash notices; without the file, the notices only name
+  the program and the signal. It replaced `labyrinth-crash-watch` (Python and a journalctl child, about 56 MB) on 2026-11-09.
 - `yggdrasil-panel` serves `org.yggdrasil.Panel` on the session bus with `Ask`; the shortcut
   runs `busctl --user call org.yggdrasil.Panel /Panel org.yggdrasil.Panel Ask`
   (`labyrinth-sarina-ask.desktop`, bound to Meta+S in `kglobalshortcutsrc`).

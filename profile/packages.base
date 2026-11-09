@@ -130,6 +130,9 @@ yggdrasil-calculator
 yggdrasil-taskmanager
 # the leak watch: a warning when a program's memory keeps growing (a timer; nothing stays running)
 yggdrasil-leakwatch
+# the crash watch (a user service, off until turned on): a notice when one of your programs crashes, "Ask Sarina" when she is
+# installed (replaced labyrinth-crash-watch, Python + journalctl, 2026-11-09)
+yggdrasil-crashwatch
 # game time: background updates and chores wait while a game runs and catch up afterwards; security keeps running
 yggdrasil-gametime
 # Saga MD, the Markdown reader: one page, formatted or as the source (replaced ghostwriter, KDE's, 2026-11-08)

@@ -17,6 +17,8 @@ import sys
 import time
 
 SESSIONS = os.environ.get("SARINA_SESSION_DIR", "/var/lib/sarina/sessions")
+# the rules for a spoken answer, as installed (labyrinth-sarina-ask passes them in LABYRINTH_VOICE_RULES; a caller that does not gets these)
+VOICE_RULES = "/usr/share/labyrinth/sarina-voice-rules.txt"
 
 
 class Timing:
@@ -874,6 +876,14 @@ def main(argv):
     env.setdefault("SARINA_SEMANTIC", "on")
     # browser profiles, keyrings and key folders are never hers to read (the owner adds personal folders in sarina.env)
     env.setdefault("SARINA_PRIVATE_DIRS", "~/.mozilla:~/.config/vivaldi:~/.config/chromium:~/.config/google-chrome:~/.local/share/keyrings:~/.password-store:~/.gnupg:~/.ssh")
+    # a spoken-style question from a caller that did not pass the voice rules (the desktop's crash watch, through Sarina's
+    # integration file) gets the installed ones; rules already in the environment win (Super+S, the evals)
+    if a.voice and "LABYRINTH_VOICE_RULES" not in env:
+        try:
+            with open(VOICE_RULES, encoding="utf-8") as f:
+                env["LABYRINTH_VOICE_RULES"] = f.read().strip()
+        except OSError:
+            pass
     state, resume, before = None, None, set()
     if a.conversation and all(c.isalnum() or c in "-_" for c in a.conversation):
         run = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "labyrinth-sarina")
