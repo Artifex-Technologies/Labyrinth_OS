@@ -128,6 +128,10 @@ yggdrasil-portal
 yggdrasil-agora
 yggdrasil-calculator
 yggdrasil-taskmanager
+# the leak watch: a warning when a program's memory keeps growing (a timer; nothing stays running)
+yggdrasil-leakwatch
+# game time: background updates and chores wait while a game runs and catch up afterwards; security keeps running
+yggdrasil-gametime
 # Saga MD, the Markdown reader: one page, formatted or as the source (replaced ghostwriter, KDE's, 2026-11-08)
 saga-md
 yggdrasil-panel
