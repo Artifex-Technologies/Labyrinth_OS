@@ -40,7 +40,7 @@ and encrypted; the desktop runs on my main PC every day. `scripts/release-check.
   lsfg-vk as the stopgap. Settings > Games chooses the games.
 - The GPU unlock ([GPU_UNLOCK.md](GPU_UNLOCK.md)): Phases 0 and 1 are done. Phase 2 waits on my go, four BIOS readings and a game
   to measure with.
-- LykanOS (formerly Niflheim OS and Chymaera OS): its repository was renamed twice on 2026-11-07
+- LykanOS (formerly Chymaera OS): its repository was renamed twice on 2026-11-07
   ([Artifex-Technologies/LykanOS](https://github.com/Artifex-Technologies/LykanOS)) and it is moving to Yggdrasil.
 - Settings > Wi-Fi & Network: Heimdall's list of devices on the network and its Wi-Fi checks (through the labyrinth-security
   integration).
