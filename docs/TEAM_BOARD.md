@@ -278,3 +278,32 @@ there into `~/Desktop/answers-for-claude.txt`), plus `ladder-applied-2` (keep ti
 `night5-accept` is moot (run B met Done when). Nothing needs sudo. The uncommitted `packages/pkgbuilds/limbo-git/PKGBUILD`
 edit is not from tonight; left as it is.
 **If cut off, resume at:** night 6 (plan Day 6) from its first step; the state file says 6.
+
+### 2026-11-10 01:45 [Claude] Sarina night 6: run A 114/120, run B 114/120; Done when met, the six-night plan is finished
+
+Night 6 (plan Day 6). Run A on `65c3b4f`, run B on `6e3d60b` (Sarina `00e6748` + `4feeea1` check_code: reproduce a failure
+before editing, sandboxed; `57be574` a digest answer must say a hash is one-way; `6e3d60b` the handover,
+`docs/TRAINING_PLAN.md`). Reports: `d464cef`. Sarina plan section 6 and the #11 row `64be67a`, Coordination Log `0b180c7`.
+All pushed.
+
+| run | build | passed | mean s | wall min | extra gen/100 | cached tok (median) |
+| --- | --- | --- | --- | --- | --- | --- |
+| #10 (night 6 A) | 65c3b4f | 114/120 | 21.8 | 58 | 21 | ~6.9k |
+| #11 (night 6 B) | 6e3d60b | 114/120 | 19.8 | 54 | 23 | ~6.9k |
+
+Done when holds: #11 is on file, `TRAINING_PLAN.md`'s table has its eleven numbered rows, both trees clean. Step gates: code 3x
+24/27 (gate 27/27 not met; the misses were her own edits); check_code before the first edit 3/3, always after the nudge;
+crypto-hash-says 5/5.
+Flips A -> B: fixed code-python-fix (the new check_code nudge fired, then she fixed it: likely `00e6748`), companion-carries-on,
+vault-recall, voice-boot-ideas (variance). New FAILs: decompile-explain (stopped after `functions` and offered options; the
+prompt's C function is called `check_code`, now also a tool's name: possibly tonight's, not proven), crash-on-the-fly (109
+words after a quote send-back), companion-opinion (no opinion word), code-add-function (her own wrong test): the last three not
+tonight's code. tt-code-test (edits the owner's rule11.py) and companion-knows-them fail in both.
+
+Ladder (after run B): earned 2, applied 2. Tier 3 missing code 90 % (89 % in the last three runs) and honesty 100 % (11-09
+01:04). The state file is 7: the night script stops ("six nights are done") until a new plan.
+
+**For the owner this morning:** read `~/Desktop/sarina-morning.md`: rebuild `sarina-git` from HEAD (sudo through pacman), remove
+the old dev builds, pick the next track (`Sarina/docs/TRAINING_PLAN.md` section 5), questions `tt-own-test-fails`,
+`check-code-nudge`, `decompile-check-code-name`. Tier 3 is not earned: no `ladder.py apply`.
+**If cut off, resume at:** the morning report; everything else of night 6 is committed and pushed.
