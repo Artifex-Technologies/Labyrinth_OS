@@ -10,7 +10,7 @@
 _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Limbo" && pwd)"
 
 pkgname=limbo-git
-pkgver=0.1.0.r56.g5a3b789
+pkgver=0.1.0.r60.gb48b5fa
 pkgrel=1
 pkgdesc='Limbo: run Windows and Linux guest apps as sandboxed host windows, with quarantine and validation runs (built from the local Limbo checkout)'
 arch=('x86_64')
@@ -67,6 +67,13 @@ package() {
   install -Dm644 examples/validation-profile.json "$pkgdir/usr/share/doc/$pkgname/examples/validation-profile.json"
   install -Dm644 examples/analysis-linux.json "$pkgdir/usr/share/doc/$pkgname/examples/analysis-linux.json"
   install -Dm644 examples/wine-profile.json "$pkgdir/usr/share/doc/$pkgname/examples/wine-profile.json"
+  # the weekly full re-check of base images proven by a full hash (limbo image verify); held during games by game time
+  install -Dm644 packaging/arch/limbo-image-verify.service "$pkgdir/usr/lib/systemd/system/limbo-image-verify.service"
+  install -Dm644 packaging/arch/limbo-image-verify.timer "$pkgdir/usr/lib/systemd/system/limbo-image-verify.timer"
+  install -Dm644 packaging/arch/limbo-image-verify-gametime.conf \
+    "$pkgdir/usr/lib/systemd/system/limbo-image-verify.service.d/gametime.conf"
+  install -dm755 "$pkgdir/usr/lib/systemd/system/timers.target.wants"
+  ln -s ../limbo-image-verify.timer "$pkgdir/usr/lib/systemd/system/timers.target.wants/limbo-image-verify.timer"
   # Limbo's wine: programs that run `wine` from PATH land in Limbo's sandbox. Not on PATH by itself; it is linked from
   # a folder before /usr/bin (sudo ln -s /usr/lib/limbo/bin/wine /usr/local/bin/wine). Wine's other command names are
   # links to the shim, which runs the matching program inside the sandbox.
