@@ -133,6 +133,9 @@ yggdrasil-leakwatch
 # the crash watch (a user service, off until turned on): a notice when one of your programs crashes, "Ask Sarina" when she is
 # installed (replaced labyrinth-crash-watch, Python + journalctl, 2026-11-09)
 yggdrasil-crashwatch
+# app usage for Settings > Apps (sort by usage): a user service that follows each app's scopes in the cgroup tree (replaced
+# the Python labyrinth-appusage, which asked systemctl every 30 s, 2026-11-10)
+yggdrasil-appusage
 # game time: background updates and chores wait while a game runs and catch up afterwards; security keeps running
 yggdrasil-gametime
 # Saga MD, the Markdown reader: one page, formatted or as the source (replaced ghostwriter, KDE's, 2026-11-08)

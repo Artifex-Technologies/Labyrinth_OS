@@ -29,7 +29,6 @@ file_permissions=(
   ["/usr/local/bin/labyrinth-appnet-ask"]="0:0:755"
   ["/usr/local/bin/labyrinth-appnet-ask-agent"]="0:0:755"
   ["/usr/local/bin/labyrinth-ask-sarina"]="0:0:755"
-  ["/usr/local/bin/labyrinth-appusage"]="0:0:755"
   ["/usr/local/bin/labyrinth-ecosystem-setup"]="0:0:755"
   ["/usr/local/bin/labyrinth-floats"]="0:0:755"
   ["/usr/local/bin/labyrinth-displays"]="0:0:755"
