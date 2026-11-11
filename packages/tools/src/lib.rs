@@ -3,10 +3,22 @@
 //! not 1:1. Where a script would have stopped with a traceback (exit code 1), the Rust one stops too, with exit code 1 and one
 //! line on standard error.
 //!
-//!   scan        labyrinth-scan-downloads   the malware scan of new files (always on: labyrinth-scan-watch.service)
-//!   quarantine  labyrinth-quarantine       its quarantine and the way back
+//!   scan        labyrinth-scan-downloads    the malware scan of new files (always on: labyrinth-scan-watch.service)
+//!   quarantine  labyrinth-quarantine        its quarantine and the way back
+//!   appnet      labyrinth-appnet            per-app network rules (nftables)
+//!   appnet_ask  labyrinth-appnet-ask        the ask mode's questions (always on: a root service)
+//!   ask_agent   labyrinth-appnet-ask-agent  the ask mode's notifications (always on: a user service)
+//!   launch      labyrinth-launch            the app launcher (dock, start menu, Settings)
 
+pub mod appnet;
+pub mod appnet_ask;
+pub mod ask_agent;
+pub mod launch;
 pub mod py;
 pub mod pycompat;
+pub mod pyre;
 pub mod quarantine;
 pub mod scan;
+
+#[cfg(test)]
+pub mod testutil;

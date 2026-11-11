@@ -18,8 +18,25 @@ path = "src/bin/labyrinth-scan-downloads.rs"
 name = "labyrinth-quarantine"
 path = "src/bin/labyrinth-quarantine.rs"
 
+[[bin]]
+name = "labyrinth-appnet"
+path = "src/bin/labyrinth-appnet.rs"
+
+[[bin]]
+name = "labyrinth-appnet-ask"
+path = "src/bin/labyrinth-appnet-ask.rs"
+
+[[bin]]
+name = "labyrinth-appnet-ask-agent"
+path = "src/bin/labyrinth-appnet-ask-agent.rs"
+
+[[bin]]
+name = "labyrinth-launch"
+path = "src/bin/labyrinth-launch.rs"
+
 [dependencies]
 libc = "0.2"
+regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 sha2 = "0.10"
 

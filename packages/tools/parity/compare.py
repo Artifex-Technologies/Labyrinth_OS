@@ -14,7 +14,7 @@ to the stand-ins, and files afterwards (names, modes, contents), byte for byte, 
     (the Python script stopped here with a traceback)": the two standard errors are not compared;
   - what a case lists in `differs` (a difference on purpose, said in the module's "Not 1:1").
 
-    compare.py [--python DIR] [--bin DIR] [--only NAME[,NAME]] [-v] [--keep]
+    compare.py [--python DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep]
 
 --python: the folder with the Python scripts (default: ../python, else the repository's profile/airootfs/usr/local/bin)
 --bin: the folder with the Rust programs (default: ../target/release; build with cargo build --release)
@@ -39,14 +39,15 @@ WORLD = os.path.join(SCRATCH, "world")
 XDEV = os.path.join(TOOLS, "target", "parity-xdev")
 
 STUB = r"""#!/bin/sh
-# a stand-in: writes down how it was called, answers as the case says (OUT_x, ERR_x, RC_x; STDIN_x=1 records its input)
+# a stand-in: writes down how it was called, answers as the case says (OUT_x, ERR_x, RC_x; STDIN_x=1 records its input,
+# STDIN_x=ARG only when its first argument is ARG)
 name=$(basename "$0")
 key=$(printf '%s' "$name" | tr -c 'A-Za-z0-9' '_')
-printf '%s' "$name" >> "$WORLD/calls"
-for a in "$@"; do printf ' [%s]' "$a" >> "$WORLD/calls"; done
-echo >> "$WORLD/calls"
+line=$name
+for a in "$@"; do line="$line [$a]"; done
+printf '%s\n' "$line" >> "$WORLD/calls"
 eval "rd=\${STDIN_$key:-}"
-if [ -n "$rd" ]; then printf 'stdin: ' >> "$WORLD/calls"; cat >> "$WORLD/calls"; echo '<end>' >> "$WORLD/calls"; fi
+if [ -n "$rd" ] && { [ "$rd" = 1 ] || [ "$rd" = "${1:-}" ]; }; then printf 'stdin: ' >> "$WORLD/calls"; cat >> "$WORLD/calls"; echo '<end>' >> "$WORLD/calls"; fi
 eval "out=\${OUT_$key:-}"
 [ -n "$out" ] && printf '%s' "$out"
 eval "err=\${ERR_$key:-}"
@@ -99,7 +100,7 @@ def snapshot(root, skip=("bin", "calls")):
     return out
 
 
-def normalize(text):
+def base_normalize(text):
     ids = {}
 
     def idsub(m):
@@ -113,9 +114,16 @@ def normalize(text):
 
 
 class Case:
-    def __init__(self, prog, name, steps, setup=None, env=None, differs=(), settle=0.0, roots=(), watch=None):
+    """prog: the program the steps run (a step may name another with "prog"); steps: [{args, env, stdin, cwd, prog, wrap}];
+    setup(paths): makes the world; env: for every step; differs: what is not compared ("calls", "tree", ("out", i), ("err", i));
+    settle: seconds to wait after each step (for what a program left running); watch(paths): for a program that keeps
+    running, what happens while it runs (it is stopped afterwards); sort_calls: the calls' order is not compared (threads);
+    norm: more making alike, text -> text."""
+
+    def __init__(self, prog, name, steps, setup=None, env=None, differs=(), settle=0.0, roots=(), watch=None, sort_calls=False, norm=None):
         self.prog, self.name, self.steps, self.setup = prog, name, steps, setup
         self.env, self.differs, self.settle, self.roots, self.watch = env or {}, differs, settle, roots, watch
+        self.sort_calls, self.norm = sort_calls, norm
 
 
 CASES = []
@@ -127,7 +135,8 @@ def case(*a, **k):
 
 def impl_paths(kind):
     """{program name: how to run it} for one implementation."""
-    names = ["labyrinth-scan-downloads", "labyrinth-quarantine"]
+    names = ["labyrinth-scan-downloads", "labyrinth-quarantine", "labyrinth-appnet", "labyrinth-appnet-ask", "labyrinth-appnet-ask-agent",
+             "labyrinth-launch", "labyrinth-apps", "labyrinth-selfcheck", "ipconfig", "steam_playall.py", "labyrinth-first-components"]
     out = {}
     for n in names:
         if kind == "python":
@@ -139,7 +148,7 @@ def impl_paths(kind):
 
 def fill(value, paths):
     return (value.replace("{WORLD}", WORLD).replace("{XDEV}", XDEV).replace("{Q}", paths["labyrinth-quarantine"])
-            .replace("{SCAN}", paths["labyrinth-scan-downloads"]))
+            .replace("{SCAN}", paths["labyrinth-scan-downloads"]).replace("{APPS}", paths["labyrinth-apps"]))
 
 
 def wipe(d):
@@ -174,10 +183,10 @@ def run_case(c, kind):
                 env.pop(k, None)
             else:
                 env[k] = fill(v, paths)
-        argv = [paths[prog]] + [fill(a, paths) for a in step.get("args", [])]
+        argv = step.get("wrap", []) + [paths[prog]] + [fill(a, paths) for a in step.get("args", [])]
         cwd = fill(step.get("cwd", WORLD), paths)
         if c.watch:
-            p = subprocess.Popen(argv, env=env, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+            p = subprocess.Popen(argv, env=env, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
             c.watch(paths)
             os.killpg(p.pid, signal.SIGTERM)
             out, err = p.communicate()
@@ -200,6 +209,13 @@ def run_case(c, kind):
 def same(c, py, rs):
     """None when the two runs agree, else what differs."""
     (pr, pc, pt), (rr, rc_, rt) = py, rs
+    extra = c.norm or (lambda t: t)
+
+    def normalize(t):
+        return extra(base_normalize(t))
+
+    if c.sort_calls:
+        pc, rc_ = "".join(sorted(pc.splitlines(True))), "".join(sorted(rc_.splitlines(True)))
     problems = []
     for i, (a, b) in enumerate(zip(pr, rr)):
         if a.get("rc") != b.get("rc"):
@@ -225,6 +241,7 @@ def same(c, py, rs):
 
 sys.path.insert(0, HERE)
 import cases_scan  # noqa: E402,F401  (each cases_*.py adds its cases with case())
+import cases_appnet  # noqa: E402,F401
 
 
 def main():
@@ -235,6 +252,7 @@ def main():
     ap.add_argument("--only")
     ap.add_argument("-v", action="store_true")
     ap.add_argument("--keep", action="store_true")
+    ap.add_argument("--case", help="only the cases whose name has this text")
     ARGS = ap.parse_args()
     if not ARGS.python:
         own = os.path.join(TOOLS, "python")
@@ -243,7 +261,7 @@ def main():
     counts, failed = {}, 0
     try:
         for c in CASES:
-            if only and c.prog not in only:
+            if (only and c.prog not in only) or (ARGS.case and ARGS.case not in c.name):
                 continue
             py = run_case(c, "python")
             rs = run_case(c, "rust")

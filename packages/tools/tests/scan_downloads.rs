@@ -90,7 +90,7 @@ fn the_weekly_full_scan_covers_home_but_caches_and_reports_only() {
 #[test]
 fn a_scanner_that_cannot_run_is_quiet() {
     let s = Scan::new();
-    let broken = stub(&s.d.p("").trim_end_matches('/'), "heimdalld2", "echo \"heimdalld scan-files: ClamAV is not installed\" >&2; exit 2");
+    let broken = stub(s.d.p("").trim_end_matches('/'), "heimdalld2", "echo \"heimdalld scan-files: ClamAV is not installed\" >&2; exit 2");
     let r = run(SCAN, &[], &with(&s.env, "HEIMDALLD", &broken));
     assert_eq!(code(&r), 0);
     assert!(s.notes().is_empty());

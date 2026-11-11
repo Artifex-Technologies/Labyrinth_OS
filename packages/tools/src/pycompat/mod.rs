@@ -10,7 +10,7 @@
 //! The Unicode tables (unicode_tables.rs) are generated from Python's own str methods by gen_unicode.py.
 
 pub mod json;
-mod unicode_tables;
+pub(crate) mod unicode_tables;
 
 use unicode_tables::{DECIMAL_ZEROS, DIGIT, PRINTABLE, SPACE, WORD};
 
