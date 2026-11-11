@@ -14,7 +14,9 @@
 //!   ipconfig    ipconfig                    Windows' ipconfig from ip and NetworkManager
 //!   playall     steam_playall               Steam Play for all titles in Steam's config.vdf (labyrinth-gaming setup)
 //!   first_components  labyrinth-first-components  the optional parts chosen in the installer, at the first login
+//!   agent       labyrinth-agent             the engineering agent's root actions, each checked (the gate sudo lets it run)
 
+pub mod agent;
 pub mod appnet;
 pub mod appnet_ask;
 pub mod apps;

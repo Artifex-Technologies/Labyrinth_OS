@@ -1,0 +1,20 @@
+labyrinth-agent: the root actions the engineering agent (Claude, account claude-agent) may take without the owner, each one
+checked. sudo lets the agent run this program and nothing else as root (/etc/sudoers.d/50-labyrinth-agent); anything broader
+needs the owner to open a window with their password (labyrinth-agent-window). Every action is written to the journal (tag
+labyrinth-agent), where Heimdall reads it, and sudo records the session. The programs it starts are found in /usr/bin only and
+see none of the caller's environment but sudo's own variables.
+
+  labyrinth-agent pkg-install FILE...        install packages built here: Artifex/Labyrinth names only (yggdrasil-*, labyrinth-*,
+                                             heimdall*, sarina*, limbo*, liki-*, agora*); opens a Heimdall maintenance window
+  labyrinth-agent pkg-add NAME...            install packages from the signed official repositories (never remote-access tools,
+                                             also not as something a package needs)
+  labyrinth-agent service ACTION [UNIT...]   start stop restart reload status is-active enable disable enable-now disable-now
+                                             user-enable user-disable daemon-reload, for the ecosystem's own units only (Heimdall
+                                             is never stopped or disabled, the agent window's units are the owner's)
+  labyrinth-agent logs JOURNALCTL-ARGS...    read the journal (read-only flags only)
+  labyrinth-agent maintenance on|off|status [--for D] [--reason TEXT]
+  labyrinth-agent limbo up|down|doctor|status [MANIFEST]   manifests under /var/lib/limbo/build-agent or /etc/limbo/validation
+  labyrinth-agent rollback list|status|dry-run N
+  labyrinth-agent firewall-status
+  labyrinth-agent deploy SRC DEST            put one file in a user-side place of the desktop (never anything root runs); SRC is
+                                             read as the account sudo ran this for

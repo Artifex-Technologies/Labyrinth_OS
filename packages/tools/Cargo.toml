@@ -2,7 +2,7 @@
 name = "labyrinth-tools"
 version = "0.1.0"
 edition = "2021"
-description = "Labyrinth OS's own command-line programs in Rust, replacing the Python scripts of the same names with the same interface: the malware scan of new files and its quarantine, the per-app network rules and their questions, the app launcher, the optional software, the self-check, ipconfig, Steam Play for all, the first-login installs"
+description = "Labyrinth OS's own command-line programs in Rust, replacing the Python scripts of the same names with the same interface: the malware scan of new files and its quarantine, the per-app network rules and their questions, the app launcher, the optional software, the self-check, ipconfig, Steam Play for all, the first-login installs, and the gate of the engineering agent's root actions"
 license = "MPL-2.0"
 
 [lib]
@@ -54,6 +54,11 @@ path = "src/bin/steam_playall.rs"
 [[bin]]
 name = "labyrinth-first-components"
 path = "src/bin/labyrinth-first-components.rs"
+
+# the gate sudo lets the engineering agent run as root (was /usr/local/sbin/labyrinth-agent)
+[[bin]]
+name = "labyrinth-agent"
+path = "src/bin/labyrinth-agent.rs"
 
 [dependencies]
 libc = "0.2"

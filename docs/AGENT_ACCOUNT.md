@@ -37,6 +37,28 @@ So today, on my PC, both are live: `labyrinth-agent` and the broad list. What th
 is the narrowed design. In both cases every use is logged by sudo under the agent's name, with its terminal input and output
 (`sudoreplay -d /var/log/sudo-io/claude-agent -l`), and `claude-sudo CMD` is shorthand for `sudo -n -u claude-agent sudo -n CMD`.
 
+## 2026-11-11: holes closed, and a Rust port
+
+Porting `labyrinth-agent` to Rust (packages/tools, bin `labyrinth-agent`; the Python script and the port were compared on 796
+command lines in a namespace of their own, with every program they would start checked against an allow-list) found holes in
+the gate. They are closed in the script and the port alike; the list is in packages/tools/README.md ("labyrinth-agent: holes
+found while porting"). The ones that mattered:
+
+- `logs -n --vacuum-time=1s` (and `--rotate`, `--flush`, `--setup-keys`, `--cursor-file=PATH`) reached journalctl as root:
+  `-n` takes its value only when it is a count, and the gate passed any word as that value. The journal could be wiped.
+- `deploy` read any file as root and wrote it readable to all (/etc/shadow, my ssh keys); the source is read as the agent's
+  account now. It could also replace /usr/bin/yggdrasil-spell and yggdrasil-gametime, which root services run; programs root is
+  told to run are refused now, and so are the graphics card unlock's support table, the optional apps' build recipes and the boot
+  menu theme's folder.
+- The agent could stop the timer that closes my window (`service stop labyrinth-agent-window-close.timer`), and stop or disable
+  Heimdall. The window's units are mine now; Heimdall can be started and restarted by the agent, not stopped or disabled.
+- `pkg-add` checked only the names given (`pkg-add sshfs` brings openssh); what pacman would install is checked now.
+- The programs it starts get a fixed environment (PATH=/usr/bin, HOME=/root, sudo's own variables) instead of relying on sudo's
+  secure_path and env_reset.
+
+The switch to the Rust gate (sudo's rule pointing at /usr/bin/labyrinth-agent from the labyrinth-tools package) is prepared on the
+branch `agent-gate-rust`, not merged.
+
 ## Built, in the repository
 
 - `profile/airootfs/usr/local/bin/labyrinth-agent-setup` (read it first): creates `claude-agent` (password locked), writes

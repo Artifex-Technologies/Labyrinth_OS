@@ -1,0 +1,30 @@
+# The fuzz target of labyrinth-agent's argument parser (cargo-fuzz layout; not part of the package or of `cargo test`).
+# Each input is a command line (words split at 0 bytes) given to `decide` on a made-up system; anything it would run as root
+# must be in the allow-list of src/agent/audit.rs, else the target panics. Run it with cargo-fuzz (`cargo fuzz run agent_args`),
+# or on stable Rust as README.md ("The gate's fuzz target") says.
+[package]
+name = "labyrinth-tools-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+license = "MPL-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+labyrinth-tools = { path = ".." }
+
+[[bin]]
+name = "agent_args"
+path = "fuzz_targets/agent_args.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1

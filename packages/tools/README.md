@@ -17,6 +17,7 @@ while games and a local model share the computer).
 | `ipconfig` | Windows' `ipconfig` from `ip` and NetworkManager | on demand | done |
 | `steam_playall` (was `steam_playall.py`) | Steam Play for all titles in Steam's config.vdf | `labyrinth-gaming setup` | done |
 | `labyrinth-first-components` | the optional parts chosen in the installer, at the first login | the session's autostart | done |
+| `labyrinth-agent` (the script is in /usr/local/sbin) | the gate: the root actions the engineering agent may take alone, each checked (sudo lets its account run this and nothing else as root) | on demand, through `claude-sudo` | done, not switched (the switch: branch `agent-gate-rust`) |
 
 Each module (`src/*.rs`) says what it is and where it is not 1:1. Where a script stopped with a traceback (exit code 1), its port
 stops too, with exit code 1 and one line on standard error. `src/pycompat` is a copy of Yggdrasil's `packages/pycompat` (the few
@@ -54,6 +55,11 @@ Python's own \w, \d and \s.
 - `labyrinth-selfcheck` and `steam_playall` match their scripts' regular expressions with code written out for them (no
   regular-expression engine: each program is a third of the size); the parity cases try them on lines written oddly.
 
+- `labyrinth-agent`: Ctrl+C while a program it started is running: the script killed that program a quarter of a second later
+  (pacman too, in the middle of a transaction) and stopped with a traceback; the port leaves the Ctrl+C to the program (it gets
+  it from the terminal as before) and exits with its code. Its arguments are bytes (the script decoded them in the locale's
+  encoding, which under sudo is UTF-8 too).
+
 ## Found while porting, fixed in both (2026-11-11)
 
 - `labyrinth-scan-downloads`: the "Malware quarantined" question with Restore / Delete is asked by a child process started as
@@ -72,6 +78,64 @@ Python's own \w, \d and \s.
 
 A test for each, in Python (tests/test_labyrinth_selfcheck.py, tests/test_steam_playall.py, tests/test_ipconfig.py) and in Rust.
 
+## labyrinth-agent: holes found while porting, closed in both (2026-11-11)
+
+The gate is what stands between the agent's account and root, so its port went further than the others (below: parity with a
+check of every call against an allow-list of its own, random command lines, a fuzz target). These holes were in the script; each
+is closed in the script and the port alike, with a test in each (tests/test_labyrinth_agent.py, src/agent/tests.rs).
+
+1. **The journal could be wiped as root.** journalctl's `-n`/`--lines` take the next word as their value only when it is a count,
+   but the gate passed any word after them as that value: `labyrinth-agent logs -n --vacuum-time=1s` ran
+   `journalctl --no-pager -n --vacuum-time=1s` as root, which vacuums the journal, the record Heimdall reads. `--rotate`,
+   `--flush`, `--setup-keys`, `--relinquish-var`, `--directory` and `--cursor-file=PATH` (a file written as root) got through the
+   same way. Checked on journalctl itself (systemd 262): `journalctl -n --version` prints the version. Now the word after `-n` is
+   its value only when it is a count (`5`, `+5`, `all`), as the word after `-b` already was only when it is a boot; any other word
+   is checked on its own.
+2. **deploy read any file as root and made it readable to all.** `deploy /etc/shadow /usr/share/yggdrasil/x` copied it with
+   mode 0644; the same for my ssh keys (the agent's account cannot enter my home folder), Limbo's keys, sudo's recordings,
+   Sarina's private state. The source is now opened by a child process that is the account sudo ran the gate for (SUDO_UID,
+   SUDO_GID and its groups), never through a link at its end: what that account cannot read is refused.
+3. **deploy could replace programs root runs.** `/usr/bin/yggdrasil-*` is a deploy place, but yggdrasil-spell-global.service runs
+   `/usr/bin/yggdrasil-spell` as root and yggdrasil-gametime-catch-up.service `/usr/bin/yggdrasil-gametime`; with
+   `service restart yggdrasil-spell-global` that was root for any program. Now a program named in a system unit or its drop-ins,
+   a pacman hook, a udev rule, a polkit action or sudoers.d is refused ("root runs it"). And three places root uses are not deploy
+   places any more: the graphics card unlock's support table (/usr/share/yggdrasil/gpu-unlock; docs/GPU_UNLOCK.md says never
+   through claude-sudo), the optional apps' build recipes (/usr/share/labyrinth/pkgbuilds, built and installed as root) and the
+   boot menu theme (/usr/share/labyrinth/grub-evodevo, whose install.sh runs as root).
+4. **The agent could keep my window open, and stop its watcher.** `service stop labyrinth-agent-window-close.timer` (or
+   `restart`, which starts the countdown again) was allowed, a "labyrinth-" unit: the window's units are refused now. And
+   Heimdall, which watches the agent, could be stopped or disabled by it (`service disable-now heimdall`): stop, disable,
+   disable-now and user-disable of heimdall units are mine now (start, restart, reload, enable stay the agent's).
+5. **pkg-add installed remote-access tools as dependencies.** Only the names given were checked, and `pkg-add sshfs` brings
+   openssh. What pacman would install (`pacman -S --print`) is checked now. The list also has the names of Heimdall's catalogue
+   it lacked (headscale, netbird, frpc, frps, bore, tor, cloudflared-bin) and the remote-desktop and web-shell servers of the
+   official repositories (gnome-remote-desktop, krfb, krdp, ttyd, cockpit, tinyssh).
+6. **limbo doctor/status read any file as root.** Their manifest was not checked (`limbo status /etc/shadow`; Limbo's error names
+   the first field of a JSON file it cannot use); it is held to the same folders as up and down now.
+7. Smaller ones:
+   - The patterns were matched with Python's `$`, which also matches before a final newline: `yggdrasil-x\n` was a unit, a
+     package name and a deploy place. Every pattern is matched whole now.
+   - `rollback dry-run N` took any Unicode digit (str.isdigit: ², ١٢); ASCII digits now (labyrinth-rollback refused the others).
+   - deploy looked for links in the two folders above the file only, so a link higher up was followed (the cases write through
+     /usr/share/yggdrasil/a -> /etc/yggdrasil); every folder on the way is now opened without following a link. A path with `.`
+     or a trailing `/` is not clean.
+   - A deploy that stopped half way left NAME.agent-tmp, and every later deploy to NAME stopped on it; it is removed on failure
+     and replaced when found.
+   - The caller's umask reached deploy's folders (sudo keeps the stricter one: 077 made them root-only); the gate's umask is 022.
+   - A refusal whose arguments came to more than 128 KiB could not be written to the journal (logger could not be started: the
+     script stopped with a traceback, nothing logged); the journal line is cut at 4000 bytes now.
+   - The programs it starts got the environment sudo left it; they get a fixed one now: PATH=/usr/bin, HOME=/root, sudo's own
+     variables (heimdalld names the window's actor from SUDO_USER) and a terminal type that names no file. Arch's sudoers sets
+     secure_path and env_reset, so there the caller's PATH, LD_*, SYSTEMD_* or LIMBO_* (limbo reads LIMBO_GO_BINARY) did not
+     get through; the gate no longer depends on that (in the cases, the script ran a pacman from the caller's PATH).
+
+Left as they are, for me to decide:
+- pkg-install stays a root path by design (a package of ours can hold anything; the name is read from the file before pacman
+  installs it, so a file swapped in between is what gets installed).
+- deploy to /etc/yggdrasil/*.json|conf writes the fan, pump, power-limit and tuning settings that root's helpers apply; Settings
+  asks for my password (polkit, auth_admin_keep) to change them, deploy does not.
+- /var/lib/limbo/build-agent does not exist yet; whoever can write there decides what `limbo up` starts as root.
+
 ## Tests and parity
 
 `cargo test`: every test of the Python scripts carried over, and more:
@@ -88,6 +152,7 @@ A test for each, in Python (tests/test_labyrinth_selfcheck.py, tests/test_steam_
 | tests/test_ipconfig.py (2) | src/ipconfig.rs |
 | tests/test_steam_playall.py (7, and 1 for the fix) | src/playall.rs |
 | tests/test_install_system.py's 2 of labyrinth-first-components | src/first_components.rs |
+| tests/test_labyrinth_agent.py (6, and 13 for the holes) | src/agent/tests.rs (with 60,000 random command lines against src/agent/audit.rs), tests/agent.rs |
 
 `parity/compare.py` runs each program and its script on the same made-up worlds: every tool they call is a stand-in that writes
 down how it was called, every file is in a scratch folder (and, for moves across file systems, `target/parity-xdev`), `set` runs
@@ -114,13 +179,42 @@ Results (2026-11-10):
 | labyrinth-appnet-ask | 4/4 (one is a 47-line conversation: questions, answers, lists, forgets, the cooldown, bad requests) |
 | labyrinth-appnet-ask-agent | 3/3 |
 | labyrinth-launch | 34/34 |
-| labyrinth-apps | 32/32 (the builds run in a copy, through stand-ins for pacman, yay, makepkg, sudo) || labyrinth-selfcheck | 74/74 (2026-11-11) |
+| labyrinth-apps | 32/32 (the builds run in a copy, through stand-ins for pacman, yay, makepkg, sudo) |
+| labyrinth-selfcheck | 74/74 (2026-11-11) |
 | ipconfig | 60/60 (2026-11-11; the addresses are documentation ones) |
 | steam_playall | 32/32 (2026-11-11; a made-up config.vdf, Steam never started) |
 | labyrinth-first-components | 24/24 (2026-11-11; stand-ins for nmcli, notify-send, labyrinth-apps) |
+| labyrinth-agent | 60/60 (396 command lines) and 400/400 random command lines (2026-11-11), every call within the cases' allow-list |
 
-All 407 cases are the same. Run against the scripts as they were before the fixes, the cases that show the fixes differ (and only
-those, with the cases built on them).
+All 467 cases and the 400 random ones are the same. Run against the scripts as they were before the fixes, the cases that show the
+fixes differ (and only those, with the cases built on them); for labyrinth-agent nearly every case differs, because every program
+it starts now gets a clean environment, and the allow-list check finds each hole above in the old script.
+
+labyrinth-agent's cases (parity/cases_agent.py) run as root of a user and mount namespace whose uids 1000-2999 are this account's
+subordinate ids (/etc/subuid), so deploy's caller, uid 2001, is another account. /etc, /usr/bin, /usr/share, /usr/lib and
+/usr/local are overlays: the stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and labyrinth-rollback are
+where the gate looks for the real ones, and every place deploy writes to or the gate searches is a folder of the case's own (no
+file of this computer shows through, none is changed). Each stand-in writes down its arguments and its whole environment. Beside
+the comparison, each run is checked against an allow-list written a third time in the cases (it models journalctl's option
+parsing, optional values included, and Go's flags for heimdalld): no stand-in called outside it, no environment but the clean one,
+no file written outside deploy's places. LABYRINTH_AGENT_RANDOM sets the number of random command lines (default 400).
+
+### The gate's fuzz target
+
+`fuzz/` (cargo-fuzz's layout, not part of the package or of `cargo test`): fuzz_targets/agent_args.rs gives any command line
+(words split at 0 bytes) to `decide` on a made-up system and panics when anything it would do as root is outside
+src/agent/audit.rs's allow-list (written apart from the checks; it models journalctl's and heimdalld's option parsing). With
+cargo-fuzz: `cargo fuzz run agent_args -- -dict=fuzz/agent_args.dict`. On stable Rust without cargo-fuzz:
+
+    RUSTFLAGS="--cfg fuzzing -Cpasses=sancov-module -Cllvm-args=-sanitizer-coverage-level=4 \
+      -Cllvm-args=-sanitizer-coverage-inline-8bit-counters -Cllvm-args=-sanitizer-coverage-pc-table \
+      -Cllvm-args=-sanitizer-coverage-trace-compares" \
+      cargo build --release --manifest-path fuzz/Cargo.toml --target x86_64-unknown-linux-gnu --target-dir target/fuzz
+    mkdir -p target/fuzz/corpus
+    target/fuzz/x86_64-unknown-linux-gnu/release/agent_args target/fuzz/corpus -dict=fuzz/agent_args.dict -max_len=512 -max_total_time=600
+
+2026-11-11: 12 million command lines in a minute, none outside the allow-list. With the old `-n` handling put back, it found `logs --lines --l...` (journalctl would read the second word
+as an option) within seconds.
 
 ## Memory of what runs all the time (the same scratch world for both, after some work, idle)
 
@@ -135,7 +229,8 @@ those, with the cases built on them).
 
 ## The Python scripts
 
-They stay in `profile/airootfs/usr/local/bin` (after the switch, in `packages/tools/python/` with their tests) for a rollback,
+They stay in `profile/airootfs/usr/local/bin` (labyrinth-agent in `profile/airootfs/usr/local/sbin`; after the switch, in
+`packages/tools/python/` with their tests) for a rollback,
 until these have run a while. The first seven were switched on 2026-11-11 (the package `labyrinth-tools` installs them in place of
 the scripts); the last four with pkgrel 2 (branch `tools-rust-switch-2`): the image's autostart runs
 /usr/bin/labyrinth-first-components and `labyrinth-gaming setup` runs /usr/bin/steam_playall.

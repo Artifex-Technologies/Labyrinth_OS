@@ -35,6 +35,8 @@ TOOLS = os.path.dirname(HERE)
 REPO = os.path.normpath(os.path.join(TOOLS, "..", ".."))
 ARGS = None
 SCRATCH = tempfile.mkdtemp(prefix="labyrinth-tools-parity-")
+# labyrinth-agent's cases have a second account (deploy's caller) that must reach the world's files
+os.chmod(SCRATCH, 0o755)
 WORLD = os.path.join(SCRATCH, "world")
 XDEV = os.path.join(TOOLS, "target", "parity-xdev")
 
@@ -157,12 +159,14 @@ class Case:
     setup(paths): makes the world; env: for every step; differs: what is not compared ("calls", "tree", ("out", i), ("err", i));
     settle: seconds to wait after each step (for what a program left running); watch(paths): for a program that keeps
     running, what happens while it runs (it is stopped afterwards); sort_calls: the calls' order is not compared (threads);
-    norm: more making alike, text -> text."""
+    norm: more making alike, text -> text; snap(): more of the files afterwards (a dict); check(results, calls, tree): after
+    each run, a list of what is wrong with it whatever the other one did (labyrinth-agent's allow-list)."""
 
-    def __init__(self, prog, name, steps, setup=None, env=None, differs=(), settle=0.0, roots=(), watch=None, sort_calls=False, norm=None):
+    def __init__(self, prog, name, steps, setup=None, env=None, differs=(), settle=0.0, roots=(), watch=None, sort_calls=False, norm=None,
+                 snap=None, check=None):
         self.prog, self.name, self.steps, self.setup = prog, name, steps, setup
         self.env, self.differs, self.settle, self.roots, self.watch = env or {}, differs, settle, roots, watch
-        self.sort_calls, self.norm = sort_calls, norm
+        self.sort_calls, self.norm, self.snap, self.check = sort_calls, norm, snap, check
 
 
 CASES = []
@@ -175,13 +179,15 @@ def case(*a, **k):
 def impl_paths(kind):
     """{program name: how to run it} for one implementation."""
     names = ["labyrinth-scan-downloads", "labyrinth-quarantine", "labyrinth-appnet", "labyrinth-appnet-ask", "labyrinth-appnet-ask-agent",
-             "labyrinth-launch", "labyrinth-apps", "labyrinth-selfcheck", "ipconfig", "steam_playall.py", "labyrinth-first-components"]
+             "labyrinth-launch", "labyrinth-apps", "labyrinth-selfcheck", "ipconfig", "steam_playall.py", "labyrinth-first-components",
+             "labyrinth-agent"]
     out = {}
     for n in names:
         if kind == "python":
             # a script still in the image (not switched yet) is read from there
             own = os.path.join(ARGS.python, n)
-            out[n] = own if os.path.exists(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", "bin", n)
+            where = "sbin" if n == "labyrinth-agent" else "bin"
+            out[n] = own if os.path.exists(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", where, n)
         else:
             out[n] = os.path.join(ARGS.bin, n.replace(".py", ""))
     return out
@@ -245,12 +251,15 @@ def run_case(c, kind):
         results.append({"rc": rc, "out": out.decode("utf-8", "backslashreplace"), "err": err.decode("utf-8", "backslashreplace")})
     calls = open(os.path.join(WORLD, "calls"), encoding="utf-8", errors="backslashreplace").read() if os.path.exists(os.path.join(WORLD, "calls")) else ""
     tree = {"world": snapshot(WORLD), "xdev": snapshot(XDEV)}
-    return results, calls, tree
+    if c.snap:
+        tree.update(c.snap())
+    out = (results, calls, tree)
+    return out + ((c.check(*out) if c.check else []),)
 
 
 def same(c, py, rs):
     """None when the two runs agree, else what differs."""
-    (pr, pc, pt), (rr, rc_, rt) = py, rs
+    (pr, pc, pt, _), (rr, rc_, rt, _) = py, rs
     extra = c.norm or (lambda t: t)
 
     def normalize(t):
@@ -288,6 +297,7 @@ import cases_apps  # noqa: E402,F401
 import cases_selfcheck  # noqa: E402,F401
 import cases_ipconfig  # noqa: E402,F401
 import cases_small  # noqa: E402,F401
+import cases_agent  # noqa: E402,F401
 
 
 
@@ -322,6 +332,9 @@ def main():
                 print("calls:\n" + py[1])
             n = counts.setdefault(c.prog, [0, 0])
             n[0] += 1
+            for kind, run in (("python", py), ("rust", rs)):
+                if run[3]:
+                    bad = (bad + "\n" if bad else "") + "".join("  %s: %s\n" % (kind, p) for p in run[3])
             if bad:
                 failed += 1
                 print("DIFFERENT  %s: %s\n%s" % (c.prog, c.name, bad))
