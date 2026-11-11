@@ -209,7 +209,8 @@ pub fn load_ask(path: Option<&str>) -> R<Ask> {
                     },
                     _ => Map::new(),
                 };
-                let kept: Vec<(String, String)> = ips.iter().filter(|(ip, _)| valid_ip(ip)).map(|(ip, n)| (ip.clone(), py::pyjson::py_str(n))).collect();
+                let kept: Vec<(String, String)> =
+                    ips.iter().filter(|(ip, _)| valid_ip(ip)).map(|(ip, n)| (ip.clone(), py::pyjson::py_str(n))).collect();
                 if k == "allow" {
                     entry.allow = kept;
                 } else {
@@ -257,7 +258,11 @@ pub fn save_ask(ask: &Ask, path: Option<&str>) -> R<()> {
 }
 
 fn parse_octet(s: &str) -> bool {
-    !s.is_empty() && s.len() <= 3 && s.bytes().all(|b| b.is_ascii_digit()) && (s == "0" || !s.starts_with('0')) && s.parse::<u32>().map(|x| x <= 255).unwrap_or(false)
+    !s.is_empty()
+        && s.len() <= 3
+        && s.bytes().all(|b| b.is_ascii_digit())
+        && (s == "0" || !s.starts_with('0'))
+        && s.parse::<u32>().map(|x| x <= 255).unwrap_or(false)
 }
 
 fn ipv4_ok(s: &str) -> bool {
@@ -295,8 +300,8 @@ fn ipv6_ok(s: &str) -> bool {
         return false;
     }
     let mut skip = None;
-    for i in 1..parts.len() - 1 {
-        if parts[i].is_empty() {
+    for (i, part) in parts.iter().enumerate().take(parts.len() - 1).skip(1) {
+        if part.is_empty() {
             if skip.is_some() {
                 return false;
             }
@@ -375,7 +380,11 @@ pub fn rule_text(uid: i128, app_id: &str, mode: &str) -> Option<Vec<String>> {
     let note = note_of(app_id, mode);
     match mode {
         // no DNS to any resolver, no loopback relays, then nothing but loopback
-        "block" => Some(vec![format!("{m} meta l4proto {{ tcp, udp }} th dport 53 drop {note}"), relay_rule(&m, &note), format!("{m} oifname != \"lo\" drop {note}")]),
+        "block" => Some(vec![
+            format!("{m} meta l4proto {{ tcp, udp }} th dport 53 drop {note}"),
+            relay_rule(&m, &note),
+            format!("{m} oifname != \"lo\" drop {note}"),
+        ]),
         "ask" => Some(ask_rules(uid, app_id)),
         "ethernet" | "wifi" => {
             let names = if mode == "ethernet" { WIRED } else { WIRELESS };
@@ -410,9 +419,15 @@ pub fn ruleset(rules: &Rules, exists: &dyn Fn(&str) -> bool, ask: &Ask) -> R<Str
             }
             if mode == "ask" {
                 let empty = vec![];
-                let allowed = ask.iter().find(|(u, _)| u == uid).and_then(|(_, a)| a.iter().find(|(x, _)| x == app_id)).map(|(_, e)| &e.allow).unwrap_or(&empty);
+                let allowed = ask
+                    .iter()
+                    .find(|(u, _)| u == uid)
+                    .and_then(|(_, a)| a.iter().find(|(x, _)| x == app_id))
+                    .map(|(_, e)| &e.allow)
+                    .unwrap_or(&empty);
                 for (fam, kind) in [(4, "ipv4_addr"), (6, "ipv6_addr")] {
-                    let mut ips: Vec<&str> = allowed.iter().map(|(ip, _)| ip.as_str()).filter(|ip| ip.contains(':') == (fam == 6)).collect();
+                    let mut ips: Vec<&str> =
+                        allowed.iter().map(|(ip, _)| ip.as_str()).filter(|ip| ip.contains(':') == (fam == 6)).collect();
                     ips.sort();
                     let elements = if ips.is_empty() { String::new() } else { format!(" elements = {{ {} }};", ips.join(", ")) };
                     sets.push(format!("  set {} {{ type {kind}; flags timeout;{elements} }}", set_name(n, app_id, fam)));
@@ -451,13 +466,22 @@ pub fn apply(rules: Option<&Rules>) -> R<i32> {
         }
     };
     let script = ruleset_now(rules)?;
-    let p = py::run_opts(&["nft", "-f", "-"], py::Run { input: Some(&script), ..Default::default() }).map_err(|e| Crash(e.message().to_string()))?;
+    let p = py::run_opts(&["nft", "-f", "-"], py::Run { input: Some(&script), ..Default::default() })
+        .map_err(|e| Crash(e.message().to_string()))?;
     if p.code != 0 {
         let s = py::strip(&p.stderr);
         let msg = if s.is_empty() { "nft failed" } else { s };
         eprintln!("{msg}");
         let first = py::splitlines(msg).first().copied().unwrap_or("").to_string();
-        py::call(&["logger", "-t", "labyrinth-appnet", "-p", "auth.warning", "--", &format!("per-app network rules did not load, apps are NOT limited: {first}")])?;
+        py::call(&[
+            "logger",
+            "-t",
+            "labyrinth-appnet",
+            "-p",
+            "auth.warning",
+            "--",
+            &format!("per-app network rules did not load, apps are NOT limited: {first}"),
+        ])?;
     }
     Ok(p.code)
 }

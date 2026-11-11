@@ -145,9 +145,18 @@ pub fn load_policy(app_id: &str) -> Map<String, Value> {
 fn int_of(v: &Value) -> R<i128> {
     match v {
         Value::Bool(b) => Ok(*b as i128),
-        Value::Number(n) => Ok(n.as_i64().map(|x| x as i128).or_else(|| n.as_u64().map(|x| x as i128)).unwrap_or_else(|| n.as_f64().unwrap_or(0.0).trunc() as i128)),
-        Value::String(s) => crate::pycompat::int(s).ok_or_else(|| Crash(format!("ValueError: invalid literal for int() with base 10: {}", py::repr(s)))),
-        other => Err(Crash(format!("TypeError: int() argument must be a string, a bytes-like object or a real number, not {}", py::pyjson::py_repr(other)))),
+        Value::Number(n) => Ok(n
+            .as_i64()
+            .map(|x| x as i128)
+            .or_else(|| n.as_u64().map(|x| x as i128))
+            .unwrap_or_else(|| n.as_f64().unwrap_or(0.0).trunc() as i128)),
+        Value::String(s) => {
+            crate::pycompat::int(s).ok_or_else(|| Crash(format!("ValueError: invalid literal for int() with base 10: {}", py::repr(s))))
+        }
+        other => Err(Crash(format!(
+            "TypeError: int() argument must be a string, a bytes-like object or a real number, not {}",
+            py::pyjson::py_repr(other)
+        ))),
     }
 }
 
@@ -246,7 +255,12 @@ fn folders_of(v: Option<&Value>) -> R<Vec<String>> {
                     return Err(Crash("TypeError: expected str, bytes or os.PathLike object, not int".into()));
                 }
             }
-            other => return Err(Crash(format!("TypeError: stat: path should be string, bytes, os.PathLike or integer, not {}", py::pyjson::py_repr(&other)))),
+            other => {
+                return Err(Crash(format!(
+                    "TypeError: stat: path should be string, bytes, os.PathLike or integer, not {}",
+                    py::pyjson::py_repr(&other)
+                )))
+            }
         }
     }
     Ok(out)
@@ -280,7 +294,11 @@ pub fn bwrap_args(app_id: &str, entry: &[(String, String)], policy: &Map<String,
             add(&["--dev-bind", d, d]);
         }
     }
-    let mut devs: Vec<String> = std::fs::read_dir("/dev").map_err(|e| py::os_err(e, "/dev"))?.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+    let mut devs: Vec<String> = std::fs::read_dir("/dev")
+        .map_err(|e| py::os_err(e, "/dev"))?
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
     devs.sort();
     for n in devs {
         if n.starts_with("nvidia") || n == "video0" || n == "video1" {
@@ -408,7 +426,9 @@ fn run(argv: &[String]) -> R<i32> {
             Some(i) => cmd[i + 1..].to_vec(),
             None => cmd
                 .into_iter()
-                .filter(|c| !["systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=", "--unit="].iter().any(|p| c.starts_with(p)))
+                .filter(|c| {
+                    !["systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=", "--unit="].iter().any(|p| c.starts_with(p))
+                })
                 .collect(),
         };
     }

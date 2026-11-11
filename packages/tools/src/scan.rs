@@ -25,8 +25,21 @@ use std::time::Duration;
 pub const DOC: &str = include_str!("doc/labyrinth-scan-downloads.txt");
 
 /// What the weekly full scan leaves out, under the home folder and anywhere ("[x]name" is a glob for a folder of that name).
-pub const FULL_EXCLUDE_HOME: &[&str] = &[".cache", ".local/share/Steam", ".steam", "Games", ".ollama", ".local/share/containers", ".local/share/flatpak",
-    ".var/app", ".cargo", ".rustup", ".npm", "go/pkg", ".local/share/labyrinth/quarantine"];
+pub const FULL_EXCLUDE_HOME: &[&str] = &[
+    ".cache",
+    ".local/share/Steam",
+    ".steam",
+    "Games",
+    ".ollama",
+    ".local/share/containers",
+    ".local/share/flatpak",
+    ".var/app",
+    ".cargo",
+    ".rustup",
+    ".npm",
+    "go/pkg",
+    ".local/share/labyrinth/quarantine",
+];
 pub const FULL_EXCLUDE_ANYWHERE: &[&str] = &["[n]ode_modules", "[.]git", "[t]arget", "*.iso", "*.qcow2", "*.img", "*.vdi", "*.vmdk"];
 
 /// The script's settings, read from the environment when it started.
@@ -63,7 +76,11 @@ impl Ctx {
 /// no lines; one that is not UTF-8 stopped the script (a Crash).
 pub fn lines(path: &str) -> R<Vec<String>> {
     match py::read_text(path) {
-        Ok(t) => Ok(py::lines(&t).into_iter().filter(|l| !py::strip(l).is_empty() && !l.starts_with('#')).map(|l| py::expanduser(py::strip(l))).collect()),
+        Ok(t) => Ok(py::lines(&t)
+            .into_iter()
+            .filter(|l| !py::strip(l).is_empty() && !l.starts_with('#'))
+            .map(|l| py::expanduser(py::strip(l)))
+            .collect()),
         Err(py::ReadError::Os(_)) => Ok(vec![]),
         Err(py::ReadError::Decode(m)) => Err(Crash(format!("UnicodeDecodeError: {m}"))),
     }
@@ -204,7 +221,10 @@ fn tell(args: &[&str], wait: bool) -> R<String> {
 pub fn prompt_quarantined(c: &Ctx, qid: &str, name: &str, sig: &str) -> R<()> {
     if py::env("LABYRINTH_SCAN_PROMPT").as_deref() == Some("child") || c.sync {
         let body = format!("{name} ({sig}) was moved to quarantine. Nothing was deleted.");
-        let ans = tell(&["-u", "critical", "-i", "dialog-warning", "-A", "restore=Restore", "-A", "delete=Delete", "Malware quarantined", &body], true)?;
+        let ans = tell(
+            &["-u", "critical", "-i", "dialog-warning", "-A", "restore=Restore", "-A", "delete=Delete", "Malware quarantined", &body],
+            true,
+        )?;
         if ans == "restore" {
             py::run(&[c.quarantine.as_str(), "restore", qid])?;
         } else if ans == "delete" {
@@ -290,7 +310,12 @@ pub fn scan(c: &Ctx, folders: &[OsString], full: bool) -> R<i32> {
     py::makedirs(&c.state)?;
     args.extend(folders.iter().cloned());
     let limit = if full { 6 * 3600 } else { 1800 };
-    let opts = py::Run { inherit_stdin: true, timeout: Some(Duration::from_secs(limit)), timeout_text: Some(limit.to_string()), ..Default::default() };
+    let opts = py::Run {
+        inherit_stdin: true,
+        timeout: Some(Duration::from_secs(limit)),
+        timeout_text: Some(limit.to_string()),
+        ..Default::default()
+    };
     let p = match py::run_opts(&args, opts) {
         Ok(p) => p,
         Err(e) => {
@@ -461,7 +486,9 @@ fn run(argv: &[OsString]) -> R<i32> {
     let c = Ctx::from_env();
     if has("--prompt") && argv.len() >= 4 {
         let i = argv.iter().position(|a| a == "--prompt").unwrap();
-        let get = |k: usize| argv.get(i + k).map(|a| a.to_string_lossy().into_owned()).ok_or_else(|| Crash("IndexError: list index out of range".into()));
+        let get = |k: usize| {
+            argv.get(i + k).map(|a| a.to_string_lossy().into_owned()).ok_or_else(|| Crash("IndexError: list index out of range".into()))
+        };
         prompt_quarantined(&c, &get(1)?, &get(2)?, &get(3)?)?;
         return Ok(0);
     }
@@ -498,8 +525,15 @@ mod tests {
         for sig in ["Win.Trojan.Agent-123", "Unix.Malware.Mirai-1"] {
             assert!(confident(sig), "{sig}");
         }
-        for sig in ["PUA.Win.Packer.Upx", "Heuristics.Encrypted.PDF", "Win.Test.EICAR_HDB-1", "Html.Phishing.Bank-9", "Doc.Exceeds.Max",
-            "Pdf.Something.Heuristic", "Archive.LimitExceeded"] {
+        for sig in [
+            "PUA.Win.Packer.Upx",
+            "Heuristics.Encrypted.PDF",
+            "Win.Test.EICAR_HDB-1",
+            "Html.Phishing.Bank-9",
+            "Doc.Exceeds.Max",
+            "Pdf.Something.Heuristic",
+            "Archive.LimitExceeded",
+        ] {
             assert!(!confident(sig), "{sig}");
         }
     }

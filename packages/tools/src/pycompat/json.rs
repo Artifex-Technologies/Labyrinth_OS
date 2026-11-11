@@ -114,7 +114,9 @@ pub fn py_repr(v: &Value) -> String {
         },
         Value::String(s) => super::repr(s),
         Value::Array(a) => format!("[{}]", a.iter().map(py_repr).collect::<Vec<_>>().join(", ")),
-        Value::Object(m) => format!("{{{}}}", m.iter().map(|(k, x)| format!("{}: {}", super::repr(k), py_repr(x))).collect::<Vec<_>>().join(", ")),
+        Value::Object(m) => {
+            format!("{{{}}}", m.iter().map(|(k, x)| format!("{}: {}", super::repr(k), py_repr(x))).collect::<Vec<_>>().join(", "))
+        }
     }
 }
 

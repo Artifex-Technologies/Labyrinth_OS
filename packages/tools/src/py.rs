@@ -1021,7 +1021,10 @@ mod tests {
     fn decode_errors_as_python() {
         let b = b"ab\xffc".to_vec();
         assert_eq!(utf8(b).unwrap_err(), "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte");
-        assert_eq!(utf8(b"a\xe2\x28".to_vec()).unwrap_err(), "'utf-8' codec can't decode byte 0xe2 in position 1: invalid continuation byte");
+        assert_eq!(
+            utf8(b"a\xe2\x28".to_vec()).unwrap_err(),
+            "'utf-8' codec can't decode byte 0xe2 in position 1: invalid continuation byte"
+        );
         assert_eq!(utf8(b"a\xe2\x82".to_vec()).unwrap_err(), "'utf-8' codec can't decode bytes in position 1-2: unexpected end of data");
     }
 }

@@ -102,7 +102,13 @@ pub fn load(path: &str) -> Result<Manifest, LoadError> {
                 for i in ids {
                     match &i {
                         Value::String(s) if comps.iter().any(|(x, _)| x == s) => out.push(s.clone()),
-                        _ => return Err(LoadError::Said(format!("preset {} names unknown component {}", py::repr(name), py::pyjson::py_repr(&i)))),
+                        _ => {
+                            return Err(LoadError::Said(format!(
+                                "preset {} names unknown component {}",
+                                py::repr(name),
+                                py::pyjson::py_repr(&i)
+                            )))
+                        }
                     }
                 }
                 presets.push((name.clone(), out));
@@ -334,7 +340,8 @@ pub fn plan_remove(chosen: &[String], m: &Manifest, installed: &[String]) -> R<V
 /// shutil.copytree(src, dst) (links followed, as copytree does by default): the folders with their modes, the files with copy2.
 fn copytree(src: &str, dst: &str) -> R<()> {
     py::makedirs(dst)?;
-    let mut names: Vec<String> = std::fs::read_dir(src).map_err(|e| py::os_err(e, src))?.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+    let mut names: Vec<String> =
+        std::fs::read_dir(src).map_err(|e| py::os_err(e, src))?.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
     names.sort();
     for n in names {
         let (s, d) = (py::join(src, &n), py::join(dst, &n));
@@ -384,7 +391,11 @@ pub fn run_steps(steps: &[Step], dry_run: bool) -> R<i32> {
                 copytree(&src, &work)?;
                 let mut full = argv.clone();
                 full.extend(makepkg_gui_args(&tmp)?);
-                let st = std::process::Command::new(&full[0]).args(&full[1..]).current_dir(&work).status().map_err(|e| Crash(py::oserror(&e, Some(&full[0]))))?;
+                let st = std::process::Command::new(&full[0])
+                    .args(&full[1..])
+                    .current_dir(&work)
+                    .status()
+                    .map_err(|e| Crash(py::oserror(&e, Some(&full[0]))))?;
                 Ok(st.code().unwrap_or_else(|| {
                     use std::os::unix::process::ExitStatusExt;
                     -st.signal().unwrap_or(1)
@@ -422,25 +433,36 @@ fn run(argv: &[String], installed: Option<Vec<String>>) -> R<i32> {
     };
     let installed = match installed {
         Some(i) => i,
-        None => match pacman_installed()? {
-            Some(i) => i,
-            None => {
-                if (cmd == "install" || cmd == "remove") && !dry {
-                    eprintln!("error: pacman not found; labyrinth-apps works on Arch-based systems only (use --dry-run to see what it would do)");
-                    return Ok(2);
+        None => {
+            match pacman_installed()? {
+                Some(i) => i,
+                None => {
+                    if (cmd == "install" || cmd == "remove") && !dry {
+                        eprintln!("error: pacman not found; labyrinth-apps works on Arch-based systems only (use --dry-run to see what it would do)");
+                        return Ok(2);
+                    }
+                    eprintln!("note: pacman not found; showing everything as not installed");
+                    vec![]
                 }
-                eprintln!("note: pacman not found; showing everything as not installed");
-                vec![]
             }
-        },
+        }
     };
     if cmd == "list" {
-        let w = m.comps.iter().map(|(i, _)| i.chars().count()).max().ok_or_else(|| Crash("ValueError: max() iterable argument is empty".into()))?;
+        let w = m
+            .comps
+            .iter()
+            .map(|(i, _)| i.chars().count())
+            .max()
+            .ok_or_else(|| Crash("ValueError: max() iterable argument is empty".into()))?;
         for (i, c) in &m.comps {
             let flag = if c.get("proprietary").map(crate::appnet::truthy).unwrap_or(false) { " [proprietary]" } else { "" };
             println!("{i:<w$}  {:<13} {}{flag}", state(c, &installed)?, name_of(c)?);
         }
-        let ps: Vec<String> = m.presets.iter().map(|(n, v)| format!("{n} ({})", if v.is_empty() { "nothing extra".to_string() } else { v.join(", ") })).collect();
+        let ps: Vec<String> = m
+            .presets
+            .iter()
+            .map(|(n, v)| format!("{n} ({})", if v.is_empty() { "nothing extra".to_string() } else { v.join(", ") }))
+            .collect();
         println!("\npresets: {}", ps.join(", "));
         return Ok(0);
     }
@@ -500,7 +522,11 @@ fn run(argv: &[String], installed: Option<Vec<String>>) -> R<i32> {
                 chosen.push(i);
             }
         }
-        let steps = if cmd == "install" { plan_install(&chosen, &m, &installed, &in_repos, never_synced(None))? } else { plan_remove(&chosen, &m, &installed)? };
+        let steps = if cmd == "install" {
+            plan_install(&chosen, &m, &installed, &in_repos, never_synced(None))?
+        } else {
+            plan_remove(&chosen, &m, &installed)?
+        };
         if steps.is_empty() {
             println!("nothing to do");
             return Ok(0);

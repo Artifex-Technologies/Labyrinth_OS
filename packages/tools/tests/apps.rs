@@ -15,7 +15,14 @@ fn world(installed: &[&str], with_pacman: bool) -> World {
     let bin = d.p("bin");
     std::fs::create_dir_all(&bin).unwrap();
     if with_pacman {
-        stub(&bin, "pacman", &format!("case \"$1\" in -Qq) printf '%s\\n' {};; -Si) exit 1;; esac", installed.iter().map(|p| format!("'{p}'")).collect::<Vec<_>>().join(" ")));
+        stub(
+            &bin,
+            "pacman",
+            &format!(
+                "case \"$1\" in -Qq) printf '%s\\n' {};; -Si) exit 1;; esac",
+                installed.iter().map(|p| format!("'{p}'")).collect::<Vec<_>>().join(" ")
+            ),
+        );
     }
     std::fs::create_dir_all(d.p("sync")).unwrap();
     std::fs::write(d.p("sync/core.db"), "").unwrap();

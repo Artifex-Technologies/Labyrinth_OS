@@ -29,7 +29,12 @@ fn modes() {
     assert!(block[1].contains("oifname \"lo\" tcp dport { 8899, 8930, 11434 } drop"));
     assert!(block[2].contains("oifname != \"lo\" drop"));
     let eth = &rule_text(1000, "a", "ethernet").unwrap()[0];
-    assert!(eth.contains("oifname != \"lo\"") && eth.contains("oifname != \"en*\"") && eth.contains("oifname != \"eth*\"") && !eth.contains("wl*"));
+    assert!(
+        eth.contains("oifname != \"lo\"")
+            && eth.contains("oifname != \"en*\"")
+            && eth.contains("oifname != \"eth*\"")
+            && !eth.contains("wl*")
+    );
     let wifi = &rule_text(1000, "a", "wifi").unwrap()[0];
     assert!(wifi.contains("oifname != \"wl*\"") && !wifi.contains("en*"));
 }
@@ -86,7 +91,10 @@ fn ruleset_declares_the_sets_with_what_you_allowed() {
     let r = rules(&[("1000", &[("pdfcraft", "ask"), ("x", "block")])]);
     let asked: Ask = vec![(
         "1000".into(),
-        vec![("pdfcraft".into(), AskEntry { allow: vec![("1.2.3.4".into(), "a".into()), ("2606:4700::1111".into(), "".into())], deny: vec![] })],
+        vec![(
+            "pdfcraft".into(),
+            AskEntry { allow: vec![("1.2.3.4".into(), "a".into()), ("2606:4700::1111".into(), "".into())], deny: vec![] },
+        )],
     )];
     let text = ruleset(&r, &|_| true, &asked).unwrap();
     assert!(text.contains("type ipv4_addr; flags timeout; elements = { 1.2.3.4 }"));
@@ -117,12 +125,46 @@ fn state_file_is_private_and_bad_entries_are_dropped() {
 
 #[test]
 fn addresses_as_pythons_ipaddress_reads_them() {
-    for ok in ["1.2.3.4", "0.0.0.0", "255.255.255.255", "::", "::1", "1::", "2606:4700::1111", "fe80::1%eth0", "::ffff:1.2.3.4", "1:2:3:4:5:6:7:8",
-        "1:2:3:4:5:6:1.2.3.4", "1::8", "1:2:3:4:5:6:7::"] {
+    for ok in [
+        "1.2.3.4",
+        "0.0.0.0",
+        "255.255.255.255",
+        "::",
+        "::1",
+        "1::",
+        "2606:4700::1111",
+        "fe80::1%eth0",
+        "::ffff:1.2.3.4",
+        "1:2:3:4:5:6:7:8",
+        "1:2:3:4:5:6:1.2.3.4",
+        "1::8",
+        "1:2:3:4:5:6:7::",
+    ] {
         assert!(valid_ip(ok), "{ok}");
     }
-    for bad in ["", "1.2.3", "1.2.3.4.5", "01.2.3.4", "256.1.1.1", "1.2.3.4/8", "1.2.3.\u{661}", " 1.2.3.4", ":::", "1:2", "1:2:3:4:5:6:7:8:9", "1::2::3",
-        ":1::2", "1::2:", "12345::", "g::", "fe80::1%", "fe80::1%a%b", "1:2:3:4:5:6:7:1.2.3.4", "::1.2.3", "1:2:3:4:5:6:7:8::"] {
+    for bad in [
+        "",
+        "1.2.3",
+        "1.2.3.4.5",
+        "01.2.3.4",
+        "256.1.1.1",
+        "1.2.3.4/8",
+        "1.2.3.\u{661}",
+        " 1.2.3.4",
+        ":::",
+        "1:2",
+        "1:2:3:4:5:6:7:8:9",
+        "1::2::3",
+        ":1::2",
+        "1::2:",
+        "12345::",
+        "g::",
+        "fe80::1%",
+        "fe80::1%a%b",
+        "1:2:3:4:5:6:7:1.2.3.4",
+        "::1.2.3",
+        "1:2:3:4:5:6:7:8::",
+    ] {
         assert!(!valid_ip(bad), "{bad}");
     }
 }

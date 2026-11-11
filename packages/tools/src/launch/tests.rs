@@ -10,7 +10,10 @@ fn s(v: &[&str]) -> Vec<String> {
 fn exec_field_codes() {
     assert_eq!(expand_exec("minos %U", &s(&["/a b", "/c"]), "", "", ""), s(&["minos", "/a b", "/c"]));
     assert_eq!(expand_exec("viewer %f", &s(&["/x", "/y"]), "", "", ""), s(&["viewer", "/x"]));
-    assert_eq!(expand_exec("app %i %c --name=%c 100%%", &[], "My App", "ic", ""), s(&["app", "--icon", "ic", "My App", "--name=My App", "100%"]));
+    assert_eq!(
+        expand_exec("app %i %c --name=%c 100%%", &[], "My App", "ic", ""),
+        s(&["app", "--icon", "ic", "My App", "--name=My App", "100%"])
+    );
     assert_eq!(expand_exec("sh -c \"echo hi %u\"", &[], "", "", ""), s(&["sh", "-c", "echo hi "]));
     assert_eq!(expand_exec("app %F", &[], "", "", ""), s(&["app"]));
 }
@@ -46,7 +49,11 @@ fn build_command_wraps_in_a_scope_and_optionally_a_sandbox() {
     std::env::set_var("XDG_DATA_HOME", d.p("d"));
     std::env::set_var("XDG_DATA_DIRS", d.p("share"));
     std::fs::create_dir_all(d.p("share/applications")).unwrap();
-    std::fs::write(d.p("share/applications/demo.desktop"), "[Desktop Entry]\nType=Application\nName=Demo\nExec=demo --open %U\nIcon=demo\nPath=/tmp\n").unwrap();
+    std::fs::write(
+        d.p("share/applications/demo.desktop"),
+        "[Desktop Entry]\nType=Application\nName=Demo\nExec=demo --open %U\nIcon=demo\nPath=/tmp\n",
+    )
+    .unwrap();
     let (cmd, cwd) = build_command("demo", &s(&["/file"])).unwrap().unwrap();
     assert_eq!(cmd[..4], s(&["systemd-run", "--user", "--scope", "--quiet"])[..]);
     assert!(cmd.contains(&"--slice=lapp_demo.slice".to_string()));
@@ -72,7 +79,11 @@ fn network_rule_is_read_for_this_user_only() {
     let p = d.p("r.json");
     let me = py::getuid().to_string();
     let other = (py::getuid() + 1).to_string();
-    std::fs::write(&p, format!(r#"{{"rules": {{"{me}": {{"a": "block", "b": "bogus", "c": "wifi", "e": "ask"}}, "{other}": {{"d": "block"}}}}}}"#)).unwrap();
+    std::fs::write(
+        &p,
+        format!(r#"{{"rules": {{"{me}": {{"a": "block", "b": "bogus", "c": "wifi", "e": "ask"}}, "{other}": {{"d": "block"}}}}}}"#),
+    )
+    .unwrap();
     assert_eq!(network_rule("a", Some(&p)).as_deref(), Some("block"));
     assert_eq!(network_rule("e", Some(&p)).as_deref(), Some("ask")); // ask mode needs its slice and rules loaded too
     assert_eq!(network_rule("c", Some(&p)).as_deref(), Some("wifi"));
@@ -93,6 +104,7 @@ fn an_exec_line_shlex_cannot_read_is_split_on_whitespace() {
 fn desktop_entries_first_value_wins_and_localised_names_are_skipped() {
     let d = TempDir::new();
     let p = d.p("a.desktop");
-    std::fs::write(&p, "Name=outside\n[Desktop Entry]\n Name = One \nName[de]=Eins\nName=Two\n# Exec=no\nExec=a=b\n[Other]\nIcon=x\n").unwrap();
+    std::fs::write(&p, "Name=outside\n[Desktop Entry]\n Name = One \nName[de]=Eins\nName=Two\n# Exec=no\nExec=a=b\n[Other]\nIcon=x\n")
+        .unwrap();
     assert_eq!(parse_desktop(&p).unwrap(), vec![("Name".to_string(), "One".to_string()), ("Exec".to_string(), "a=b".to_string())]);
 }

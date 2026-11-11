@@ -11,9 +11,9 @@
 //!   launch      labyrinth-launch            the app launcher (dock, start menu, Settings)
 //!   apps        labyrinth-apps              the optional software (Agora, the first login)
 
-pub mod apps;
 pub mod appnet;
 pub mod appnet_ask;
+pub mod apps;
 pub mod ask_agent;
 pub mod launch;
 pub mod py;

@@ -62,7 +62,15 @@ fn lookup(ip: &str) -> String {
     }
     let mut host = vec![0 as libc::c_char; 1025];
     let rc = unsafe {
-        libc::getnameinfo(&storage as *const _ as *const libc::sockaddr, len as libc::socklen_t, host.as_mut_ptr(), host.len() as libc::socklen_t, std::ptr::null_mut(), 0, libc::NI_NAMEREQD)
+        libc::getnameinfo(
+            &storage as *const _ as *const libc::sockaddr,
+            len as libc::socklen_t,
+            host.as_mut_ptr(),
+            host.len() as libc::socklen_t,
+            std::ptr::null_mut(),
+            0,
+            libc::NI_NAMEREQD,
+        )
     };
     if rc != 0 {
         return String::new();
@@ -95,7 +103,13 @@ impl Q {
             Some(Value::Bool(b)) => *b as i128,
             _ => 0,
         };
-        Ok(Q { id: m.get("id").cloned().unwrap_or(Value::Null), app: text(m.get("app"), "app")?, ip: text(m.get("ip"), "ip")?, port, proto: text(m.get("proto"), "proto")? })
+        Ok(Q {
+            id: m.get("id").cloned().unwrap_or(Value::Null),
+            app: text(m.get("app"), "app")?,
+            ip: text(m.get("ip"), "ip")?,
+            port,
+            proto: text(m.get("proto"), "proto")?,
+        })
     }
 }
 
@@ -110,7 +124,10 @@ pub fn message(q: &Q, name: &str) -> (String, String) {
 /// Show the notification; the chosen key ("allow", "all", "deny"), or "" when it was closed or timed out.
 pub fn ask_user(q: &Q, name: &str, notify: &str, timeout: &str) -> String {
     let (title, body) = message(q, name);
-    let mut cmd: Vec<String> = ["timeout", timeout, notify, "-a", "Firewall", "-u", "normal", "-t", "0", "-i", "network-error"].iter().map(|s| s.to_string()).collect();
+    let mut cmd: Vec<String> = ["timeout", timeout, notify, "-a", "Firewall", "-u", "normal", "-t", "0", "-i", "network-error"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
     for (k, label) in ACTIONS {
         cmd.push("-A".into());
         cmd.push(format!("{k}={label}"));
@@ -163,7 +180,9 @@ fn run() -> R<i32> {
     let sock = py::env_get("LABYRINTH_ASK_SOCKET", "/run/labyrinth/appnet-ask.sock");
     let notify = py::env_get("LABYRINTH_NOTIFY", "notify-send");
     let t = py::env_get("LABYRINTH_ASK_TIMEOUT", "300");
-    let timeout = crate::pycompat::int(&t).ok_or_else(|| Crash(format!("ValueError: invalid literal for int() with base 10: {}", py::repr(&t))))?.to_string();
+    let timeout = crate::pycompat::int(&t)
+        .ok_or_else(|| Crash(format!("ValueError: invalid literal for int() with base 10: {}", py::repr(&t))))?
+        .to_string();
     loop {
         let mut seen: Vec<Value> = vec![]; // ids start from 1 again when the service restarts
         if let Ok(mut s) = UnixStream::connect(&sock) {
@@ -227,7 +246,10 @@ mod tests {
         assert_eq!(app_title("com.mitchellh.ghostty"), "Ghostty");
         assert_eq!(app_title("spotify-launcher"), "Spotify Launcher");
         let q = Q { id: Value::from(1), app: "pdfcraft".into(), ip: "1.2.3.4".into(), port: 443, proto: "TCP".into() };
-        assert_eq!(message(&q, "example.com"), ("Pdfcraft wants to connect to example.com".to_string(), "1.2.3.4 port 443 (TCP)".to_string()));
+        assert_eq!(
+            message(&q, "example.com"),
+            ("Pdfcraft wants to connect to example.com".to_string(), "1.2.3.4 port 443 (TCP)".to_string())
+        );
         assert_eq!(message(&q, ""), ("Pdfcraft wants to connect to 1.2.3.4".to_string(), "TCP port 443".to_string()));
     }
 
