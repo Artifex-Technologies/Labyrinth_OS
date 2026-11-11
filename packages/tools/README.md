@@ -13,10 +13,10 @@ while games and a local model share the computer).
 | `labyrinth-appnet` | per-app network rules (nftables) | at boot and login, from Settings (pkexec) | done |
 | `labyrinth-launch` | starts apps in their own scope and slice | every app started from the dock, start menu, Settings | done |
 | `labyrinth-apps` | Labyrinth's optional software (Agora's component installer, the first login) | on demand | done |
-| `labyrinth-selfcheck` | is the desktop in a sane state (after an upgrade) | on demand | done, not switched |
-| `ipconfig` | Windows' `ipconfig` from `ip` and NetworkManager | on demand | done, not switched |
-| `steam_playall` (was `steam_playall.py`) | Steam Play for all titles in Steam's config.vdf | `labyrinth-gaming setup` | done, not switched |
-| `labyrinth-first-components` | the optional parts chosen in the installer, at the first login | the session's autostart | done, not switched |
+| `labyrinth-selfcheck` | is the desktop in a sane state (after an upgrade) | on demand | done |
+| `ipconfig` | Windows' `ipconfig` from `ip` and NetworkManager | on demand | done |
+| `steam_playall` (was `steam_playall.py`) | Steam Play for all titles in Steam's config.vdf | `labyrinth-gaming setup` | done |
+| `labyrinth-first-components` | the optional parts chosen in the installer, at the first login | the session's autostart | done |
 
 Each module (`src/*.rs`) says what it is and where it is not 1:1. Where a script stopped with a traceback (exit code 1), its port
 stops too, with exit code 1 and one line on standard error. `src/pycompat` is a copy of Yggdrasil's `packages/pycompat` (the few
@@ -137,6 +137,7 @@ those, with the cases built on them).
 
 They stay in `profile/airootfs/usr/local/bin` (after the switch, in `packages/tools/python/` with their tests) for a rollback,
 until these have run a while. The first seven were switched on 2026-11-11 (the package `labyrinth-tools` installs them in place of
-the scripts); the switch of the last four is on the branch `tools-rust-switch-2`.
+the scripts); the last four with pkgrel 2 (branch `tools-rust-switch-2`): the image's autostart runs
+/usr/bin/labyrinth-first-components and `labyrinth-gaming setup` runs /usr/bin/steam_playall.
 
 Formatting: `cargo fmt` with rustfmt.toml (Heimdall's settings: 140 columns); `cargo clippy --all-targets -- -D warnings` is clean.

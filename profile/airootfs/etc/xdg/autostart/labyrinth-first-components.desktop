@@ -2,6 +2,6 @@
 Type=Application
 Name=Optional parts chosen at install
 Comment=Installs the optional parts chosen in the installer that were not on it (once; nothing to do afterwards)
-Exec=/usr/local/bin/labyrinth-first-components
+Exec=/usr/bin/labyrinth-first-components
 NoDisplay=true
 X-GNOME-Autostart-enabled=true

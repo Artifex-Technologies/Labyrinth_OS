@@ -19,6 +19,8 @@ if os.path.isfile(TOOL):
     spec = importlib.util.spec_from_loader("install_system", loader)
     inst = importlib.util.module_from_spec(spec)
     loader.exec_module(inst)
+# the script, kept for a rollback since labyrinth-tools' Rust program replaced it (the image runs /usr/bin/labyrinth-first-components)
+FIRST = os.path.join(ROOT, "packages", "tools", "python", "labyrinth-first-components")
 needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with the install program at {TOOL}")
 
 
@@ -45,7 +47,7 @@ class TheIntegrationFile(unittest.TestCase):
         self.assertEqual(set(c["reserved_logins"].split()), {"heimdall", "sarina"})
 
     def test_the_first_login_list_is_where_labyrinth_first_components_reads_it(self):
-        first = open(os.path.join(AIROOTFS, "usr", "local", "bin", "labyrinth-first-components")).read()
+        first = open(FIRST).read()
         self.assertIn(conf_values()["first_login"], first)
 
     @needs_program
@@ -122,7 +124,6 @@ class Browsers(unittest.TestCase):
 
 EXTRAS = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "installer-extras.json")
 COMPONENTS = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "components.json")
-FIRST = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "labyrinth-first-components")
 
 
 @needs_program
