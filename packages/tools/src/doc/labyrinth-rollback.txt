@@ -1,0 +1,7 @@
+labyrinth-rollback: put the whole system back to a snapshot, in one command, and undo that if needed.
+
+  labyrinth-rollback list                 the snapshots: number, date, description
+  labyrinth-rollback status               what the system is now: made from which snapshot, which earlier systems are kept
+  labyrinth-rollback N [--yes]            make snapshot N the system from the next restart on
+  labyrinth-rollback undo [--yes]         put back the system that the last rollback set aside
+  options: --device DEV (the btrfs partition; found by itself), --dry-run (show the steps, change nothing)

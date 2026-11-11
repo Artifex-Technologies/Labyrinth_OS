@@ -19,7 +19,7 @@ Not related to Proton AG (Proton Drive, Proton Pass): see [PROTON_AG.md](PROTON_
 
 ## Setup and verification (built)
 
-`labyrinth-gaming` (`/usr/local/bin/labyrinth-gaming`):
+`labyrinth-gaming` (`/usr/bin/labyrinth-gaming`, from the labyrinth-tools package):
 
 - `labyrinth-gaming check` is read-only. It reports PASS/WARN/FAIL for: Steam and
   32-bit NVIDIA/Vulkan packages, the multilib repo, whether the NVIDIA driver is

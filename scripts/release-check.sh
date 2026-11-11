@@ -23,12 +23,12 @@ bad=0
 while IFS= read -r f; do
   head -1 "$f" | grep -q '^#!.*\(ba\)\?sh' && { bash -n "$f" 2>/dev/null || { fail "shell syntax: $f"; bad=1; }; }
   head -1 "$f" | grep -q '^#!.*python' && { python3 -m py_compile "$f" 2>/dev/null || { fail "python syntax: $f"; bad=1; }; }
-done < <(find profile/airootfs/usr/local/bin scripts -type f ! -name '*.md')
+done < <(find profile/airootfs/usr/local/bin packages/tools/shell scripts -type f ! -name '*.md')
 ((bad)) || pass "shell and python scripts parse"
 find . -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null
 
 if command -v shellcheck >/dev/null; then
-  step "shellcheck (errors only)" bash -c 'find profile/airootfs/usr/local/bin scripts -type f -exec grep -l "^#!.*\(ba\)\?sh" {} + | xargs shellcheck -S error'
+  step "shellcheck (errors only)" bash -c 'find profile/airootfs/usr/local/bin packages/tools/shell scripts -type f -exec grep -l "^#!.*\(ba\)\?sh" {} + | xargs shellcheck -S error'
 else warn "shellcheck is not installed (sudo pacman -S shellcheck)"; fi
 
 # systemd units

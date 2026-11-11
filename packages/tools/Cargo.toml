@@ -2,7 +2,7 @@
 name = "labyrinth-tools"
 version = "0.1.0"
 edition = "2021"
-description = "Labyrinth OS's own command-line programs in Rust, replacing the Python scripts of the same names with the same interface: the malware scan of new files and its quarantine, the per-app network rules and their questions, the app launcher, the optional software, the self-check, ipconfig, Steam Play for all, the first-login installs"
+description = "Labyrinth OS's own command-line programs in Rust, replacing the Python scripts of the same names with the same interface: the malware scan of new files and its quarantine, the per-app network rules and their questions, the app launcher, the optional software, the self-check, ipconfig, Steam Play for all, the first-login installs, and the gate of the engineering agent's root actions"
 license = "MPL-2.0"
 
 [lib]
@@ -34,6 +34,113 @@ path = "src/bin/labyrinth-appnet-ask-agent.rs"
 name = "labyrinth-launch"
 path = "src/bin/labyrinth-launch.rs"
 
+[[bin]]
+name = "labyrinth-apps"
+path = "src/bin/labyrinth-apps.rs"
+
+[[bin]]
+name = "labyrinth-selfcheck"
+path = "src/bin/labyrinth-selfcheck.rs"
+
+[[bin]]
+name = "ipconfig"
+path = "src/bin/ipconfig.rs"
+
+# the script was steam_playall.py
+[[bin]]
+name = "steam_playall"
+path = "src/bin/steam_playall.rs"
+
+[[bin]]
+name = "labyrinth-first-components"
+path = "src/bin/labyrinth-first-components.rs"
+
+# the gate sudo lets the engineering agent run as root (was /usr/local/sbin/labyrinth-agent)
+[[bin]]
+name = "labyrinth-agent"
+path = "src/bin/labyrinth-agent.rs"
+
+# the shell scripts' ports (the scripts: packages/tools/shell; they were in profile/airootfs/usr/local/bin)
+[[bin]]
+name = "labyrinth-rollback"
+path = "src/bin/labyrinth-rollback.rs"
+
+[[bin]]
+name = "labyrinth-install-bootfinish"
+path = "src/bin/labyrinth-install-bootfinish.rs"
+
+[[bin]]
+name = "labyrinth-install-cleanup"
+path = "src/bin/labyrinth-install-cleanup.rs"
+
+[[bin]]
+name = "labyrinth-agent-setup"
+path = "src/bin/labyrinth-agent-setup.rs"
+
+[[bin]]
+name = "labyrinth-agent-window"
+path = "src/bin/labyrinth-agent-window.rs"
+
+[[bin]]
+name = "labyrinth-ecosystem-setup"
+path = "src/bin/labyrinth-ecosystem-setup.rs"
+
+[[bin]]
+name = "labyrinth-hardware-setup"
+path = "src/bin/labyrinth-hardware-setup.rs"
+
+[[bin]]
+name = "labyrinth-grub-theme"
+path = "src/bin/labyrinth-grub-theme.rs"
+
+[[bin]]
+name = "labyrinth-security-setting"
+path = "src/bin/labyrinth-security-setting.rs"
+
+[[bin]]
+name = "labyrinth-gaming"
+path = "src/bin/labyrinth-gaming.rs"
+
+[[bin]]
+name = "labyrinth-sarina"
+path = "src/bin/labyrinth-sarina.rs"
+
+[[bin]]
+name = "labyrinth-sarina-setting"
+path = "src/bin/labyrinth-sarina-setting.rs"
+
+[[bin]]
+name = "labyrinth-rea"
+path = "src/bin/labyrinth-rea.rs"
+
+[[bin]]
+name = "labyrinth-rea-setup"
+path = "src/bin/labyrinth-rea-setup.rs"
+
+[[bin]]
+name = "labyrinth-claude-code"
+path = "src/bin/labyrinth-claude-code.rs"
+
+[[bin]]
+name = "labyrinth-sarina-reflect"
+path = "src/bin/labyrinth-sarina-reflect.rs"
+
+[[bin]]
+name = "labyrinth-sarina-voice-setup"
+path = "src/bin/labyrinth-sarina-voice-setup.rs"
+
+[[bin]]
+name = "labyrinth-sarina-warm"
+path = "src/bin/labyrinth-sarina-warm.rs"
+
+[[bin]]
+name = "labyrinth-install"
+path = "src/bin/labyrinth-install.rs"
+
+[[bin]]
+name = "labyrinth-notify-activate"
+path = "src/bin/labyrinth-notify-activate.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }
@@ -46,6 +153,3 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
-
-[dev-dependencies]
-serde_json = { version = "1", features = ["preserve_order"] }

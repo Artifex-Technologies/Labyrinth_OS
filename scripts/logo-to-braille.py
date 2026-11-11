@@ -2,7 +2,7 @@
 import sys
 # Makes the fastfetch logo from the emblem: scripts/logo-to-braille.py assets/logo/labyrinth-black.png 36 > profile/airootfs/usr/share/labyrinth/fastfetch/labyrinth.txt
 # (braille dots, 2x4 per character; "$1" is the colour fastfetch fills in)
-from PIL import Image, ImageFilter
+from PIL import Image
 src, cols = sys.argv[1], int(sys.argv[2])
 im0 = Image.open(src).convert("RGBA"); bg = Image.new("RGBA", im0.size, (255,255,255,255)); im = Image.alpha_composite(bg, im0).convert("L")
 bbox = Image.eval(im, lambda v: 255 - v).getbbox()   # crop to the emblem

@@ -1,0 +1,567 @@
+#!/usr/bin/python3 -I
+"""labyrinth-agent: the root actions the engineering agent (Claude, account claude-agent) may take without the owner, each one
+checked. sudo lets the agent run this program and nothing else as root (/etc/sudoers.d/50-labyrinth-agent); anything broader
+needs the owner to open a window with their password (labyrinth-agent-window). Every action is written to the journal (tag
+labyrinth-agent), where Heimdall reads it, and sudo records the session. The programs it starts are found in /usr/bin only and
+see none of the caller's environment but sudo's own variables.
+
+  labyrinth-agent pkg-install FILE...        install packages built here: Artifex/Labyrinth names only (yggdrasil-*, labyrinth-*,
+                                             heimdall*, sarina*, limbo*, liki-*, agora*); each file is copied (read as the account
+                                             sudo ran this for) into a folder only root may enter, checked and installed from
+                                             there; opens a Heimdall maintenance window
+  labyrinth-agent pkg-add NAME...            install packages from the signed official repositories (never remote-access tools,
+                                             also not as something a package needs)
+  labyrinth-agent service ACTION [UNIT...]   start stop restart reload status is-active enable disable enable-now disable-now
+                                             user-enable user-disable daemon-reload, for the ecosystem's own units only (Heimdall
+                                             is never stopped or disabled, the agent window's units are the owner's)
+  labyrinth-agent logs JOURNALCTL-ARGS...    read the journal (read-only flags only)
+  labyrinth-agent maintenance on|off|status [--for D] [--reason TEXT]
+  labyrinth-agent limbo up|down|doctor|status [MANIFEST]   manifests under /var/lib/limbo/build-agent or /etc/limbo/validation,
+                                             root's alone (the file and every folder above it owned by root, writable by root only)
+  labyrinth-agent rollback list|status|dry-run N
+  labyrinth-agent firewall-status
+  labyrinth-agent deploy SRC DEST            put one file in a user-side place of the desktop (never anything root runs, never a
+                                             setting Settings changes only with the owner's password); SRC is read as the account
+                                             sudo ran this for
+"""
+import errno
+import os
+import pwd
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+
+# Every pattern is matched whole (fullmatch): a name with a newline at its end is not a name.
+OURS = re.compile(r"(yggdrasil|labyrinth|heimdall|sarina|limbo|liki|agora)[-a-z0-9.+_]*")
+PKGNAME = re.compile(r"[a-z0-9@._+-]{1,100}")
+# remote-access and tunnel tools (the ones in Heimdall's catalogue, internal/remoteaccess/remote-access.json, and more), and
+# servers: not installed by the agent alone, also not as a dependency of what it installs (Heimdall also watches for them)
+NEVER_ADD = re.compile(r"tailscale|headscale|zerotier.*|netbird.*|ngrok|cloudflared.*|frp|frpc|frps|chisel|rathole|bore|bore-cli|"
+                       r"anydesk.*|teamviewer.*|rustdesk.*|meshagent|tor|openssh|dropbear|tinyssh|tigervnc|x11vnc|wayvnc|xrdp|"
+                       r"gnome-remote-desktop|krfb|krdp|ttyd|cockpit|sunshine|samba|ksmbd-tools|nfs-utils|vsftpd|.*-server")
+UNIT = re.compile(r"(yggdrasil-|labyrinth-|heimdall|limbo|sarina|ollama|systemd-sysctl|greetd-test)[A-Za-z0-9@._:-]*")
+SERVICE_ACTIONS = {"start", "stop", "restart", "reload", "status", "is-active", "enable", "disable", "enable-now", "disable-now",
+                   "user-enable", "user-disable", "daemon-reload"}
+# Heimdall watches the agent: the agent may (re)start it, not stop or disable it
+STOPS = {"stop", "disable", "disable-now", "user-disable"}
+LOG_VALUE = {"-u", "--unit", "-o", "--output", "--since", "--until", "-p", "--priority", "-t", "--identifier", "-g", "--grep"}
+LOG_BARE = {"-k", "--dmesg", "-q", "--quiet", "--no-pager", "-f", "--follow", "-r", "--reverse", "-x", "--catalog",
+            "--no-hostname", "-a", "--all", "--case-sensitive"}
+BOOT_ID = re.compile(r"-?[0-9]+|[0-9a-f]{32}")
+LINES = re.compile(r"\+?[0-9]+|all")
+# journalctl's -n and -b take the next word as their value only when it reads as one: `-n --vacuum-time=1s` vacuums the journal.
+# So here too: the next word is their value only when it is a count or a boot, else it is checked on its own.
+LOG_OPTIONAL = {"-n": LINES, "--lines": LINES, "-b": BOOT_ID, "--boot": BOOT_ID}
+LOG_MATCH = re.compile(r"(_COMM|_PID|_UID|_TRANSPORT|_SYSTEMD_UNIT|_SYSTEMD_USER_UNIT|SYSLOG_IDENTIFIER|PRIORITY)=[A-Za-z0-9@._:/-]*")
+LIMBO_DIRS = ("/var/lib/limbo/build-agent/", "/etc/limbo/validation/")
+DIGITS = re.compile(r"[0-9]+")
+DEPLOY = [  # (pattern, mode)
+    (re.compile(r"/usr/bin/(yggdrasil-[a-z0-9-]+|minos|ygg-[a-z0-9-]+)"), 0o755),
+    (re.compile(r"/usr/share/(yggdrasil|labyrinth)/[A-Za-z0-9._/-]+"), 0o644),
+    (re.compile(r"/usr/share/icons/[A-Za-z0-9._/-]+\.(svg|png)"), 0o644),
+    (re.compile(r"/usr/share/(applications|wayland-sessions)/[A-Za-z0-9._-]+\.desktop"), 0o644),
+    (re.compile(r"/etc/yggdrasil/[A-Za-z0-9._-]+\.(json|conf)"), 0o644),
+]
+# places among those that root uses: the graphics card unlock's support table (docs/GPU_UNLOCK.md: never through claude-sudo),
+# the optional apps' build recipes (built and installed as root), the boot menu theme (its install.sh runs as root)
+DEPLOY_NEVER = ("/usr/share/yggdrasil/gpu-unlock", "/usr/share/labyrinth/pkgbuilds", "/usr/share/labyrinth/grub-evodevo")
+# the settings Settings changes only with the owner's password (polkit, auth_admin_keep: casefan's fans and pumps, gpufan,
+# powerlimit, tune), and the protections the account helper and Agora's pkg-root read: the agent does not get them without it
+DEPLOY_GUARDED = ("/etc/yggdrasil/case-fans.json", "/etc/yggdrasil/gpu-fan.json", "/etc/yggdrasil/power-limits.json",
+                  "/etc/yggdrasil/tuning.json", "/etc/yggdrasil/protected-accounts", "/etc/yggdrasil/protected-packages")
+# pkg-install's copies: a fresh folder in here for each install (root's own, 0700), removed afterwards
+STAGE = "/var/cache/labyrinth-agent"
+# where root is told to run a program: system units, pacman hooks, udev rules, polkit actions, sudo rules (a deploy to /usr/bin
+# of a program named in one of these is refused)
+ROOT_RUNS = ("/etc/systemd/system", "/run/systemd/system", "/usr/local/lib/systemd/system", "/usr/lib/systemd/system",
+             "/etc/pacman.d/hooks", "/usr/share/libalpm/hooks", "/etc/udev/rules.d", "/run/udev/rules.d", "/usr/lib/udev/rules.d",
+             "/usr/share/polkit-1/actions", "/etc/sudoers.d")
+NAME_BYTES = frozenset(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.@+")
+# what the programs it starts see of the environment: a fixed PATH and HOME, sudo's own variables, the terminal's type
+KEEP_ENV = ("LOGNAME", "USER", "SUDO_COMMAND", "SUDO_GID", "SUDO_HOME", "SUDO_UID", "SUDO_USER")
+TERM_OK = re.compile(r"[A-Za-z0-9._+-]{1,64}")
+ID = re.compile(r"[0-9]{1,10}")
+# a journal line longer than this is cut (logger could not even be started with one over 128 KiB)
+LOG_MAX = 4000
+
+
+class Refused(Exception):
+    pass
+
+
+def child_env(environ):
+    """The environment of every program this starts. Nothing else the caller set reaches them: PATH, LD_*, SYSTEMD_*, LIMBO_*,
+    PAGER and the like steer a program that runs as root (sudo removes most of them; this does not rely on it)."""
+    env = {"PATH": "/usr/bin", "HOME": "/root"}
+    for k in KEEP_ENV:
+        if k in environ:
+            env[k] = environ[k]
+    term = environ.get("TERM")
+    if term is not None and TERM_OK.fullmatch(term):
+        env["TERM"] = term
+    return env
+
+
+ENV = child_env(os.environ)
+
+
+def log_bytes(msg):
+    b = os.fsencode(msg)
+    if len(b) > LOG_MAX:
+        b = b[:LOG_MAX] + b" [%d bytes more]" % (len(b) - LOG_MAX)
+    return b
+
+
+def log(msg):
+    subprocess.run(["logger", "-t", "labyrinth-agent", "-p", "auth.notice", "--", log_bytes(msg)], check=False, env=ENV)
+
+
+def run(argv):
+    log("run: " + " ".join(argv))
+    return subprocess.run(argv, env=ENV).returncode
+
+
+# ---------------------------------------------------------------- checks (pure, tested)
+
+
+def check_pkg_files(paths, name_of, copy):
+    """The package files the agent may install: each copied first (copy(path, i) gives the copy: the file is read as the caller,
+    never through a link at its end), and the copy's package must be one of ours. The names and the copies: only the copies are
+    installed, so a file changed after it was checked is not what pacman gets."""
+    if not paths:
+        raise Refused("no package files")
+    names, copies = [], []
+    for i, p in enumerate(paths):
+        if not p.startswith("/") or ".." in p.split("/") or not p.endswith((".pkg.tar.zst", ".pkg.tar.xz")):
+            raise Refused(f"{p}: not an absolute path to a package file")
+        c = copy(p, i)
+        n = name_of(c)
+        if not n or not OURS.fullmatch(n):
+            raise Refused(f"{p}: package {n or '?'} is not one of the ecosystem's own")
+        names.append(n)
+        copies.append(c)
+    return names, copies
+
+
+def check_pkg_names(names):
+    if not names:
+        raise Refused("no package names")
+    for n in names:
+        if not PKGNAME.fullmatch(n) or n.startswith("-"):
+            raise Refused(f"{n!r}: not a package name")
+        if NEVER_ADD.fullmatch(n):
+            raise Refused(f"{n}: remote-access tools and servers need the owner (labyrinth-agent-window)")
+    return names
+
+
+def check_transaction(names, printed):
+    """pacman -Sp's list of what installing names would install (one name a line): no remote-access tool or server among them."""
+    for line in printed.split(b"\n"):
+        n = os.fsdecode(line.strip())
+        if n and NEVER_ADD.fullmatch(n):
+            raise Refused(f"{n}, which {', '.join(names)} would install: remote-access tools and servers need the owner "
+                          "(labyrinth-agent-window)")
+
+
+def service_argv(action, units):
+    if action not in SERVICE_ACTIONS:
+        raise Refused(f"{action}: not a service action the agent may take")
+    if action == "daemon-reload":
+        if units:
+            raise Refused("daemon-reload takes no unit")
+        return ["systemctl", "daemon-reload"]
+    if not units:
+        raise Refused("name a unit")
+    for u in units:
+        if not UNIT.fullmatch(u):
+            raise Refused(f"{u}: not one of the ecosystem's own units")
+        if u.startswith("labyrinth-agent"):
+            raise Refused(f"{u}: the agent window's units are the owner's")
+        if u.startswith("heimdall") and action in STOPS:
+            raise Refused(f"{u}: Heimdall watches the agent; only the owner stops or disables it")
+    base = {"enable-now": ["enable", "--now"], "disable-now": ["disable", "--now"], "user-enable": ["--global", "enable"],
+            "user-disable": ["--global", "disable"]}.get(action, [action])
+    return ["systemctl", *base, *units]
+
+
+def logs_argv(args):
+    """journalctl with read-only options only (never --vacuum, --rotate, --flush, --setup-keys, --directory and the like)."""
+    out, i = ["journalctl", "--no-pager"], 0
+    while i < len(args):
+        a = args[i]
+        flag, sep, _ = a.partition("=")
+        if a in LOG_BARE or LOG_MATCH.fullmatch(a) or (sep and (flag in LOG_VALUE or flag in ("-n", "--lines"))):
+            out.append(a)
+        elif a in LOG_VALUE:
+            if i + 1 >= len(args):
+                raise Refused(f"{a} needs a value")
+            out += [a, args[i + 1]]
+            i += 1
+        elif a in LOG_OPTIONAL:
+            out.append(a)
+            if i + 1 < len(args) and LOG_OPTIONAL[a].fullmatch(args[i + 1]):
+                out.append(args[i + 1])
+                i += 1
+        else:
+            raise Refused(f"{a}: not a read-only journal option")
+        i += 1
+    return out
+
+
+def limbo_argv(verb, manifest):
+    if verb not in {"up", "down", "doctor", "status"}:
+        raise Refused(f"limbo {verb}: not allowed")
+    ok = manifest and ".." not in manifest.split("/") and manifest.startswith(LIMBO_DIRS) and manifest.endswith(".json")
+    if verb in {"up", "down"}:
+        if not ok:
+            raise Refused("limbo up/down needs a manifest under " + " or ".join(LIMBO_DIRS))
+        return ["limbo", verb, manifest]
+    if manifest and not ok:
+        # limbo reads any file it is given as root: a manifest only from the same folders
+        raise Refused(f"limbo {verb}: a manifest only from under " + " or ".join(LIMBO_DIRS))
+    return ["limbo", verb] + ([manifest] if manifest else [])
+
+
+def deploy_mode(dest):
+    if any(p in ("", ".", "..") for p in dest.split("/")[1:]):
+        raise Refused(f"{dest}: not a clean path")
+    if dest in DEPLOY_GUARDED:
+        raise Refused(f"{dest}: Settings changes it only with the owner's password (polkit), so the agent does not")
+    for never in DEPLOY_NEVER:
+        if dest == never or dest.startswith(never + "/"):
+            raise Refused(f"{dest}: root uses what is there (the owner's, through labyrinth-agent-window)")
+    for pattern, mode in DEPLOY:
+        if pattern.fullmatch(dest):
+            return mode
+    raise Refused(f"{dest}: not a place the agent may write (user-side desktop files only)")
+
+
+def names(data, name):
+    """data (bytes) names the program name: name stands there whole, not as part of a longer name."""
+    i = data.find(name)
+    while i >= 0:
+        j = i + len(name)
+        if (i == 0 or data[i - 1] not in NAME_BYTES) and (j == len(data) or data[j] not in NAME_BYTES):
+            return True
+        i = data.find(name, i + 1)
+    return False
+
+
+def files_in(d):
+    """The files of folder d (bytes) and of its subfolders (one level: drop-ins, .wants), in name order."""
+    try:
+        entries = sorted(os.listdir(d))
+    except OSError:
+        return
+    for e in entries:
+        p = os.path.join(d, e)
+        try:
+            st = os.lstat(p)
+        except OSError:
+            continue
+        if stat.S_ISDIR(st.st_mode):
+            try:
+                sub = sorted(os.listdir(p))
+            except OSError:
+                continue
+            for s in sub:
+                yield os.path.join(p, s)
+        else:
+            yield p
+
+
+def root_runs(name, places=ROOT_RUNS):
+    """The first file of the places where root is told to run programs that names this program, else None."""
+    b = os.fsencode(name)
+    for d in places:
+        for p in files_in(os.fsencode(d)):
+            try:
+                fd = os.open(p, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+            except OSError:
+                continue
+            data = None
+            try:
+                if stat.S_ISREG(os.fstat(fd).st_mode):
+                    chunks = []
+                    while True:
+                        c = os.read(fd, 1 << 16)
+                        if not c:
+                            break
+                        chunks.append(c)
+                    data = b"".join(chunks)
+            except OSError:
+                data = None
+            finally:
+                os.close(fd)
+            if data is not None and names(data, b):
+                return os.fsdecode(p)
+    return None
+
+
+def root_only(path):
+    """None when path and every folder above it, to /, are owned by root, writable by root only and no link; else why not.
+    (limbo starts as root what a manifest says: only root may decide that.)"""
+    parts = path.split("/")[1:]
+    chain = ["/"] + ["/" + "/".join(parts[:k]) for k in range(1, len(parts) + 1)]
+    for i, p in enumerate(chain):
+        try:
+            st = os.lstat(p)
+        except OSError as e:
+            return f"{p}: {e.strerror}"
+        if stat.S_ISLNK(st.st_mode):
+            return f"{p} is a link"
+        if i == len(chain) - 1 and not stat.S_ISREG(st.st_mode):
+            return f"{p} is not a regular file"
+        if i < len(chain) - 1 and not stat.S_ISDIR(st.st_mode):
+            return f"{p} is not a folder"
+        if st.st_uid != 0 or st.st_mode & 0o022:
+            return f"{p} is not root's alone (owner {st.st_uid}, mode {oct(st.st_mode & 0o7777)})"
+    return None
+
+
+# ---------------------------------------------------------------- actions
+
+
+def pkg_name(path):
+    p = subprocess.run(["pacman", "-Qip", path], capture_output=True, text=True, env=ENV)
+    m = re.search(r"^Name\s*:\s*(\S+)", p.stdout, re.M)
+    return m.group(1) if m else ""
+
+
+def caller(environ):
+    """The account sudo ran this for (SUDO_UID, SUDO_GID): (uid, gid, groups, name); None when that is root, or without sudo."""
+    uid, gid = environ.get("SUDO_UID"), environ.get("SUDO_GID")
+    if uid is None and gid is None:
+        return None
+    if not (uid and gid and ID.fullmatch(uid) and ID.fullmatch(gid)) or int(uid) >= 0xFFFFFFFF or int(gid) >= 0xFFFFFFFF:
+        raise Refused("SUDO_UID and SUDO_GID do not name an account")
+    uid, gid = int(uid), int(gid)
+    if uid == 0:
+        return None
+    try:
+        name = pwd.getpwuid(uid).pw_name
+        groups = os.getgrouplist(name, gid)
+    except KeyError:
+        name, groups = str(uid), [gid]
+    return uid, gid, groups, name
+
+
+def writeall(fd, data):
+    while data:
+        data = data[os.write(fd, data):]
+
+
+def read_as(src, who):
+    """The source file's bytes, opened by a child process that is the caller (who), never through a link at its end: what the
+    caller may not read (/etc/shadow, keys, another account's files) is refused, so deploy never makes it readable to all."""
+    r, w = os.pipe()
+    pid = os.fork()
+    if pid == 0:
+        code = 1
+        try:
+            os.close(r)
+            if who:
+                os.setgroups(who[2])
+                os.setgid(who[1])
+                os.setuid(who[0])
+            try:
+                fd = os.open(src, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+            except OSError as e:
+                writeall(w, b"L" if e.errno == errno.ELOOP else b"E%d" % e.errno)
+            else:
+                if not stat.S_ISREG(os.fstat(fd).st_mode):
+                    writeall(w, b"N")
+                else:
+                    writeall(w, b"O")
+                    while True:
+                        c = os.read(fd, 1 << 20)
+                        if not c:
+                            break
+                        writeall(w, c)
+            code = 0
+        finally:
+            os._exit(code)
+    os.close(w)
+    chunks = []
+    while True:
+        c = os.read(r, 1 << 20)
+        if not c:
+            break
+        chunks.append(c)
+    os.close(r)
+    _, status = os.waitpid(pid, 0)
+    out = b"".join(chunks)
+    if status != 0 or not out:
+        raise OSError(f"could not read {src}")
+    if out[:1] == b"O":
+        return out[1:]
+    if out[:1] in (b"L", b"N"):
+        raise Refused(f"{src}: not a regular file")
+    raise Refused(f"{src}: {who[3] if who else 'root'} cannot read it ({os.strerror(int(out[1:]))})")
+
+
+def open_dirs(path):
+    """A descriptor of the folder path, its missing folders made (0755), never through a link anywhere on the way."""
+    fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+    here = ""
+    try:
+        for name in path.split("/")[1:]:
+            here += "/" + name
+            try:
+                st = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            except FileNotFoundError:
+                os.mkdir(name, 0o755, dir_fd=fd)
+                st = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if stat.S_ISLNK(st.st_mode):
+                raise Refused(f"{here} is a link")
+            nfd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=fd)
+            os.close(fd)
+            fd = nfd
+    except BaseException:
+        os.close(fd)
+        raise
+    return fd
+
+
+def put(dfd, name, data, mode):
+    """name in the folder dfd: written beside it, owned by root with mode, then moved over it."""
+    tmp = name + ".agent-tmp"
+    try:
+        os.unlink(tmp, dir_fd=dfd)  # left by a deploy that was killed
+    except FileNotFoundError:
+        pass
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, mode, dir_fd=dfd)
+    try:
+        with os.fdopen(fd, "wb") as out:
+            out.write(data)
+            os.fchmod(out.fileno(), mode)
+            os.fchown(out.fileno(), 0, 0)
+        os.replace(tmp, name, src_dir_fd=dfd, dst_dir_fd=dfd)
+    except BaseException:
+        try:
+            os.unlink(tmp, dir_fd=dfd)
+        except OSError:
+            pass
+        raise
+
+
+def stage_dir():
+    """A fresh folder for pkg-install's copies, in STAGE (made root's own, 0700, if it is not there)."""
+    try:
+        st = os.lstat(STAGE)
+    except FileNotFoundError:
+        os.mkdir(STAGE, 0o700)
+        st = os.lstat(STAGE)
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid != 0 or st.st_mode & 0o077:
+        raise Refused(f"{STAGE} is not a folder only root may enter")
+    return tempfile.mkdtemp(prefix="install-", dir=STAGE)
+
+
+class Stage:
+    """pkg-install's copies: the caller and the folder are found at the first copy; remove() takes the folder away."""
+
+    def __init__(self):
+        self.dir = self.who = None
+
+    def copy(self, p, i):
+        if self.dir is None:
+            self.who = caller(os.environ)
+            self.dir = stage_dir()
+        data = read_as(p, self.who)
+        sub = os.path.join(self.dir, str(i))
+        os.mkdir(sub, 0o700)
+        c = os.path.join(sub, os.path.basename(p))
+        fd = os.open(c, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+        with os.fdopen(fd, "wb") as out:
+            out.write(data)
+        return c
+
+    def remove(self):
+        if self.dir is not None:
+            shutil.rmtree(self.dir, ignore_errors=True)
+
+
+def deploy(src, dest):
+    mode = deploy_mode(dest)
+    if mode == 0o755:
+        where = root_runs(os.path.basename(dest))
+        if where:
+            raise Refused(f"{dest}: root runs it ({where})")
+    data = read_as(src, caller(os.environ))
+    dfd = open_dirs(os.path.dirname(dest))
+    try:
+        put(dfd, os.path.basename(dest), data, mode)
+    finally:
+        os.close(dfd)
+    log(f"deploy: {src} -> {dest} ({oct(mode)})")
+    return 0
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    if os.geteuid() != 0:
+        print("labyrinth-agent: runs as root through sudo (claude-sudo labyrinth-agent ...)", file=sys.stderr)
+        return 1
+    os.umask(0o022)  # the caller's umask (sudo keeps a stricter one) would make deploy's folders root-only
+    cmd, rest = argv[1], argv[2:]
+    try:
+        if cmd == "pkg-install":
+            stage = Stage()
+            try:
+                names, copies = check_pkg_files(rest, pkg_name, stage.copy)
+                log("pkg-install: " + " ".join(rest) + " copied to " + stage.dir)
+                run(["heimdalld", "maintenance", "on", "--for", "15m", "--reason", "agent installs " + ", ".join(names)])
+                return run(["pacman", "-U", "--noconfirm", *copies])
+            finally:
+                stage.remove()
+        if cmd == "pkg-add":
+            check_pkg_names(rest)
+            for n in rest:
+                if subprocess.run(["pacman", "-Si", n], capture_output=True, env=ENV).returncode != 0:
+                    raise Refused(f"{n}: not in the official repositories")
+            p = subprocess.run(["pacman", "-S", "--print", "--print-format", "%n", "--needed", "--noconfirm", *rest],
+                               capture_output=True, env=ENV)
+            if p.returncode != 0:
+                raise Refused("pacman cannot say what " + ", ".join(rest) + " would install")
+            check_transaction(rest, p.stdout)
+            return run(["pacman", "-S", "--needed", "--noconfirm", *rest])
+        if cmd == "service" and rest:
+            return run(service_argv(rest[0], rest[1:]))
+        if cmd == "logs":
+            return run(logs_argv(rest))
+        if cmd == "maintenance" and rest and rest[0] in ("on", "off", "status"):
+            extra = rest[1:]
+            if extra and not (len(extra) in (2, 4) and extra[0] in ("--for", "--reason") and (len(extra) == 2 or extra[2] in ("--for", "--reason"))):
+                raise Refused("maintenance [--for D] [--reason TEXT]")
+            return run(["heimdalld", "maintenance", *rest])
+        if cmd == "limbo" and rest:
+            argv = limbo_argv(rest[0], rest[1] if len(rest) > 1 else "")
+            if len(argv) == 3:
+                why = root_only(argv[2])
+                if why:
+                    raise Refused(f"limbo {rest[0]}: {why} (limbo starts what a manifest says, as root: only root may write it)")
+            return run(argv)
+        if cmd == "rollback" and rest:
+            if rest[0] in ("list", "status") and len(rest) == 1:
+                return run(["/usr/bin/labyrinth-rollback", rest[0]])
+            if rest[0] == "dry-run" and len(rest) == 2 and DIGITS.fullmatch(rest[1]):
+                return run(["/usr/bin/labyrinth-rollback", rest[1], "--dry-run"])
+            raise Refused("rollback list|status|dry-run N (a real rollback is the owner's, through labyrinth-agent-window)")
+        if cmd == "firewall-status":
+            return run(["ufw", "status", "verbose"])
+        if cmd == "deploy" and len(rest) == 2:
+            return deploy(rest[0], rest[1])
+        raise Refused("unknown command (see --help)")
+    except Refused as e:
+        log(f"refused: {cmd} {' '.join(rest)}: {e}")
+        print(f"labyrinth-agent: refused: {e}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

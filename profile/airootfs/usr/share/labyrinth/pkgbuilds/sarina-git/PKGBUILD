@@ -7,7 +7,7 @@
 
 pkgname=sarina-git
 pkgver=0.1.0.r0.g0000000
-pkgrel=2
+pkgrel=3
 pkgdesc='Local-model agent: Go core with an optional Python ML/voice helper'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Sarina'

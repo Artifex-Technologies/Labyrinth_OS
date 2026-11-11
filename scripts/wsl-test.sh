@@ -27,11 +27,10 @@ tests() {
   step "components, app manager, package list"
   run python3 tests/test_labyrinth_apps.py
   step "display layout"
-  run python3 tests/test_displays.py
   step "steam config editor"
-  run python3 tests/test_steam_playall.py
+  run python3 packages/tools/python/tests/test_steam_playall.py
   step "shell syntax and shellcheck"
-  for f in profile/airootfs/usr/local/bin/labyrinth-install-* profile/airootfs/usr/local/bin/labyrinth-gaming \
+  for f in packages/tools/shell/labyrinth-install-* packages/tools/shell/labyrinth-gaming \
            packages/labyrinth-driverlab/probe.sh profile/profiledef.sh; do
     run bash -n "$f"
   done

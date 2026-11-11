@@ -193,7 +193,14 @@ impl Engine {
         if self.cooldown.get(&key).copied().unwrap_or(0.0) > (self.now)() {
             return Ok(None);
         }
-        let q = Question { id: self.next_id, uid: ev.uid.clone(), app: ev.app.clone(), ip: ev.ip.clone(), port: ev.port, proto: ev.proto.clone() };
+        let q = Question {
+            id: self.next_id,
+            uid: ev.uid.clone(),
+            app: ev.app.clone(),
+            ip: ev.ip.clone(),
+            port: ev.port,
+            proto: ev.proto.clone(),
+        };
         self.next_id += 1;
         self.pending.push(q.clone());
         self.by_key.insert(key, q.id);
@@ -257,7 +264,8 @@ impl Engine {
     fn element(&mut self, verb: &str, uid: &str, app: &str, ip: &str) -> Result<(), Stop> {
         let fam = if ip.contains(':') { 6 } else { 4 };
         let n = appnet::uid_int(uid).map_err(other)?;
-        let args: Vec<String> = [verb, "element", "inet", appnet::TABLE, &appnet::set_name(n, app, fam), "{", ip, "}"].iter().map(|s| s.to_string()).collect();
+        let args: Vec<String> =
+            [verb, "element", "inet", appnet::TABLE, &appnet::set_name(n, app, fam), "{", ip, "}"].iter().map(|s| s.to_string()).collect();
         (self.nft)(&args)
     }
 
@@ -317,13 +325,23 @@ pub fn run_nft(nft: &str, args: &[String]) -> Result<(), Stop> {
 /// labyrinth-appnet's apply, from inside the service: nft and logger missing are OSErrors, a broken file is not.
 pub fn apply_rules(rules: &appnet::Rules) -> Result<(), Stop> {
     let script = appnet::ruleset_now(rules).map_err(other)?;
-    let p = py::run_opts(&["nft", "-f", "-"], py::Run { input: Some(&script), ..Default::default() }).map_err(|e| Stop::Os(e.message().to_string()))?;
+    let p = py::run_opts(&["nft", "-f", "-"], py::Run { input: Some(&script), ..Default::default() })
+        .map_err(|e| Stop::Os(e.message().to_string()))?;
     if p.code != 0 {
         let s = py::strip(&p.stderr);
         let msg = if s.is_empty() { "nft failed" } else { s };
         eprintln!("{msg}");
         let first = py::splitlines(msg).first().copied().unwrap_or("").to_string();
-        py::call(&["logger", "-t", "labyrinth-appnet", "-p", "auth.warning", "--", &format!("per-app network rules did not load, apps are NOT limited: {first}")]).map_err(os)?;
+        py::call(&[
+            "logger",
+            "-t",
+            "labyrinth-appnet",
+            "-p",
+            "auth.warning",
+            "--",
+            &format!("per-app network rules did not load, apps are NOT limited: {first}"),
+        ])
+        .map_err(os)?;
     }
     Ok(())
 }
@@ -359,7 +377,8 @@ fn peer_uid(s: &UnixStream) -> String {
     use std::os::unix::io::AsRawFd;
     let mut cred: libc::ucred = unsafe { std::mem::zeroed() };
     let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
-    let rc = unsafe { libc::getsockopt(s.as_raw_fd(), libc::SOL_SOCKET, libc::SO_PEERCRED, &mut cred as *mut _ as *mut libc::c_void, &mut len) };
+    let rc =
+        unsafe { libc::getsockopt(s.as_raw_fd(), libc::SOL_SOCKET, libc::SO_PEERCRED, &mut cred as *mut _ as *mut libc::c_void, &mut len) };
     if rc != 0 {
         return String::new();
     }
@@ -473,9 +492,11 @@ fn handle(shared: Arc<Mutex<Shared>>, stream: UnixStream, conn: u64) {
 fn serve() -> R<i32> {
     let socket = py::env_get("LABYRINTH_ASK_SOCKET", "/run/labyrinth/appnet-ask.sock");
     let nft = py::env_get("LABYRINTH_NFT", "nft");
-    let log_cmd: Vec<String> = py::split(&py::env_get("LABYRINTH_ASK_LOGCMD", "journalctl -k -f -n 0 -o cat")).into_iter().map(String::from).collect();
+    let log_cmd: Vec<String> =
+        py::split(&py::env_get("LABYRINTH_ASK_LOGCMD", "journalctl -k -f -n 0 -o cat")).into_iter().map(String::from).collect();
     let cooldown_text = py::env_get("LABYRINTH_ASK_COOLDOWN", "60");
-    let cooldown = py_float(&cooldown_text).ok_or_else(|| Crash(format!("ValueError: could not convert string to float: {}", py::repr(&cooldown_text))))?;
+    let cooldown = py_float(&cooldown_text)
+        .ok_or_else(|| Crash(format!("ValueError: could not convert string to float: {}", py::repr(&cooldown_text))))?;
     let start = Instant::now();
     let engine = Engine::new(
         Box::new(move |args: &[String]| run_nft(&nft, args)),
@@ -556,7 +577,8 @@ pub fn py_float(text: &str) -> Option<f64> {
             return None;
         }
     }
-    let s: String = b.iter().filter(|c| **c != '_').map(|c| crate::pycompat::decimal(*c).map(|d| char::from(b'0' + d as u8)).unwrap_or(*c)).collect();
+    let s: String =
+        b.iter().filter(|c| **c != '_').map(|c| crate::pycompat::decimal(*c).map(|d| char::from(b'0' + d as u8)).unwrap_or(*c)).collect();
     let l = s.to_ascii_lowercase();
     let body = l.trim_start_matches(['+', '-']);
     if body == "inf" || body == "infinity" || body == "nan" {

@@ -5,7 +5,7 @@
 
 use std::ffi::{CStr, CString, OsStr, OsString};
 use std::io::{self, Read, Write};
-use std::os::unix::ffi::{OsStrExt, OsStringExt};
+use std::os::unix::ffi::OsStringExt;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::path::Path;
@@ -142,11 +142,6 @@ pub fn load_json(path: &str) -> Result<Value, Option<String>> {
         Err(ReadError::Decode(m)) => return Err(Some(m)),
     };
     pyjson::loads(&text).map_err(Some)
-}
-
-/// text[:n] in characters.
-pub fn take_chars(s: &str, n: usize) -> String {
-    s.chars().take(n).collect()
 }
 
 /// str.partition(sep)
@@ -893,10 +888,6 @@ pub fn args_os() -> Vec<OsString> {
     std::env::args_os().collect()
 }
 
-pub fn os_bytes(s: &OsStr) -> &[u8] {
-    s.as_bytes()
-}
-
 pub fn os_from_bytes(b: Vec<u8>) -> OsString {
     OsString::from_vec(b)
 }
@@ -1021,7 +1012,10 @@ mod tests {
     fn decode_errors_as_python() {
         let b = b"ab\xffc".to_vec();
         assert_eq!(utf8(b).unwrap_err(), "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte");
-        assert_eq!(utf8(b"a\xe2\x28".to_vec()).unwrap_err(), "'utf-8' codec can't decode byte 0xe2 in position 1: invalid continuation byte");
+        assert_eq!(
+            utf8(b"a\xe2\x28".to_vec()).unwrap_err(),
+            "'utf-8' codec can't decode byte 0xe2 in position 1: invalid continuation byte"
+        );
         assert_eq!(utf8(b"a\xe2\x82".to_vec()).unwrap_err(), "'utf-8' codec can't decode bytes in position 1-2: unexpected end of data");
     }
 }

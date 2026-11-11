@@ -3,10 +3,40 @@ post_install() {
 	echo "    Check what is missing:   limbo doctor"
 	echo "    Install and enable it:   sudo limbo setup"
 	echo "    (If pacman reports a stale database, run: sudo pacman -Syu  first.)"
+	start_image_timer
 }
 
 post_upgrade() {
 	if ! command -v virsh >/dev/null 2>&1; then
 		post_install
+	else
+		start_image_timer
+	fi
+	rust_daemon_note
+}
+
+# Since the Rust port, /usr/bin/limbo is limbo-rs (the daemon) and the Go build is /usr/lib/limbo/limbo-go. A host that
+# switched by hand first (a drop-in naming /usr/lib/limbo/limbo-rs) no longer needs it; the daemon itself is replaced
+# at its next restart, which destroys the guest of a validation run in progress (as any restart does), so it is left
+# to the person. Nothing here restarts it or removes a file the package does not own.
+rust_daemon_note() {
+	if [ -f /etc/systemd/system/limbo.service.d/rust.conf ]; then
+		echo "==> limbo.service is the Rust daemon from this package now; the hand-made drop-in can go:"
+		echo "    sudo rm /etc/systemd/system/limbo.service.d/rust.conf && sudo systemctl daemon-reload"
+		echo "    and after the restart below: sudo rm /usr/lib/limbo/limbo-rs"
+	fi
+	if [ -d /run/systemd/system ] && systemctl -q is-active limbo.service 2>/dev/null; then
+		echo "==> Restart limbo.service to run this version's daemon (not while a validation run is active):"
+		echo "    sudo systemctl restart limbo.service"
+	fi
+}
+
+# The weekly image re-check's timer is wanted by timers.target from the package; start it now rather than at the next
+# boot (as Yggdrasil's game time does with its catch-up timer). It does nothing until a start has proven an image.
+# Inside a chroot (an ISO build) there is no running systemd, and the package's link enables it at boot.
+start_image_timer() {
+	if [ -d /run/systemd/system ]; then
+		systemctl daemon-reload >/dev/null 2>&1 || true
+		systemctl --no-block start limbo-image-verify.timer >/dev/null 2>&1 || true
 	fi
 }

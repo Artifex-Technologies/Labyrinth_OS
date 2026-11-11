@@ -1,5 +1,5 @@
 import sys, os, importlib.machinery, importlib.util
-p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "profile", "airootfs", "usr", "local", "bin", "labyrinth-appnet")
+p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "packages", "tools", "python", "labyrinth-appnet")
 l = importlib.machinery.SourceFileLoader("an", p); spec = importlib.util.spec_from_loader("an", l); an = importlib.util.module_from_spec(spec); l.exec_module(an)
 cg = open("/proc/self/cgroup").read().strip().split("::")[1].strip("/")
 an.cgroup_path = lambda uid, app: cg

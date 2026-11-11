@@ -60,9 +60,6 @@ pub fn isword(c: char) -> bool {
     in_ranges(WORD, c)
 }
 
-/// \s in a Python pattern on text (str.isspace()).
-pub const PY_SPACE_CLASS: &str = r"[\s\x1c-\x1f]";
-
 /// str.strip() with no argument.
 pub fn strip(s: &str) -> &str {
     s.trim_matches(isspace)

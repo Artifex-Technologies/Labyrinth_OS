@@ -1,10 +1,12 @@
 """Tests for Labyrinth's side of the installer: its integration file (labyrinth-installer.conf), the browser and optional-part
 lists, and labyrinth-first-components. The install program itself is Yggdrasil's yggdrasil-install-system (since 2026-11-07;
-its own tests are in Yggdrasil's packages/installer/helpers/tests); the tests that run it need a Yggdrasil checkout next to this
-repository (or YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
+its own tests are in Yggdrasil's packages/install-system and packages/installer/helpers/tests); the tests that run it load
+the Python script Yggdrasil keeps for a rollback, so they need a Yggdrasil checkout next to this repository (or
+YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
 import importlib.machinery
 import importlib.util
 import os
+import re
 import tempfile
 import unittest
 
@@ -12,13 +14,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AIROOTFS = os.path.join(ROOT, "profile", "airootfs")
 CONF = os.path.join(AIROOTFS, "usr", "share", "yggdrasil", "integrations", "labyrinth-installer.conf")
 YGG = os.environ.get("YGGDRASIL_DIR") or os.path.join(os.path.dirname(ROOT), "Yggdrasil")
-TOOL = os.path.join(YGG, "packages", "installer", "helpers", "install-system")
+# the Python script, which Yggdrasil keeps for a rollback since its Rust port (packages/install-system) replaced it on
+# 2026-11-11; the two do the same (Yggdrasil's packages/install-system/parity/compare.py), and the script can be loaded here
+TOOL = os.path.join(YGG, "packages", "installer", "helpers", "python", "install-system")
 inst = None
 if os.path.isfile(TOOL):
     loader = importlib.machinery.SourceFileLoader("install_system", TOOL)
     spec = importlib.util.spec_from_loader("install_system", loader)
     inst = importlib.util.module_from_spec(spec)
     loader.exec_module(inst)
+# the script, kept for a rollback since labyrinth-tools' Rust program replaced it (the image runs /usr/bin/labyrinth-first-components)
+FIRST = os.path.join(ROOT, "packages", "tools", "python", "labyrinth-first-components")
 needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with the install program at {TOOL}")
 
 
@@ -37,15 +43,19 @@ class TheIntegrationFile(unittest.TestCase):
         c = conf_values()
         self.assertEqual(c["kind"], "installer")
         self.assertEqual(c["command"], "/usr/bin/yggdrasil-install-system")
+        # Labyrinth's own steps come with the labyrinth-tools package (/usr/bin), which the image installs
+        pkgbuild = open(os.path.join(ROOT, "packages", "pkgbuilds", "labyrinth-tools", "PKGBUILD")).read()
         for key in ("cleanup", "finish", "boot_menu_theme"):
-            self.assertTrue(os.path.isfile(AIROOTFS + c[key]), f"{key}: {c[key]} is on the medium")
+            name = os.path.basename(c[key])
+            self.assertEqual(c[key], "/usr/bin/" + name, key)
+            self.assertRegex(pkgbuild, r"\b%s\b" % re.escape(name), f"{key}: labyrinth-tools installs {name}")
         for key in ("browsers", "extras", "components"):
             self.assertTrue(os.path.isfile(AIROOTFS + c[key]), f"{key}: {c[key]} is on the medium")
         self.assertIn("nvidia_drm.modeset=1", c["kernel_options"].split())
         self.assertEqual(set(c["reserved_logins"].split()), {"heimdall", "sarina"})
 
     def test_the_first_login_list_is_where_labyrinth_first_components_reads_it(self):
-        first = open(os.path.join(AIROOTFS, "usr", "local", "bin", "labyrinth-first-components")).read()
+        first = open(FIRST).read()
         self.assertIn(conf_values()["first_login"], first)
 
     @needs_program
@@ -122,7 +132,6 @@ class Browsers(unittest.TestCase):
 
 EXTRAS = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "installer-extras.json")
 COMPONENTS = os.path.join(ROOT, "profile", "airootfs", "usr", "share", "labyrinth", "components.json")
-FIRST = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "labyrinth-first-components")
 
 
 @needs_program

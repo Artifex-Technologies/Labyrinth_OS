@@ -6,7 +6,7 @@
 #
 #   SUDO=sudo bash tests/test_labyrinth_rollback.sh [path/to/labyrinth-rollback]
 set -euo pipefail
-TOOL=${1:-$(dirname "$0")/../profile/airootfs/usr/local/bin/labyrinth-rollback}
+TOOL=${1:-$(dirname "$0")/../packages/tools/shell/labyrinth-rollback}   # the Rust one: packages/tools/target/release/labyrinth-rollback
 SUDO=${SUDO:-sudo}
 W=$(mktemp -d)
 LOOP=""

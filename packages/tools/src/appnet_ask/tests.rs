@@ -68,7 +68,10 @@ fn allow_of(app: &str) -> Vec<(String, String)> {
 #[test]
 fn log_lines() {
     let re = line_regex();
-    assert_eq!(parse_log(&re, LOG), Some(Event { uid: "1000".into(), app: "pdfcraft".into(), ip: "93.184.216.34".into(), port: 443, proto: "TCP".into() }));
+    assert_eq!(
+        parse_log(&re, LOG),
+        Some(Event { uid: "1000".into(), app: "pdfcraft".into(), ip: "93.184.216.34".into(), port: 443, proto: "TCP".into() })
+    );
     let v6 = parse_log(&re, LOG6).unwrap();
     assert_eq!((v6.ip.as_str(), v6.port, v6.proto.as_str()), ("2606:4700::1111", 53, "UDP"));
     assert_eq!(parse_log(&re, "IN=eth0 OUT= SRC=1.1.1.1 DST=2.2.2.2 PROTO=TCP"), None);
@@ -138,7 +141,8 @@ fn only_the_owner_answers_and_only_real_questions() {
     assert!(!f.eng.decide("1001", &Value::from(q.id), &allow, &Value::from("")).unwrap().0); // someone else
     assert!(!f.eng.decide("1000", &Value::from(999), &allow, &Value::from("")).unwrap().0); // no such question
     assert!(f.calls().is_empty());
-    assert!(!f.eng.decide("1000", &Value::from(q.id), &v(serde_json::json!("bogus")), &Value::from("")).unwrap().0); // (the question is consumed)
+    assert!(!f.eng.decide("1000", &Value::from(q.id), &v(serde_json::json!("bogus")), &Value::from("")).unwrap().0);
+    // (the question is consumed)
 }
 
 #[test]
@@ -174,7 +178,10 @@ fn ids_as_a_python_dict_finds_them_and_names_cleaned() {
     let q = f.eng.asked(&ev("10.0.0.2", "pdfcraft")).unwrap().unwrap();
     assert!(matches!(f.eng.decide("1000", &v(serde_json::json!([q.id])), &Value::from("allow"), &Value::from("")), Err(Stop::Other(_))));
     assert!(matches!(f.eng.decide("1000", &Value::from(q.id), &Value::from("allow"), &Value::from(5)), Err(Stop::Other(_))));
-    assert!(!f.eng.decide("1000", &v(serde_json::json!(true)), &Value::from("deny"), &Value::Null).unwrap().0, "true is 1, which is answered");
+    assert!(
+        !f.eng.decide("1000", &v(serde_json::json!(true)), &Value::from("deny"), &Value::Null).unwrap().0,
+        "true is 1, which is answered"
+    );
     assert!(f.eng.decide("1000", &Value::from(q.id), &Value::from("deny"), &Value::Null).unwrap().0);
 }
 
@@ -213,9 +220,8 @@ fn question_notification_answer_and_set_update() {
     let listener = UnixListener::bind(&sock).unwrap();
     let sh = shared.clone();
     std::thread::spawn(move || {
-        let mut n = 0;
-        for s in listener.incoming().flatten() {
-            n += 1;
+        for (i, s) in listener.incoming().flatten().enumerate() {
+            let n = i as u64 + 1;
             let sh = sh.clone();
             std::thread::spawn(move || handle(sh, s, n));
         }

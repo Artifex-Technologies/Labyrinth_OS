@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""labyrinth-selfcheck: is the desktop in a sane state? Run it after an upgrade (or when something looks off).
+
+  labyrinth-selfcheck            print a list of checks: ok, warn or FAIL, with what to do
+  labyrinth-selfcheck --quiet    print only warnings and failures; exit status 1 on any FAIL, 2 on a warning
+
+What it looks at (read-only, nothing is changed):
+  * the session needs a log out: Hyprland started before it or Yggdrasil's session, lock screen or panel were last
+    upgraded (a lock screen newer than its session can fail to start: this really happened under Plasma on 2026-10-16)
+  * the running kernel is not the newest installed one (reboot)
+  * Hyprland reports the screen(s), and the panel is running
+  * greetd is the login screen and its greeter is installed
+  * who owns the notification service (should be the Labyrinth panel)
+  * Labyrinth's services (Ollama, Limbo, Heimdall, Sarina, per-app network and power limits) and failed units
+  * Heimdall answers, and its file-integrity watch covers the binaries installed from the AUR
+"""
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+OK, WARN, FAIL = "ok", "warn", "FAIL"
+
+
+def run(cmd, timeout=10):
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        return p.returncode, p.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return 127, ""
+
+
+def last_upgrade_epoch(package, log="/var/log/pacman.log"):
+    """When pacman last installed or upgraded `package` (epoch seconds), or None."""
+    best = None
+    try:
+        with open(log, errors="replace") as f:
+            for line in f:
+                m = re.match(r"\[(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)([+-]\d{4})\] \[ALPM\] (upgraded|installed|reinstalled) " + re.escape(package) + r" ", line)
+                if m:
+                    best = time.mktime(time.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S"))
+    except OSError:
+        return None
+    return best
+
+
+def process_start_epoch(name):
+    rc, out = run(["pgrep", "-x", name])
+    pids = out.split()
+    if rc != 0 or not pids:
+        return None
+    try:
+        return os.stat("/proc/%s" % pids[0]).st_mtime
+    except OSError:
+        return None
+
+
+def stale_session(started, upgraded, slack=60):
+    """The program started before its package was upgraded (more than `slack` seconds before)."""
+    return started is not None and upgraded is not None and started + slack < upgraded
+
+
+def version_key(name):
+    """For sorting kernel versions: runs of digits compared as numbers (7.10 after 7.9), the rest as text."""
+    parts = re.split(r"([0-9]+)", name)
+    return [int(p) if i % 2 else p for i, p in enumerate(parts)], name
+
+
+def newest_kernel_module_dir(base="/usr/lib/modules"):
+    """The installed kernels' module folders, sorted by version (the newest last)."""
+    return sorted(os.listdir(base), key=version_key) if os.path.isdir(base) else []
+
+
+def login_screen_problem(display_manager, greetd_config):
+    """What is wrong with the login screen, or None. `display_manager` is where display-manager.service points
+    (empty when it points nowhere), `greetd_config` the text of /etc/greetd/config.toml."""
+    if not display_manager:
+        return "no login screen is enabled; enable it: sudo systemctl enable greetd"
+    if os.path.basename(display_manager) != "greetd.service":
+        return "the login screen is %s, not greetd; switch: sudo systemctl enable -f greetd" % os.path.basename(display_manager)
+    m = re.search(r'^\s*command\s*=\s*"(.*)"\s*$', greetd_config, re.M)
+    if not m:
+        return "/etc/greetd/config.toml has no greeter command"
+    return None
+
+
+def read_text(path):
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError:
+        return ""
+
+
+def checks():
+    out = []
+
+    def add(status, name, detail=""):
+        out.append((status, name, detail))
+
+    # the session predates an upgrade of the compositor or of Yggdrasil's own pieces
+    started = process_start_epoch("Hyprland")
+    stale = []
+    for pkg in ("hyprland", "yggdrasil-session", "yggdrasil-lock", "yggdrasil-panel"):
+        if stale_session(started, last_upgrade_epoch(pkg)):
+            stale.append(pkg)
+    if stale:
+        add(WARN, "session older than its packages", "%s upgraded after the session started: log out and in (or reboot) soon." % ", ".join(stale))
+    elif started is None:
+        add(WARN, "Hyprland", "Hyprland is not running (run this inside the desktop)")
+    else:
+        add(OK, "session matches the installed packages")
+
+    # kernel
+    rel = os.uname().release
+    mods = [m for m in newest_kernel_module_dir() if m.endswith(rel.split("-")[-1])]
+    if mods and rel not in mods:
+        add(WARN, "running kernel is not installed any more", "running %s; installed: %s. Reboot." % (rel, ", ".join(mods)))
+    elif mods and mods[-1] != rel:
+        add(WARN, "a newer kernel is installed", "running %s, installed %s. Reboot when convenient." % (rel, mods[-1]))
+    else:
+        add(OK, "kernel", rel)
+
+    # screens and the panel
+    rc, js = run(["hyprctl", "-j", "monitors"])
+    try:
+        outs = [o for o in json.loads(js) if not o.get("disabled")]
+    except (ValueError, TypeError):
+        outs = []
+    if not outs:
+        add(FAIL if started else WARN, "no screen reported by Hyprland", "hyprctl -j monitors listed none")
+    else:
+        add(OK, "screens", ", ".join("%s %sx%s" % (o.get("name"), o.get("width"), o.get("height")) for o in outs))
+    rc, _ = run(["pgrep", "-x", "yggdrasil-panel"])
+    add(OK if rc == 0 else FAIL, "yggdrasil-panel running", "" if rc == 0 else "log out and in to start it again")
+
+    # the login screen (a broken one blocks every login)
+    try:
+        dm = os.path.realpath("/etc/systemd/system/display-manager.service") if os.path.lexists("/etc/systemd/system/display-manager.service") else ""
+    except OSError:
+        dm = ""
+    bad = login_screen_problem(dm, read_text("/etc/greetd/config.toml"))
+    if not bad and not os.path.exists("/usr/bin/yggdrasil-greeter"):
+        bad = "yggdrasil-greeter is not installed (package yggdrasil-lock)"
+    add(FAIL if bad else OK, "login screen", bad or "greetd")
+
+    # notification service owner
+    rc, o = run(["busctl", "--user", "list", "--no-legend"])
+    owner = [l.split()[2] for l in o.splitlines() if l.startswith("org.freedesktop.Notifications ")]
+    if owner and owner[0] == "yggdrasil-panel":
+        add(OK, "notifications are served by the Labyrinth panel")
+    elif owner:
+        add(WARN, "notifications are served by %s, not the Labyrinth panel" % owner[0], "stop it (systemctl --user stop mako) and the panel takes over within 10 s")
+    else:
+        add(WARN, "nobody serves notifications", "restart the panel")
+
+    # services
+    for unit in ("ollama", "limbo", "heimdall", "sarina-service", "yggdrasil-powerlimit"):
+        rc, st = run(["systemctl", "is-active", unit + ".service"])
+        if st.strip() == "active":
+            add(OK, unit)
+        elif run(["systemctl", "cat", unit + ".service"])[0] != 0:
+            add(OK, unit, "not installed here")
+        else:
+            add(WARN, unit, "is %s" % (st.strip() or "unknown"))
+    rc, failed = run(["systemctl", "--failed", "--no-legend", "--plain"])
+    names = [l.split()[0] for l in failed.splitlines() if l.strip()]
+    add(OK if not names else WARN, "no failed system units" if not names else "failed units", ", ".join(names))
+
+    # heimdall
+    rc, body = run(["curl", "-s", "-m", "3", "http://127.0.0.1:8930/healthz"])
+    add(OK if "ok" in body else WARN, "Heimdall answers", "" if "ok" in body else "no answer on 127.0.0.1:8930")
+    try:
+        with open("/etc/heimdall/config.json") as f:
+            fim = set(json.load(f).get("fim_paths", []))
+    except (OSError, ValueError):
+        fim = None
+    if fim is not None:
+        rc, foreign = run(["pacman", "-Qmq"])
+        missing = []
+        for pkg in foreign.split():
+            if pkg.endswith("craft-bin"):
+                exe = "/usr/bin/" + pkg[: -len("-bin")]
+                if os.path.exists(exe) and exe not in fim:
+                    missing.append(exe)
+        add(OK if not missing else WARN, "Heimdall watches the AUR apps' binaries" if not missing else "not in Heimdall's file-integrity list", ", ".join(missing))
+    return out
+
+
+def exit_status(statuses):
+    """1 when anything failed (also after a warning), else 2 when anything warned, else 0."""
+    return 1 if FAIL in statuses else 2 if WARN in statuses else 0
+
+
+def main(argv):
+    quiet = "--quiet" in argv
+    results = checks()
+    worst = exit_status([r[0] for r in results])
+    for status, name, detail in results:
+        if quiet and status == OK:
+            continue
+        print("%-5s %s%s" % (status, name, (": " + detail) if detail else ""))
+    if not quiet and worst == 0:
+        print("everything looks fine")
+    return worst
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

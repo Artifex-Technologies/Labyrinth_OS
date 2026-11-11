@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly malware scan of the home folder (Heimdall's scanner, ClamAV)
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/labyrinth-scan-downloads --full
+Nice=19
+IOSchedulingClass=idle
+CPUWeight=idle

@@ -2,4 +2,4 @@
 # notification sent before the panel is up starts the panel, not mako.
 [D-BUS Service]
 Name=org.freedesktop.Notifications
-Exec=/usr/local/bin/labyrinth-notify-activate
+Exec=/usr/bin/labyrinth-notify-activate

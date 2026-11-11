@@ -79,7 +79,9 @@ fn the_weekly_full_scan_covers_home_but_caches_and_reports_only() {
     let args = s.calls().into_iter().find(|c| c.starts_with("heimdalld")).unwrap();
     assert!(args.contains("scan-full-state.json"), "its own state: the Downloads scan's is not mixed in");
     assert!(args.contains("--max-mb 100"));
-    for e in [format!("{}/.cache", s.home), format!("{}/.local/share/Steam", s.home), "[n]ode_modules".into(), "[.]git".into(), "*.iso".into()] {
+    for e in
+        [format!("{}/.cache", s.home), format!("{}/.local/share/Steam", s.home), "[n]ode_modules".into(), "[.]git".into(), "*.iso".into()]
+    {
         assert!(args.contains(&format!("--exclude {e}")), "{e}");
     }
     assert!(args.ends_with(&format!(" {}", s.home)), "{args}");

@@ -21,7 +21,7 @@ def load_module(name, path):
     return mod
 
 
-apps = load_module("labyrinth_apps", os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "labyrinth-apps"))
+apps = load_module("labyrinth_apps", os.path.join(ROOT, "packages", "tools", "python", "labyrinth-apps"))
 gen = load_module("gen_packages", os.path.join(ROOT, "scripts", "gen-packages.py"))
 apps.MANIFEST = MANIFEST
 # the commands below run as on a system that has fetched its package lists, whatever this machine has

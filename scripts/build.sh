@@ -70,6 +70,10 @@ echo "==> Preparing the work copy of profile/"
 rm -rf --one-file-system "${profile_build_dir:?}"
 mkdir -p "$work_dir"
 cp -r "$repo_root/profile" "$profile_build_dir"
+# junk never reaches the image: Python caches (they held compiled copies of removed programs) and editor leftovers. The
+# generated app icons are git-ignored too but belong on the image, so this prunes by kind rather than copying git ls-files.
+find "$profile_build_dir" \( -name __pycache__ -o -name '*.pyc' -o -name '*~' -o -name '*.orig' -o -name '*.rej' -o -name '.*.swp' \) \
+  -prune -exec rm -rf {} +
 sed -i "s|@@LABYRINTH_REPO_DIR@@|$repo_root/repo/x86_64|g" "$profile_build_dir/pacman.conf"
 [[ ${LABYRINTH_UNSIGNED:-} == 1 ]] && sed -i '/^\[labyrinth\]/,/^Server/ s/^SigLevel = Required$/SigLevel = Optional TrustAll/' "$profile_build_dir/pacman.conf"
 if [[ -n ${LABYRINTH_PRESET:-} ]]; then

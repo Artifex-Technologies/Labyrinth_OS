@@ -48,7 +48,15 @@ impl Fixture {
     fn scan(&self, infected: &[(&str, &str)], answer: &str, extra_conf: Option<&str>) -> std::process::Output {
         let lines: String = infected.iter().map(|(p, s)| format!("echo \"INFECTED {p}: {s}\"\n")).collect();
         let dp = self.d.0.to_string_lossy().into_owned();
-        let heim = stub(&dp, "heimdalld", &format!("{lines}echo \"scanned 3 files in 1s: {} infected, 0 could not be scanned\"\nexit {}", infected.len(), if infected.is_empty() { 0 } else { 1 }));
+        let heim = stub(
+            &dp,
+            "heimdalld",
+            &format!(
+                "{lines}echo \"scanned 3 files in 1s: {} infected, 0 could not be scanned\"\nexit {}",
+                infected.len(),
+                if infected.is_empty() { 0 } else { 1 }
+            ),
+        );
         if let Some(c) = extra_conf {
             write(&format!("{}/.config/labyrinth/scan.conf", self.home), c);
         }
@@ -163,6 +171,26 @@ fn delete_from_the_notification() {
     f.scan(&[(&p, "Win.Trojan.Agent-123")], "delete", None);
     assert!(!exists(&p));
     assert_eq!(f.listing(), serde_json::json!([]));
+}
+
+#[test]
+fn the_question_is_asked_by_the_child_process() {
+    // the child the scan starts (labyrinth-scan-downloads --prompt ID NAME SIGNATURE) asks Restore / Delete itself
+    let f = Fixture::new();
+    let p = f.file("child.exe", "evil\n", None);
+    let qid = out(&f.q(&["add", &p, "--signature", "Win.Trojan.Agent-1"])).trim().to_string();
+    let dp = f.d.0.to_string_lossy().into_owned();
+    let heim = stub(&dp, "heimdalld", &format!("echo \"heimdalld $*\" >> {}\necho \"scanned 0 files\"", f.calls));
+    let env: Vec<(String, String)> =
+        with(&with(&with(&f.env, "HEIMDALLD", &heim), "NOTIFY_ANSWER", "restore"), "LABYRINTH_SCAN_PROMPT", "child")
+            .into_iter()
+            .filter(|(k, _)| k != "LABYRINTH_SCAN_SYNC")
+            .collect();
+    let r = run(SCAN, &["--prompt", &qid, "child.exe", "Win.Trojan.Agent-1"], &env);
+    assert_eq!(code(&r), 0);
+    assert!(f.notes().join(" ").contains("Malware quarantined"));
+    assert!(!f.notes().join(" ").contains("heimdalld"), "no scan instead of the question");
+    assert!(exists(&p)); // answered Restore
 }
 
 #[test]

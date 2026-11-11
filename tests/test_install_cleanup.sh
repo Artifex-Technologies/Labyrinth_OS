@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Exercise labyrinth-install-cleanup against a mock target root (no root, no
 # Linux install needed). Run from the repo root: bash tests/test_install_cleanup.sh
+# LABYRINTH_CLEANUP=PATH tests another build of it (the Rust one: packages/tools/target/release/labyrinth-install-cleanup).
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
-script=$here/profile/airootfs/usr/local/bin/labyrinth-install-cleanup
+script=${LABYRINTH_CLEANUP:-$here/packages/tools/shell/labyrinth-install-cleanup}
+# a script is run with bash (git keeps it without its x bit), a program as it is
+run() { if head -c2 "$script" | grep -q '#!'; then bash "$script"; else "$script"; fi; }
 pass=0; failn=0
 ok()   { printf 'PASS %s\n' "$1"; pass=$((pass+1)); }
 bad()  { printf 'FAIL %s\n' "$1"; failn=$((failn+1)); }
@@ -31,7 +34,7 @@ mkroot() {  # $1 = list of kernel pkgbases
 
 # Three kernels: success path.
 r=$(mkroot "linux-cachyos linux-cachyos-bore linux-cachyos-lts")
-out=$(LABYRINTH_ROOT=$r bash "$script" 2>&1); rc=$?
+out=$(LABYRINTH_ROOT=$r run 2>&1); rc=$?
 check "exit 0 with three kernels" "[ $rc -eq 0 ]"
 for k in linux-cachyos linux-cachyos-bore linux-cachyos-lts; do
   check "$k kernel copied to /boot"      "[ \"\$(cat $r/boot/vmlinuz-$k)\" = kernel-$k ]"
@@ -49,32 +52,32 @@ rm -rf "$r"
 
 # Missing LTS: warns but succeeds.
 r=$(mkroot "linux-cachyos")
-out=$(LABYRINTH_ROOT=$r bash "$script" 2>&1); rc=$?
+out=$(LABYRINTH_ROOT=$r run 2>&1); rc=$?
 check "single kernel still succeeds" "[ $rc -eq 0 ]"
 check "warns when LTS fallback missing" "grep -q 'no fallback kernel' <<<\"\$out\""
 rm -rf "$r"
 
 # No kernel: must fail.
 r=$(mkroot "")
-LABYRINTH_ROOT=$r bash "$script" >/dev/null 2>&1; rc=$?
+LABYRINTH_ROOT=$r run >/dev/null 2>&1; rc=$?
 check "fails with no kernel" "[ $rc -ne 0 ]"
 rm -rf "$r"
 
 # Empty template: must fail.
 r=$(mkroot "linux-cachyos"); : >"$r/usr/share/mkinitcpio/hook.preset"
-LABYRINTH_ROOT=$r bash "$script" >/dev/null 2>&1; rc=$?
+LABYRINTH_ROOT=$r run >/dev/null 2>&1; rc=$?
 check "fails with empty preset template" "[ $rc -ne 0 ]"
 rm -rf "$r"
 
 # Template without PRESETS: must fail rather than ship an unbootable preset.
 r=$(mkroot "linux-cachyos"); printf 'nothing useful\n' >"$r/usr/share/mkinitcpio/hook.preset"
-LABYRINTH_ROOT=$r bash "$script" >/dev/null 2>&1; rc=$?
+LABYRINTH_ROOT=$r run >/dev/null 2>&1; rc=$?
 check "fails when generated preset has no PRESETS" "[ $rc -ne 0 ]"
 rm -rf "$r"
 
 # Hostile pkgbase must be rejected (it is interpolated into sed and file names).
 r=$(mkroot ""); mkdir -p "$r/usr/lib/modules/x"; printf 'a|b;c\n' >"$r/usr/lib/modules/x/pkgbase"; printf k >"$r/usr/lib/modules/x/vmlinuz"
-LABYRINTH_ROOT=$r bash "$script" >/dev/null 2>&1; rc=$?
+LABYRINTH_ROOT=$r run >/dev/null 2>&1; rc=$?
 check "rejects odd pkgbase" "[ $rc -ne 0 ]"
 rm -rf "$r"
 
