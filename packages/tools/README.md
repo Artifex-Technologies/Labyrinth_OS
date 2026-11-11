@@ -213,7 +213,8 @@ cargo-fuzz: `cargo fuzz run agent_args -- -dict=fuzz/agent_args.dict`. On stable
     mkdir -p target/fuzz/corpus
     target/fuzz/x86_64-unknown-linux-gnu/release/agent_args target/fuzz/corpus -dict=fuzz/agent_args.dict -max_len=512 -max_total_time=600
 
-2026-11-11: 12 million command lines in a minute, none outside the allow-list. With the old `-n` handling put back, it found `logs --lines --l...` (journalctl would read the second word
+2026-11-11: 106 million command lines in ten minutes (coverage 1156, 1685 inputs kept), none outside the allow-list. With the old
+`-n` handling put back, it found `logs --lines --l...` (journalctl would read the second word
 as an option) within seconds.
 
 ## Memory of what runs all the time (the same scratch world for both, after some work, idle)
