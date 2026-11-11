@@ -4,7 +4,7 @@ Each run is in a world of its own: a user and mount namespace (unshare, no real 
 1000-2999 are its subordinate ids (/etc/subuid), so the caller (uid 2001) is another account, and a root folder of its own
 (WORLD/root, chroot): / and /var are the world's (owned by root there, as limbo's manifest check needs), /usr is this computer's
 with /usr/bin, /usr/share, /usr/lib and /usr/local laid over (overlays), /etc is an overlay, /proc, /dev, /tmp and /home are bound
-in. The stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and /usr/local/bin/labyrinth-rollback are
+in. The stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and /usr/bin/labyrinth-rollback are
 files of the world in /usr/bin (the gate finds them there, as it would the real ones), and every place deploy writes to or the
 gate searches (the deploy folders, systemd's unit folders, pacman's hooks, udev's rules, polkit's actions, sudoers.d, /run,
 /var/cache/labyrinth-agent, Limbo's manifest folders) is a folder of the world (nothing of this computer shows through).
@@ -24,7 +24,7 @@ import __main__ as P
 W = P.WORLD
 AGENT = "labyrinth-agent"
 FAKES = ("pacman", "systemctl", "journalctl", "logger", "heimdalld", "limbo", "ufw")
-ROLLBACK = "/usr/local/bin/labyrinth-rollback"
+ROLLBACK = "/usr/bin/labyrinth-rollback"
 CALLER = "2001"
 
 
@@ -172,7 +172,7 @@ def world(pkgs=None, repo=None, deps=None, sp_fails=False, rc=None, src=None, un
                 os.setxattr(upper(m, d), "user.overlay.opaque", b"y")
         for f in FAKES:
             P.write(upper("/usr/bin", f), FAKE.replace("@WORLD@", W), 0o755)
-        P.write(upper("/usr/local", "bin/labyrinth-rollback"), FAKE.replace("@WORLD@", W), 0o755)
+        P.write(upper("/usr/bin", "labyrinth-rollback"), FAKE.replace("@WORLD@", W), 0o755)
         P.write(os.path.join(W, "fake", "repo"), "".join(n + "\n" for n in repo))
         for n, ds in deps.items():
             P.write(os.path.join(W, "fake", "deps", n), "".join(d + "\n" for d in ds))

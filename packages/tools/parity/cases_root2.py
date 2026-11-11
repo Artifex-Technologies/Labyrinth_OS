@@ -19,7 +19,7 @@ def norm(t):
 
 
 VISUDO = [("visudo", {"sh": 'printf "  checked: " >> "$W/calls"; cat "$2" >> "$W/calls"\n'})]
-GATE_FILES = {"/usr/local/sbin/labyrinth-agent": ("#!/bin/sh\n", 0o755), "/usr/local/sbin/labyrinth-agent-window": ("#!/bin/sh\n", 0o755),
+GATE_FILES = {"/usr/local/sbin/labyrinth-agent": ("#!/bin/sh\n", 0o755), "/usr/bin/labyrinth-agent-window": ("#!/bin/sh\n", 0o755),
               "/usr/local/bin/": ("dir", 0o755), "/etc/sudoers.d/": ("dir", 0o750)}
 USERS = "tester:x:1001:1001::/home/tester:/bin/bash\nbin:x:1:1::/:/usr/bin/nologin\n"
 GROUPS = "tester:x:1001:\n"
@@ -67,7 +67,7 @@ agent_setup("Heimdall's maintenance_actors is not a list", [{"args": []}],
             files={"/etc/heimdall/config.json": '{"maintenance_actors": 5}'}, differs=(("err", 0),))
 agent_setup("Heimdall's file is a list", [{"args": []}], files={"/etc/heimdall/config.json": "[1]"}, differs=(("err", 0),))
 agent_setup("the gate is missing", [{"args": []}], files={"/usr/local/sbin/labyrinth-agent": None})
-agent_setup("the window is not executable", [{"args": []}], files={"/usr/local/sbin/labyrinth-agent-window": ("#!/bin/sh\n", 0o644)})
+agent_setup("the window is not executable", [{"args": []}], files={"/usr/bin/labyrinth-agent-window": ("#!/bin/sh\n", 0o644)})
 agent_setup("visudo refuses", [{"args": []}], fakes=[("visudo", {"rc": 1, "err": "parse error\n"})])
 agent_setup("useradd fails", [{"args": []}], fakes=[("useradd", {"rc": 9, "err": "useradd: exists\n"})])
 agent_setup("passwd fails", [{"args": []}], fakes=[("passwd", {"rc": 3, "err": "passwd: no\n"})])

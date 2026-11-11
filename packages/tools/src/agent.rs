@@ -141,7 +141,7 @@ pub const ROOT_RUNS: [&str; 11] = [
 ];
 const KEEP_ENV: [&str; 7] = ["LOGNAME", "USER", "SUDO_COMMAND", "SUDO_GID", "SUDO_HOME", "SUDO_UID", "SUDO_USER"];
 pub const LOG_MAX: usize = 4000;
-const ROLLBACK: &[u8] = b"/usr/local/bin/labyrinth-rollback";
+const ROLLBACK: &[u8] = b"/usr/bin/labyrinth-rollback";
 
 fn lower_digit(c: u8) -> bool {
     c.is_ascii_lowercase() || c.is_ascii_digit()

@@ -36,7 +36,7 @@ pub fn rules(user: &str, hours: &str) -> String {
     format!(
         "# Written by labyrinth-agent-window for {user}: removed by the timer {UNIT} after {hours} h, or by --close.\n\
          Cmnd_Alias AGENT_WINDOW = /usr/bin/pacman, /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/loginctl, /usr/bin/systemd-run, \\\n    \
-         /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *, /usr/local/bin/labyrinth-*, \\\n    \
+         /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *, /usr/local/bin/labyrinth-*, /usr/bin/labyrinth-*, \\\n    \
          /usr/bin/install, /usr/bin/mkdir, /usr/bin/chown, /usr/bin/chmod\n\
          {AGENT} ALL=(root) NOPASSWD: AGENT_WINDOW\n"
     )

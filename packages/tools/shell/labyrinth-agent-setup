@@ -56,9 +56,8 @@ install -d -m750 -o root -g root /var/log/sudo-io
 # (labyrinth-agent refuses a manifest when it or a folder above it is not owned by root or is writable by others)
 install -d -m755 -o root -g root /var/lib/limbo/build-agent
 
-for f in labyrinth-agent labyrinth-agent-window; do
-  [[ -x /usr/local/sbin/$f ]] || { echo "/usr/local/sbin/$f is missing (it comes with the Labyrinth profile)" >&2; exit 1; }
-done
+[[ -x /usr/local/sbin/labyrinth-agent ]] || { echo "/usr/local/sbin/labyrinth-agent is missing (it comes with the Labyrinth profile)" >&2; exit 1; }
+[[ -x /usr/bin/labyrinth-agent-window ]] || { echo "/usr/bin/labyrinth-agent-window is missing (it comes with the labyrinth-tools package)" >&2; exit 1; }
 if [[ $OWNER_LOGIN -eq 1 ]]; then
   OWNER_RULE="Defaults:$OWNER timestamp_type=global, timestamp_timeout=720
 $OWNER ALL=($AGENT) ALL"

@@ -4,7 +4,7 @@
 # LABYRINTH_CLEANUP=PATH tests another build of it (the Rust one: packages/tools/target/release/labyrinth-install-cleanup).
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
-script=${LABYRINTH_CLEANUP:-$here/profile/airootfs/usr/local/bin/labyrinth-install-cleanup}
+script=${LABYRINTH_CLEANUP:-$here/packages/tools/shell/labyrinth-install-cleanup}
 # a script is run with bash (git keeps it without its x bit), a program as it is
 run() { if head -c2 "$script" | grep -q '#!'; then bash "$script"; else "$script"; fi; }
 pass=0; failn=0

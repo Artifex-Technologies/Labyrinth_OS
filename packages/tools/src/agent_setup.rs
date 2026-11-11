@@ -30,7 +30,7 @@ const SUDOERS: &str = "/etc/sudoers.d/50-labyrinth-agent";
 const CLAUDE_SUDO: &str = "/usr/local/bin/claude-sudo";
 /// The gate sudo lets the agent run, and the owner's window (the script checks both are there).
 pub const GATE: &str = "/usr/local/sbin/labyrinth-agent";
-pub const WINDOW: &str = "/usr/local/sbin/labyrinth-agent-window";
+pub const WINDOW: &str = "/usr/bin/labyrinth-agent-window";
 const HEIMDALL: &str = "/etc/heimdall/config.json";
 
 fn err(msg: &str, code: i32) -> i32 {
@@ -155,10 +155,9 @@ pub fn main(args: &[String]) -> i32 {
             return err(&format!("install: cannot make {dir}: {e}"), 1);
         }
     }
-    for f in ["labyrinth-agent", "labyrinth-agent-window"] {
-        let p = format!("/usr/local/sbin/{f}");
-        if !sh::executable(&p) {
-            return err(&format!("{p} is missing (it comes with the Labyrinth profile)"), 1);
+    for (p, from) in [(GATE, "the Labyrinth profile"), (WINDOW, "the labyrinth-tools package")] {
+        if !sh::executable(p) {
+            return err(&format!("{p} is missing (it comes with {from})"), 1);
         }
     }
     if let Err(code) = write_sudoers(SUDOERS, &rules(&agent, &owner, owner_login), "the sudoers file did not validate; nothing changed") {

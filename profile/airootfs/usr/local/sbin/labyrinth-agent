@@ -548,9 +548,9 @@ def main(argv):
             return run(argv)
         if cmd == "rollback" and rest:
             if rest[0] in ("list", "status") and len(rest) == 1:
-                return run(["/usr/local/bin/labyrinth-rollback", rest[0]])
+                return run(["/usr/bin/labyrinth-rollback", rest[0]])
             if rest[0] == "dry-run" and len(rest) == 2 and DIGITS.fullmatch(rest[1]):
-                return run(["/usr/local/bin/labyrinth-rollback", rest[1], "--dry-run"])
+                return run(["/usr/bin/labyrinth-rollback", rest[1], "--dry-run"])
             raise Refused("rollback list|status|dry-run N (a real rollback is the owner's, through labyrinth-agent-window)")
         if cmd == "firewall-status":
             return run(["ufw", "status", "verbose"])

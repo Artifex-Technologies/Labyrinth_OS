@@ -67,10 +67,10 @@ branch `agent-gate-rust`, not merged.
 
 ## Built, in the repository
 
-- `profile/airootfs/usr/local/bin/labyrinth-agent-setup` (read it first): creates `claude-agent` (password locked), writes
+- `labyrinth-agent-setup` (labyrinth-tools, packages/tools/src/agent_setup.rs; read it first, or its script in packages/tools/shell): creates `claude-agent` (password locked), writes
   `/etc/sudoers.d/50-labyrinth-agent` (validated with visudo), installs `claude-sudo`, and tells Heimdall who may open a
   maintenance window. `sudo labyrinth-agent-setup --owner USER [--owner-login]`; undo the rules with `--remove`.
-- `profile/airootfs/usr/local/sbin/labyrinth-agent` and `labyrinth-agent-window` (above).
+- `profile/airootfs/usr/local/sbin/labyrinth-agent` and `labyrinth-agent-window` (/usr/bin, labyrinth-tools; above).
 - Heimdall (commit "Maintenance window..."): 
   - **Maintenance window:** `sudo heimdalld maintenance on --for 2h --reason "why"`, `off`, `status`. At most 4 hours, a reason is required,
     root only, and only the users listed in `maintenance_actors` (empty = any root user). The file lives in /etc/heimdall (Heimdall only reads
@@ -85,7 +85,7 @@ branch `agent-gate-rust`, not merged.
 
 ## To switch it on (the owner)
 ```
-sudo install -m755 profile/airootfs/usr/local/sbin/labyrinth-agent{,-window} /usr/local/sbin/
+sudo install -m755 profile/airootfs/usr/local/sbin/labyrinth-agent /usr/local/sbin/   # labyrinth-agent-window: labyrinth-tools
 sudo labyrinth-agent-setup --owner USER --owner-login      # after reading it
 ```
 and add the ArtCraft binaries to `fim_paths` in /etc/heimdall/config.json (/usr/bin/pdfcraft, pdfcraft-cli, and the same for

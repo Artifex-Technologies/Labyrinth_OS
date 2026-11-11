@@ -27,7 +27,7 @@
 use crate::sh::{self, Io};
 
 /// The boot menu theme's installer (labyrinth-grub-theme).
-pub const GRUB_THEME: &str = "/usr/local/bin/labyrinth-grub-theme";
+pub const GRUB_THEME: &str = "/usr/bin/labyrinth-grub-theme";
 const CFG: &str = "/boot/grub/grub.cfg";
 const DEFAULT_GRUB: &str = "/etc/default/grub";
 

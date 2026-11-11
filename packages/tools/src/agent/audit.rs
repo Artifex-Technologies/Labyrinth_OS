@@ -395,7 +395,7 @@ pub fn audit(plan: &Plan, m: &mut Mock) -> Result<(), String> {
                     Some(b"limbo") => limbo(a, m)?,
                     Some(b"pacman") => pacman(a, m)?,
                     Some(b"ufw") if a[1..] == [b"status".to_vec(), b"verbose".to_vec()] => {}
-                    Some(b"/usr/local/bin/labyrinth-rollback") => match a[1..].iter().map(Vec::as_slice).collect::<Vec<_>>().as_slice() {
+                    Some(b"/usr/bin/labyrinth-rollback") => match a[1..].iter().map(Vec::as_slice).collect::<Vec<_>>().as_slice() {
                         [b"list" | b"status"] => {}
                         [n, b"--dry-run"] if !n.is_empty() && n.iter().all(u8::is_ascii_digit) => {}
                         _ => return Err(format!("labyrinth-rollback {:?}", a.iter().map(|x| s(x)).collect::<Vec<_>>())),

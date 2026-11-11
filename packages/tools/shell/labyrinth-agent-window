@@ -33,7 +33,7 @@ tmp=$(mktemp)
 cat >"$tmp" <<RULES
 # Written by labyrinth-agent-window for $SUDO_USER: removed by the timer $UNIT after $HOURS h, or by --close.
 Cmnd_Alias AGENT_WINDOW = /usr/bin/pacman, /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/loginctl, /usr/bin/systemd-run, \\
-    /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *, /usr/local/bin/labyrinth-*, \\
+    /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *, /usr/local/bin/labyrinth-*, /usr/bin/labyrinth-*, \\
     /usr/bin/install, /usr/bin/mkdir, /usr/bin/chown, /usr/bin/chmod
 $AGENT ALL=(root) NOPASSWD: AGENT_WINDOW
 RULES

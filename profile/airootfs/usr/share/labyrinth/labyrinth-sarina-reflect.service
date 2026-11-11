@@ -4,7 +4,7 @@ Description=Sarina learns from your talks (Entities/About <owner> in her vault)
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/labyrinth-sarina-reflect
+ExecStart=/usr/bin/labyrinth-sarina-reflect
 # exit 75: the graphics card was busy (a game) or the model server was down; try again in an hour
 SuccessExitStatus=0
 RestartForceExitStatus=75

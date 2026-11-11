@@ -486,9 +486,10 @@ def bf_world(files=None, fakes=(), stubs=BF_STUBS, own_units=None, gametime=Fals
     if gametime:
         f["/usr/bin/yggdrasil-gametime"] = ("#!/bin/sh\n", 0o755)
     if theme:
-        f["/usr/local/bin/labyrinth-grub-theme"] = (THEME_STUB.replace("@W@", W), 0o755)
+        f["/usr/bin/labyrinth-grub-theme"] = (THEME_STUB.replace("@W@", W), 0o755)
     f.update(files or {})
-    return world(files=f, stubs=stubs, fakes=list(fakes), whiteouts={"/usr/bin": ["yggdrasil-gametime"] if whiteout_gametime and not gametime else []})
+    hidden = (["yggdrasil-gametime"] if whiteout_gametime and not gametime else []) + ([] if theme else ["labyrinth-grub-theme"])
+    return world(files=f, stubs=stubs, fakes=list(fakes), whiteouts={"/usr/bin": hidden})
 
 
 def bf(name, steps=None, env=None, differs=(), **k):
@@ -535,8 +536,8 @@ bf("snapper's snapshot fails, no grub-btrfsd", fakes=BTRFS_ROOT + [("snapper_--n
    stubs=tuple(s for s in BF_STUBS if s != "grub-btrfsd"))
 bf("grub-mkconfig fails", fakes=BTRFS_ROOT + [("grub-mkconfig_-o", {"rc": 1})])
 bf("grub-mkconfig writes no menu", fakes=BTRFS_ROOT + [("grub-mkconfig_-o", {"sh": 'echo "set x" > "$2"\n'})])
-bf("the theme fails", fakes=BTRFS_ROOT, files={"/usr/local/bin/labyrinth-grub-theme": ("#!/bin/sh\necho broken >&2\nexit 1\n", 0o755)})
-bf("the theme is not executable", fakes=BTRFS_ROOT, files={"/usr/local/bin/labyrinth-grub-theme": ("#!/bin/sh\n", 0o644)})
+bf("the theme fails", fakes=BTRFS_ROOT, files={"/usr/bin/labyrinth-grub-theme": ("#!/bin/sh\necho broken >&2\nexit 1\n", 0o755)})
+bf("the theme is not executable", fakes=BTRFS_ROOT, files={"/usr/bin/labyrinth-grub-theme": ("#!/bin/sh\n", 0o644)})
 bf("zram: its file is a folder (fixed: a warning)", files={"/etc/systemd/zram-generator.conf/x": ""}, differs=(("err", 0),))
 
 # ---------------------------------------------------------------- labyrinth-install-cleanup

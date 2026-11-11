@@ -30,8 +30,17 @@ Python's own \w, \d and \s.
 The bash and sh scripts of `profile/airootfs/usr/local/{bin,sbin}` get Rust ports too, for security and stability more than
 speed: no quoting or word-splitting bugs, programs started by argv rather than command strings, strict checks of what comes in,
 clear errors. Each is a bin with the script's name, arguments, output, files, calls and exit codes (`src/sh.rs` holds what they
-share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each against its script (below). Not switched on main: the
-scripts are what the image runs until the branch `scripts-rust-switch` is merged.
+share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each against its script (below).
+
+The switch (this branch, `scripts-rust-switch`): labyrinth-tools 0.1.0-4 installs the 20 programs in /usr/bin; the scripts leave
+the image and are kept in `packages/tools/shell/` for a rollback (with the switched paths, so they stay the ports' specification,
+and the parity runs against them); `cls` is a link to /usr/bin/clear. The paths to them are /usr/bin now: the installer's
+integration file (clean-up, finish, boot menu theme), the security and Sarina integration files (sarina-git 0.1.0-2 / -3),
+the notifications' D-Bus activation, labyrinth-sarina-reflect.service, the gate's rollback (the Python gate and the Rust one),
+labyrinth-agent-setup's check of the window. The window's rules name /usr/bin/labyrinth-* beside /usr/local/bin/labyrinth-*
+(the tools moved; the window already allows any pacman and systemd-run, so it gives nothing more). When merging
+`agent-gate-rust` too: both set labyrinth-tools' pkgrel (3 there, 4 here) and both change labyrinth-agent-setup (there: the
+gate is /usr/bin/labyrinth-agent; carry that into src/agent_setup.rs's GATE and the script in packages/tools/shell).
 
 | Script | Port | Parity |
 | --- | --- | --- |
