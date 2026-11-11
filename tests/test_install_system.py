@@ -6,6 +6,7 @@ YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"
 import importlib.machinery
 import importlib.util
 import os
+import re
 import tempfile
 import unittest
 
@@ -42,8 +43,12 @@ class TheIntegrationFile(unittest.TestCase):
         c = conf_values()
         self.assertEqual(c["kind"], "installer")
         self.assertEqual(c["command"], "/usr/bin/yggdrasil-install-system")
+        # Labyrinth's own steps come with the labyrinth-tools package (/usr/bin), which the image installs
+        pkgbuild = open(os.path.join(ROOT, "packages", "pkgbuilds", "labyrinth-tools", "PKGBUILD")).read()
         for key in ("cleanup", "finish", "boot_menu_theme"):
-            self.assertTrue(os.path.isfile(AIROOTFS + c[key]), f"{key}: {c[key]} is on the medium")
+            name = os.path.basename(c[key])
+            self.assertEqual(c[key], "/usr/bin/" + name, key)
+            self.assertRegex(pkgbuild, r"\b%s\b" % re.escape(name), f"{key}: labyrinth-tools installs {name}")
         for key in ("browsers", "extras", "components"):
             self.assertTrue(os.path.isfile(AIROOTFS + c[key]), f"{key}: {c[key]} is on the medium")
         self.assertIn("nvidia_drm.modeset=1", c["kernel_options"].split())
