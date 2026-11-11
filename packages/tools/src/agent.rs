@@ -23,7 +23,7 @@ use crate::pycompat;
 use std::ffi::{CString, OsStr, OsString};
 use std::io::{Read, Write};
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
-use std::os::unix::fs::OpenOptionsExt;
+use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::process::{Command, Stdio};
 
@@ -113,6 +113,18 @@ pub const LIMBO_DIRS: [&[u8]; 2] = [b"/var/lib/limbo/build-agent/", b"/etc/limbo
 /// places among the deploy targets that root uses (docs/GPU_UNLOCK.md; the optional apps' recipes; the boot menu theme)
 pub const DEPLOY_NEVER: [&[u8]; 3] =
     [b"/usr/share/yggdrasil/gpu-unlock", b"/usr/share/labyrinth/pkgbuilds", b"/usr/share/labyrinth/grub-evodevo"];
+/// the settings Settings changes only with the owner's password (polkit, auth_admin_keep: casefan's fans and pumps, gpufan,
+/// powerlimit, tune), and the protections the account helper and Agora's pkg-root read
+pub const DEPLOY_GUARDED: [&[u8]; 6] = [
+    b"/etc/yggdrasil/case-fans.json",
+    b"/etc/yggdrasil/gpu-fan.json",
+    b"/etc/yggdrasil/power-limits.json",
+    b"/etc/yggdrasil/tuning.json",
+    b"/etc/yggdrasil/protected-accounts",
+    b"/etc/yggdrasil/protected-packages",
+];
+/// pkg-install's copies: a fresh folder in here for each install (root's own, 0700), removed afterwards
+pub const STAGE: &str = "/var/cache/labyrinth-agent";
 /// where root is told to run a program
 pub const ROOT_RUNS: [&str; 11] = [
     "/etc/systemd/system",
@@ -318,12 +330,19 @@ pub enum Plan {
     Runs(Vec<Vec<B>>),
     /// one file put in place (the source is read as the caller then)
     Deploy { src: B, dest: B, mode: u32 },
+    /// pkg-install: the journal line saying where the packages were copied, then the runs (heimdalld, pacman -U of the copies)
+    Install { note: B, runs: Vec<Vec<B>> },
 }
 
 /// What the decisions need to know of the system, asked in the script's order.
 pub trait World {
-    /// os.lstat(path) names a regular file (an error is where the script stopped)
-    fn regular(&mut self, path: &[u8]) -> Result<bool, Crash>;
+    /// pkg-install's copy of package file number i (read as the caller, never through a link at its end) in the stage folder,
+    /// made at the first copy; a refusal where the caller may not read it
+    fn copy_in(&mut self, path: &[u8], i: usize) -> Result<B, Fail>;
+    /// the stage folder the copies are in
+    fn staged(&self) -> B;
+    /// None when path and every folder above it are root's alone (owned by root, writable by root only, no link), else why not
+    fn root_only(&mut self, path: &[u8]) -> Option<B>;
     /// the package's name in pacman -Qip PATH's "Name :" line, empty when there is none
     fn pkg_name(&mut self, path: &[u8]) -> Result<B, Crash>;
     /// pacman -Si NAME succeeds
@@ -334,27 +353,28 @@ pub trait World {
     fn root_runs(&mut self, name: &[u8]) -> Option<B>;
 }
 
-pub fn check_pkg_files(paths: &[B], w: &mut dyn World) -> Result<Vec<B>, Fail> {
+/// The package files the agent may install: each copied first (`World::copy_in`), and the copy's package must be one of ours.
+/// The names and the copies: only the copies are installed, so a file changed after it was checked is not what pacman gets.
+pub fn check_pkg_files(paths: &[B], w: &mut dyn World) -> Result<(Vec<B>, Vec<B>), Fail> {
     if paths.is_empty() {
         return Err(refused(&[b"no package files"]));
     }
-    let mut names = vec![];
-    for p in paths {
+    let (mut names, mut copies) = (vec![], vec![]);
+    for (i, p) in paths.iter().enumerate() {
         let parent_part = p.split(|&c| c == b'/').any(|c| c == b"..");
         if !p.starts_with(b"/") || parent_part || !(p.ends_with(b".pkg.tar.zst") || p.ends_with(b".pkg.tar.xz")) {
             return Err(refused(&[p, b": not an absolute path to a package file"]));
         }
-        if !w.regular(p)? {
-            return Err(refused(&[p, b": not a regular file"]));
-        }
-        let n = w.pkg_name(p)?;
+        let c = w.copy_in(p, i)?;
+        let n = w.pkg_name(&c)?;
         if n.is_empty() || !ours(&n) {
             let shown: &[u8] = if n.is_empty() { b"?" } else { &n };
             return Err(refused(&[p, b": package ", shown, b" is not one of the ecosystem's own"]));
         }
         names.push(n);
+        copies.push(c);
     }
-    Ok(names)
+    Ok((names, copies))
 }
 
 pub fn check_pkg_names(names: &[B]) -> Result<(), Fail> {
@@ -506,6 +526,9 @@ pub fn deploy_mode(dest: &[u8]) -> Result<u32, Fail> {
     if dest.split(|&c| c == b'/').skip(1).any(|p| p.is_empty() || p == b"." || p == b"..") {
         return Err(refused(&[dest, b": not a clean path"]));
     }
+    if DEPLOY_GUARDED.contains(&dest) {
+        return Err(refused(&[dest, b": Settings changes it only with the owner's password (polkit), so the agent does not"]));
+    }
     for never in DEPLOY_NEVER {
         if dest == never || (dest.starts_with(never) && dest.get(never.len()) == Some(&b'/')) {
             return Err(refused(&[dest, b": root uses what is there (the owner's, through labyrinth-agent-window)"]));
@@ -519,13 +542,14 @@ pub fn decide(cmd: &[u8], rest: &[B], w: &mut dyn World) -> Result<Plan, Fail> {
     let first = rest.first().map(Vec::as_slice);
     match cmd {
         b"pkg-install" => {
-            let names = check_pkg_files(rest, w)?;
+            let (names, copies) = check_pkg_files(rest, w)?;
+            let note = cat(&[b"pkg-install: ", &join(rest, b" "), b" copied to ", &w.staged()]);
             let reason = cat(&[b"agent installs ", &join(&names, b", ")]);
             let mut maint = argv(&[b"heimdalld", b"maintenance", b"on", b"--for", b"15m", b"--reason"]);
             maint.push(reason);
             let mut install = argv(&[b"pacman", b"-U", b"--noconfirm"]);
-            install.extend(rest.iter().cloned());
-            Ok(Plan::Runs(vec![maint, install]))
+            install.extend(copies);
+            Ok(Plan::Install { note, runs: vec![maint, install] })
         }
         b"pkg-add" => {
             check_pkg_names(rest)?;
@@ -554,7 +578,16 @@ pub fn decide(cmd: &[u8], rest: &[B], w: &mut dyn World) -> Result<Plan, Fail> {
             a.extend(rest.iter().cloned());
             Ok(Plan::Runs(vec![a]))
         }
-        b"limbo" if !rest.is_empty() => Ok(Plan::Runs(vec![limbo_argv(&rest[0], rest.get(1).map(Vec::as_slice).unwrap_or(b""))?])),
+        b"limbo" if !rest.is_empty() => {
+            let a = limbo_argv(&rest[0], rest.get(1).map(Vec::as_slice).unwrap_or(b""))?;
+            if a.len() == 3 {
+                if let Some(why) = w.root_only(&a[2]) {
+                    let tail = b" (limbo starts what a manifest says, as root: only root may write it)";
+                    return Err(refused(&[b"limbo ", &rest[0], b": ", &why, tail]));
+                }
+            }
+            Ok(Plan::Runs(vec![a]))
+        }
         b"rollback" if !rest.is_empty() => {
             if matches!(first, Some(b"list" | b"status")) && rest.len() == 1 {
                 return Ok(Plan::Runs(vec![vec![ROLLBACK.to_vec(), rest[0].clone()]]));
@@ -734,15 +767,111 @@ pub fn root_runs_in(places: &[&str], name: &[u8]) -> Option<B> {
     None
 }
 
+/// None when path and every folder above it, to /, are owned by root, writable by root only and no link; else why not.
+pub fn root_only_path(path: &[u8]) -> Option<B> {
+    let parts: Vec<&[u8]> = path.split(|&c| c == b'/').skip(1).collect();
+    let mut chain = vec![b"/".to_vec()];
+    for k in 1..=parts.len() {
+        chain.push(cat(&[b"/", &parts[..k].join(&b'/')]));
+    }
+    for (i, p) in chain.iter().enumerate() {
+        let m = match std::fs::symlink_metadata(OsStr::from_bytes(p)) {
+            Ok(m) => m,
+            Err(e) => return Some(cat(&[p, b": ", py::strerror(e.raw_os_error().unwrap_or(0)).as_bytes()])),
+        };
+        let last = i == chain.len() - 1;
+        if m.file_type().is_symlink() {
+            return Some(cat(&[p, b" is a link"]));
+        }
+        if last && !m.file_type().is_file() {
+            return Some(cat(&[p, b" is not a regular file"]));
+        }
+        if !last && !m.is_dir() {
+            return Some(cat(&[p, b" is not a folder"]));
+        }
+        if m.uid() != 0 || m.mode() & 0o022 != 0 {
+            return Some(cat(&[p, format!(" is not root's alone (owner {}, mode 0o{:o})", m.uid(), m.mode() & 0o7777).as_bytes()]));
+        }
+    }
+    None
+}
+
+/// A fresh folder for pkg-install's copies, in STAGE (made root's own, 0700, if it is not there), named as tempfile.mkdtemp names.
+fn stage_dir() -> Result<B, Fail> {
+    use std::os::unix::fs::DirBuilderExt;
+    let m = match std::fs::symlink_metadata(STAGE) {
+        Ok(m) => m,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            std::fs::DirBuilder::new().mode(0o700).create(STAGE).map_err(|e| py::os_err(e, STAGE))?;
+            std::fs::symlink_metadata(STAGE).map_err(|e| py::os_err(e, STAGE))?
+        }
+        Err(e) => return Err(py::os_err(e, STAGE).into()),
+    };
+    if !m.is_dir() || m.uid() != 0 || m.mode() & 0o077 != 0 {
+        return Err(refused(&[STAGE.as_bytes(), b" is not a folder only root may enter"]));
+    }
+    const LETTERS: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789_";
+    for _ in 0..100 {
+        let mut r = [0u8; 8];
+        if unsafe { libc::getrandom(r.as_mut_ptr().cast(), r.len(), 0) } != 8 {
+            return Err(os_crash("getrandom").into());
+        }
+        let name: String = r.iter().map(|b| LETTERS[*b as usize % LETTERS.len()] as char).collect();
+        let dir = format!("{STAGE}/install-{name}");
+        match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
+            Ok(()) => return Ok(dir.into_bytes()),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(py::os_err(e, &dir).into()),
+        }
+    }
+    Err(Crash("No usable temporary directory name found".into()).into())
+}
+
 /// The system itself, asked as the script asked it.
 pub struct Real<'a> {
     pub env: &'a [(OsString, OsString)],
+    /// pkg-install's stage folder and the caller the copies are read as (found at the first copy)
+    pub stage: Option<B>,
+    pub who: Option<Caller>,
+}
+
+impl Real<'_> {
+    /// pkg-install's copies taken away (whatever happened).
+    pub fn discard(&mut self) {
+        if let Some(d) = self.stage.take() {
+            let _ = std::fs::remove_dir_all(OsStr::from_bytes(&d));
+        }
+    }
 }
 
 impl World for Real<'_> {
-    fn regular(&mut self, path: &[u8]) -> Result<bool, Crash> {
-        let m = std::fs::symlink_metadata(OsStr::from_bytes(path)).map_err(|e| py::os_err(e, &show(path)))?;
-        Ok(m.file_type().is_file())
+    fn copy_in(&mut self, path: &[u8], i: usize) -> Result<B, Fail> {
+        if self.stage.is_none() {
+            self.who = caller(std::env::var_os("SUDO_UID"), std::env::var_os("SUDO_GID"))?;
+            self.stage = Some(stage_dir()?);
+        }
+        let data = read_as(path, self.who.as_ref())?;
+        let sub = cat(&[self.stage.as_deref().unwrap_or_default(), b"/", i.to_string().as_bytes()]);
+        use std::os::unix::fs::DirBuilderExt;
+        std::fs::DirBuilder::new().mode(0o700).create(OsStr::from_bytes(&sub)).map_err(|e| py::os_err(e, &show(&sub)))?;
+        let c = cat(&[&sub, b"/", basename(path)]);
+        let mut f = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW)
+            .open(OsStr::from_bytes(&c))
+            .map_err(|e| py::os_err(e, &show(&c)))?;
+        f.write_all(&data).map_err(|e| py::os_err(e, &show(&c)))?;
+        Ok(c)
+    }
+
+    fn staged(&self) -> B {
+        self.stage.clone().unwrap_or_default()
+    }
+
+    fn root_only(&mut self, path: &[u8]) -> Option<B> {
+        root_only_path(path)
     }
 
     fn pkg_name(&mut self, path: &[u8]) -> Result<B, Crash> {
@@ -1073,16 +1202,23 @@ pub fn main(argv: &[OsString]) -> i32 {
     unsafe { libc::umask(0o022) };
     let env = child_env(std::env::vars_os());
     let (cmd, rest) = (&args[1], &args[2..]);
-    let outcome = decide(cmd, rest, &mut Real { env: &env }).and_then(|plan| match plan {
-        Plan::Runs(list) => {
-            let mut rc = 0;
-            for a in &list {
-                rc = run(a, &env)?;
-            }
-            Ok(rc)
+    let mut world = Real { env: &env, stage: None, who: None };
+    let runs = |list: &[Vec<B>]| -> Result<i32, Fail> {
+        let mut rc = 0;
+        for a in list {
+            rc = run(a, &env)?;
+        }
+        Ok(rc)
+    };
+    let outcome = decide(cmd, rest, &mut world).and_then(|plan| match plan {
+        Plan::Runs(list) => runs(&list),
+        Plan::Install { note, runs: list } => {
+            log(&note, &env)?;
+            runs(&list)
         }
         Plan::Deploy { src, dest, mode } => deploy(&src, &dest, mode, &env),
     });
+    world.discard();
     match outcome {
         Ok(rc) => rc,
         Err(Fail::Refused(why)) => {

@@ -1,11 +1,13 @@
 """The cases of labyrinth-agent (loaded by compare.py), the gate sudo lets the engineering agent run as root.
 
 Each run is in a world of its own: a user and mount namespace (unshare, no real root) where uid 0 is this account and uids
-1000-2999 are its subordinate ids (/etc/subuid), so deploy's caller (uid 2001) is another account. /etc, /usr/bin, /usr/share,
-/usr/lib and /usr/local are overlays: the stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and
-/usr/local/bin/labyrinth-rollback are files of the world there (the gate finds them in /usr/bin, as it would the real ones), and
-every place deploy writes to or the gate searches (the deploy folders, systemd's unit folders, pacman's hooks, udev's rules,
-polkit's actions, sudoers.d, /run/systemd/system) is a folder of the world (opaque: nothing of this computer shows through).
+1000-2999 are its subordinate ids (/etc/subuid), so the caller (uid 2001) is another account, and a root folder of its own
+(WORLD/root, chroot): / and /var are the world's (owned by root there, as limbo's manifest check needs), /usr is this computer's
+with /usr/bin, /usr/share, /usr/lib and /usr/local laid over (overlays), /etc is an overlay, /proc, /dev, /tmp and /home are bound
+in. The stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and /usr/local/bin/labyrinth-rollback are
+files of the world in /usr/bin (the gate finds them there, as it would the real ones), and every place deploy writes to or the
+gate searches (the deploy folders, systemd's unit folders, pacman's hooks, udev's rules, polkit's actions, sudoers.d, /run,
+/var/cache/labyrinth-agent, Limbo's manifest folders) is a folder of the world (nothing of this computer shows through).
 Nothing on the computer is changed and none of the real programs runs.
 
 Each stand-in writes down its arguments and its whole environment (calls, and argv.log byte for byte). Beside the comparison of
@@ -14,6 +16,7 @@ and the Rust checks): no call of a stand-in that would act as root outside it, t
 file written outside deploy's places. Random command lines (LABYRINTH_AGENT_RANDOM, default 400) are run the same way."""
 import os
 import random
+import re
 import stat
 
 import __main__ as P
@@ -60,7 +63,11 @@ rc=$(cat "$W/fake/rc.$n" 2>/dev/null || echo 0)
 case "$n" in
   pacman)
     case "$1" in
-      -Qip) if [ -f "$2" ]; then cat "$2"; else echo "error: '$2': cannot open" >&2; exit 1; fi; exit 0 ;;
+      -Qip) if [ -f "$2" ]; then cat "$2"; else echo "error: '$2': cannot open" >&2; exit 1; fi
+            # the caller changes the file it named once the gate has looked at it (fake/swap holds the new contents)
+            [ -e "$W/fake/swap" ] && cp "$W/fake/swap" "$W/pkgs/${2##*/}"
+            exit 0 ;;
+      -U) for f in "$@"; do [ -f "$f" ] && sed -n 's/^Name[[:space:]]*:[[:space:]]*\([^[:space:]]*\).*/\1/p' "$f" | head -n 1 >> "$W/installed.log"; done ;;
       -Si) if grep -qxF -- "$2" "$W/fake/repo"; then printf 'Repository : extra\nName : %s\n' "$2"; exit 0; fi
            echo "error: package '$2' was not found" >&2; exit 1 ;;
       -S) if [ "$2" = --print ]; then
@@ -80,7 +87,7 @@ exit "$rc"
 # deploy's places, and where root is told to run programs: folders of the world (opaque)
 OPAQUE = {
     "/usr/share": ["yggdrasil", "labyrinth", "icons", "applications", "wayland-sessions", "libalpm/hooks", "polkit-1/actions"],
-    "/etc": ["yggdrasil", "systemd/system", "pacman.d/hooks", "udev/rules.d", "sudoers.d"],
+    "/etc": ["yggdrasil", "systemd/system", "pacman.d/hooks", "udev/rules.d", "sudoers.d", "limbo/validation"],
     "/usr/lib": ["systemd/system", "udev/rules.d"],
     "/usr/local": ["lib/systemd/system"],
     "/usr/bin": [],
@@ -107,12 +114,47 @@ STANDARD_UNITS = {"/usr/lib/systemd/system/yggdrasil-spell-global.service": "[Se
                   "/usr/lib/systemd/system/yggdrasil-x.service": "[Unit]\nRequires=yggdrasil-spell-global.service\n[Service]\nExecStart=/usr/bin/true\n"}
 
 
+STANDARD_MANIFESTS = {"/var/lib/limbo/build-agent/t.json": "{}\n", "/etc/limbo/validation/a.json": "{}\n"}
+R = os.path.join(W, "root")
+
+
 def upper(mount, rel=""):
     return os.path.join(W, "ov" + mount, "up", rel)
 
 
+def host(path):
+    """Where a path of the world's root is on this computer (outside the namespace)."""
+    for m in ("/usr/bin", "/usr/share", "/usr/lib", "/usr/local", "/etc"):
+        if path == m or path.startswith(m + "/"):
+            return upper(m, path[len(m) + 1:])
+    return R + path
+
+
+NS = r"""#!/bin/sh
+# the world's root (see cases_agent.py), then the program in it
+set -e
+W=@WORLD@
+R=$W/root
+/usr/bin/hostname parity-host
+@WHITEOUTS@
+/usr/bin/mount --rbind /usr "$R/usr"
+for d in /usr/bin /usr/share /usr/lib /usr/local /etc; do
+  /usr/bin/mount -t overlay overlay -o "lowerdir=$d,upperdir=$W/ov$d/up,workdir=$W/ov$d/work,userxattr" "$R$d"
+done
+for d in /proc /dev /tmp /home; do /usr/bin/mount --rbind "$d" "$R$d"; done
+@CHOWNS@
+exec /usr/bin/chroot "$R" "$@"
+"""
+
+
+def teardown():
+    """Give back to this account what a case gave the caller (uid 2001) inside the namespace."""
+    import subprocess
+    subprocess.run(WRAP[:WRAP.index("--")] + ["--", "/usr/bin/chown", "-R", "-h", "0:0", W], check=False)
+
+
 def world(pkgs=None, repo=None, deps=None, sp_fails=False, rc=None, src=None, units=None, existing=None, links=None,
-          etc_yggdrasil=True, run_units=None, extra=None):
+          etc_yggdrasil=True, run_units=None, extra=None, manifests=None, chown=(), swap=None, modes=None):
     pkgs = STANDARD_PKGS if pkgs is None else pkgs
     repo = STANDARD_REPO if repo is None else repo
     deps = STANDARD_DEPS if deps is None else deps
@@ -150,24 +192,44 @@ def world(pkgs=None, repo=None, deps=None, sp_fails=False, rc=None, src=None, un
             p = upper(m, path[len(m) + 1:])
             os.makedirs(os.path.dirname(p), exist_ok=True)
             os.symlink(target, p)
-        os.makedirs(os.path.join(W, "run-units"), exist_ok=True)
+        # the world's root: its own /, /var and /run; mount points for the rest
+        for d in ("usr", "etc", "proc", "dev", "tmp", "home", "root", "var/cache", "var/lib/limbo/build-agent", "run/systemd/system",
+                  "run/udev/rules.d"):
+            os.makedirs(os.path.join(R, d), exist_ok=True)
+        for d, _, _ in os.walk(R):
+            os.chmod(d, 0o755)
+        for n, t in (("bin", "usr/bin"), ("sbin", "usr/bin"), ("lib", "usr/lib"), ("lib64", "usr/lib")):
+            os.symlink(t, os.path.join(R, n))
         for n, body in (run_units or {}).items():
-            P.write(os.path.join(W, "run-units", n), body)
+            P.write(os.path.join(R, "run", "systemd", "system", n), body)
+        for path, body in (STANDARD_MANIFESTS if manifests is None else manifests).items():
+            P.write(host(path), body, 0o644)
+        if swap is not None:
+            P.write(os.path.join(W, "fake", "swap"), swap)
         os.chmod(os.path.join(W, "src"), 0o755) if os.path.isdir(os.path.join(W, "src")) else None
         if extra:
             extra()
-        mounts = [("hostname", "parity-host")]
-        if not etc_yggdrasil:
-            mounts.append(("whiteout", "/etc", "yggdrasil"))
-        mounts += [("overlay", m) for m in OPAQUE]
-        mounts.append(("bind", os.path.join(W, "run-units"), "/run/systemd/system"))
-        P.world_of_its_own(mounts)
+        for path, mode in (modes or {}).items():
+            os.chmod(host(path), mode)
+        whiteouts = "" if etc_yggdrasil else '/usr/bin/mknod "$W/ov/etc/up/yggdrasil" c 0 0'
+        chowns = "\n".join('/usr/bin/chown -h %s "$R%s"' % (CALLER, path) for path in chown)
+        P.write(os.path.join(W, "ns.sh"), NS.replace("@WORLD@", W).replace("@WHITEOUTS@", whiteouts).replace("@CHOWNS@", chowns), 0o755)
         BEFORE.clear()
         BEFORE.update(upper_files())
+        BEFORE_STAGE.clear()
+        BEFORE_STAGE.update(stage_entries())
     return go
 
 
+def stage_entries():
+    stage = os.path.join(R, "var", "cache", "labyrinth-agent")
+    if os.path.isdir(stage) and not os.path.islink(stage) and os.access(stage, os.R_OK | os.X_OK):
+        return {n for n in os.listdir(stage) if n.startswith("install-")}
+    return set()
+
+
 BEFORE = {}
+BEFORE_STAGE = set()
 
 
 def upper_files():
@@ -281,6 +343,22 @@ def journalctl_ok(args):
     return None
 
 
+STAGE_COPY = re.compile(r"/var/cache/labyrinth-agent/install-[a-z0-9_]{8}/[0-9]+/[^/]+")
+
+
+def root_only_world(path):
+    """None when the world shows path and every folder above it as root's alone (root inside is this account outside)."""
+    parts = path.split("/")[1:]
+    for p in ["/"] + ["/" + "/".join(parts[:k]) for k in range(1, len(parts) + 1)]:
+        try:
+            st = os.lstat(host(p) if p != "/" else R)
+        except OSError:
+            return "missing " + p
+        if stat.S_ISLNK(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022:
+            return "not root's alone: " + p
+    return None
+
+
 def call_ok(argv):
     """None when this call of a stand-in is one the gate may make, else why not."""
     n, a = argv[0], argv[1:]
@@ -294,7 +372,8 @@ def call_ok(argv):
         if a[:6] == ["-S", "--print", "--print-format", "%n", "--needed", "--noconfirm"] and a[6:] and all(map(target, a[6:])):
             return None
         if a[:2] == ["-U", "--noconfirm"] and a[2:]:
-            bad = [f for f in a[2:] if not (package_file(f) and os.path.isfile(f) and not os.path.islink(f) and eco_package_in(f))]
+            # only the copies made for this install (what they held is checked in installed.log)
+            bad = [f for f in a[2:] if not (STAGE_COPY.fullmatch(f) and package_file(f))]
             return "pacman -U %r" % bad if bad else None
         if a[:3] == ["-S", "--needed", "--noconfirm"] and a[3:]:
             repo = open(os.path.join(W, "fake", "repo")).read().split("\n")
@@ -340,6 +419,8 @@ def call_ok(argv):
     if n == "limbo":
         def manifest(m):
             return m.startswith(("/var/lib/limbo/build-agent/", "/etc/limbo/validation/")) and m.endswith(".json") and ".." not in m.split("/")
+        if len(a) == 2 and manifest(a[1]) and root_only_world(a[1]):
+            return "limbo with a manifest that is not root's alone: %s" % root_only_world(a[1])
         if (len(a) == 2 and a[0] in ("up", "down") and manifest(a[1])) or (a[:1] in (["doctor"], ["status"]) and (len(a) == 1 or (len(a) == 2 and manifest(a[1])))):
             return None
         return "limbo %r" % a
@@ -416,7 +497,8 @@ def check(results, calls, tree):
               "/usr/share/libalpm/hooks/", "/etc/udev/rules.d/", "/usr/lib/udev/rules.d/", "/usr/share/polkit-1/actions/", "/etc/sudoers.d/")
     units_text = "\n".join(v[1].decode("utf-8", "replace") for k, v in BEFORE.items()
                            if any(k.startswith(d) and k[len(d):].count("/") <= 1 for d in places) and not k.endswith("/"))
-    units_text += "\n".join(open(os.path.join(W, "run-units", n), errors="replace").read() for n in os.listdir(os.path.join(W, "run-units")))
+    run_units = os.path.join(R, "run", "systemd", "system")
+    units_text += "\n".join(open(os.path.join(run_units, n), errors="replace").read() for n in os.listdir(run_units))
     after = upper_files()
     for path, (mode, body) in after.items():
         if path.endswith("/"):
@@ -428,10 +510,22 @@ def check(results, calls, tree):
     for path in BEFORE:
         if path not in after and not path.endswith("/") and not (path.endswith(".agent-tmp") and not deploy_ok(path[:-10], "0o644", "")):
             problems.append("file removed: " + path)
+    # what pacman -U was given held a package of ours; no copy is left behind
+    log = os.path.join(W, "installed.log")
+    for n in (open(log, encoding="utf-8", errors="replace").read().split("\n") if os.path.exists(log) else []):
+        if n and not (n.startswith(ECO) and all(c in "abcdefghijklmnopqrstuvwxyz0123456789-._+" for c in n)):
+            problems.append("installed a package that is not ours: " + n)
+    if stage_entries() - BEFORE_STAGE:
+        problems.append("copies left in /var/cache/labyrinth-agent")
     return problems
 
 
 # ---------------------------------------------------------------- the cases
+
+
+def same_stage(text):
+    """The stage folder's random name (tempfile.mkdtemp's in the script, the same letters in the port) made alike."""
+    return re.sub(r"/var/cache/labyrinth-agent/install-[a-z0-9_]{8}", "/var/cache/labyrinth-agent/install-<RANDOM>", text)
 
 
 def case(name, steps, env=None, **world_args):
@@ -439,7 +533,8 @@ def case(name, steps, env=None, **world_args):
     e.update(env or {})
     for s in steps:
         s.setdefault("wrap", WRAP)
-    P.case(AGENT, name, steps, setup=world(**world_args), env=e, snap=snap, check=check)
+    P.case(AGENT, name, steps, setup=world(**world_args), env=e, snap=snap, check=check, norm=same_stage,
+           teardown=teardown if world_args.get("chown") else None)
 
 
 def one(name, *args, env=None, **world_args):
@@ -493,6 +588,33 @@ else:
                         os.makedirs(os.path.join(W, "pkgs", "dir.pkg.tar.zst"))))
     odd_names = {"sp ace\udcff.pkg.tar.zst": pkg("yggdrasil-odd")}
     one("pkg-install: a file name with a space and a byte that is not UTF-8", "pkg-install", PK + "sp ace\udcff.pkg.tar.zst", pkgs=odd_names)
+
+    # -- pkg-install: copies (read as the caller, into a folder only root may enter), checked and installed from there
+    SECRET = dict(STANDARD_PKGS, **{"secret-1-1-x86_64.pkg.tar.zst": pkg("yggdrasil-s")})
+
+    def closed():
+        os.chmod(os.path.join(W, "pkgs", "secret-1-1-x86_64.pkg.tar.zst"), 0o600)
+        P.write(os.path.join(W, "pkgs", "closed", "yggdrasil-c-1-1-x86_64.pkg.tar.zst"), pkg("yggdrasil-c"), 0o644)
+        os.chmod(os.path.join(W, "pkgs", "closed"), 0o700)
+
+    one("pkg-install: the file changed after its check is not what is installed", "pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst",
+        swap=pkg("openssh"))
+    each("pkg-install: files the caller may not read", [["pkg-install", PK + "secret-1-1-x86_64.pkg.tar.zst"],
+                                                        ["pkg-install", PK + "closed/yggdrasil-c-1-1-x86_64.pkg.tar.zst"],
+                                                        ["pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst", PK + "secret-1-1-x86_64.pkg.tar.zst"]],
+         pkgs=SECRET, extra=closed)
+    case("pkg-install: root's own files when sudo names no caller", [{"args": ["pkg-install", PK + "secret-1-1-x86_64.pkg.tar.zst"],
+                                                                       "env": {"SUDO_UID": None, "SUDO_GID": None}}], pkgs=SECRET, extra=closed)
+    case("pkg-install: SUDO_UID that names no account", [{"args": ["pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst"], "env": {"SUDO_UID": "x"}}])
+    one("pkg-install: the stage folder others may enter", "pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst",
+        extra=lambda: os.makedirs(os.path.join(R, "var", "cache", "labyrinth-agent")), modes={"/var/cache/labyrinth-agent": 0o755})
+    one("pkg-install: the stage folder the caller owns", "pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst",
+        extra=lambda: os.makedirs(os.path.join(R, "var", "cache", "labyrinth-agent")), modes={"/var/cache/labyrinth-agent": 0o700},
+        chown=["/var/cache/labyrinth-agent"])
+    one("pkg-install: the stage folder is a link", "pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst",
+        extra=lambda: os.symlink("/tmp", os.path.join(R, "var", "cache", "labyrinth-agent")))
+    one("pkg-install: the stage folder kept from before", "pkg-install", PK + "yggdrasil-a-1-1-x86_64.pkg.tar.zst",
+        extra=lambda: os.makedirs(os.path.join(R, "var", "cache", "labyrinth-agent", "install-oldoldol")), modes={"/var/cache/labyrinth-agent": 0o700})
 
     # -- pkg-add
     one("pkg-add: one", "pkg-add", "htop")
@@ -572,6 +694,26 @@ else:
                             ["limbo", "hold"], ["limbo", "status", "/etc/shadow"], ["limbo", "doctor", "--state-dir=/tmp/x"],
                             ["limbo", "status", "/var/lib/limbo/build-agent-x/t.json"], ["limbo", "UP", "/etc/limbo/validation/a.json"]])
 
+    # -- limbo: a manifest and every folder above it root's alone (only root decides what limbo starts as root)
+    BA = "/var/lib/limbo/build-agent"
+    each("limbo: root's own manifests", [["limbo", "up", BA + "/t.json"], ["limbo", "down", "/etc/limbo/validation/a.json"],
+                                         ["limbo", "status", BA + "/t.json"], ["limbo", "doctor", "/etc/limbo/validation/a.json"]])
+    each("limbo: a manifest the caller owns", [["limbo", "up", BA + "/t.json"], ["limbo", "status", BA + "/t.json"]], chown=[BA + "/t.json"])
+    each("limbo: a folder the caller owns", [["limbo", "up", BA + "/t.json"], ["limbo", "down", "/etc/limbo/validation/a.json"]], chown=[BA])
+    each("limbo: manifests others may write", [["limbo", "up", BA + "/" + n] for n in ("g.json", "o.json", "t.json")],
+         manifests=dict(STANDARD_MANIFESTS, **{BA + "/g.json": "{}\n", BA + "/o.json": "{}\n"}),
+         modes={BA + "/g.json": 0o664, BA + "/o.json": 0o646})
+    one("limbo: a folder others may write", "limbo", "up", BA + "/t.json", modes={BA: 0o775})
+    one("limbo: /var others may write", "limbo", "up", BA + "/t.json", modes={"/var": 0o1777})
+    each("limbo: links and what is not a manifest", [["limbo", "up", BA + "/l.json"], ["limbo", "up", BA + "/missing.json"],
+                                                     ["limbo", "up", BA + "/dir.json"], ["limbo", "status", "/etc/limbo/validation/missing.json"]],
+         extra=lambda: (os.symlink("t.json", host(BA + "/l.json")), os.makedirs(host(BA + "/dir.json"))))
+
+    def build_agent_link():
+        os.rename(host(BA), host("/var/lib/limbo/real"))
+        os.symlink("real", host(BA))
+    one("limbo: a link on the way", "limbo", "up", BA + "/t.json", extra=build_agent_link)
+
     # -- rollback, firewall
     each("rollback", [["rollback", "list"], ["rollback", "status"], ["rollback", "dry-run", "12"], ["rollback", "dry-run", "²"],
                       ["rollback", "dry-run", "١٢"], ["rollback", "dry-run", "1a"], ["rollback", "dry-run"], ["rollback", "list", "x"],
@@ -585,6 +727,10 @@ else:
                                 ["deploy", SRC + "pub", "/usr/share/applications/x.desktop"],
                                 ["deploy", SRC + "pub", "/usr/share/wayland-sessions/y.desktop"], ["deploy", SRC + "pub", "/etc/yggdrasil/a.json"],
                                 ["deploy", SRC + "pub", "/etc/yggdrasil/b.conf"]])
+    each("deploy: settings Settings changes only with the owner's password", [["deploy", SRC + "pub", "/etc/yggdrasil/" + g] for g in
+                                                                             ("case-fans.json", "gpu-fan.json", "power-limits.json", "tuning.json",
+                                                                              "protected-accounts", "protected-packages", "greeter.conf",
+                                                                              "tuning2.json")])
     one("deploy: over what is there", "deploy", SRC + "exe", "/usr/share/yggdrasil/old.png",
         existing={"/usr/share/yggdrasil/old.png": ("old\n", 0o600)})
     one("deploy: /etc/yggdrasil made", "deploy", SRC + "pub", "/etc/yggdrasil/new.json", etc_yggdrasil=False)
@@ -671,7 +817,9 @@ else:
              PK + "noname-1-1-x86_64.pkg.tar.zst", PK + "missing.pkg.tar.zst", "/var/lib/limbo/build-agent/t.json", "/etc/shadow",
              "/etc/limbo/validation/a.json", SRC + "pub", SRC + "secret", SRC + "exe", "/usr/bin/yggdrasil-x", "/usr/bin/yggdrasil-spell",
              "/usr/bin/minos", "/usr/share/yggdrasil/r/x.png", "/usr/share/yggdrasil/gpu-unlock/supported.json", "/usr/share/icons/t/a.svg",
-             "/etc/yggdrasil/r.json", "/etc/sudoers.d/x", "/usr/share/applications/r.desktop", "\udcff", "x\n"]
+             "/etc/yggdrasil/r.json", "/etc/sudoers.d/x", "/usr/share/applications/r.desktop", "\udcff", "x\n",
+             "/etc/yggdrasil/tuning.json", "/etc/yggdrasil/gpu-fan.json", "/var/lib/limbo/build-agent/missing.json",
+             PK + "heimdall-git-1-1-x86_64.pkg.tar.xz"]
     rng = random.Random(20261111)
     for k in range(int(os.environ.get("LABYRINTH_AGENT_RANDOM", "400"))):
         words = [rng.choice(VOCAB[:9]) if rng.random() < 0.85 else rng.choice(VOCAB)]

@@ -28,18 +28,31 @@ class Agent(unittest.TestCase):
         open(p, "w").close()
         return p
 
+    def copier(self):
+        """pkg-install's copies as Stage.copy makes them (read as the caller: here, this account), in a temporary folder."""
+        d = tempfile.mkdtemp()
+
+        def copy(p, i):
+            c = os.path.join(d, "%d-%s" % (i, os.path.basename(p)))
+            with open(c, "wb") as f:
+                f.write(self.m.read_as(p, None))
+            return c
+        return copy
+
     def test_only_our_own_packages_are_installed(self):
         ours = self.pkg("yggdrasil-settings")
-        self.assertEqual(self.m.check_pkg_files([ours], lambda p: "yggdrasil-settings"), ["yggdrasil-settings"])
+        names, copies = self.m.check_pkg_files([ours], lambda p: "yggdrasil-settings", self.copier())
+        self.assertEqual(names, ["yggdrasil-settings"])
+        self.assertNotEqual(copies, [ours])
         for name in ["sudo", "systemd", "evil-yggdrasil", "openssh"]:
             with self.assertRaises(self.m.Refused, msg=name):
-                self.m.check_pkg_files([self.pkg(name)], lambda p, n=name: n)
+                self.m.check_pkg_files([self.pkg(name)], lambda p, n=name: n, self.copier())
         link = os.path.join(self.d, "link-1-1-x86_64.pkg.tar.zst")
         os.symlink(ours, link)
         with self.assertRaises(self.m.Refused):
-            self.m.check_pkg_files([link], lambda p: "yggdrasil-settings")
+            self.m.check_pkg_files([link], lambda p: "yggdrasil-settings", self.copier())
         with self.assertRaises(self.m.Refused):
-            self.m.check_pkg_files(["relative.pkg.tar.zst"], lambda p: "yggdrasil-x")
+            self.m.check_pkg_files(["relative.pkg.tar.zst"], lambda p: "yggdrasil-x", self.copier())
 
     def test_repository_packages_but_never_remote_access_tools(self):
         self.assertEqual(self.m.check_pkg_names(["gnu-efi", "python-pillow"]), ["gnu-efi", "python-pillow"])
@@ -76,7 +89,7 @@ class Agent(unittest.TestCase):
     def test_deploy_only_to_user_side_desktop_files(self):
         self.assertEqual(self.m.deploy_mode("/usr/bin/yggdrasil-settings"), 0o755)
         self.assertEqual(self.m.deploy_mode("/usr/share/yggdrasil/theme/x.png"), 0o644)
-        self.assertEqual(self.m.deploy_mode("/etc/yggdrasil/tuning.json"), 0o644)
+        self.assertEqual(self.m.deploy_mode("/etc/yggdrasil/greeter.conf"), 0o644)
         for bad in ["/usr/lib/yggdrasil/tune", "/usr/local/bin/labyrinth-x", "/etc/sudoers.d/x", "/usr/bin/sudo",
                     "/etc/systemd/system/x.service", "/usr/share/yggdrasil/../../../etc/passwd", "/usr/share/polkit-1/actions/x.policy",
                     "/etc/yggdrasil/../sudoers"]:
@@ -188,6 +201,41 @@ class HolesClosed(unittest.TestCase):
         self.assertTrue(self.refused(self.m.read_as, os.path.join(self.d, "l"), None).endswith("not a regular file"))
         self.assertTrue(self.refused(self.m.read_as, self.d, None).endswith("not a regular file"))
         self.assertTrue(self.refused(self.m.read_as, os.path.join(self.d, "none"), None).endswith("cannot read it (No such file or directory)"))
+
+    def test_pkg_install_checks_and_installs_copies(self):
+        """The name is read from the copy and the copy is what is installed: a file changed after it was copied is not."""
+        p = os.path.join(self.d, "yggdrasil-x-1-1-x86_64.pkg.tar.zst")
+        with open(p, "w") as f:
+            f.write("Name : yggdrasil-x\n")
+        copy = Agent.copier(self)
+
+        def name_of(c):
+            with open(p, "w") as f:  # the caller changes the file once it has been copied
+                f.write("Name : openssh\n")
+            return open(c).read().split(":")[1].strip()
+        names, copies = self.m.check_pkg_files([p], name_of, copy)
+        self.assertEqual(names, ["yggdrasil-x"])
+        self.assertEqual(open(copies[0]).read(), "Name : yggdrasil-x\n")
+        self.assertEqual(self.m.STAGE, "/var/cache/labyrinth-agent")
+        if os.geteuid() != 0:
+            with self.assertRaises((OSError, self.m.Refused)):  # a folder only root may enter: not here
+                self.m.stage_dir()
+
+    def test_settings_guarded_by_polkit_are_not_deployed(self):
+        for g in ["case-fans.json", "gpu-fan.json", "power-limits.json", "tuning.json", "protected-accounts", "protected-packages"]:
+            self.assertIn("only with the owner's password (polkit)", self.refused(self.m.deploy_mode, "/etc/yggdrasil/" + g), g)
+        self.assertEqual(self.m.deploy_mode("/etc/yggdrasil/tuning2.json"), 0o644)
+
+    def test_limbo_manifests_are_roots_alone(self):
+        if os.path.exists("/etc/passwd") and not os.path.islink("/etc"):
+            self.assertIsNone(self.m.root_only("/etc/passwd"))
+        f = os.path.join(self.d, "m.json")
+        open(f, "w").close()
+        why = self.m.root_only(f)
+        self.assertTrue("is not root's alone" in why or "is a link" in why, why)
+        self.assertTrue(self.m.root_only("/nonexistent-x/m.json").endswith("No such file or directory"))
+        if os.path.islink("/bin"):
+            self.assertEqual(self.m.root_only("/bin/sh"), "/bin is a link")
 
     def test_the_help_is_the_rust_ports(self):
         doc = os.path.join(HERE, "..", "packages", "tools", "src", "doc", "labyrinth-agent.txt")

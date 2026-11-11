@@ -55,6 +55,12 @@ found while porting"). The ones that mattered:
 - `pkg-add` checked only the names given (`pkg-add sshfs` brings openssh); what pacman would install is checked now.
 - The programs it starts get a fixed environment (PATH=/usr/bin, HOME=/root, sudo's own variables) instead of relying on sudo's
   secure_path and env_reset.
+- `pkg-install` copies each package (read as the agent's account) into a folder only root may enter, checks the copy and installs
+  only it, so a file swapped after its check is not what pacman gets.
+- `deploy` refuses the settings Settings asks my password for: the fans and pumps, the power limits, the tuning
+  (/etc/yggdrasil/case-fans.json, gpu-fan.json, power-limits.json, tuning.json) and the protected accounts and packages.
+- `limbo` manifests must be root's alone (the file and every folder above it owned by root, writable by root only, no link);
+  labyrinth-agent-setup makes /var/lib/limbo/build-agent root's own, 0755, so only I put manifests there.
 
 The switch to the Rust gate (sudo's rule pointing at /usr/bin/labyrinth-agent from the labyrinth-tools package) is prepared on the
 branch `agent-gate-rust`, not merged.

@@ -4,7 +4,7 @@
 //! that takes its value only when the next word reads as one, Go's flags), and a deploy must go where this allows. `Mock` is a
 //! made-up system whose answers the case chooses.
 
-use super::{decide, Plan, World, B};
+use super::{decide, Fail, Plan, World, B};
 use crate::py::Crash;
 
 /// A made-up system.
@@ -18,15 +18,36 @@ pub struct Mock {
     pub sp_fails: bool,
     /// the programs root is told to run
     pub root_run: Vec<B>,
+    /// manifests that are not root's alone (a folder or the file not root's, or writable by others, or a link on the way)
+    pub not_root: Vec<B>,
+    /// pkg-install's copies made, each with the file it is a copy of
+    pub copies: Vec<(B, B)>,
 }
 
+const STAGED: &[u8] = b"/var/cache/labyrinth-agent/install-made-up";
+
 impl World for Mock {
-    fn regular(&mut self, path: &[u8]) -> Result<bool, Crash> {
-        Ok(self.files.iter().any(|(p, _)| p == path))
+    fn copy_in(&mut self, path: &[u8], i: usize) -> Result<B, Fail> {
+        if !self.files.iter().any(|(p, _)| p == path) {
+            return Err(Fail::Refused([path, b": not a regular file"].concat()));
+        }
+        let name = path.rsplit(|&c| c == b'/').next().unwrap_or(path);
+        let c = [STAGED, b"/", i.to_string().as_bytes(), b"/", name].concat();
+        self.copies.push((c.clone(), path.to_vec()));
+        Ok(c)
+    }
+
+    fn staged(&self) -> B {
+        STAGED.to_vec()
+    }
+
+    fn root_only(&mut self, path: &[u8]) -> Option<B> {
+        self.not_root.iter().any(|p| p == path).then(|| [path, b" is not root's alone (owner 1001, mode 0o644)"].concat())
     }
 
     fn pkg_name(&mut self, path: &[u8]) -> Result<B, Crash> {
-        Ok(self.files.iter().find(|(p, _)| p == path).map(|(_, n)| n.clone()).unwrap_or_default())
+        let original = self.copies.iter().find(|(c, _)| c == path).map(|(_, o)| o.clone()).unwrap_or_else(|| path.to_vec());
+        Ok(self.files.iter().find(|(p, _)| *p == original).map(|(_, n)| n.clone()).unwrap_or_default())
     }
 
     fn in_repos(&mut self, name: &[u8]) -> Result<bool, Crash> {
@@ -79,6 +100,8 @@ pub fn standard_mock() -> Mock {
         ],
         sp_fails: false,
         root_run: vec![v("yggdrasil-spell"), v("yggdrasil-gametime")],
+        not_root: vec![v("/var/lib/limbo/build-agent/agent-made.json"), v("/etc/limbo/validation/linked.json")],
+        copies: vec![],
     }
 }
 
@@ -251,16 +274,17 @@ fn systemctl(a: &[B]) -> Result<(), String> {
     Ok(())
 }
 
-fn limbo(a: &[B]) -> Result<(), String> {
-    let manifest_ok = |m: &[u8]| {
-        (m.starts_with(b"/var/lib/limbo/build-agent/") || m.starts_with(b"/etc/limbo/validation/"))
-            && m.ends_with(b".json")
-            && !m.split(|&c| c == b'/').any(|c| c == b"..")
+fn limbo(a: &[B], m: &Mock) -> Result<(), String> {
+    let manifest_ok = |p: &[u8]| {
+        (p.starts_with(b"/var/lib/limbo/build-agent/") || p.starts_with(b"/etc/limbo/validation/"))
+            && p.ends_with(b".json")
+            && !p.split(|&c| c == b'/').any(|c| c == b"..")
+            && !m.not_root.iter().any(|n| n == p)
     };
     match a.iter().map(Vec::as_slice).collect::<Vec<_>>().as_slice() {
-        [_, b"up" | b"down", m] if manifest_ok(m) => Ok(()),
+        [_, b"up" | b"down", p] if manifest_ok(p) => Ok(()),
         [_, b"doctor" | b"status"] => Ok(()),
-        [_, b"doctor" | b"status", m] if manifest_ok(m) => Ok(()),
+        [_, b"doctor" | b"status", p] if manifest_ok(p) => Ok(()),
         _ => Err(format!("limbo {:?}", a.iter().map(|x| s(x)).collect::<Vec<_>>())),
     }
 }
@@ -270,8 +294,12 @@ fn pacman(a: &[B], m: &mut Mock) -> Result<(), String> {
     match words.as_slice() {
         [b"-U", b"--noconfirm", files @ ..] if !files.is_empty() => {
             for f in files {
-                let name = m.pkg_name(f).unwrap_or_default();
-                if !package_file(f) || !m.regular(f).unwrap_or(false) || !eco_package(&name) {
+                // a copy in the stage folder, of a package file of ours, never the file the caller named
+                let Some((_, original)) = m.copies.iter().find(|(c, _)| c == f).cloned() else {
+                    return Err(format!("pacman -U {} (not a copy made for this install)", s(f)));
+                };
+                let name = m.files.iter().find(|(p, _)| *p == original).map(|(_, n)| n.clone()).unwrap_or_default();
+                if !f.starts_with(STAGED) || !package_file(&original) || !eco_package(&name) {
                     return Err(format!("pacman -U {} ({})", s(f), s(&name)));
                 }
             }
@@ -301,6 +329,11 @@ fn deploy(dest: &[u8], mode: u32, m: &mut Mock) -> Result<(), String> {
     let t = s(dest);
     if !clean_components(dest) || std::str::from_utf8(dest).is_err() {
         return Err(format!("deploy to {t}"));
+    }
+    // what Settings changes only with the owner's password (polkit)
+    let guarded = ["case-fans.json", "gpu-fan.json", "power-limits.json", "tuning.json", "protected-accounts", "protected-packages"];
+    if guarded.iter().any(|g| t == format!("/etc/yggdrasil/{g}")) {
+        return Err(format!("deploy to {t}, which Settings guards with polkit"));
     }
     for never in ["/usr/share/yggdrasil/gpu-unlock", "/usr/share/labyrinth/pkgbuilds", "/usr/share/labyrinth/grub-evodevo"] {
         if t == never || t.starts_with(&format!("{never}/")) {
@@ -339,6 +372,12 @@ fn deploy(dest: &[u8], mode: u32, m: &mut Mock) -> Result<(), String> {
 pub fn audit(plan: &Plan, m: &mut Mock) -> Result<(), String> {
     match plan {
         Plan::Deploy { dest, mode, .. } => deploy(dest, *mode, m),
+        Plan::Install { note, runs } => {
+            if !note.starts_with(b"pkg-install: ") || runs.len() != 2 {
+                return Err("an install that is not one".into());
+            }
+            audit(&Plan::Runs(runs.clone()), m)
+        }
         Plan::Runs(list) => {
             if list.is_empty() {
                 return Err("nothing to run".into());
@@ -353,7 +392,7 @@ pub fn audit(plan: &Plan, m: &mut Mock) -> Result<(), String> {
                     Some(b"journalctl") if a.get(1).map(Vec::as_slice) == Some(b"--no-pager") => journalctl(&a[2..])?,
                     Some(b"systemctl") => systemctl(a)?,
                     Some(b"heimdalld") => heimdalld(a, pkg_install)?,
-                    Some(b"limbo") => limbo(a)?,
+                    Some(b"limbo") => limbo(a, m)?,
                     Some(b"pacman") => pacman(a, m)?,
                     Some(b"ufw") if a[1..] == [b"status".to_vec(), b"verbose".to_vec()] => {}
                     Some(b"/usr/local/bin/labyrinth-rollback") => match a[1..].iter().map(Vec::as_slice).collect::<Vec<_>>().as_slice() {

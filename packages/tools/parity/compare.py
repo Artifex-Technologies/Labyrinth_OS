@@ -160,13 +160,14 @@ class Case:
     settle: seconds to wait after each step (for what a program left running); watch(paths): for a program that keeps
     running, what happens while it runs (it is stopped afterwards); sort_calls: the calls' order is not compared (threads);
     norm: more making alike, text -> text; snap(): more of the files afterwards (a dict); check(results, calls, tree): after
-    each run, a list of what is wrong with it whatever the other one did (labyrinth-agent's allow-list)."""
+    each run, a list of what is wrong with it whatever the other one did (labyrinth-agent's allow-list); teardown(): after each
+    run, before the world is wiped (what a namespace gave another account given back)."""
 
     def __init__(self, prog, name, steps, setup=None, env=None, differs=(), settle=0.0, roots=(), watch=None, sort_calls=False, norm=None,
-                 snap=None, check=None):
+                 snap=None, check=None, teardown=None):
         self.prog, self.name, self.steps, self.setup = prog, name, steps, setup
         self.env, self.differs, self.settle, self.roots, self.watch = env or {}, differs, settle, roots, watch
-        self.sort_calls, self.norm, self.snap, self.check = sort_calls, norm, snap, check
+        self.sort_calls, self.norm, self.snap, self.check, self.teardown = sort_calls, norm, snap, check, teardown
 
 
 CASES = []
@@ -254,7 +255,10 @@ def run_case(c, kind):
     if c.snap:
         tree.update(c.snap())
     out = (results, calls, tree)
-    return out + ((c.check(*out) if c.check else []),)
+    out += ((c.check(*out) if c.check else []),)
+    if c.teardown:
+        c.teardown()
+    return out
 
 
 def same(c, py, rs):

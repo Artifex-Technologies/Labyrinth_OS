@@ -30,7 +30,9 @@ fn mock_with(files: &[(&str, &str)]) -> Mock {
 fn only_our_own_packages_are_installed() {
     let ours = "/d/yggdrasil-settings-1-1-x86_64.pkg.tar.zst";
     let mut m = mock_with(&[(ours, "yggdrasil-settings")]);
-    assert_eq!(check_pkg_files(&bs(&[ours]), &mut m).unwrap(), bs(&["yggdrasil-settings"]));
+    let (names, copies) = check_pkg_files(&bs(&[ours]), &mut m).unwrap();
+    assert_eq!(names, bs(&["yggdrasil-settings"]));
+    assert_eq!(copies, bs(&["/var/cache/labyrinth-agent/install-made-up/0/yggdrasil-settings-1-1-x86_64.pkg.tar.zst"]));
     for name in ["sudo", "systemd", "evil-yggdrasil", "openssh"] {
         let p = format!("/d/{name}-1-1-x86_64.pkg.tar.zst");
         let mut m = mock_with(&[(&p, name)]);
@@ -109,7 +111,7 @@ fn limbo_manifests_from_the_agents_folders_only() {
 fn deploy_only_to_user_side_desktop_files() {
     assert_eq!(deploy_mode(b"/usr/bin/yggdrasil-settings").unwrap(), 0o755);
     assert_eq!(deploy_mode(b"/usr/share/yggdrasil/theme/x.png").unwrap(), 0o644);
-    assert_eq!(deploy_mode(b"/etc/yggdrasil/tuning.json").unwrap(), 0o644);
+    assert_eq!(deploy_mode(b"/etc/yggdrasil/greeter.conf").unwrap(), 0o644);
     for bad in [
         "/usr/lib/yggdrasil/tune",
         "/usr/local/bin/labyrinth-x",
@@ -375,7 +377,83 @@ fn name_lines_as_the_pattern_finds_them() {
 #[test]
 fn the_help_is_the_scripts() {
     assert!(DOC.starts_with("labyrinth-agent: the root actions the engineering agent"));
-    assert!(DOC.ends_with("read as the account sudo ran this for\n"));
+    assert!(DOC.ends_with("sudo ran this for\n"));
+}
+
+// ---- closed later on 2026-11-11: pkg-install's copies, Settings' guarded settings, root's own manifests
+
+/// pkg-install checks and installs copies, never the files named (a file swapped after its check is not what pacman gets).
+#[test]
+fn pkg_install_installs_its_checked_copies() {
+    let mut m = standard_mock();
+    let a = "/tmp/yggdrasil-a-1-1-x86_64.pkg.tar.zst";
+    let x = "/tmp/heimdall-git-1-1-x86_64.pkg.tar.xz";
+    let plan = decide(b"pkg-install", &bs(&[a, x]), &mut m).unwrap();
+    let stage = "/var/cache/labyrinth-agent/install-made-up";
+    let reason = "agent installs yggdrasil-a, heimdall-git";
+    let c0 = format!("{stage}/0/yggdrasil-a-1-1-x86_64.pkg.tar.zst");
+    let c1 = format!("{stage}/1/heimdall-git-1-1-x86_64.pkg.tar.xz");
+    let want = Plan::Install {
+        note: b(&format!("pkg-install: {a} {x} copied to {stage}")),
+        runs: vec![
+            bs(&["heimdalld", "maintenance", "on", "--for", "15m", "--reason", reason]),
+            bs(&["pacman", "-U", "--noconfirm", &c0, &c1]),
+        ],
+    };
+    assert_eq!(plan, want);
+    audit::audit(&plan, &mut m).unwrap();
+    // the files named are never installed themselves
+    let maint = bs(&["heimdalld", "maintenance", "on", "--for", "15m", "--reason", "r"]);
+    let direct = Plan::Install { note: b("pkg-install: x"), runs: vec![maint, bs(&["pacman", "-U", "--noconfirm", a])] };
+    assert!(audit::audit(&direct, &mut m).is_err());
+    // a file that cannot be read as the caller is refused before anything
+    assert!(refusal(decide(b"pkg-install", &bs(&["/tmp/unknown-1-1-x86_64.pkg.tar.zst"]), &mut m)).ends_with("not a regular file"));
+}
+
+/// The stage folder is made 0700 and root's, and refused when it is anything else (as far as a test that is not root can see).
+#[test]
+fn copies_are_made_in_a_folder_only_root_may_enter() {
+    assert_eq!(STAGE, "/var/cache/labyrinth-agent");
+    if unsafe { libc::geteuid() } != 0 {
+        assert!(stage_dir().is_err(), "a folder only root may enter cannot be made or used here");
+    }
+}
+
+/// The settings Settings asks the owner's password for (polkit) are not deploy places.
+#[test]
+fn settings_guarded_by_polkit_are_not_deployed() {
+    for g in ["case-fans.json", "gpu-fan.json", "power-limits.json", "tuning.json", "protected-accounts", "protected-packages"] {
+        let d = format!("/etc/yggdrasil/{g}");
+        assert!(refusal(deploy_mode(d.as_bytes())).contains("only with the owner's password (polkit)"), "{d}");
+    }
+    assert_eq!(deploy_mode(b"/etc/yggdrasil/greeter.conf").unwrap(), 0o644);
+    assert_eq!(deploy_mode(b"/etc/yggdrasil/tuning2.json").unwrap(), 0o644);
+}
+
+/// limbo starts what a manifest says, as root: the manifest and every folder above it must be root's alone.
+#[test]
+fn limbo_manifests_are_roots_alone() {
+    let mut m = standard_mock();
+    let tail = " (limbo starts what a manifest says, as root: only root may write it)";
+    assert_eq!(
+        refusal(decide(b"limbo", &bs(&["up", "/var/lib/limbo/build-agent/agent-made.json"]), &mut m)),
+        format!("limbo up: /var/lib/limbo/build-agent/agent-made.json is not root's alone (owner 1001, mode 0o644){tail}")
+    );
+    assert!(decide(b"limbo", &bs(&["status", "/etc/limbo/validation/linked.json"]), &mut m).is_err());
+    assert!(decide(b"limbo", &bs(&["up", "/var/lib/limbo/build-agent/t.json"]), &mut m).is_ok());
+    assert!(decide(b"limbo", &bs(&["doctor"]), &mut m).is_ok());
+    // on this system: /etc/passwd is root's alone; a file in a temporary folder is not
+    if std::path::Path::new("/etc/passwd").exists() && !std::path::Path::new("/etc").is_symlink() {
+        assert_eq!(root_only_path(b"/etc/passwd"), None);
+    }
+    let d = TempDir::new();
+    std::fs::write(d.p("m.json"), "{}").unwrap();
+    let why = show(&root_only_path(d.p("m.json").as_bytes()).unwrap());
+    assert!(why.contains("is not root's alone") || why.contains("is a link"), "{why}");
+    assert!(show(&root_only_path(b"/nonexistent-x/m.json").unwrap()).ends_with("No such file or directory"));
+    if std::path::Path::new("/bin").is_symlink() {
+        assert_eq!(show(&root_only_path(b"/bin/sh").unwrap()), "/bin is a link");
+    }
 }
 
 // ---- random command lines against audit.rs's allow-list
@@ -569,6 +647,10 @@ const WORDS: &[&str] = &[
     "/etc/yggdrasil/../sudoers.d/x.conf",
     "/etc/sudoers.d/x",
     "/usr/share/yggdrasil/x/",
+    "/etc/yggdrasil/tuning.json",
+    "/etc/yggdrasil/case-fans.json",
+    "/var/lib/limbo/build-agent/agent-made.json",
+    "/etc/limbo/validation/linked.json",
 ];
 
 fn random_word(r: &mut Rng) -> B {
@@ -632,6 +714,8 @@ fn the_allow_list_catches_the_old_holes() {
         Plan::Deploy { src: b("/etc/shadow"), dest: b("/usr/bin/yggdrasil-spell"), mode: 0o755 },
         Plan::Deploy { src: b("/x"), dest: b("/usr/share/yggdrasil/gpu-unlock/supported.json"), mode: 0o644 },
         Plan::Deploy { src: b("/x"), dest: b("/usr/bin/yggdrasil-x\n"), mode: 0o755 },
+        Plan::Deploy { src: b("/x"), dest: b("/etc/yggdrasil/gpu-fan.json"), mode: 0o644 },
+        plan(&["limbo", "up", "/var/lib/limbo/build-agent/agent-made.json"]),
     ] {
         assert!(audit::audit(&bad, &mut m).is_err(), "{bad:?}");
     }

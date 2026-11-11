@@ -61,3 +61,8 @@
 "/../"
 "/./"
 "//"
+"/etc/yggdrasil/tuning.json"
+"/etc/yggdrasil/case-fans.json"
+"/var/lib/limbo/build-agent/agent-made.json"
+"/etc/limbo/validation/linked.json"
+"/tmp/heimdall-git-1-1-x86_64.pkg.tar.xz"

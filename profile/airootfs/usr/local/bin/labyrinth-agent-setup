@@ -6,7 +6,8 @@
 #   * the account (default `claude-agent`): a normal user whose password is locked, so nobody can log in as it with one;
 #   * /etc/sudoers.d/50-labyrinth-agent: the agent may run ONE program as root without a password, labyrinth-agent, which
 #     checks every action (installing the ecosystem's own packages, official-repository packages but no remote-access tools,
-#     the ecosystem's own services, reading the journal, Heimdall maintenance windows, Limbo test runs, the rollback tool's
+#     the ecosystem's own services, reading the journal, Heimdall maintenance windows, Limbo test runs (manifests root put in
+#     /var/lib/limbo/build-agent, made here root's own 0755, or /etc/limbo/validation), the rollback tool's
 #     read-only commands, user-side desktop files). Anything broader (any pacman command, systemd-run, install anywhere, the
 #     firewall) needs the owner to open a window with their password: `sudo labyrinth-agent-window HOURS`.
 #     Installing a package the agent built still runs that package's code as root: the checks make root deliberate and
@@ -46,6 +47,9 @@ if ! id "$AGENT" >/dev/null 2>&1; then
 fi
 passwd -l "$AGENT" >/dev/null
 install -d -m750 -o root -g root /var/log/sudo-io
+# the Limbo manifests the agent may start (labyrinth-agent limbo up): root's alone, so only root decides what limbo starts as root
+# (labyrinth-agent refuses a manifest when it or a folder above it is not owned by root or is writable by others)
+install -d -m755 -o root -g root /var/lib/limbo/build-agent
 
 for f in labyrinth-agent labyrinth-agent-window; do
   [[ -x /usr/local/sbin/$f ]] || { echo "/usr/local/sbin/$f is missing (it comes with the Labyrinth profile)" >&2; exit 1; }

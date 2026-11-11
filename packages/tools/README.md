@@ -129,12 +129,24 @@ is closed in the script and the port alike, with a test in each (tests/test_laby
      secure_path and env_reset, so there the caller's PATH, LD_*, SYSTEMD_* or LIMBO_* (limbo reads LIMBO_GO_BINARY) did not
      get through; the gate no longer depends on that (in the cases, the script ran a pacman from the caller's PATH).
 
-Left as they are, for me to decide:
-- pkg-install stays a root path by design (a package of ours can hold anything; the name is read from the file before pacman
-  installs it, so a file swapped in between is what gets installed).
-- deploy to /etc/yggdrasil/*.json|conf writes the fan, pump, power-limit and tuning settings that root's helpers apply; Settings
-  asks for my password (polkit, auth_admin_keep) to change them, deploy does not.
-- /var/lib/limbo/build-agent does not exist yet; whoever can write there decides what `limbo up` starts as root.
+Three more, closed the same day (my rule: security over speed):
+
+8. **pkg-install installed the file the caller named, after checking it.** The package's name was read from the file, then
+   pacman installed the same path, so a file swapped in between was what got installed (a package named sudo, say). Now each file
+   is copied first, read as the account sudo ran the gate for and never through a link at its end, into a fresh folder only root
+   may enter (/var/cache/labyrinth-agent/install-XXXXXXXX, 0700; /var/cache/labyrinth-agent itself must be root's, 0700, or
+   the install is refused); the name is read from the copy, only the copies are installed, and the folder is removed afterwards.
+   A package file the caller cannot read is refused. A package of ours can still hold anything: pkg-install stays a root path
+   by design, made deliberate and visible.
+9. **deploy wrote the settings Settings asks my password for.** The fan and pump settings (/etc/yggdrasil/case-fans.json,
+   gpu-fan.json), the power limits (power-limits.json) and the tuning (tuning.json) are written by casefan, gpufan, powerlimit and
+   tune through polkit with auth_admin_keep; deploy put them in place without a password, and root's helpers applied them. They
+   are refused now, and so are protected-accounts and protected-packages (what the account helper and Agora's pkg-root keep).
+   Found in Yggdrasil's power-helpers and settings-helpers and their .policy files; nothing protected by polkit writes another
+   /etc/yggdrasil file (greeter.conf, gametime.conf and dock are written by the installer or the package).
+10. **Whoever could write a manifest's folder decided what limbo starts as root.** A manifest for `limbo up|down|doctor|status`
+    is now refused unless it and every folder above it, to /, are owned by root, writable by root only, and no link.
+    labyrinth-agent-setup makes /var/lib/limbo/build-agent root's own (0755): only root puts manifests there.
 
 ## Tests and parity
 
@@ -184,20 +196,23 @@ Results (2026-11-10):
 | ipconfig | 60/60 (2026-11-11; the addresses are documentation ones) |
 | steam_playall | 32/32 (2026-11-11; a made-up config.vdf, Steam never started) |
 | labyrinth-first-components | 24/24 (2026-11-11; stand-ins for nmcli, notify-send, labyrinth-apps) |
-| labyrinth-agent | 60/60 (396 command lines) and 400/400 random command lines (2026-11-11), every call within the cases' allow-list |
+| labyrinth-agent | 77/77 (432 command lines) and 400/400 random command lines (2026-11-11), every call within the cases' allow-list |
 
-All 467 cases and the 400 random ones are the same. Run against the scripts as they were before the fixes, the cases that show the
+All 484 cases and the 400 random ones are the same. Run against the scripts as they were before the fixes, the cases that show the
 fixes differ (and only those, with the cases built on them); for labyrinth-agent nearly every case differs, because every program
 it starts now gets a clean environment, and the allow-list check finds each hole above in the old script.
 
 labyrinth-agent's cases (parity/cases_agent.py) run as root of a user and mount namespace whose uids 1000-2999 are this account's
-subordinate ids (/etc/subuid), so deploy's caller, uid 2001, is another account. /etc, /usr/bin, /usr/share, /usr/lib and
-/usr/local are overlays: the stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and labyrinth-rollback are
-where the gate looks for the real ones, and every place deploy writes to or the gate searches is a folder of the case's own (no
-file of this computer shows through, none is changed). Each stand-in writes down its arguments and its whole environment. Beside
+subordinate ids (/etc/subuid), so the caller, uid 2001, is another account, in a root folder of the case's own (chroot): / and
+/var are the case's, owned by root there (limbo's manifest check looks at every folder up to /), /usr is this computer's with
+/usr/bin, /usr/share, /usr/lib and /usr/local laid over (overlays), /etc is an overlay, /proc, /dev, /tmp and /home are bound in.
+The stand-ins for pacman, systemctl, journalctl, logger, heimdalld, limbo, ufw and labyrinth-rollback are where the gate looks for
+the real ones, and every place deploy writes to or the gate searches is a folder of the case's own (no file of this computer
+shows through, none is changed). The stand-in pacman can change the file it was asked about (the swap of item 8) and writes down
+the name of every package it is given to install. Each stand-in writes down its arguments and its whole environment. Beside
 the comparison, each run is checked against an allow-list written a third time in the cases (it models journalctl's option
 parsing, optional values included, and Go's flags for heimdalld): no stand-in called outside it, no environment but the clean one,
-no file written outside deploy's places. LABYRINTH_AGENT_RANDOM sets the number of random command lines (default 400).
+no file written outside deploy's places, no package installed that is not ours, no copy left behind. LABYRINTH_AGENT_RANDOM sets the number of random command lines (default 400).
 
 ### The gate's fuzz target
 
@@ -215,7 +230,8 @@ cargo-fuzz: `cargo fuzz run agent_args -- -dict=fuzz/agent_args.dict`. On stable
 
 2026-11-11: 106 million command lines in ten minutes (coverage 1156, 1685 inputs kept), none outside the allow-list. With the old
 `-n` handling put back, it found `logs --lines --l...` (journalctl would read the second word
-as an option) within seconds.
+as an option) within seconds. After items 8-10 (and the audit's copies and root's-alone manifests): 50 million more in five
+minutes (coverage 1233), none outside.
 
 ## Memory of what runs all the time (the same scratch world for both, after some work, idle)
 
