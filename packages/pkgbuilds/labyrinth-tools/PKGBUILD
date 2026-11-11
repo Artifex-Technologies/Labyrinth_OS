@@ -1,11 +1,13 @@
 # Labyrinth's own programs in Rust (packages/tools in this repository), in place of the Python scripts of the same names that the
 # image kept in /usr/local/bin: the malware scan of new files and its quarantine, the per-app network rules with the ask service
 # and its notifications, the app launcher and the optional-software installer; since pkgrel 2 also the self-check, ipconfig,
-# Steam Play for all (steam_playall, was steam_playall.py) and the first-login installs. Their units come with them (same names).
+# Steam Play for all (steam_playall, was steam_playall.py) and the first-login installs; since pkgrel 3 also labyrinth-agent, the
+# gate sudo lets the engineering agent's account run as root (was /usr/local/sbin/labyrinth-agent; labyrinth-agent-setup's rule
+# names /usr/bin/labyrinth-agent). Their units come with them (same names).
 pkgname=labyrinth-tools
 pkgver=0.1.0
-pkgrel=2
-pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs"
+pkgrel=3
+pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
 license=('MPL-2.0')
@@ -32,7 +34,7 @@ check() {
 
 package() {
   for b in labyrinth-scan-downloads labyrinth-quarantine labyrinth-appnet labyrinth-appnet-ask labyrinth-appnet-ask-agent labyrinth-launch labyrinth-apps \
-           labyrinth-selfcheck ipconfig steam_playall labyrinth-first-components; do
+           labyrinth-selfcheck ipconfig steam_playall labyrinth-first-components labyrinth-agent; do
     install -Dm755 "$srcdir/target/release/$b" "$pkgdir/usr/bin/$b"
   done
   for u in labyrinth-scan.service labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.service labyrinth-scan-full.timer \

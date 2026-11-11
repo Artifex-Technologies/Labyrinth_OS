@@ -1,5 +1,5 @@
-//! tests/test_labyrinth_agent.py carried over, a test for each hole closed on 2026-11-11, and random command lines checked
-//! against the allow-list of audit.rs.
+//! python/tests/test_labyrinth_agent.py (was tests/) carried over, a test for each hole closed on 2026-11-11, and random command
+//! lines checked against the allow-list of audit.rs.
 
 use super::audit::{self, standard_mock, Mock};
 use super::*;
@@ -126,7 +126,7 @@ fn deploy_only_to_user_side_desktop_files() {
     }
 }
 
-// ---- the holes closed on 2026-11-11 (each also a test in tests/test_labyrinth_agent.py)
+// ---- the holes closed on 2026-11-11 (each also a test in python/tests/test_labyrinth_agent.py)
 
 /// journalctl's -n takes the next word only when it is a count: `-n --vacuum-time=1s` vacuumed the journal as root.
 #[test]

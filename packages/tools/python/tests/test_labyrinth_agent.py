@@ -1,4 +1,6 @@
-"""labyrinth-agent's checks without root: which package files, package names, units, journal options, Limbo manifests and
+"""Run: python packages/tools/python/tests/test_labyrinth_agent.py
+
+labyrinth-agent's checks without root: which package files, package names, units, journal options, Limbo manifests and
 deploy targets the agent may use. Nothing is installed or changed."""
 import importlib.machinery
 import importlib.util
@@ -7,7 +9,7 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TOOL = os.path.join(HERE, "..", "profile", "airootfs", "usr", "local", "sbin", "labyrinth-agent")
+TOOL = os.path.join(HERE, "..", "labyrinth-agent")
 
 
 def load():
@@ -238,7 +240,7 @@ class HolesClosed(unittest.TestCase):
             self.assertEqual(self.m.root_only("/bin/sh"), "/bin is a link")
 
     def test_the_help_is_the_rust_ports(self):
-        doc = os.path.join(HERE, "..", "packages", "tools", "src", "doc", "labyrinth-agent.txt")
+        doc = os.path.join(HERE, "..", "..", "src", "doc", "labyrinth-agent.txt")
         if os.path.exists(doc):
             self.assertEqual(open(doc).read(), self.m.__doc__)
 

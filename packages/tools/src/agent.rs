@@ -1,6 +1,6 @@
 //! labyrinth-agent: the root actions the engineering agent (account claude-agent) may take without the owner, each one checked.
 //! It is a gate: sudo lets the agent run this program and nothing else as root (/etc/sudoers.d/50-labyrinth-agent). The Python
-//! script of the same name (profile/airootfs/usr/local/sbin/labyrinth-agent) with the same commands, checks, refusals, journal
+//! script of the same name (was /usr/local/sbin/labyrinth-agent; kept in packages/tools/python/) with the same commands, checks, refusals, journal
 //! lines, calls and exit codes; its help is src/doc/labyrinth-agent.txt.
 //!
 //! Written for a gate:
