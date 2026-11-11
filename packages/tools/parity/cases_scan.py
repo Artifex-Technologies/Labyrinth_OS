@@ -103,8 +103,9 @@ scan_case("XDG folders and an empty XDG_CONFIG_HOME", [(bad, "x")], report((bad,
           steps=[{}, {"prog": "labyrinth-quarantine", "args": ["list"]}])
 scan_case("RUN_MEDIA from USER, then from HOME's name", [], report(), env={"LABYRINTH_RUN_MEDIA": None, "RC_heimdalld": "0"}, steps=[{}, {"env": {"USER": None}}])
 scan_case("--off and --on", [], "", steps=[{"args": ["--off"]}, {"args": ["--on"], "env": {"RC_systemctl": "3", "OUT_systemctl": "said\n"}}])
-scan_case("--prompt with its three values (the child's own call): a scan, as the script did", [(bad, "x")], report((bad, "Win.Trojan.A")),
-          env={"LABYRINTH_SCAN_PROMPT": "child", "LABYRINTH_SCAN_SYNC": None}, steps=[{"args": ["--prompt", "abcdefabcdef", "bad.exe", "Sig"]}])
+scan_case("--prompt with its three values (the child's own call): the question, answered Restore", [(os.path.join(QDATA, "abcdefabcdef", "payload"), "x"),
+          (os.path.join(QDATA, "abcdefabcdef", "info.json"), '{"id": "abcdefabcdef", "when": "2026-01-01 00:00:00", "original": "%s", "sha256": "s", "mode": 420}' % bad)], "",
+          env={"LABYRINTH_SCAN_PROMPT": "child", "LABYRINTH_SCAN_SYNC": None, "OUT_notify_send": "restore\n"}, steps=[{"args": ["--prompt", "abcdefabcdef", "bad.exe", "Sig"]}])
 scan_case("--prompt with a fourth value: the question, answered Delete", [(os.path.join(QDATA, "abcdefabcdef", "payload"), "x"),
           (os.path.join(QDATA, "abcdefabcdef", "info.json"), '{"id": "abcdefabcdef", "when": "2026-01-01 00:00:00", "original": "%s", "sha256": "s"}' % bad)],
           "", env={"LABYRINTH_SCAN_PROMPT": "child", "OUT_notify_send": "delete\n"}, steps=[{"args": ["--prompt", "abcdefabcdef", "bad.exe", "Sig", "x"]}])

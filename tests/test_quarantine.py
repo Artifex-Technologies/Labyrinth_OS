@@ -125,6 +125,19 @@ class ScanDecisions(Fixture):
         self.assertFalse(os.path.exists(p))
         self.assertEqual(json.loads(self.q("list", "--json").stdout), [])
 
+    def test_the_question_is_asked_by_the_child_process(self):
+        # the child the scan starts (labyrinth-scan-downloads --prompt ID NAME SIGNATURE) asks Restore / Delete itself
+        p = self.file("child.exe")
+        qid = self.q("add", p, "--signature", "Win.Trojan.Agent-1").stdout.strip()
+        heim = stub(self.d, "heimdalld", 'echo "heimdalld $*" >> %s\necho "scanned 0 files"' % self.calls)
+        env = dict(self.env, HEIMDALLD=heim, NOTIFY_ANSWER="restore", LABYRINTH_SCAN_PROMPT="child")
+        env.pop("LABYRINTH_SCAN_SYNC")
+        r = subprocess.run(["python3", SCAN, "--prompt", qid, "child.exe", "Win.Trojan.Agent-1"], capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("Malware quarantined", " ".join(self.notes()))
+        self.assertNotIn("heimdalld", " ".join(self.notes()), "no scan instead of the question")
+        self.assertTrue(os.path.exists(p))  # answered Restore
+
     def test_a_guess_is_only_a_warning(self):
         for sig in ["PUA.Win.Packer.Upx", "Heuristics.Encrypted.PDF", "Win.Test.EICAR_HDB-1x", "Html.Phishing.Bank-9"]:
             p = self.file("maybe.bin", body=sig)

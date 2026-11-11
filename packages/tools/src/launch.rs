@@ -329,7 +329,7 @@ pub fn bwrap_args(app_id: &str, entry: &[(String, String)], policy: &Map<String,
     Ok(a)
 }
 
-/// The app's network mode from the system's rules file (block, ethernet or wifi), or none.
+/// The app's network mode from the system's rules file (block, ethernet, wifi or ask), or none.
 pub fn network_rule(app_id: &str, state: Option<&str>) -> Option<String> {
     let path = match state {
         Some(s) if !s.is_empty() => s.to_string(),
@@ -346,7 +346,7 @@ pub fn network_rule(app_id: &str, state: Option<&str>) -> Option<String> {
     };
     match mine {
         Value::Object(m) => match m.get(app_id) {
-            Some(Value::String(s)) if ["block", "ethernet", "wifi"].contains(&s.as_str()) => Some(s.clone()),
+            Some(Value::String(s)) if ["block", "ethernet", "wifi", "ask"].contains(&s.as_str()) => Some(s.clone()),
             _ => None,
         },
         _ => None,

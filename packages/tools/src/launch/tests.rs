@@ -72,8 +72,9 @@ fn network_rule_is_read_for_this_user_only() {
     let p = d.p("r.json");
     let me = py::getuid().to_string();
     let other = (py::getuid() + 1).to_string();
-    std::fs::write(&p, format!(r#"{{"rules": {{"{me}": {{"a": "block", "b": "bogus", "c": "wifi"}}, "{other}": {{"d": "block"}}}}}}"#)).unwrap();
+    std::fs::write(&p, format!(r#"{{"rules": {{"{me}": {{"a": "block", "b": "bogus", "c": "wifi", "e": "ask"}}, "{other}": {{"d": "block"}}}}}}"#)).unwrap();
     assert_eq!(network_rule("a", Some(&p)).as_deref(), Some("block"));
+    assert_eq!(network_rule("e", Some(&p)).as_deref(), Some("ask")); // ask mode needs its slice and rules loaded too
     assert_eq!(network_rule("c", Some(&p)).as_deref(), Some("wifi"));
     assert_eq!(network_rule("b", Some(&p)), None);
     assert_eq!(network_rule("d", Some(&p)), None);

@@ -214,12 +214,12 @@ def bwrap_args(app_id, entry, policy, env=None):
 
 
 def network_rule(app_id, state=None):
-    """The app's network mode from the system's rules file (block, ethernet, wifi), or None when it has no limit."""
+    """The app's network mode from the system's rules file (block, ethernet, wifi, ask), or None when it has no limit."""
     try:
         with open(state or os.environ.get("LABYRINTH_APPNET_STATE", "/etc/labyrinth/app-network.json"), encoding="utf-8") as f:
             rules = json.load(f).get("rules", {})
         mode = rules.get(str(os.getuid()), {}).get(app_id)
-        return mode if mode in ("block", "ethernet", "wifi") else None
+        return mode if mode in ("block", "ethernet", "wifi", "ask") else None
     except (OSError, ValueError, AttributeError):
         return None
 

@@ -71,8 +71,9 @@ class LaunchTests(unittest.TestCase):
             p = os.path.join(d, "r.json")
             me, other = str(os.getuid()), str(os.getuid() + 1)
             with open(p, "w") as f:
-                json.dump({"rules": {me: {"a": "block", "b": "bogus", "c": "wifi"}, other: {"d": "block"}}}, f)
+                json.dump({"rules": {me: {"a": "block", "b": "bogus", "c": "wifi", "e": "ask"}, other: {"d": "block"}}}, f)
             self.assertEqual(launch.network_rule("a", p), "block")
+            self.assertEqual(launch.network_rule("e", p), "ask")  # ask mode needs its slice and rules loaded too
             self.assertEqual(launch.network_rule("c", p), "wifi")
             self.assertIsNone(launch.network_rule("b", p))
             self.assertIsNone(launch.network_rule("d", p))

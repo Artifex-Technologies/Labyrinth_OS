@@ -166,6 +166,25 @@ fn delete_from_the_notification() {
 }
 
 #[test]
+fn the_question_is_asked_by_the_child_process() {
+    // the child the scan starts (labyrinth-scan-downloads --prompt ID NAME SIGNATURE) asks Restore / Delete itself
+    let f = Fixture::new();
+    let p = f.file("child.exe", "evil\n", None);
+    let qid = out(&f.q(&["add", &p, "--signature", "Win.Trojan.Agent-1"])).trim().to_string();
+    let dp = f.d.0.to_string_lossy().into_owned();
+    let heim = stub(&dp, "heimdalld", &format!("echo \"heimdalld $*\" >> {}\necho \"scanned 0 files\"", f.calls));
+    let env: Vec<(String, String)> = with(&with(&with(&f.env, "HEIMDALLD", &heim), "NOTIFY_ANSWER", "restore"), "LABYRINTH_SCAN_PROMPT", "child")
+        .into_iter()
+        .filter(|(k, _)| k != "LABYRINTH_SCAN_SYNC")
+        .collect();
+    let r = run(SCAN, &["--prompt", &qid, "child.exe", "Win.Trojan.Agent-1"], &env);
+    assert_eq!(code(&r), 0);
+    assert!(f.notes().join(" ").contains("Malware quarantined"));
+    assert!(!f.notes().join(" ").contains("heimdalld"), "no scan instead of the question");
+    assert!(exists(&p)); // answered Restore
+}
+
+#[test]
 fn a_guess_is_only_a_warning() {
     let f = Fixture::new();
     for sig in ["PUA.Win.Packer.Upx", "Heuristics.Encrypted.PDF", "Win.Test.EICAR_HDB-1x", "Html.Phishing.Bank-9"] {

@@ -286,7 +286,7 @@ def main(argv):
         return subprocess.run(["systemctl", "--user", "disable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service", "labyrinth-scan-full.timer"]).returncode
     if "--on" in argv:
         return subprocess.run(["systemctl", "--user", "enable", "--now", "labyrinth-scan.timer", "labyrinth-scan-watch.service", "labyrinth-scan-full.timer"]).returncode
-    if "--prompt" in argv and len(argv) >= 5:
+    if "--prompt" in argv and len(argv) >= 4:
         prompt_quarantined(argv[argv.index("--prompt") + 1], argv[argv.index("--prompt") + 2], argv[argv.index("--prompt") + 3])
         return 0
     if "--watch" in argv:

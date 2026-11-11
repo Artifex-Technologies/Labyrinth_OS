@@ -45,15 +45,13 @@ Python's own \w, \d and \s.
   "cannot read FILE: " differ; component ids that are not text are refused (exit code 1).
 - JSON files with numbers beyond 64 bits keep them as floating point (Python kept the exact integer).
 
-## Found while porting (kept as the script does it, to fix in both)
+## Found while porting, fixed in both (2026-11-11)
 
 - `labyrinth-scan-downloads`: the "Malware quarantined" question with Restore / Delete is asked by a child process started as
-  `labyrinth-scan-downloads --prompt ID NAME SIGNATURE`, but `main` wants five arguments after the program's name (`len(argv) >= 5`)
-  and gets four, so the child runs an ordinary scan instead and the question is never shown (the file stays in quarantine; Settings
-  > Security can restore it). Only the tests' LABYRINTH_SCAN_SYNC path asked. The fix is `>= 4` in both.
-- `labyrinth-launch` starts the slice and asks for the rules only for block, ethernet and wifi (`network_rule`), not for ask: an
-  app in ask mode started from the dock before any other is limited only once `labyrinth-appnet-prepare` or a later rule change
-  loads the rules.
+  `labyrinth-scan-downloads --prompt ID NAME SIGNATURE`, but `main` wanted five arguments after the program's name and got four,
+  so the child ran an ordinary scan and the question was never shown. Now four (Python and Rust, with a test in each).
+- `labyrinth-launch` started the app's slice and asked for the rules for block, ethernet and wifi but not for ask, so an app in
+  ask mode could start unlimited until the rules were next loaded. Ask is included now (Python and Rust, with a test in each).
 
 ## Tests and parity
 

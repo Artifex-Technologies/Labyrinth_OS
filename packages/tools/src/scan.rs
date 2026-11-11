@@ -459,7 +459,7 @@ fn run(argv: &[OsString]) -> R<i32> {
         return units("enable");
     }
     let c = Ctx::from_env();
-    if has("--prompt") && argv.len() >= 5 {
+    if has("--prompt") && argv.len() >= 4 {
         let i = argv.iter().position(|a| a == "--prompt").unwrap();
         let get = |k: usize| argv.get(i + k).map(|a| a.to_string_lossy().into_owned()).ok_or_else(|| Crash("IndexError: list index out of range".into()));
         prompt_quarantined(&c, &get(1)?, &get(2)?, &get(3)?)?;
