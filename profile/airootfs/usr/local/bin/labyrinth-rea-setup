@@ -13,6 +13,13 @@ REA_VERSION=${REA_VERSION:-6.5.0}
 GHIDRA_TAG=${GHIDRA_TAG:-Ghidra_12.1.4_build}
 GHIDRA_ZIP=${GHIDRA_ZIP:-ghidra_12.1.4_PUBLIC_20260921.zip}
 GHIDRA_SHA256=${GHIDRA_SHA256:-ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db}
+# from the environment, so checked: a version (not any npm spec: a git URL or a file would be installed instead), plain names in
+# the download's address, a SHA-256
+if [[ ! $REA_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || ! $GHIDRA_TAG =~ ^[A-Za-z0-9._-]+$ || ! $GHIDRA_ZIP =~ ^[A-Za-z0-9._-]+$ \
+      || $GHIDRA_TAG == . || $GHIDRA_TAG == .. || $GHIDRA_ZIP == . || $GHIDRA_ZIP == .. || ! $GHIDRA_SHA256 =~ ^[0-9a-f]{64}$ ]]; then
+  echo "labyrinth-rea-setup: REA_VERSION must be a version (1.2.3), GHIDRA_TAG and GHIDRA_ZIP plain names, GHIDRA_SHA256 64 hex digits" >&2
+  exit 2
+fi
 
 check() {
   [[ -f $APPS/rea/node_modules/rea-agents/scripts/rea.mjs ]] && echo "REA: $(node "$APPS/rea/node_modules/rea-agents/scripts/rea.mjs" --version 2>/dev/null)" || echo "REA: not installed"

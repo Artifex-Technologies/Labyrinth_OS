@@ -117,12 +117,111 @@ pub fn background<S: AsRef<OsStr>>(argv: &[S], out: Io, err: Io) {
     let _ = command(argv).stdin(Stdio::null()).stdout(stdio(out)).stderr(stdio(err)).spawn();
 }
 
+/// `nice -n INC CMD`: the program run with its niceness raised by INC, everything as ours. Its exit code.
+pub fn nice<S: AsRef<OsStr>>(inc: i32, argv: &[S]) -> i32 {
+    let _ = io::stdout().flush();
+    let mut c = command(argv);
+    unsafe {
+        c.pre_exec(move || {
+            libc::nice(inc);
+            Ok(())
+        });
+    }
+    match c.status() {
+        Ok(st) => code_of(st),
+        Err(e) => not_started(argv[0].as_ref(), &e, Io::Inherit),
+    }
+}
+
+/// `CMD 2>&1`: what it wrote to its output and errors, in the order written, and its exit code.
+pub fn combined<S: AsRef<OsStr>>(argv: &[S]) -> (i32, Vec<u8>) {
+    let _ = io::stdout().flush();
+    let (mut r, w) = match io::pipe() {
+        Ok(p) => p,
+        Err(_) => return (126, vec![]),
+    };
+    let mut c = command(argv);
+    match w.try_clone() {
+        Ok(w2) => c.stdout(w2).stderr(w),
+        Err(_) => return (126, vec![]),
+    };
+    let mut child = match c.spawn() {
+        Ok(ch) => ch,
+        Err(e) => return (not_started(argv[0].as_ref(), &e, Io::Inherit), vec![]),
+    };
+    drop(c);
+    let mut out = vec![];
+    let _ = r.read_to_end(&mut out);
+    (child.wait().map(code_of).unwrap_or(1), out)
+}
+
 /// `exec cmd`: this process becomes the program (nothing of ours runs after). Returns only when it cannot be started, with
 /// bash's exit code for that.
 pub fn exec<S: AsRef<OsStr>>(argv: &[S]) -> i32 {
     let _ = io::stdout().flush();
     let e = command(argv).exec();
     not_started(argv[0].as_ref(), &e, Io::Inherit)
+}
+
+/// `read -r -p PROMPT ans`: the prompt on standard error when standard input is a terminal (as bash shows it), then one line,
+/// without its newline and the blanks around it; "" at the end of input.
+pub fn ask(prompt: &str) -> String {
+    if stdin_is_terminal() {
+        eprint!("{prompt}");
+    }
+    let mut line = String::new();
+    let _ = io::stdin().read_line(&mut line);
+    line.trim_matches([' ', '\t', '\n']).to_string()
+}
+
+/// `setsid -f CMD > LOG 2>&1`: started in a session of its own with its output into LOG, not waited for (a program that cannot
+/// start is said in LOG, as setsid said it). Err: LOG could not be opened (then nothing is started, as bash did).
+pub fn detached<S: AsRef<OsStr>>(argv: &[S], env: &[(&str, &str)], log: &str) -> io::Result<()> {
+    let f = fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o666).open(log)?;
+    let mut c = command(argv);
+    c.stdout(f.try_clone()?).stderr(f);
+    for (k, v) in env {
+        c.env(k, v);
+    }
+    unsafe {
+        c.pre_exec(|| {
+            libc::setsid();
+            Ok(())
+        });
+    }
+    let _ = io::stdout().flush();
+    match c.spawn() {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            // where setsid would have said it, the log
+            let why = crate::py::strerror(e.raw_os_error().unwrap_or(0));
+            let _ = append(log, format!("setsid: failed to execute {}: {why}\n", argv[0].as_ref().to_string_lossy()).as_bytes());
+            Ok(())
+        }
+    }
+}
+
+/// `(sleep SECS; CMD >/dev/null 2>&1) &`: a child that waits, then runs the program with no output; not waited for.
+pub fn later<S: AsRef<OsStr>>(secs: u64, argv: &[S]) {
+    let _ = io::stdout().flush();
+    let _ = io::stderr().flush();
+    let pid = unsafe { libc::fork() };
+    if pid == 0 {
+        std::thread::sleep(std::time::Duration::from_secs(secs));
+        let code = run(argv, Io::Null, Io::Null);
+        unsafe { libc::_exit(code) };
+    }
+}
+
+/// The ids of the processes running now (the folders of /proc that are numbers), this one left out.
+pub fn processes() -> Vec<String> {
+    let me = std::process::id().to_string();
+    match fs::read_dir("/proc") {
+        Ok(rd) => {
+            rd.filter_map(|e| e.ok()).map(|e| e.file_name().to_string_lossy().into_owned()).filter(|p| digits(p) && *p != me).collect()
+        }
+        Err(_) => vec![],
+    }
 }
 
 /// `command -v NAME`: the first file of that name in PATH that may be run (a name with a slash is itself checked).
@@ -216,6 +315,22 @@ pub fn lines(b: &[u8]) -> Vec<&[u8]> {
     }
     let body = b.strip_suffix(b"\n").unwrap_or(b);
     body.split(|&c| c == b'\n').collect()
+}
+
+/// `tail -N`: the last N lines as they are (a last line without its newline stays without).
+pub fn tail(b: &[u8], n: usize) -> &[u8] {
+    let mut i = if b.ends_with(b"\n") { b.len() - 1 } else { b.len() };
+    let mut seen = 0;
+    while i > 0 {
+        i -= 1;
+        if b[i] == b'\n' {
+            seen += 1;
+            if seen == n {
+                return &b[i + 1..];
+            }
+        }
+    }
+    b
 }
 
 /// `grep -q` with a test on each line (no file: no match).
@@ -564,6 +679,14 @@ mod tests {
         assert_eq!(lines(b""), Vec::<&[u8]>::new());
         assert_eq!(lines(b"a\nb"), vec![&b"a"[..], b"b"]);
         assert_eq!(lines(b"a\n\n"), vec![&b"a"[..], b""]);
+    }
+
+    #[test]
+    fn tails() {
+        assert_eq!(tail(b"1\n2\n3\n4\n5\n6\n7", 5), b"3\n4\n5\n6\n7");
+        assert_eq!(tail(b"1\n2\n3\n4\n5\n6\n", 5), b"2\n3\n4\n5\n6\n");
+        assert_eq!(tail(b"a\nb\n", 3), b"a\nb\n");
+        assert_eq!(tail(b"", 3), b"");
     }
 
     #[test]

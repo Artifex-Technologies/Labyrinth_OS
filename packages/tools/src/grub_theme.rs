@@ -110,22 +110,6 @@ pub fn classes(line: &str) -> (Option<String>, Option<String>) {
     (entry, own)
 }
 
-/// `tail -5`: the last five lines as they are (a last line without its newline stays without).
-pub fn tail5(b: &[u8]) -> &[u8] {
-    let mut i = if b.ends_with(b"\n") { b.len() - 1 } else { b.len() };
-    let mut n = 0;
-    while i > 0 {
-        i -= 1;
-        if b[i] == b'\n' {
-            n += 1;
-            if n == 5 {
-                return &b[i + 1..];
-            }
-        }
-    }
-    b
-}
-
 /// A class that may name a file: [A-Za-z0-9_-]+
 pub fn plain(c: &str) -> bool {
     !c.is_empty() && c.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
@@ -279,7 +263,7 @@ pub fn main(args: &[String]) -> i32 {
         eprintln!("labyrinth-grub-theme: failed; putting the old menu back");
         let log_text = fs::read(&log).unwrap_or_default();
         use std::io::Write;
-        let _ = std::io::stderr().write_all(tail5(&log_text));
+        let _ = std::io::stderr().write_all(sh::tail(&log_text, 5));
         let _ = sh::write(DEFAULT_GRUB, &old_default);
         let _ = sh::write(CFG, &old_cfg);
         1
@@ -318,8 +302,5 @@ mod tests {
             (Some("evodevo_entry_12".into()), Some("windows".into()))
         );
         assert!(plain("uefi_cd_dvd") && !plain("../x") && !plain(""));
-        assert_eq!(tail5(b"1\n2\n3\n4\n5\n6\n7"), b"3\n4\n5\n6\n7");
-        assert_eq!(tail5(b"1\n2\n3\n4\n5\n6\n"), b"2\n3\n4\n5\n6\n");
-        assert_eq!(tail5(b"a\nb\n"), b"a\nb\n");
     }
 }

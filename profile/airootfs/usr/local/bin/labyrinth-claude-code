@@ -22,12 +22,21 @@ status() {
 
 case ${1:-install} in
   status) status ;;
-  update) command -v claude >/dev/null 2>&1 && claude update || { echo "Claude Code is not installed yet: run labyrinth-claude-code"; exit 1; } ;;
+  update)
+    # (a failed update said "not installed yet" before)
+    command -v claude >/dev/null 2>&1 || { echo "Claude Code is not installed yet: run labyrinth-claude-code"; exit 1; }
+    claude update ;;
   install)
     if command -v claude >/dev/null 2>&1; then
       echo "Claude Code is already installed."
     else
-      curl -fsSL https://claude.ai/install.sh | bash || { echo "The installer did not finish. Check the network and try again."; exit 1; }
+      # the whole installer first, then run: `curl | bash` ran a download cut short as far as it came, and a failed download
+      # (bash read nothing and succeeded) was never reported
+      tmp=$(mktemp)
+      trap 'rm -f "$tmp"' EXIT
+      if ! curl -fsSL -o "$tmp" https://claude.ai/install.sh || ! bash "$tmp"; then
+        echo "The installer did not finish. Check the network and try again."; exit 1
+      fi
     fi
     status
     echo

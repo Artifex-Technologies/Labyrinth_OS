@@ -30,22 +30,45 @@ Python's own \w, \d and \s.
 The bash and sh scripts of `profile/airootfs/usr/local/{bin,sbin}` get Rust ports too, for security and stability more than
 speed: no quoting or word-splitting bugs, programs started by argv rather than command strings, strict checks of what comes in,
 clear errors. Each is a bin with the script's name, arguments, output, files, calls and exit codes (`src/sh.rs` holds what they
-share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each against its script (below). Not switched yet: the
-scripts are what the image runs.
+share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each against its script (below). Not switched on main: the
+scripts are what the image runs until the branch `scripts-rust-switch` is merged.
 
 | Script | Port | Parity |
 | --- | --- | --- |
-| labyrinth-rollback | done (src/rollback.rs) | 30/30 |
-| labyrinth-install-bootfinish | done (src/bootfinish.rs) | 32/32 |
-| labyrinth-install-cleanup | done (src/install_cleanup.rs) | 18/18 |
-| labyrinth-agent-setup | done (src/agent_setup.rs) | 20/20 |
-| labyrinth-agent-window (sbin) | done (src/agent_window.rs) | 11/11 |
-| labyrinth-ecosystem-setup | done (src/ecosystem.rs) | 14/14 |
-| labyrinth-hardware-setup | done (src/hardware.rs) | 9/9 |
-| labyrinth-grub-theme | done (src/grub_theme.rs) | 15/15 |
-| labyrinth-security-setting | done (src/security_setting.rs) | 10/10 |
-| labyrinth-gaming, labyrinth-sarina, labyrinth-sarina-setting, labyrinth-rea, labyrinth-claude-code, labyrinth-rea-setup, labyrinth-sarina-reflect, labyrinth-sarina-voice-setup, labyrinth-sarina-warm, labyrinth-install, labyrinth-notify-activate, cls | left | |
+| labyrinth-rollback | src/rollback.rs | 30/30 |
+| labyrinth-install-bootfinish | src/bootfinish.rs | 32/32 |
+| labyrinth-install-cleanup | src/install_cleanup.rs | 18/18 (and tests/test_install_cleanup.sh's 21 with LABYRINTH_CLEANUP) |
+| labyrinth-agent-setup | src/agent_setup.rs | 20/20 |
+| labyrinth-agent-window (sbin) | src/agent_window.rs | 11/11 |
+| labyrinth-ecosystem-setup | src/ecosystem.rs | 14/14 |
+| labyrinth-hardware-setup | src/hardware.rs | 9/9 |
+| labyrinth-grub-theme | src/grub_theme.rs | 15/15 |
+| labyrinth-security-setting | src/security_setting.rs | 10/10 |
+| labyrinth-gaming | src/gaming.rs | 14/14 |
+| labyrinth-sarina | src/sarina.rs | 12/12 |
+| labyrinth-sarina-setting | src/sarina_setting.rs | 12/12 |
+| labyrinth-rea, labyrinth-rea-setup | src/rea.rs | 10/10, 8/8 |
+| labyrinth-claude-code, labyrinth-install, labyrinth-notify-activate | src/small.rs | 5/5, 4/4, 4/4 |
+| labyrinth-sarina-reflect, -warm, -voice-setup | src/sarina_small.rs | 14/14, 7/7, 7/7 |
+| cls | none: on the switch it becomes a link to /usr/bin/clear (it was `exec clear "$@"`; clear does the same under any name, and no shell runs) | |
 | labyrinth-sarina-ask, labyrinth-sarina-speak | not ported: they wait for my voice test | |
+
+All 20 ports are done; 256 cases, all the same. Run against the scripts as they were before the fixes below (`--shell` with
+the scripts of 921bf80), the cases that show a fix differ, and only those and the ones built on them (36 of 256: in
+ecosystem-setup and claude-code nearly every case, as `ollama list` is read once and the installer is downloaded first; in
+grub-theme every install, as the made-up grub.cfg has a class with `../` in it, which the old script copied an icon to,
+outside the icons' folder).
+
+How the cases run (parity/cases_root.py): a user and mount namespace (and a network namespace: nothing reaches the network)
+whose root folder is the case's own (chroot): its /etc, /var, /run, /boot, /home, /tmp and /dev (null, zero, urandom and two
+"partitions", which are this computer's first block device bound in so that `[[ -b ]]` holds; nothing opens them), this
+computer's /usr with overlays (nothing written reaches it) and the folders a case owns bound over it. PATH is the case's
+stand-ins, then a folder of links to the few real tools the scripts use (bash, sed, grep, cp ...), so a program a case does not
+give is not there. Each stand-in writes down its arguments and answers as the case says (a mount binds a folder of the case's
+as the partition's top level, btrfs's snapshot copies one). Programs that look at running processes (gaming's Steam,
+notify-activate's panel) run in a process namespace of their own with lingering stand-ins; the waits of labyrinth-sarina and
+notify-activate pass at once (parity/fastclock.c). Uids 1000-2999 are this account's subordinate ids, so the files a case gives
+another owner (sarina's, the agent's) are owned so.
 
 Found while porting, fixed in the scripts and the ports alike:
 
@@ -73,6 +96,17 @@ Found while porting, fixed in the scripts and the ports alike:
   GRUB_GFXMODE line was glued to a last line without a newline; an icon was copied under any class name grub.cfg gave (a `/` in
   one would have written outside the icons' folder).
 - `labyrinth-security-setting scan -x` handed `-x` to heimdalld as an option; it is `./-x` now.
+- `labyrinth-gaming setup` never chose the system-wide Proton-CachyOS (one `ls` over two folders fails when either has
+  none; `check` had been fixed so, `setup` not).
+- `labyrinth-claude-code` ran `curl ... | bash`: a download cut short ran as far as it came, and a failed download (bash read
+  nothing and succeeded) was never reported. The installer is downloaded whole first now; `update` no longer says "not
+  installed yet" when the update itself failed.
+- `labyrinth-rea-setup` took REA_VERSION (any npm spec: a git URL would have been installed), GHIDRA_TAG and GHIDRA_ZIP (the
+  download's address) and GHIDRA_SHA256 from the environment unchecked.
+- `labyrinth-sarina-reflect` exported every KEY=VALUE of sarina.env that was not set, LD_PRELOAD and the interpreters'
+  variables too, into nvidia-smi, curl and sarina; those are skipped now.
+- `labyrinth-sarina-warm` put the model's name from sarina.env unchecked into the JSON it sends; `labyrinth-sarina-voice-setup`
+  passed a voice name starting with `-` to the downloader as an option.
 
 ## Not 1:1
 

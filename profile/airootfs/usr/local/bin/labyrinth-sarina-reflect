@@ -7,6 +7,8 @@
 set -u
 envf="${XDG_CONFIG_HOME:-$HOME/.config}/labyrinth/sarina.env"
 while IFS='=' read -r k v; do
+  # Sarina's settings, never the loader's or an interpreter's: LD_PRELOAD here would run in every program below
+  case $k in LD_*|BASH*|ENV|GLIBC_TUNABLES|GCONV_PATH|LOCPATH|NLSPATH|PYTHONPATH|PYTHONHOME|PYTHONSTARTUP|NODE_OPTIONS|PERL5LIB|PERL5OPT|RUBYOPT) continue ;; esac
   [[ $k =~ ^[A-Z_][A-Z0-9_]*$ ]] && [[ -z ${!k:-} ]] && export "$k=$v"
 done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$envf" 2>/dev/null)
 [[ -n ${SARINA_VAULT:-} && -d $SARINA_VAULT ]] || { echo "no vault set (SARINA_VAULT in $envf)"; exit 0; }

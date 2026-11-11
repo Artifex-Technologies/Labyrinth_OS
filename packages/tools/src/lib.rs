@@ -26,6 +26,12 @@
 //!   hardware         labyrinth-hardware-setup      only the drivers and device tools this computer needs
 //!   grub_theme       labyrinth-grub-theme          the boot menu theme
 //!   security_setting labyrinth-security-setting    the security settings Settings asks for
+//!   gaming           labyrinth-gaming              are Steam and Proton installed and working
+//!   sarina           labyrinth-sarina              Sarina with a model server behind her
+//!   sarina_setting   labyrinth-sarina-setting      Sarina's settings for Settings > Sarina
+//!   sarina_small     labyrinth-sarina-reflect, -warm, -voice-setup
+//!   rea              labyrinth-rea, labyrinth-rea-setup   REA in a sandbox, and its installation
+//!   small            labyrinth-claude-code, labyrinth-install, labyrinth-notify-activate
 
 pub mod agent;
 pub mod agent_setup;
@@ -37,6 +43,7 @@ pub mod ask_agent;
 pub mod bootfinish;
 pub mod ecosystem;
 pub mod first_components;
+pub mod gaming;
 pub mod grub_theme;
 pub mod hardware;
 pub mod install_cleanup;
@@ -47,11 +54,16 @@ pub mod py;
 pub mod pycompat;
 pub mod pyre;
 pub mod quarantine;
+pub mod rea;
 pub mod rollback;
+pub mod sarina;
+pub mod sarina_setting;
+pub mod sarina_small;
 pub mod scan;
 pub mod security_setting;
 pub mod selfcheck;
 pub mod sh;
+pub mod small;
 
 #[cfg(test)]
 pub mod testutil;

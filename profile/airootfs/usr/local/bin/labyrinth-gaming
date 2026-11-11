@@ -97,10 +97,10 @@ do_setup() {
   elif pgrep -x steam >/dev/null 2>&1; then
     echo "Steam is running: close it fully, then run setup again so its config can be edited safely."
   elif [ -f "$root/config/config.vdf" ] && [ -x "$helper" ]; then
-    # Prefer Proton-CachyOS if present, else Valve's Proton Experimental.
-    tool=proton_experimental
-    ls -d "$root"/compatibilitytools.d/proton-cachyos* /usr/share/steam/compatibilitytools.d/proton-cachyos* >/dev/null 2>&1 && \
-      tool=$(basename "$(ls -d "$root"/compatibilitytools.d/proton-cachyos* /usr/share/steam/compatibilitytools.d/proton-cachyos* 2>/dev/null | head -1)")
+    # Prefer Proton-CachyOS if present (yours first, then the system's), else Valve's Proton Experimental. Each folder on its
+    # own: one ls over both fails when either has none, which hid the system-wide Proton-CachyOS here too.
+    tool=$( { ls -d "$root"/compatibilitytools.d/proton-cachyos* 2>/dev/null; ls -d /usr/share/steam/compatibilitytools.d/proton-cachyos* 2>/dev/null; } | head -1)
+    if [ -n "$tool" ]; then tool=$(basename "$tool"); else tool=proton_experimental; fi
     "$helper" "$root/config/config.vdf" "$tool"
   fi
   echo

@@ -5,6 +5,8 @@
 # English voices from the Piper voice collection (Hugging Face, rhasspy/piper-voices; about 60 MB each). Then Settings > Sound > "Sarina's voice"
 # lets you choose and hear them. Nothing is sent anywhere when she speaks: it is all made on this computer.
 set -euo pipefail
+# voice names only (one starting with - would be an option of the downloader's)
+for v in "$@"; do [[ $v =~ ^[A-Za-z0-9_.-]{1,80}$ && $v != -* ]] || { echo "not a voice name: $v" >&2; exit 2; }; done
 dir=${LABYRINTH_TTS_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/labyrinth/tts}
 mkdir -p "$dir/voices"
 [[ -x $dir/venv/bin/python ]] || python3 -m venv "$dir/venv"

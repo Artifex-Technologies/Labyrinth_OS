@@ -97,6 +97,50 @@ path = "src/bin/labyrinth-grub-theme.rs"
 name = "labyrinth-security-setting"
 path = "src/bin/labyrinth-security-setting.rs"
 
+[[bin]]
+name = "labyrinth-gaming"
+path = "src/bin/labyrinth-gaming.rs"
+
+[[bin]]
+name = "labyrinth-sarina"
+path = "src/bin/labyrinth-sarina.rs"
+
+[[bin]]
+name = "labyrinth-sarina-setting"
+path = "src/bin/labyrinth-sarina-setting.rs"
+
+[[bin]]
+name = "labyrinth-rea"
+path = "src/bin/labyrinth-rea.rs"
+
+[[bin]]
+name = "labyrinth-rea-setup"
+path = "src/bin/labyrinth-rea-setup.rs"
+
+[[bin]]
+name = "labyrinth-claude-code"
+path = "src/bin/labyrinth-claude-code.rs"
+
+[[bin]]
+name = "labyrinth-sarina-reflect"
+path = "src/bin/labyrinth-sarina-reflect.rs"
+
+[[bin]]
+name = "labyrinth-sarina-voice-setup"
+path = "src/bin/labyrinth-sarina-voice-setup.rs"
+
+[[bin]]
+name = "labyrinth-sarina-warm"
+path = "src/bin/labyrinth-sarina-warm.rs"
+
+[[bin]]
+name = "labyrinth-install"
+path = "src/bin/labyrinth-install.rs"
+
+[[bin]]
+name = "labyrinth-notify-activate"
+path = "src/bin/labyrinth-notify-activate.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }

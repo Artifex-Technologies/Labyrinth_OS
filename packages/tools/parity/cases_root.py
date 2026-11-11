@@ -61,7 +61,7 @@ BLOCK = first_block_device()
 
 SYSBIN = ("bash sh env sed grep awk gawk tail head cat cut tr date mktemp rm mv cp ls sort diff rmdir install mkdir chmod chown ln df sync "
           "id touch basename dirname xargs sha256sum wc printf sleep seq python3 setsid stat readlink realpath getent tee test true false "
-          "uname find openssl").split()
+          "uname find openssl pgrep nice ps").split()
 
 FAKE = r"""#!/bin/sh
 W=@W@
@@ -108,9 +108,18 @@ while read -r own; do
 done < "$W/own.list"
 for n in null zero full random urandom tty; do /usr/bin/touch "$R/dev/$n"; /usr/bin/mount --bind "/dev/$n" "$R/dev/$n"; done
 for n in fakedisk0 fakedisk1; do /usr/bin/touch "$R/dev/$n"; /usr/bin/mount --bind "@BLOCK@" "$R/dev/$n"; done
-/usr/bin/mount --rbind /proc "$R/proc"
+if [ -e "$W/pidns" ]; then /usr/bin/mount -t proc proc "$R/proc"; else /usr/bin/mount --rbind /proc "$R/proc"; fi
 /usr/bin/mkdir -p "$R@S@"
 /usr/bin/mount --bind "@S@" "$R@S@"
+# processes a case wants running (a lingering program under the name given), each waited for until it has started
+n=0
+while read -r path; do
+  [ -n "$path" ] || continue
+  n=$((n + 1))
+  /usr/bin/env -u LINGER_LOG LINGER_READY="$W/ov/ready.$n" /usr/bin/chroot "$R" "$path" &
+  i=0
+  while [ ! -e "$W/ov/ready.$n" ] && [ $i -lt 250 ]; do /usr/bin/sleep 0.02; i=$((i + 1)); done
+done < "$W/procs"
 p=$1
 shift
 /usr/bin/cp "$p" "$W/ov/prog"
@@ -120,7 +129,8 @@ trap - EXIT
 cwd=${INNER_CWD:-/}
 uid=${AS_UID:-}
 export PATH="$INNER_PATH"
-unset INNER_PATH INNER_CWD AS_UID
+[ -z "${INNER_PRELOAD:-}" ] || export LD_PRELOAD="$INNER_PRELOAD"
+unset INNER_PATH INNER_CWD AS_UID INNER_PRELOAD
 if [ -n "$uid" ]; then
   exec /usr/bin/chroot --userspec="$uid:$uid" --groups="$uid" "$R" /usr/bin/env -C "$cwd" "$W/ov/prog" "$@"
 fi
@@ -166,10 +176,39 @@ PASSWD = "root:x:0:0::/root:/bin/bash\n"
 GROUP = "root:x:0:\nwheel:x:998:\n"
 
 
-def world(files=None, stubs=(), fakes=(), own=(), whiteouts=None, passwd="", group="", disks=None, extra=None):
+LINGER_C = r"""
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+/* linger: stays until killed; says it started (LINGER_LOG: appended to; LINGER_READY: a file made) */
+int main(int argc, char **argv) {
+    const char *log = getenv("LINGER_LOG"), *ready = getenv("LINGER_READY");
+    FILE *f;
+    (void)argc;
+    if (log && (f = fopen(log, "a"))) { fprintf(f, "started %s\n", argv[0]); fclose(f); }
+    if (ready && (f = fopen(ready, "w"))) fclose(f);
+    for (;;) pause();
+}
+"""
+
+
+def linger():
+    """A small program that stays until killed (a stand-in for a program that keeps running: the panel, Steam)."""
+    import subprocess
+    exe = os.path.join(S, "linger")
+    if not os.path.exists(exe):
+        src = exe + ".c"
+        P.write(src, LINGER_C)
+        subprocess.run(["cc", "-O2", "-o", exe, src], check=True)
+    return exe
+
+
+def world(files=None, stubs=(), fakes=(), own=(), whiteouts=None, passwd="", group="", disks=None, extra=None, procs=(), pidns=False):
     """A case's world. files: {path: see put}; stubs: the stand-ins' names; fakes: [(key, {out, rc, err, sh, stdin})]; own: the
     folders under /usr that are the world's (empty unless files puts something there); whiteouts: {"/usr/bin": [names]} hidden
-    from this computer's; disks: {device name: {relative path: see put}} (a partition's top level)."""
+    from this computer's; disks: {device name: {relative path: see put}} (a partition's top level); procs: paths in the world where a
+    lingering program is put and started before the program (a world with pidns=True has a process list of its own, /proc
+    mounted anew)."""
     def go(paths):
         for d in ("etc", "var/log", "var/lib", "var/cache", "run", "boot", "home", "root", "usr", "proc", "dev", "tmp", "mnt"):
             os.makedirs(os.path.join(R, d), exist_ok=True)
@@ -214,6 +253,14 @@ def world(files=None, stubs=(), fakes=(), own=(), whiteouts=None, passwd="", gro
                     P.write(p, v[0], v[1])
                 else:
                     P.write(p, v)
+        import shutil
+        for path in procs:
+            dst = path if path.startswith(W + "/") else host(path)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy(linger(), dst)
+        P.write(os.path.join(W, "procs"), "".join(p + "\n" for p in procs))
+        if pidns:
+            P.write(os.path.join(W, "pidns"), "")
         if extra:
             extra()
         P.write(os.path.join(W, "ns.sh"), NS.replace("@W@", W).replace("@S@", S).replace("@BLOCK@", BLOCK or "/dev/null"), 0o755)
@@ -287,16 +334,26 @@ def wrap_ok(results, calls, tree):
     return ["the namespace or chroot failed: %r" % r.get("err") for r in results if "parity-ns:" in r.get("err", "") or "unshare:" in r.get("err", "")]
 
 
-def case(prog, name, steps, setup, env=None, differs=(), norm_more=None):
+WRAP_PID = UNSHARE + ["--pid", "--fork", "--", "/bin/sh", os.path.join(W, "ns.sh")]
+
+
+def case(prog, name, steps, setup, env=None, differs=(), norm_more=None, pidns=False, fastclock=False, sort_calls=False, settle=0.0):
+    """pidns: the world's processes are its own (its world says pidns=True too); fastclock: waits pass at once
+    (parity/fastclock.c in the program); sort_calls: the calls' order is not compared (a program left running writes down its
+    call when it gets to it); settle: seconds to wait after each step."""
     e = dict(ENV)
     e.update(env or {})
+    if fastclock:
+        e["INNER_PRELOAD"] = P.fastclock()
     full = (lambda t: norm_more(norm(t))) if norm_more else norm
     run = []
     for s in steps:
         # user: run as that uid in the world; cwd: the folder in the world it starts in
         inner = {k: v for k, v in (("AS_UID", s.get("user")), ("INNER_CWD", s.get("cwd"))) if v}
-        run.append(dict({k: v for k, v in s.items() if k not in ("user", "cwd")}, wrap=WRAP, env=dict(s.get("env", {}), **inner)))
-    P.case(prog, name, run, setup=setup, env=e, differs=differs, norm=full, snap=snap, teardown=teardown, bare=True, check=wrap_ok)
+        wrap = WRAP_PID if pidns else WRAP
+        run.append(dict({k: v for k, v in s.items() if k not in ("user", "cwd")}, wrap=wrap, env=dict(s.get("env", {}), **inner)))
+    P.case(prog, name, run, setup=setup, env=e, differs=differs, norm=full, snap=snap, teardown=teardown, bare=True, check=wrap_ok, sort_calls=sort_calls,
+           settle=settle)
 
 
 # ---------------------------------------------------------------- labyrinth-rollback
