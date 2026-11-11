@@ -60,7 +60,7 @@ path = "src/bin/labyrinth-first-components.rs"
 name = "labyrinth-agent"
 path = "src/bin/labyrinth-agent.rs"
 
-# the shell scripts' ports (profile/airootfs/usr/local/bin; the switch: branch scripts-rust-switch)
+# the shell scripts' ports (the scripts: packages/tools/shell; they were in profile/airootfs/usr/local/bin)
 [[bin]]
 name = "labyrinth-rollback"
 path = "src/bin/labyrinth-rollback.rs"

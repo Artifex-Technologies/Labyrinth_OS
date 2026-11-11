@@ -3,7 +3,8 @@
 # rules with --remove.
 #
 #   * the account (default `claude-agent`): a normal user whose password is locked, so nobody can log in as it with one;
-#   * /etc/sudoers.d/50-labyrinth-agent: the agent may run ONE program as root without a password, labyrinth-agent, which
+#   * /etc/sudoers.d/50-labyrinth-agent: the agent may run ONE program as root without a password, /usr/bin/labyrinth-agent
+#     (from the labyrinth-tools package; it was the Python script /usr/local/sbin/labyrinth-agent until 2026-11-11), which
 #     checks every action (installing the ecosystem's own packages, official-repository packages but no remote-access tools,
 #     the ecosystem's own services, reading the journal, Heimdall maintenance windows, Limbo test runs (manifests root put in
 #     /var/lib/limbo/build-agent, made here root's own 0755, or /etc/limbo/validation), the rollback tool's

@@ -28,9 +28,12 @@ use std::os::unix::fs::MetadataExt;
 pub const DOC: &str = include_str!("doc/labyrinth-agent-setup.txt");
 const SUDOERS: &str = "/etc/sudoers.d/50-labyrinth-agent";
 const CLAUDE_SUDO: &str = "/usr/local/bin/claude-sudo";
-/// The gate sudo lets the agent run, and the owner's window (the script checks both are there).
-pub const GATE: &str = "/usr/local/sbin/labyrinth-agent";
+/// The gate sudo lets the agent run, and the owner's window (the script checks both are there); both come with labyrinth-tools.
+pub const GATE: &str = "/usr/bin/labyrinth-agent";
 pub const WINDOW: &str = "/usr/bin/labyrinth-agent-window";
+/// The Python gate of before: sudo looks in /usr/local/sbin first (secure_path), so it would be the one found, and the rule does
+/// not allow it; it is removed.
+const OLD_GATE: &str = "/usr/local/sbin/labyrinth-agent";
 const HEIMDALL: &str = "/etc/heimdall/config.json";
 
 fn err(msg: &str, code: i32) -> i32 {
@@ -155,10 +158,16 @@ pub fn main(args: &[String]) -> i32 {
             return err(&format!("install: cannot make {dir}: {e}"), 1);
         }
     }
-    for (p, from) in [(GATE, "the Labyrinth profile"), (WINDOW, "the labyrinth-tools package")] {
+    for p in [GATE, WINDOW] {
         if !sh::executable(p) {
-            return err(&format!("{p} is missing (it comes with {from})"), 1);
+            return err(&format!("{p} is missing (it comes with the labyrinth-tools package)"), 1);
         }
+    }
+    if sh::exists(OLD_GATE) {
+        if let Err(e) = sh::rm_f(OLD_GATE) {
+            return err(&format!("rm: cannot remove '{OLD_GATE}': {}", crate::py::strerror(e.raw_os_error().unwrap_or(0))), 1);
+        }
+        println!("removed the old Python gate {OLD_GATE} (labyrinth-tools installs {GATE})");
     }
     if let Err(code) = write_sudoers(SUDOERS, &rules(&agent, &owner, owner_login), "the sudoers file did not validate; nothing changed") {
         return code;
@@ -229,7 +238,7 @@ mod tests {
     #[test]
     fn the_rules() {
         let r = rules("claude-agent", "owner", false);
-        assert!(r.contains("claude-agent ALL=(root) NOPASSWD: /usr/local/sbin/labyrinth-agent, /usr/local/sbin/labyrinth-agent *\n"));
+        assert!(r.contains("claude-agent ALL=(root) NOPASSWD: /usr/bin/labyrinth-agent, /usr/bin/labyrinth-agent *\n"));
         assert!(r.ends_with("owner ALL=(claude-agent) NOPASSWD: ALL\n"));
         let r = rules("claude-agent", "owner", true);
         assert!(r.ends_with("Defaults:owner timestamp_type=global, timestamp_timeout=720\nowner ALL=(claude-agent) ALL\n"));

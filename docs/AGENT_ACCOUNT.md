@@ -13,7 +13,8 @@ Three things happened, in this order:
    password. pacman, systemd-run and install are in effect root: the safeguard was the record, not a fence.
 2. **2026-10-27, narrowed (commit 63d68d4).** A security audit found that any process running as the owner reached that root
    access silently. `labyrinth-agent-setup` now writes `/etc/sudoers.d/50-labyrinth-agent`, which lets the agent run one program
-   as root: `/usr/local/sbin/labyrinth-agent`. It checks each action and logs it for Heimdall:
+   as root: `/usr/local/sbin/labyrinth-agent` (since 2026-11-11 `/usr/bin/labyrinth-agent`, in Rust, from labyrinth-tools). It
+   checks each action and logs it for Heimdall:
    - `pkg-install FILE...`: packages built here, the ecosystem's own names only (yggdrasil-*, labyrinth-*, heimdall, sarina,
      limbo, liki, agora);
    - `pkg-add NAME...`: packages from the signed official repositories, never remote-access tools, tunnels or servers;
@@ -62,15 +63,16 @@ found while porting"). The ones that mattered:
 - `limbo` manifests must be root's alone (the file and every folder above it owned by root, writable by root only, no link);
   labyrinth-agent-setup makes /var/lib/limbo/build-agent root's own, 0755, so only I put manifests there.
 
-The switch to the Rust gate (sudo's rule pointing at /usr/bin/labyrinth-agent from the labyrinth-tools package) is prepared on the
-branch `agent-gate-rust`, not merged.
+The switch to the Rust gate: sudo's rule names /usr/bin/labyrinth-agent, which the labyrinth-tools package installs (0.1.0-4,
+together with the shell scripts' ports); the Python script is kept in packages/tools/python/ for a rollback.
 
 ## Built, in the repository
 
 - `labyrinth-agent-setup` (labyrinth-tools, packages/tools/src/agent_setup.rs; read it first, or its script in packages/tools/shell): creates `claude-agent` (password locked), writes
   `/etc/sudoers.d/50-labyrinth-agent` (validated with visudo), installs `claude-sudo`, and tells Heimdall who may open a
   maintenance window. `sudo labyrinth-agent-setup --owner USER [--owner-login]`; undo the rules with `--remove`.
-- `profile/airootfs/usr/local/sbin/labyrinth-agent` and `labyrinth-agent-window` (/usr/bin, labyrinth-tools; above).
+- `labyrinth-agent` (packages/tools, bin `labyrinth-agent`, installed as /usr/bin/labyrinth-agent by labyrinth-tools; the Python
+  script it replaced is packages/tools/python/labyrinth-agent) and `labyrinth-agent-window` (/usr/bin, labyrinth-tools; above).
 - Heimdall (commit "Maintenance window..."): 
   - **Maintenance window:** `sudo heimdalld maintenance on --for 2h --reason "why"`, `off`, `status`. At most 4 hours, a reason is required,
     root only, and only the users listed in `maintenance_actors` (empty = any root user). The file lives in /etc/heimdall (Heimdall only reads
@@ -85,8 +87,8 @@ branch `agent-gate-rust`, not merged.
 
 ## To switch it on (the owner)
 ```
-sudo install -m755 profile/airootfs/usr/local/sbin/labyrinth-agent /usr/local/sbin/   # labyrinth-agent-window: labyrinth-tools
-sudo labyrinth-agent-setup --owner USER --owner-login      # after reading it
+sudo pacman -U labyrinth-tools-0.1.0-4-x86_64.pkg.tar.zst   # /usr/bin/labyrinth-agent, -agent-setup, -agent-window (packages/pkgbuilds/labyrinth-tools)
+sudo labyrinth-agent-setup --owner USER --owner-login      # after reading it (/usr/bin; it removes the old /usr/local/sbin/labyrinth-agent)
 ```
 and add the ArtCraft binaries to `fim_paths` in /etc/heimdall/config.json (/usr/bin/pdfcraft, pdfcraft-cli, and the same for
 cadcraft, deckcraft, designcraft, filmcraft, gridcraft, photocraft, soundcraft, vectorcraft, wordcraft).

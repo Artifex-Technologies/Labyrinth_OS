@@ -19,7 +19,7 @@ def norm(t):
 
 
 VISUDO = [("visudo", {"sh": 'printf "  checked: " >> "$W/calls"; cat "$2" >> "$W/calls"\n'})]
-GATE_FILES = {"/usr/local/sbin/labyrinth-agent": ("#!/bin/sh\n", 0o755), "/usr/bin/labyrinth-agent-window": ("#!/bin/sh\n", 0o755),
+GATE_FILES = {"/usr/bin/labyrinth-agent": ("#!/bin/sh\n", 0o755), "/usr/bin/labyrinth-agent-window": ("#!/bin/sh\n", 0o755),
               "/usr/local/bin/": ("dir", 0o755), "/etc/sudoers.d/": ("dir", 0o750)}
 USERS = "tester:x:1001:1001::/home/tester:/bin/bash\nbin:x:1:1::/:/usr/bin/nologin\n"
 GROUPS = "tester:x:1001:\n"
@@ -36,8 +36,10 @@ def agent_setup(name, steps, files=None, fakes=(), passwd=USERS, env=None, diffe
     for k, v in list(f.items()):
         if v is None:
             del f[k]
+    # the gate and the window come with labyrinth-tools: once it is installed, this computer's would show through the world's /usr/bin
+    hidden = [n for n in ("labyrinth-agent", "labyrinth-agent-window") if "/usr/bin/" + n not in f]
     setup = C.world(files=f, stubs=("useradd", "passwd", "visudo", "systemctl"), fakes=VISUDO + [("useradd", {"sh": USERADD})] + list(fakes),
-                    passwd=passwd, group=GROUPS)
+                    passwd=passwd, group=GROUPS, whiteouts={"/usr/bin": hidden})
     C.case(AS, name, steps, setup, env=dict({"SUDO_USER": "tester"}, **(env or {})), differs=differs, norm_more=norm)
 
 
@@ -66,7 +68,12 @@ agent_setup("Heimdall's file is not JSON", [{"args": []}],
 agent_setup("Heimdall's maintenance_actors is not a list", [{"args": []}],
             files={"/etc/heimdall/config.json": '{"maintenance_actors": 5}'}, differs=(("err", 0),))
 agent_setup("Heimdall's file is a list", [{"args": []}], files={"/etc/heimdall/config.json": "[1]"}, differs=(("err", 0),))
-agent_setup("the gate is missing", [{"args": []}], files={"/usr/local/sbin/labyrinth-agent": None})
+agent_setup("the gate is missing", [{"args": []}], files={"/usr/bin/labyrinth-agent": None})
+agent_setup("the window is missing", [{"args": []}], files={"/usr/bin/labyrinth-agent-window": None})
+agent_setup("the old Python gate in /usr/local/sbin is removed", [{"args": []}],
+            files={"/usr/local/sbin/labyrinth-agent": ("#!/usr/bin/env python3\n", 0o755)})
+agent_setup("the old Python gate is a dangling link (left, as [[ -e ]] says)", [{"args": []}],
+            files={"/usr/local/sbin/labyrinth-agent": ("link", "/nonexistent")})
 agent_setup("the window is not executable", [{"args": []}], files={"/usr/bin/labyrinth-agent-window": ("#!/bin/sh\n", 0o644)})
 agent_setup("visudo refuses", [{"args": []}], fakes=[("visudo", {"rc": 1, "err": "parse error\n"})])
 agent_setup("useradd fails", [{"args": []}], fakes=[("useradd", {"rc": 9, "err": "useradd: exists\n"})])

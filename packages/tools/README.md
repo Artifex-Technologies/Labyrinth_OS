@@ -17,7 +17,7 @@ while games and a local model share the computer).
 | `ipconfig` | Windows' `ipconfig` from `ip` and NetworkManager | on demand | done |
 | `steam_playall` (was `steam_playall.py`) | Steam Play for all titles in Steam's config.vdf | `labyrinth-gaming setup` | done |
 | `labyrinth-first-components` | the optional parts chosen in the installer, at the first login | the session's autostart | done |
-| `labyrinth-agent` (the script is in /usr/local/sbin) | the gate: the root actions the engineering agent may take alone, each checked (sudo lets its account run this and nothing else as root) | on demand, through `claude-sudo` | done, not switched (the switch: branch `agent-gate-rust`) |
+| `labyrinth-agent` (was in /usr/local/sbin) | the gate: the root actions the engineering agent may take alone, each checked (sudo lets its account run this and nothing else as root) | on demand, through `claude-sudo` | done |
 
 Each module (`src/*.rs`) says what it is and where it is not 1:1. Where a script stopped with a traceback (exit code 1), its port
 stops too, with exit code 1 and one line on standard error. `src/pycompat` is a copy of Yggdrasil's `packages/pycompat` (the few
@@ -32,15 +32,15 @@ speed: no quoting or word-splitting bugs, programs started by argv rather than c
 clear errors. Each is a bin with the script's name, arguments, output, files, calls and exit codes (`src/sh.rs` holds what they
 share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each against its script (below).
 
-The switch (this branch, `scripts-rust-switch`): labyrinth-tools 0.1.0-4 installs the 20 programs in /usr/bin; the scripts leave
+The switch (branch `scripts-rust-switch`, merged with `agent-gate-rust` into one switch): labyrinth-tools 0.1.0-4 installs the
+20 programs in /usr/bin, and the agent's gate with them; the scripts leave
 the image and are kept in `packages/tools/shell/` for a rollback (with the switched paths, so they stay the ports' specification,
 and the parity runs against them); `cls` is a link to /usr/bin/clear. The paths to them are /usr/bin now: the installer's
 integration file (clean-up, finish, boot menu theme), the security and Sarina integration files (sarina-git 0.1.0-2 / -3),
 the notifications' D-Bus activation, labyrinth-sarina-reflect.service, the gate's rollback (the Python gate and the Rust one),
-labyrinth-agent-setup's check of the window. The window's rules name /usr/bin/labyrinth-* beside /usr/local/bin/labyrinth-*
-(the tools moved; the window already allows any pacman and systemd-run, so it gives nothing more). When merging
-`agent-gate-rust` too: both set labyrinth-tools' pkgrel (3 there, 4 here) and both change labyrinth-agent-setup (there: the
-gate is /usr/bin/labyrinth-agent; carry that into src/agent_setup.rs's GATE and the script in packages/tools/shell).
+labyrinth-agent-setup's checks of the gate and the window (both /usr/bin; it removes the Python gate from /usr/local/sbin, script
+and port alike). The window's rules name /usr/bin/labyrinth-* beside /usr/local/bin/labyrinth-* (the tools moved; the window
+already allows any pacman and systemd-run, so it gives nothing more).
 
 | Script | Port | Parity |
 | --- | --- | --- |
@@ -238,7 +238,7 @@ A test for each, in Python (tests/test_labyrinth_selfcheck.py, tests/test_steam_
 
 The gate is what stands between the agent's account and root, so its port went further than the others (below: parity with a
 check of every call against an allow-list of its own, random command lines, a fuzz target). These holes were in the script; each
-is closed in the script and the port alike, with a test in each (tests/test_labyrinth_agent.py, src/agent/tests.rs).
+is closed in the script and the port alike, with a test in each (python/tests/test_labyrinth_agent.py, src/agent/tests.rs).
 
 1. **The journal could be wiped as root.** journalctl's `-n`/`--lines` take the next word as their value only when it is a count,
    but the gate passed any word after them as that value: `labyrinth-agent logs -n --vacuum-time=1s` ran
@@ -320,7 +320,7 @@ Three more, closed the same day (my rule: security over speed):
 | tests/test_ipconfig.py (2) | src/ipconfig.rs |
 | tests/test_steam_playall.py (7, and 1 for the fix) | src/playall.rs |
 | tests/test_install_system.py's 2 of labyrinth-first-components | src/first_components.rs |
-| tests/test_labyrinth_agent.py (6, and 16 for the holes) | src/agent/tests.rs (with 60,000 random command lines against src/agent/audit.rs), tests/agent.rs |
+| python/tests/test_labyrinth_agent.py (was tests/; 6, and 16 for the holes) | src/agent/tests.rs (with 60,000 random command lines against src/agent/audit.rs), tests/agent.rs |
 
 `parity/compare.py` runs each program and its script on the same made-up worlds: every tool they call is a stand-in that writes
 down how it was called, every file is in a scratch folder (and, for moves across file systems, `target/parity-xdev`), `set` runs
@@ -402,10 +402,11 @@ minutes (coverage 1233), none outside.
 
 ## The Python scripts
 
-They stay in `profile/airootfs/usr/local/bin` (labyrinth-agent in `profile/airootfs/usr/local/sbin`; after the switch, in
-`packages/tools/python/` with their tests) for a rollback,
+They stay in `profile/airootfs/usr/local/bin` (after the switch, in `packages/tools/python/` with their tests) for a rollback,
 until these have run a while. The first seven were switched on 2026-11-11 (the package `labyrinth-tools` installs them in place of
 the scripts); the last four with pkgrel 2 (branch `tools-rust-switch-2`): the image's autostart runs
-/usr/bin/labyrinth-first-components and `labyrinth-gaming setup` runs /usr/bin/steam_playall.
+/usr/bin/labyrinth-first-components and `labyrinth-gaming setup` runs /usr/bin/steam_playall. labyrinth-agent with pkgrel 4
+(branch `agent-gate-rust`, switched together with the shell scripts): sudo's rule written by labyrinth-agent-setup names /usr/bin/labyrinth-agent, and the setup removes
+the Python gate from /usr/local/sbin (sudo would find it first).
 
 Formatting: `cargo fmt` with rustfmt.toml (Heimdall's settings: 140 columns); `cargo clippy --all-targets -- -D warnings` is clean.

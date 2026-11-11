@@ -1,15 +1,17 @@
 # Labyrinth's own programs in Rust (packages/tools in this repository), in place of the Python scripts of the same names that the
 # image kept in /usr/local/bin: the malware scan of new files and its quarantine, the per-app network rules with the ask service
 # and its notifications, the app launcher and the optional-software installer; since pkgrel 2 also the self-check, ipconfig,
-# Steam Play for all (steam_playall, was steam_playall.py) and the first-login installs; since pkgrel 4 also the ports of the
-# shell scripts (packages/tools/shell keeps the scripts): the rollback, the installer's two steps, the agent's set-up and window,
-# the ecosystem's set-up, the hardware set-up, the boot menu theme, the gaming check, Sarina's launcher, settings and helpers, REA,
-# Claude Code's installer, the live installer's launcher and the notification activation. (pkgrel 3 is the agent gate's switch,
-# branch agent-gate-rust.) Their units come with them (same names).
+# Steam Play for all (steam_playall, was steam_playall.py) and the first-login installs; since pkgrel 4 also labyrinth-agent, the
+# gate sudo lets the engineering agent's account run as root (was /usr/local/sbin/labyrinth-agent; labyrinth-agent-setup's rule
+# names /usr/bin/labyrinth-agent), and the ports of the shell scripts (packages/tools/shell keeps the scripts): the rollback, the
+# installer's two steps, the agent's set-up and window, the ecosystem's set-up, the hardware set-up, the boot menu theme, the
+# gaming check, Sarina's launcher, settings and helpers, REA, Claude Code's installer, the live installer's launcher and the
+# notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Their
+# units come with them (same names).
 pkgname=labyrinth-tools
 pkgver=0.1.0
 pkgrel=4
-pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers"
+pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
 license=('MPL-2.0')
@@ -40,7 +42,7 @@ check() {
 
 package() {
   for b in labyrinth-scan-downloads labyrinth-quarantine labyrinth-appnet labyrinth-appnet-ask labyrinth-appnet-ask-agent labyrinth-launch labyrinth-apps \
-           labyrinth-selfcheck ipconfig steam_playall labyrinth-first-components \
+           labyrinth-selfcheck ipconfig steam_playall labyrinth-first-components labyrinth-agent \
            labyrinth-rollback labyrinth-install-bootfinish labyrinth-install-cleanup labyrinth-agent-setup labyrinth-agent-window \
            labyrinth-ecosystem-setup labyrinth-hardware-setup labyrinth-grub-theme labyrinth-security-setting labyrinth-gaming \
            labyrinth-sarina labyrinth-sarina-setting labyrinth-sarina-reflect labyrinth-sarina-voice-setup labyrinth-sarina-warm \
