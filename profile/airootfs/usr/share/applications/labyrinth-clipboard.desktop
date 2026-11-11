@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Clipboard history
-Comment=Open the notch on what you copied
-Exec=busctl --user call org.yggdrasil.Panel /Panel org.yggdrasil.Panel ShowClipboard
-Icon=edit-paste
-NoDisplay=true

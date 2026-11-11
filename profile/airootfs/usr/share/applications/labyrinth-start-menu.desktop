@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Start menu
-Comment=Open the start menu and its search
-Exec=busctl --user call org.yggdrasil.Panel /Panel org.yggdrasil.Panel ToggleStart
-Icon=system-search
-NoDisplay=true

@@ -17,7 +17,7 @@ reason there is none) appears in the same card; Esc or a click outside closes it
   the program and the signal. It replaced `labyrinth-crash-watch` (Python and a journalctl child, about 56 MB) on 2026-11-09.
 - `yggdrasil-panel` serves `org.yggdrasil.Panel` on the session bus with `Ask`; the shortcut
   runs `busctl --user call org.yggdrasil.Panel /Panel org.yggdrasil.Panel Ask`
-  (`labyrinth-sarina-ask.desktop`, bound to Meta+S in `kglobalshortcutsrc`).
+  (Super+S in Yggdrasil's Hyprland binds runs `yggdrasil-panelctl ask-press`, which makes that call).
 - Recording uses `pw-record` (PipeWire): mono, 16 kHz, 16-bit, into a private folder
   (`$XDG_RUNTIME_DIR/labyrinth-sarina/`, mode 700, in memory-backed storage). The file is deleted as soon
   as the question has been handed over, or cancelled.
