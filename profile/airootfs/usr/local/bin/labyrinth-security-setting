@@ -11,7 +11,9 @@ case ${1:-} in
   scan)
     [[ -n ${2:-} ]] || exit 2
     mkdir -p "$state"
-    exec heimdalld scan-files --state "$state/scan-state.json" "$2" ;;
+    f=$2
+    [[ $f != -* ]] || f=./$f   # a folder, never an option of heimdalld's
+    exec heimdalld scan-files --state "$state/scan-state.json" "$f" ;;
   auto-quarantine)
     case ${2:-} in
       status) grep -qE '^[[:space:]]*action[[:space:]]*=[[:space:]]*notify' "$conf/scan.conf" 2>/dev/null && echo off || echo on ;;

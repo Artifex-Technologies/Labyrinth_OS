@@ -30,14 +30,20 @@ Python's own \w, \d and \s.
 The bash and sh scripts of `profile/airootfs/usr/local/{bin,sbin}` get Rust ports too, for security and stability more than
 speed: no quoting or word-splitting bugs, programs started by argv rather than command strings, strict checks of what comes in,
 clear errors. Each is a bin with the script's name, arguments, output, files, calls and exit codes (`src/sh.rs` holds what they
-share); `parity/cases_root.py` runs each against its script (below). Not switched yet: the scripts are what the image runs.
+share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each against its script (below). Not switched yet: the
+scripts are what the image runs.
 
 | Script | Port | Parity |
 | --- | --- | --- |
 | labyrinth-rollback | done (src/rollback.rs) | 30/30 |
 | labyrinth-install-bootfinish | done (src/bootfinish.rs) | 32/32 |
 | labyrinth-install-cleanup | done (src/install_cleanup.rs) | 18/18 |
-| labyrinth-agent-setup, labyrinth-agent-window, labyrinth-ecosystem-setup, labyrinth-hardware-setup, labyrinth-grub-theme, labyrinth-security-setting | left | |
+| labyrinth-agent-setup | done (src/agent_setup.rs) | 20/20 |
+| labyrinth-agent-window (sbin) | done (src/agent_window.rs) | 11/11 |
+| labyrinth-ecosystem-setup | done (src/ecosystem.rs) | 14/14 |
+| labyrinth-hardware-setup | done (src/hardware.rs) | 9/9 |
+| labyrinth-grub-theme | done (src/grub_theme.rs) | 15/15 |
+| labyrinth-security-setting | done (src/security_setting.rs) | 10/10 |
 | labyrinth-gaming, labyrinth-sarina, labyrinth-sarina-setting, labyrinth-rea, labyrinth-claude-code, labyrinth-rea-setup, labyrinth-sarina-reflect, labyrinth-sarina-voice-setup, labyrinth-sarina-warm, labyrinth-install, labyrinth-notify-activate, cls | left | |
 | labyrinth-sarina-ask, labyrinth-sarina-speak | not ported: they wait for my voice test | |
 
@@ -53,6 +59,20 @@ Found while porting, fixed in the scripts and the ports alike:
   to the last line when the file did not end with a newline (in /etc/fstab, that breaks the last mount); the file system's
   UUID went unchecked into the sed expression that writes the kernel command line; "configured zram swap" was said even when
   its file could not be written.
+- `labyrinth-agent-window`: when systemd-run could not set the timer that closes the window (a leftover unit of the same name
+  does that: open, close, open again quickly), the rules stayed with nothing to remove them, for good: a sudoers file outlives
+  a restart. They are removed again now and it says so. SUDO_USER went into the rules unchecked; it must be an account's name.
+- `labyrinth-agent-setup`: the owner's name went into sudoers checked only by `id` (which also takes a uid); `--agent root`
+  (or any account below uid 1000) locked that account's password and gave the owner root without one; the owner as the agent
+  was taken. All refused now.
+- `labyrinth-ecosystem-setup`: a failed `openssl rand` inside the here-document wrote an empty SARINA_SERVICE_TOKEN (the port
+  takes the token from getrandom); the image's hash and the key's public half could be left empty likewise; the model's name went
+  into service.env unchecked (a newline in it adds a setting); `ollama list | grep -q` under pipefail said a model was missing
+  when grep stopped reading early; `--help` printed four lines of code after the text.
+- `labyrinth-grub-theme --preview FILE` with a relative FILE wrote the picture into its work folder, which it then removed; a
+  GRUB_GFXMODE line was glued to a last line without a newline; an icon was copied under any class name grub.cfg gave (a `/` in
+  one would have written outside the icons' folder).
+- `labyrinth-security-setting scan -x` handed `-x` to heimdalld as an option; it is `./-x` now.
 
 ## Not 1:1
 

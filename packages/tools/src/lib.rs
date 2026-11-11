@@ -20,14 +20,25 @@
 //!   rollback         labyrinth-rollback            the whole system back to a snapshot, and back again
 //!   bootfinish       labyrinth-install-bootfinish  the installer's last step in the installed system
 //!   install_cleanup  labyrinth-install-cleanup     the live medium's pieces out of the installed system, the kernels back
+//!   agent_setup      labyrinth-agent-setup         the engineering agent's own account and its sudo rules
+//!   agent_window     labyrinth-agent-window        the owner opens the agent's broad root commands for some hours
+//!   ecosystem        labyrinth-ecosystem-setup     Ollama, Sarina, Heimdall and Limbo wired up together
+//!   hardware         labyrinth-hardware-setup      only the drivers and device tools this computer needs
+//!   grub_theme       labyrinth-grub-theme          the boot menu theme
+//!   security_setting labyrinth-security-setting    the security settings Settings asks for
 
 pub mod agent;
+pub mod agent_setup;
+pub mod agent_window;
 pub mod appnet;
 pub mod appnet_ask;
 pub mod apps;
 pub mod ask_agent;
 pub mod bootfinish;
+pub mod ecosystem;
 pub mod first_components;
+pub mod grub_theme;
+pub mod hardware;
 pub mod install_cleanup;
 pub mod ipconfig;
 pub mod launch;
@@ -38,6 +49,7 @@ pub mod pyre;
 pub mod quarantine;
 pub mod rollback;
 pub mod scan;
+pub mod security_setting;
 pub mod selfcheck;
 pub mod sh;
 

@@ -526,15 +526,14 @@ pub fn digits(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|c| c.is_ascii_digit())
 }
 
-/// An account name that is safe to write into sudoers and to hand to programs: letters, digits, `_` `-` `.`, not starting with
-/// `-` or `.`, at most 32 bytes, an optional `$` at the end (machine accounts).
+/// An account's name, safe to write into sudoers and to hand to programs: a letter or `_` first, then letters, digits, `.`, `_`,
+/// `-`, at most 32 bytes (^[A-Za-z_][A-Za-z0-9._-]{0,31}$).
 pub fn account_name(s: &str) -> bool {
-    let core = s.strip_suffix('$').unwrap_or(s);
-    !core.is_empty()
-        && s.len() <= 32
-        && !core.starts_with('-')
-        && !core.starts_with('.')
-        && core.bytes().all(|c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'-' | b'.'))
+    let b = s.as_bytes();
+    !b.is_empty()
+        && b.len() <= 32
+        && (b[0].is_ascii_alphabetic() || b[0] == b'_')
+        && b.iter().all(|&c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'-' | b'.'))
 }
 
 /// printf '%-Ns': padded with spaces to N bytes (bash counts bytes).
@@ -628,10 +627,10 @@ mod tests {
 
     #[test]
     fn account_names() {
-        for ok in ["owner", "claude-agent", "a_b", "x1", "m$"] {
+        for ok in ["owner", "claude-agent", "a_b", "x1", "_x", "A.b"] {
             assert!(account_name(ok), "{ok}");
         }
-        for bad in ["", "-x", ".x", "a b", "a\nb", "ALL,x", "a:b", "%wheel", "$", &"a".repeat(33)] {
+        for bad in ["", "-x", ".x", "1000", "a b", "a\nb", "ALL,x", "a:b", "%wheel", "m$", &"a".repeat(33)] {
             assert!(!account_name(bad), "{bad:?}");
         }
     }

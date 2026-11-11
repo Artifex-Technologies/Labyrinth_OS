@@ -73,6 +73,30 @@ path = "src/bin/labyrinth-install-bootfinish.rs"
 name = "labyrinth-install-cleanup"
 path = "src/bin/labyrinth-install-cleanup.rs"
 
+[[bin]]
+name = "labyrinth-agent-setup"
+path = "src/bin/labyrinth-agent-setup.rs"
+
+[[bin]]
+name = "labyrinth-agent-window"
+path = "src/bin/labyrinth-agent-window.rs"
+
+[[bin]]
+name = "labyrinth-ecosystem-setup"
+path = "src/bin/labyrinth-ecosystem-setup.rs"
+
+[[bin]]
+name = "labyrinth-hardware-setup"
+path = "src/bin/labyrinth-hardware-setup.rs"
+
+[[bin]]
+name = "labyrinth-grub-theme"
+path = "src/bin/labyrinth-grub-theme.rs"
+
+[[bin]]
+name = "labyrinth-security-setting"
+path = "src/bin/labyrinth-security-setting.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }

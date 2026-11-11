@@ -61,7 +61,7 @@ BLOCK = first_block_device()
 
 SYSBIN = ("bash sh env sed grep awk gawk tail head cat cut tr date mktemp rm mv cp ls sort diff rmdir install mkdir chmod chown ln df sync "
           "id touch basename dirname xargs sha256sum wc printf sleep seq python3 setsid stat readlink realpath getent tee test true false "
-          "uname find").split()
+          "uname find openssl").split()
 
 FAKE = r"""#!/bin/sh
 W=@W@
@@ -117,9 +117,14 @@ shift
 /usr/bin/chmod 755 "$W/ov/prog"
 cd /
 trap - EXIT
+cwd=${INNER_CWD:-/}
+uid=${AS_UID:-}
 export PATH="$INNER_PATH"
-unset INNER_PATH
-exec /usr/bin/chroot "$R" "$W/ov/prog" "$@"
+unset INNER_PATH INNER_CWD AS_UID
+if [ -n "$uid" ]; then
+  exec /usr/bin/chroot --userspec="$uid:$uid" --groups="$uid" "$R" /usr/bin/env -C "$cwd" "$W/ov/prog" "$@"
+fi
+exec /usr/bin/chroot "$R" /usr/bin/env -C "$cwd" "$W/ov/prog" "$@"
 """
 
 
@@ -286,8 +291,12 @@ def case(prog, name, steps, setup, env=None, differs=(), norm_more=None):
     e = dict(ENV)
     e.update(env or {})
     full = (lambda t: norm_more(norm(t))) if norm_more else norm
-    P.case(prog, name, [dict(s, wrap=WRAP) for s in steps], setup=setup, env=e, differs=differs, norm=full, snap=snap, teardown=teardown, bare=True,
-           check=wrap_ok)
+    run = []
+    for s in steps:
+        # user: run as that uid in the world; cwd: the folder in the world it starts in
+        inner = {k: v for k, v in (("AS_UID", s.get("user")), ("INNER_CWD", s.get("cwd"))) if v}
+        run.append(dict({k: v for k, v in s.items() if k not in ("user", "cwd")}, wrap=WRAP, env=dict(s.get("env", {}), **inner)))
+    P.case(prog, name, run, setup=setup, env=e, differs=differs, norm=full, snap=snap, teardown=teardown, bare=True, check=wrap_ok)
 
 
 # ---------------------------------------------------------------- labyrinth-rollback

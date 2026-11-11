@@ -160,7 +160,8 @@ def fastclock():
 class Case:
     """prog: the program the steps run (a step may name another with "prog"); steps: [{args, env, stdin, cwd, prog, wrap}]
     (bare: the program's path is given as it is, also for a script without its x bit: the wrap copies it into the world);
-    setup(paths): makes the world; env: for every step; differs: what is not compared ("calls", "tree", ("out", i), ("err", i));
+    setup(paths): makes the world; env: for every step; differs: what is not compared ("calls", "tree", ("out", i), ("err", i),
+    ("rc", i): a step's exit code);
     settle: seconds to wait after each step (for what a program left running); watch(paths): for a program that keeps
     running, what happens while it runs (it is stopped afterwards); sort_calls: the calls' order is not compared (threads);
     norm: more making alike, text -> text; snap(): more of the files afterwards (a dict); check(results, calls, tree): after
@@ -304,9 +305,9 @@ def same(c, py, rs):
         pc, rc_ = "".join(sorted(pc.splitlines(True))), "".join(sorted(rc_.splitlines(True)))
     problems = []
     for i, (a, b) in enumerate(zip(pr, rr)):
-        if a.get("rc") != b.get("rc"):
+        if a.get("rc") != b.get("rc") and ("rc", i) not in c.differs:
             problems.append("step %d: exit %s vs %s" % (i, a.get("rc"), b.get("rc")))
-        crash = a.get("rc") == 1 and "Traceback (most recent call last)" in a.get("err", "")
+        crash = a.get("rc") == 1 and "Traceback (most recent call last)" in a.get("err", "") and ("err", i) not in c.differs
         if crash:
             if "unexpected error (the Python script stopped here with a traceback)" not in b.get("err", ""):
                 problems.append("step %d: the script crashed, the Rust program did not say so: %r" % (i, b.get("err")))
@@ -334,6 +335,8 @@ import cases_ipconfig  # noqa: E402,F401
 import cases_small  # noqa: E402,F401
 import cases_agent  # noqa: E402,F401
 import cases_root  # noqa: E402,F401
+import cases_root2  # noqa: E402,F401
+import cases_user  # noqa: E402,F401
 
 
 

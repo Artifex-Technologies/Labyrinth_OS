@@ -20,11 +20,13 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --model) MODEL="$2"; shift 2 ;;
     --no-limbo-profile) PROFILE=0; shift ;;
-    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
 done
 [[ $EUID -eq 0 ]] || { echo "run as root: sudo labyrinth-ecosystem-setup" >&2; exit 1; }
+# the name goes into Sarina's service.env: a model's name and nothing else (a newline would add a setting of its own)
+[[ $MODEL =~ ^[A-Za-z0-9._:/-]{1,128}$ ]] || { echo "bad model name" >&2; exit 2; }
 say() { echo "==> $*"; }
 have_unit() { systemctl cat "$1" >/dev/null 2>&1; }
 
@@ -51,9 +53,11 @@ fi
 if have_unit sarina-service.service; then
   install -d -m750 -o root -g sarina /etc/sarina
   if [[ ! -f /etc/sarina/service.env ]]; then
+    # a failed openssl inside the text below would have written an empty token
+    if ! token=$(openssl rand -hex 24) || [[ ! $token =~ ^[0-9a-f]{48}$ ]]; then echo "could not make a token (openssl rand)" >&2; exit 1; fi
     cat > /etc/sarina/service.env <<EOF
 # Written by labyrinth-ecosystem-setup. Sarina's service: a local Ollama model, an access token, Limbo and Heimdall.
-SARINA_SERVICE_TOKEN=$(openssl rand -hex 24)
+SARINA_SERVICE_TOKEN=$token
 OPENAI_BASE_URL=http://127.0.0.1:11434/v1
 OPENAI_API_KEY=local-token
 OPENAI_MODEL=$MODEL
@@ -140,17 +144,20 @@ if have_unit limbo.service && [[ $PROFILE -eq 1 ]]; then
     install -d -m755 /etc/limbo/validation; install -d -m700 /etc/limbo/keys
     [[ -f /etc/limbo/keys/validation ]] || ssh-keygen -q -t ed25519 -N "" -C validation@labyrinth -f /etc/limbo/keys/validation
     chmod 600 /etc/limbo/keys/validation
+    # read first: inside the text below a failure would have left an empty value
+    sha=$(sha256sum "$IMG" | cut -d' ' -f1)
+    pub=$(cat /etc/limbo/keys/validation.pub)
     cat > /etc/limbo/validation/arch-validate.json <<EOF
 {
   "manifest": {
     "name": "validate", "os": "linux",
-    "image": {"path": "$IMG", "sha256": "$(sha256sum "$IMG" | cut -d' ' -f1)"},
+    "image": {"path": "$IMG", "sha256": "$sha"},
     "cpus": 2, "memory_mb": 2048,
     "network": {"mode": "none"},
     "disposable": true,
     "access": {"user": "analyst", "sudo": true},
     "app": {"name": "validate", "exec": "true"},
-    "provision": {"ssh_public_key": "$(cat /etc/limbo/keys/validation.pub)"}
+    "provision": {"ssh_public_key": "$pub"}
   },
   "ssh_identity": "/etc/limbo/keys/validation",
   "max_seconds": 600,
@@ -168,11 +175,15 @@ systemctl daemon-reload
 for u in ollama limbo heimdall sarina-service; do
   if have_unit "$u.service"; then systemctl enable --now "$u.service" >/dev/null 2>&1 && say "enabled and started $u" || echo "warning: could not start $u" >&2; fi
 done
-if command -v ollama >/dev/null && ! ollama list 2>/dev/null | grep -q "^$MODEL"; then
-  echo
-  echo "The model $MODEL is not on this machine yet. Pull it (5 GB):  ollama pull $MODEL"
-fi
-if command -v ollama >/dev/null && ! ollama list 2>/dev/null | grep -q "^nomic-embed-text"; then
-  echo "For finding her notes by meaning, also pull the small embedding model (270 MB):  ollama pull nomic-embed-text"
+if command -v ollama >/dev/null; then
+  # read whole: `ollama list | grep -q` under pipefail said "missing" when grep stopped reading before ollama had written all
+  models=$(ollama list 2>/dev/null || true)
+  if ! grep -q "^$MODEL" <<<"$models"; then
+    echo
+    echo "The model $MODEL is not on this machine yet. Pull it (5 GB):  ollama pull $MODEL"
+  fi
+  if ! grep -q "^nomic-embed-text" <<<"$models"; then
+    echo "For finding her notes by meaning, also pull the small embedding model (270 MB):  ollama pull nomic-embed-text"
+  fi
 fi
 say "done. Check it with: curl -s 127.0.0.1:8930/healthz ; labyrinth-ask-sarina 'hello'"

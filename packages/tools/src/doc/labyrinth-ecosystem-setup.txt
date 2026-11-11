@@ -1,0 +1,14 @@
+# labyrinth-ecosystem-setup: wire up Ollama, Sarina, Heimdall and Limbo so they work together. Run as root:
+#   sudo labyrinth-ecosystem-setup [--model qwen3:8b] [--no-limbo-profile]
+#
+# Idempotent: it creates what is missing and leaves what exists alone (your edited config files are never overwritten).
+# What it does, and why:
+#   * Ollama: context window 16384 (Sarina needs at least 8192), service enabled.
+#   * Sarina: /etc/sarina/service.env with a fresh random token, the local model, and the Limbo and Heimdall endpoints;
+#     her service gets the limbo-agent group; the sessions folder is made readable to Heimdall (and writable by the
+#     wheel group, so an administrator can ask her things from a terminal and still have Heimdall watch the session).
+#   * Heimdall: /etc/heimdall/config.json pointing at Sarina's sessions and Limbo's event log; the limbo-heimdall group.
+#   * Limbo: its control service enabled; a validation profile "arch-validate" (a disposable guest with NO network and a time
+#     limit) if a base image exists at /var/lib/limbo/images/arch-cloudimg.qcow2. The profile is what Sarina may run
+#     commands in. Delete /etc/limbo/validation/arch-validate.json to take that away.
+# It never pulls a model: `ollama pull qwen3:8b` (5 GB) is a separate step it prints at the end if the model is missing.

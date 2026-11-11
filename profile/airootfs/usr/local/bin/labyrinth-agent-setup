@@ -40,7 +40,12 @@ if [[ $REMOVE -eq 1 ]]; then
   exit 0
 fi
 [[ -n $OWNER ]] || { echo "say who the owner is: --owner USER" >&2; exit 2; }
+# both names go into sudoers: an account's name and nothing else; the agent's account is its own (`--agent root` locked root's
+# password and gave the owner root without one)
+[[ $OWNER =~ ^[A-Za-z_][A-Za-z0-9._-]{0,31}$ ]] || { echo "bad owner name" >&2; exit 2; }
 id "$OWNER" >/dev/null 2>&1 || { echo "no such user: $OWNER" >&2; exit 2; }
+[[ $OWNER != "$AGENT" ]] || { echo "the owner and the agent must be two accounts" >&2; exit 2; }
+if id "$AGENT" >/dev/null 2>&1 && (( $(id -u "$AGENT") < 1000 )); then echo "$AGENT is a system account, not one for the agent" >&2; exit 2; fi
 
 if ! id "$AGENT" >/dev/null 2>&1; then
   useradd -m -s /bin/bash -c "Claude, the engineering agent (audited account)" "$AGENT"

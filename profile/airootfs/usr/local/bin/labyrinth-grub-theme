@@ -13,12 +13,16 @@ src=/usr/share/labyrinth/grub-evodevo
 preview=
 if [ "${1:-}" = --preview ]; then
     preview=${2:?usage: labyrinth-grub-theme --preview FILE}
+    # from where the command was given: below, the script works in a folder it then removes
+    case $preview in /*) ;; *) preview=$PWD/$preview ;; esac
 fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 cp -r "$src"/. "$work"/
 cd "$work"
 
+# FILE gets LINE on a line of its own (`echo LINE >>FILE` glued it to a last line without a newline)
+add_line() { if [ -s "$1" ] && [ -n "$(tail -c1 "$1")" ]; then echo >>"$1"; fi; printf '%s\n' "$2" >>"$1"; }
 set_var() {   # set_var NAME VALUE: change the first NAME=VALUE setting (the later ones are derived values)
     sed -i -E "0,/^$1=/s|^$1=.*|$1='$2'|" install.sh
 }
@@ -64,9 +68,9 @@ cp /boot/grub/grub.cfg "$work/grub.cfg.orig"
 if grep -q '^#\?GRUB_GFXMODE=' /etc/default/grub; then
     sed -i -E "s|^#?GRUB_GFXMODE=.*|GRUB_GFXMODE=$native,auto|" /etc/default/grub
 else
-    echo "GRUB_GFXMODE=$native,auto" >>/etc/default/grub
+    add_line /etc/default/grub "GRUB_GFXMODE=$native,auto"
 fi
-grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub || echo 'GRUB_GFXPAYLOAD_LINUX=keep' >>/etc/default/grub
+grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub || add_line /etc/default/grub 'GRUB_GFXPAYLOAD_LINUX=keep'
 
 if sh ./install.sh >"$work/install.log" 2>&1 && grep -q '^[[:space:]]*menuentry ' /boot/grub/grub.cfg && grep -q initrd /boot/grub/grub.cfg; then
     # The theme gives each menu entry its icon through a class it writes into grub.cfg (evodevo_entry_N), which every later
@@ -76,6 +80,8 @@ if sh ./install.sh >"$work/install.log" 2>&1 && grep -q '^[[:space:]]*menuentry 
     grep -o -E "^[[:space:]]*menuentry '[^']*'( --class [^ ]+)+" /boot/grub/grub.cfg | while read -r line; do
         entry=$(printf '%s\n' "$line" | grep -o -E 'evodevo_entry_[0-9]+' | head -n1)
         own=$(printf '%s\n' "$line" | grep -o -E -- '--class [^ ]+' | sed 's/--class //' | grep -v '^evodevo_entry_' | head -n1)
+        # (only a plain name: a / in a class would write outside the icons' folder)
+        case $own in *[!A-Za-z0-9_-]*) own= ;; esac
         if [ -n "$entry" ] && [ -n "$own" ] && [ -f "$icons/$entry.png" ] && [ ! -e "$icons/$own.png" ]; then
             cp "$icons/$entry.png" "$icons/$own.png"
         fi

@@ -15,6 +15,8 @@ UNIT=labyrinth-agent-window-close
 note() { logger -t labyrinth-agent -p auth.warning -- "$*"; echo "$*"; }
 [[ $EUID -eq 0 ]] || { echo "run it with sudo: sudo labyrinth-agent-window HOURS" >&2; exit 1; }
 [[ -n ${SUDO_USER:-} && ${SUDO_USER} != "$AGENT" ]] || { echo "only the owner opens the window (not the agent itself)" >&2; exit 1; }
+# it is written into the window's rules: an account's name and nothing else
+[[ $SUDO_USER =~ ^[A-Za-z_][A-Za-z0-9._-]{0,31}$ ]] || { echo "SUDO_USER is not an account name" >&2; exit 1; }
 
 case ${1:-4} in
   --status)
@@ -38,5 +40,10 @@ RULES
 visudo -cf "$tmp" >/dev/null || { rm -f "$tmp"; echo "the window's rules did not validate; nothing changed" >&2; exit 1; }
 install -m440 -o root -g root "$tmp" "$FILE"; rm -f "$tmp"
 systemctl stop "$UNIT.timer" 2>/dev/null || true
-systemd-run --quiet --unit="$UNIT" --on-active="${HOURS}h" --timer-property=AccuracySec=1min /usr/bin/rm -f "$FILE"
+# without the timer nothing would close the window (a leftover unit of the same name makes systemd-run fail)
+if ! systemd-run --quiet --unit="$UNIT" --on-active="${HOURS}h" --timer-property=AccuracySec=1min /usr/bin/rm -f "$FILE"; then
+  rm -f "$FILE"
+  echo "could not set the timer that closes the window, so it was not opened" >&2
+  exit 1
+fi
 note "agent window opened by $SUDO_USER for $HOURS h"
