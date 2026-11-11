@@ -63,9 +63,15 @@ def stale_session(started, upgraded, slack=60):
     return started is not None and upgraded is not None and started + slack < upgraded
 
 
+def version_key(name):
+    """For sorting kernel versions: runs of digits compared as numbers (7.10 after 7.9), the rest as text."""
+    parts = re.split(r"([0-9]+)", name)
+    return [int(p) if i % 2 else p for i, p in enumerate(parts)], name
+
+
 def newest_kernel_module_dir(base="/usr/lib/modules"):
-    """The newest installed kernel's version string per `pacman`-style naming (one per flavour, compared by flavour)."""
-    return sorted(os.listdir(base)) if os.path.isdir(base) else []
+    """The installed kernels' module folders, sorted by version (the newest last)."""
+    return sorted(os.listdir(base), key=version_key) if os.path.isdir(base) else []
 
 
 def login_screen_problem(display_manager, greetd_config):
@@ -113,8 +119,8 @@ def checks():
     mods = [m for m in newest_kernel_module_dir() if m.endswith(rel.split("-")[-1])]
     if mods and rel not in mods:
         add(WARN, "running kernel is not installed any more", "running %s; installed: %s. Reboot." % (rel, ", ".join(mods)))
-    elif mods and sorted(mods)[-1] != rel:
-        add(WARN, "a newer kernel is installed", "running %s, installed %s. Reboot when convenient." % (rel, sorted(mods)[-1]))
+    elif mods and mods[-1] != rel:
+        add(WARN, "a newer kernel is installed", "running %s, installed %s. Reboot when convenient." % (rel, mods[-1]))
     else:
         add(OK, "kernel", rel)
 
@@ -184,15 +190,16 @@ def checks():
     return out
 
 
+def exit_status(statuses):
+    """1 when anything failed (also after a warning), else 2 when anything warned, else 0."""
+    return 1 if FAIL in statuses else 2 if WARN in statuses else 0
+
+
 def main(argv):
     quiet = "--quiet" in argv
     results = checks()
-    worst = 0
+    worst = exit_status([r[0] for r in results])
     for status, name, detail in results:
-        if status == FAIL:
-            worst = max(worst, 1)
-        elif status == WARN:
-            worst = max(worst, 2) if worst == 0 else worst
         if quiet and status == OK:
             continue
         print("%-5s %s%s" % (status, name, (": " + detail) if detail else ""))

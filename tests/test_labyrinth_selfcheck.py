@@ -44,5 +44,19 @@ class SelfCheck(unittest.TestCase):
         self.assertIn("sddm.service", sc.login_screen_problem("/usr/lib/systemd/system/sddm.service", conf))
         self.assertIn("no greeter", sc.login_screen_problem("/usr/lib/systemd/system/greetd.service", "vt = 7\n"))
 
+    def test_kernels_sort_by_version(self):
+        # fixed 2026-11-11: sorted as text, a leftover 7.9 module folder counted as newer than a running 7.10
+        d = tempfile.mkdtemp()
+        for n in ("7.10.0-2-cachyos", "7.9.2-1-cachyos", "7.10.0-1-cachyos"):
+            os.mkdir(os.path.join(d, n))
+        self.assertEqual(sc.newest_kernel_module_dir(d), ["7.9.2-1-cachyos", "7.10.0-1-cachyos", "7.10.0-2-cachyos"])
+
+    def test_a_failure_after_a_warning_is_still_a_failure(self):
+        # fixed 2026-11-11: a warning before a failure left the exit status at 2
+        self.assertEqual(sc.exit_status([sc.WARN, sc.FAIL]), 1)
+        self.assertEqual(sc.exit_status([sc.FAIL, sc.WARN]), 1)
+        self.assertEqual(sc.exit_status([sc.OK, sc.WARN]), 2)
+        self.assertEqual(sc.exit_status([sc.OK]), 0)
+
 if __name__ == "__main__":
     unittest.main()

@@ -62,7 +62,8 @@ def main(argv):
         return 2
     path = argv[1]
     tool = argv[2] if len(argv) == 3 else DEFAULT_TOOL
-    with open(path, encoding="utf-8") as f:
+    # newline="": read the line ends as they are, so a file with \r\n keeps them
+    with open(path, encoding="utf-8", newline="") as f:
         text = f.read()
     new, status = apply(text, tool)
     if status.startswith("refused"):

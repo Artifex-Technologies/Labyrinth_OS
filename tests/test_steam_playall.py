@@ -1,11 +1,14 @@
+import contextlib
+import io
 import unittest
 
 import os
 import sys
+import tempfile
 
 # The shipped copy is the only one: profile/airootfs/usr/local/bin/steam_playall.py
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profile", "airootfs", "usr", "local", "bin"))
-from steam_playall import apply  # noqa: E402
+from steam_playall import apply, main  # noqa: E402
 
 BASE = '''"InstallConfigStore"
 {
@@ -67,6 +70,18 @@ class T(unittest.TestCase):
         new, _ = apply((BASE % "").replace("\n", "\r\n"))
         self.assertNotIn("\r\n\n", new)
         self.assertNotRegex(new, r"(?<!\r)\n")
+
+    def test_the_program_keeps_a_files_crlf(self):
+        # fixed 2026-11-11: the file was read with universal newlines, so one with \r\n was written back with \n everywhere
+        d = tempfile.mkdtemp()
+        p = os.path.join(d, "config.vdf")
+        with open(p, "w", newline="") as f:
+            f.write((BASE % "").replace("\n", "\r\n"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(["steam_playall.py", p]), 0)
+        after = open(p, newline="").read()
+        self.assertIn('"proton_experimental"\r\n', after)
+        self.assertEqual(after.count("\n"), after.count("\r\n"))
 
 
 if __name__ == "__main__":

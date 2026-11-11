@@ -14,7 +14,7 @@ to the stand-ins, and files afterwards (names, modes, contents), byte for byte, 
     (the Python script stopped here with a traceback)": the two standard errors are not compared;
   - what a case lists in `differs` (a difference on purpose, said in the module's "Not 1:1").
 
-    compare.py [--python DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep]
+    compare.py [--python DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep] [--show]
 
 --python: the folder with the Python scripts (default: ../python, else the repository's profile/airootfs/usr/local/bin)
 --bin: the folder with the Rust programs (default: ../target/release; build with cargo build --release)
@@ -70,7 +70,7 @@ def stubs(names):
         write(os.path.join(WORLD, "bin", n), STUB, 0o755)
 
 
-def snapshot(root, skip=("bin", "calls")):
+def snapshot(root, skip=("bin", "calls", "ov")):
     out = {}
     if not os.path.isdir(root):
         return out
@@ -114,6 +114,44 @@ def base_normalize(text):
     return text
 
 
+NS = r"""#!/bin/sh
+# runs a program in a world of its own (unshare -r -m -u: root of a user namespace, nothing changes outside it), with what
+# $WORLD/mounts lists laid over the system's, line by line:
+#   hostname NAME          the host name
+#   bind SRC DST           SRC (a file or folder of the world) seen at DST
+#   whiteout DIR NAME      DIR/NAME is not there (with: overlay DIR)
+#   overlay DIR            $WORLD/ov/DIR/up laid over DIR (what it holds is added, its whiteouts hidden)
+set -e
+while read -r what a b; do
+  case "$what" in
+    hostname) /usr/bin/hostname "$a" ;;
+    bind) /usr/bin/mount --bind "$a" "$b" ;;
+    whiteout) /usr/bin/mkdir -p "$WORLD/ov$a/up"; [ -c "$WORLD/ov$a/up/$b" ] || /usr/bin/mknod "$WORLD/ov$a/up/$b" c 0 0 ;;
+    overlay) /usr/bin/mkdir -p "$WORLD/ov$a/up" "$WORLD/ov$a/work"
+             /usr/bin/mount -t overlay overlay -o "lowerdir=$a,upperdir=$WORLD/ov$a/up,workdir=$WORLD/ov$a/work,userxattr" "$a" ;;
+  esac
+done < "$WORLD/mounts"
+exec "$@"
+"""
+
+
+def world_of_its_own(mounts):
+    """For a case's setup: the namespace's script and its list (see NS); a step runs in it with wrap=NS_WRAP."""
+    write(os.path.join(WORLD, "ns.sh"), NS, 0o755)
+    write(os.path.join(WORLD, "mounts"), "".join(" ".join(m) + "\n" for m in mounts))
+
+
+NS_WRAP = ["/usr/bin/unshare", "-r", "-m", "-u", "--", "/bin/sh", os.path.join(WORLD, "ns.sh")]
+
+
+def fastclock():
+    """parity/fastclock.c built once (for LD_PRELOAD): sleeps return at once and move the clocks on."""
+    so = os.path.join(SCRATCH, "fastclock.so")
+    if not os.path.exists(so):
+        subprocess.run(["cc", "-O2", "-shared", "-fPIC", "-o", so, os.path.join(HERE, "fastclock.c"), "-ldl"], check=True)
+    return so
+
+
 class Case:
     """prog: the program the steps run (a step may name another with "prog"); steps: [{args, env, stdin, cwd, prog, wrap}];
     setup(paths): makes the world; env: for every step; differs: what is not compared ("calls", "tree", ("out", i), ("err", i));
@@ -141,7 +179,9 @@ def impl_paths(kind):
     out = {}
     for n in names:
         if kind == "python":
-            out[n] = os.path.join(ARGS.python, n)
+            # a script still in the image (not switched yet) is read from there
+            own = os.path.join(ARGS.python, n)
+            out[n] = own if os.path.exists(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", "bin", n)
         else:
             out[n] = os.path.join(ARGS.bin, n.replace(".py", ""))
     return out
@@ -245,6 +285,11 @@ sys.path.insert(0, HERE)
 import cases_scan  # noqa: E402,F401  (each cases_*.py adds its cases with case())
 import cases_appnet  # noqa: E402,F401
 import cases_apps  # noqa: E402,F401
+import cases_selfcheck  # noqa: E402,F401
+import cases_ipconfig  # noqa: E402,F401
+import cases_small  # noqa: E402,F401
+
+
 
 
 def main():
@@ -256,6 +301,7 @@ def main():
     ap.add_argument("-v", action="store_true")
     ap.add_argument("--keep", action="store_true")
     ap.add_argument("--case", help="only the cases whose name has this text")
+    ap.add_argument("--show", action="store_true", help="also print what the script did (exit codes, output, calls)")
     ARGS = ap.parse_args()
     if not ARGS.python:
         own = os.path.join(TOOLS, "python")
@@ -269,6 +315,11 @@ def main():
             py = run_case(c, "python")
             rs = run_case(c, "rust")
             bad = same(c, py, rs)
+            if ARGS.show:
+                print("== %s: %s" % (c.prog, c.name))
+                for r in py[0]:
+                    print("exit %s\n%s%s" % (r.get("rc"), r.get("out", ""), "stderr: " + r["err"] if r.get("err") else ""))
+                print("calls:\n" + py[1])
             n = counts.setdefault(c.prog, [0, 0])
             n[0] += 1
             if bad:

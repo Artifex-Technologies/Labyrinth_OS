@@ -81,6 +81,9 @@ def lease(seconds):
     return f"{d} days {h:02d}:{m:02d}:{s:02d} remaining" if d else f"{h:02d}:{m:02d}:{s:02d} remaining"
 
 
+CONTINUED = 41  # a further gateway or DNS server goes under the first one's value
+
+
 def line(label, value, width=36):
     """'   IPv4 Address. . . . . . . . . . . : 192.168.1.5', as Windows aligns it."""
     print(f"   {(label + '. ' * width)[:width - 1].rstrip().ljust(width - 1)} : {value}")
@@ -133,13 +136,13 @@ def show(full):
             gws = gateways.get(dev, [])
             line("Default Gateway", gws[0] if gws else "")
             for g in gws[1:]:
-                print(" " * 43 + g)
+                print(" " * CONTINUED + g)
             if full:
                 dns = nm.get("IP4.DNS", []) + nm.get("IP6.DNS", []) or resolv_conf()
                 if dns:
                     line("DNS Servers", dns[0])
                     for d in dns[1:]:
-                        print(" " * 43 + d)
+                        print(" " * CONTINUED + d)
         print()
 
 

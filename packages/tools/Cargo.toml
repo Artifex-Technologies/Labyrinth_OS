@@ -38,6 +38,23 @@ path = "src/bin/labyrinth-launch.rs"
 name = "labyrinth-apps"
 path = "src/bin/labyrinth-apps.rs"
 
+[[bin]]
+name = "labyrinth-selfcheck"
+path = "src/bin/labyrinth-selfcheck.rs"
+
+[[bin]]
+name = "ipconfig"
+path = "src/bin/ipconfig.rs"
+
+# the script was steam_playall.py
+[[bin]]
+name = "steam_playall"
+path = "src/bin/steam_playall.rs"
+
+[[bin]]
+name = "labyrinth-first-components"
+path = "src/bin/labyrinth-first-components.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }
