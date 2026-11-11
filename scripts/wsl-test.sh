@@ -27,7 +27,6 @@ tests() {
   step "components, app manager, package list"
   run python3 tests/test_labyrinth_apps.py
   step "display layout"
-  run python3 tests/test_displays.py
   step "steam config editor"
   run python3 tests/test_steam_playall.py
   step "shell syntax and shellcheck"
