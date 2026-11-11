@@ -1,4 +1,4 @@
-"""Tests for ipconfig's layout. Run: python tests/test_ipconfig.py"""
+"""Tests for ipconfig's layout. Run: python packages/tools/python/tests/test_ipconfig.py"""
 import contextlib
 import importlib.machinery
 import importlib.util
@@ -6,8 +6,7 @@ import io
 import os
 import unittest
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-path = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "ipconfig")
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ipconfig")
 loader = importlib.machinery.SourceFileLoader("ipconfig", path)
 spec = importlib.util.spec_from_loader("ipconfig", loader)
 ipc = importlib.util.module_from_spec(spec)

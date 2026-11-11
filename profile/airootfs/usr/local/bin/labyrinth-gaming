@@ -91,17 +91,17 @@ do_setup() {
   fi
 
   root=$(steam_root)
-  helper="$(dirname "$(readlink -f "$0")")/steam_playall.py"
+  helper=/usr/bin/steam_playall  # labyrinth-tools (the script was steam_playall.py next to this one)
   if [ -z "$root" ]; then
     echo "Steam has not been run yet: start it once and sign in, then run this again to enable Steam Play."
   elif pgrep -x steam >/dev/null 2>&1; then
     echo "Steam is running: close it fully, then run setup again so its config can be edited safely."
-  elif [ -f "$root/config/config.vdf" ] && [ -f "$helper" ]; then
+  elif [ -f "$root/config/config.vdf" ] && [ -x "$helper" ]; then
     # Prefer Proton-CachyOS if present, else Valve's Proton Experimental.
     tool=proton_experimental
     ls -d "$root"/compatibilitytools.d/proton-cachyos* /usr/share/steam/compatibilitytools.d/proton-cachyos* >/dev/null 2>&1 && \
       tool=$(basename "$(ls -d "$root"/compatibilitytools.d/proton-cachyos* /usr/share/steam/compatibilitytools.d/proton-cachyos* 2>/dev/null | head -1)")
-    python3 "$helper" "$root/config/config.vdf" "$tool"
+    "$helper" "$root/config/config.vdf" "$tool"
   fi
   echo
   do_check

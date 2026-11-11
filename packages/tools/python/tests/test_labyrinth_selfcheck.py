@@ -1,4 +1,4 @@
-"""Tests for labyrinth-selfcheck's pure parts. Run: python tests/test_labyrinth_selfcheck.py"""
+"""Tests for labyrinth-selfcheck's pure parts. Run: python packages/tools/python/tests/test_labyrinth_selfcheck.py"""
 import importlib.machinery
 import importlib.util
 import os
@@ -6,8 +6,7 @@ import tempfile
 import time
 import unittest
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-path = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin", "labyrinth-selfcheck")
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "labyrinth-selfcheck")
 loader = importlib.machinery.SourceFileLoader("labyrinth_selfcheck", path)
 spec = importlib.util.spec_from_loader("labyrinth_selfcheck", loader)
 sc = importlib.util.module_from_spec(spec)

@@ -6,8 +6,8 @@ import os
 import sys
 import tempfile
 
-# The shipped copy is the only one: profile/airootfs/usr/local/bin/steam_playall.py
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profile", "airootfs", "usr", "local", "bin"))
+# The script, kept for a rollback since the switch to labyrinth-tools' steam_playall: packages/tools/python/steam_playall.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from steam_playall import apply, main  # noqa: E402
 
 BASE = '''"InstallConfigStore"
