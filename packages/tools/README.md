@@ -108,6 +108,70 @@ Found while porting, fixed in the scripts and the ports alike:
 - `labyrinth-sarina-warm` put the model's name from sarina.env unchecked into the JSON it sends; `labyrinth-sarina-voice-setup`
   passed a voice name starting with `-` to the downloader as an option.
 
+### Why Rust for the shell scripts
+
+Not speed first: my order is security, then stability, then speed. What the ports bring, script by script:
+
+| Script (runs as) | What is safer or steadier now |
+| --- | --- |
+| labyrinth-rollback (root) | Renames never replace or enter anything (RENAME_NOREPLACE; `mv` moved a subvolume *into* a folder of the same name); a snapshot without info.xml no longer stops it silently through `pipefail` + `set -e`; the snapshot list, GRUB's comparison and the log need no `ls`, `sort`, `diff`, `sed`, `date`; the partition's top level is unmounted and its folder removed on every way out |
+| labyrinth-install-bootfinish (root, installer) | Lines are added on a line of their own (no setting glued to the last one of /etc/fstab or /etc/default/grub); the UUID that goes into the kernel command line is checked; every edit is written whole and renamed into place with the old file's mode and owner (no half-written /etc/default/grub when the disk fills) |
+| labyrinth-install-cleanup (root, installer) | No word splitting over kernel and preset names; the kernels are copied whole and renamed into place; /etc/skel's owner and modes set without following links |
+| labyrinth-agent-setup (root) | Account names checked before they go into sudoers (no uid as a name, no root or system account as the agent); the sudoers file is written whole, checked and renamed into place (sudo never sees half a file or none); Heimdall's config is edited without starting Python and written whole |
+| labyrinth-agent-window (root) | The window's rules are removed again when the timer that closes them cannot be set (they stayed for good); SUDO_USER checked before it goes into the rules; the rules written whole and renamed into place |
+| labyrinth-ecosystem-setup (root) | Sarina's token comes from the kernel's random numbers and is never empty (a failed openssl wrote an empty one); its file is 0640 and Sarina's from the start; the model's name is checked before it goes into service.env; no `ollama list \| grep -q` race under `pipefail`; JSON written as JSON |
+| labyrinth-hardware-setup (root, installer) | Package lists passed as lists (the script relied on word splitting of `$pk`) |
+| labyrinth-grub-theme (root, installer) | `--preview` with a relative file no longer loses the picture; icon names from grub.cfg checked (a `/` wrote outside the icons' folder); /etc/default/grub's lines added on their own line |
+| labyrinth-security-setting | A folder named like an option is not passed to heimdalld as one |
+| labyrinth-gaming | The system-wide Proton-CachyOS is found; config.vdf is read without starting Python; process and limit checks without `pgrep` and `ulimit`; Proton names with spaces are not split by `xargs` |
+| labyrinth-sarina, -setting, -reflect, -warm, -voice-setup | sarina.env no longer puts LD_PRELOAD or interpreter variables into what reflect starts; the model's name is put into JSON as JSON; voice names cannot be options; sarina.env written whole under a name only the program picks (the script used a fixed .tmp name) |
+| labyrinth-rea, labyrinth-rea-setup | The sandbox's arguments are a list built in one place; the version, the download's address and the hash taken from the environment are checked; Ghidra's hash is computed in-process |
+| labyrinth-claude-code | The installer is downloaded whole before it runs (no `curl \| bash`), and a failed download is reported |
+| labyrinth-install, labyrinth-notify-activate | Nothing to fix; no shell, `pgrep` or `seq` started for every notification activation |
+
+Measured on 2026-11-11 on my desktop (16 threads, 62 GB), bash 5.3.20, Python 3.14.9 (for the two scripts that started it),
+Rust 1.99.1. Old: each script as git has it at 3d27d69 (the image's, with the fixes above). New: the Rust release build of
+3d27d69. Times are the median of 30 runs each, p10-p90 in brackets; "less" is old minus new.
+
+| Program and case | Script | Rust | Less | CPU, script → Rust | Peak RSS, script → Rust |
+| --- | --- | --- | --- | --- | --- |
+| security-setting: auto-quarantine status | 1.71 ms (1.67-1.75) | 0.45 ms (0.44-0.47) | −74 % | 1.63 → 0.39 ms | 3.8 → 2.0 MB |
+| sarina-setting: forge status | 2.56 ms (2.52-2.64) | 0.46 ms (0.44-0.47) | −82 % | 2.99 → 0.39 ms | 3.8 → 2.1 MB |
+| sarina-setting: voice list | 3.50 ms (3.43-3.57) | 0.51 ms (0.49-0.54) | −85 % | 3.95 → 0.44 ms | 3.8 → 2.4 MB |
+| agent-window: --status | 2.83 ms (2.76-2.86) | 0.80 ms (0.76-0.84) | −72 % | 3.12 → 0.74 ms | 4.3 → 2.1 MB |
+| hardware-setup: --dry-run, an ASUS laptop | 5.34 ms (5.26-5.46) | 0.51 ms (0.49-0.53) | −90 % | 5.19 → 0.44 ms | 3.9 → 2.4 MB |
+| gaming: check, everything there | 34.4 ms (34.0-34.9) | 4.29 ms (4.04-4.50) | −88 % | 37.5 → 4.08 ms | 10.9 → 2.3 MB |
+| rollback: list | 47.5 ms (47.0-48.1) | 9.23 ms (9.11-9.41) | −81 % | 63.4 → 9.80 ms | 4.5 → 3.9 MB |
+| rollback: N --dry-run | 20.2 ms (20.0-20.6) | 13.1 ms (12.9-13.3) | −35 % | 22.3 → 14.1 ms | 4.1 → 4.0 MB |
+| sarina-reflect: a run with the Inbox | 13.3 ms (13.1-13.4) | 10.2 ms (10.0-10.5) | −23 % | 14.5 → 11.0 ms | 4.5 → 3.9 MB |
+| sarina-warm | 2.41 ms (2.36-2.50) | 0.81 ms (0.78-0.88) | −66 % | 2.86 → 0.73 ms | 3.8 → 2.1 MB |
+| rea: the sandbox's arguments, then bwrap | 4.66 ms (4.60-4.82) | 1.29 ms (1.25-1.32) | −72 % | 5.64 → 1.21 ms | 3.8 → 2.3 MB |
+| claude-code: status | 2.24 ms (2.16-2.32) | 0.48 ms (0.45-0.50) | −79 % | 2.18 → 0.42 ms | 3.9 → 2.1 MB |
+| install-cleanup: a mock root | 17.0 ms (16.6-17.6) | 1.28 ms (1.25-1.32) | −92 % | 16.8 → 1.19 ms | 4.2 → 2.6 MB |
+| install-bootfinish: everything (btrfs, ufw, theme) | 40.0 ms (39.3-41.1) | 18.6 ms (18.2-18.9) | −54 % | 41.9 → 19.2 ms | 4.0 → 4.0 MB |
+| agent-setup: first set-up, Heimdall told | 36.3 ms (35.8-37.3) | 11.3 ms (11.1-11.5) | −69 % | 37.2 → 12.3 ms | 11.1 → 4.0 MB |
+| ecosystem-setup: everything, a base image | 35.1 ms (34.6-36.1) | 14.4 ms (14.1-14.8) | −59 % | 36.8 → 15.6 ms | 7.5 → 3.9 MB |
+| grub-theme: install, a 3440x1440 monitor | 37.5 ms (36.9-38.1) | 5.38 ms (5.30-5.47) | −86 % | 50.6 → 5.73 ms | 4.0 → 3.8 MB |
+| **on disk, the 20 programs** | 86 KB of scripts (+ bash, coreutils, sed, grep, gawk already there) | 7.4 MB (323-423 KB each; 0.8 MB with zstd -19) | **+7.3 MB** | | |
+
+- Every case printed the same output and exit code on both sides (the bench compares the first run of each).
+- Where the Rust times stay high, the stand-ins are most of them: bootfinish starts about 30 programs (systemctl, snapper,
+  grub-mkconfig ...), reflect and the dry run start a shell stand-in that acts (a mount, a snapshot), and those cost the same on
+  both sides. agent-setup's and gaming's peak memory was Python's (the script started it for Heimdall's config and Steam's).
+- Worse: the disk. Twenty small programs carry Rust's standard library twenty times. One program with twenty names (as Heimdall's
+  Wi-Fi helpers are links to heimdalld) would be under 1 MB, but then which program runs depends on argv[0], and some of these
+  run as root through sudo: I kept one program per script. The ISO compresses them to well under 1 MB.
+- Not measured: the scripts' waits (sarina's 30 s for the server, notify-activate's 20 s for the panel), the same on both sides.
+
+How these numbers were measured: `cargo build --release && python3 -I parity/bench-scripts.py --runs 30` (a few minutes;
+`--commit` picks the scripts' revision, `--only` programs, `--json` a file). It builds each case's parity world (the cases named
+in the script), runs one unmeasured run of each side and compares their output, then 30 of each, alternating which goes first,
+one process at a time, at nice 19. A small C launcher (built with cc), started inside the world in place of the program, runs it
+and reports wall time, user + system CPU and peak RSS from wait4, so the namespace's own set-up is not counted; CPU and peak RSS
+include the stand-ins a program starts (a small C program answering from files; the parity's shell stand-in where a case's
+answer acts). A case that changes its world gets a fresh one before every run. Nothing on this computer is changed, nothing
+reaches the network.
+
 ## Not 1:1
 
 - `labyrinth-scan-downloads --watch` sleeps until the kernel reports a new file, a scan is due or the 5-minute look for new places
