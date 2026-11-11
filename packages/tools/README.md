@@ -25,6 +25,35 @@ Python behaviours the ports need: json.dumps' bytes, str.strip(), splitlines() .
 (os.path, shutil.move and rmtree as Python 3.14 does them, subprocess, time.strftime, shlex); `src/pyre.rs` gives the regex crate
 Python's own \w, \d and \s.
 
+## The shell scripts (started 2026-11-11)
+
+The bash and sh scripts of `profile/airootfs/usr/local/{bin,sbin}` get Rust ports too, for security and stability more than
+speed: no quoting or word-splitting bugs, programs started by argv rather than command strings, strict checks of what comes in,
+clear errors. Each is a bin with the script's name, arguments, output, files, calls and exit codes (`src/sh.rs` holds what they
+share); `parity/cases_root.py` runs each against its script (below). Not switched yet: the scripts are what the image runs.
+
+| Script | Port | Parity |
+| --- | --- | --- |
+| labyrinth-rollback | done (src/rollback.rs) | 30/30 |
+| labyrinth-install-bootfinish | done (src/bootfinish.rs) | 32/32 |
+| labyrinth-install-cleanup | done (src/install_cleanup.rs) | 18/18 |
+| labyrinth-agent-setup, labyrinth-agent-window, labyrinth-ecosystem-setup, labyrinth-hardware-setup, labyrinth-grub-theme, labyrinth-security-setting | left | |
+| labyrinth-gaming, labyrinth-sarina, labyrinth-sarina-setting, labyrinth-rea, labyrinth-claude-code, labyrinth-rea-setup, labyrinth-sarina-reflect, labyrinth-sarina-voice-setup, labyrinth-sarina-warm, labyrinth-install, labyrinth-notify-activate, cls | left | |
+| labyrinth-sarina-ask, labyrinth-sarina-speak | not ported: they wait for my voice test | |
+
+Found while porting, fixed in the scripts and the ports alike:
+
+- `labyrinth-rollback N` and `N --dry-run` stopped silently with exit code 2 when the snapshot had no info.xml (an interrupted
+  snapper run leaves such a snapshot): sed's failure reached `set -e` through `pipefail`.
+- `labyrinth-rollback undo` did not check that its `@rolled-back-DATE` name was free: `mv @ @rolled-back-DATE` would have moved
+  the system *into* a folder of that name, snapshots and all. The port renames with RENAME_NOREPLACE everywhere (nothing is ever
+  replaced or entered), and the script checks the name now.
+- `labyrinth-rollback list --device` (no value) stopped silently with exit code 1; it is a usage error now.
+- `labyrinth-install-bootfinish`: a setting added to the end of /etc/default/grub or /etc/fstab (`echo X >> file`) was glued
+  to the last line when the file did not end with a newline (in /etc/fstab, that breaks the last mount); the file system's
+  UUID went unchecked into the sed expression that writes the kernel command line; "configured zram swap" was said even when
+  its file could not be written.
+
 ## Not 1:1
 
 - `labyrinth-scan-downloads --watch` sleeps until the kernel reports a new file, a scan is due or the 5-minute look for new places

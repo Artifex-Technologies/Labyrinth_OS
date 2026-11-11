@@ -12,6 +12,9 @@ set -uo pipefail
 
 say()  { printf 'labyrinth-install-bootfinish: %s\n' "$*"; }
 warn() { printf 'labyrinth-install-bootfinish: WARNING: %s\n' "$*"; }
+# FILE gets LINE on a line of its own: a file that does not end with a newline gets one first (`echo LINE >>FILE` glued LINE to
+# the end of the last setting then)
+add_line() { if [[ -s $1 && -n $(tail -c1 "$1") ]]; then echo >>"$1"; fi; printf '%s\n' "$2" >>"$1"; }
 
 # 1. grub.cfg must exist and boot at least one kernel.
 cfg=/boot/grub/grub.cfg
@@ -87,12 +90,12 @@ fi
 
 # 2b. zram swap for everyday memory pressure. Hibernate uses the disk swap file from 2b'.
 install -d /etc/systemd
-cat >/etc/systemd/zram-generator.conf <<'EOF'
+if cat >/etc/systemd/zram-generator.conf <<'EOF'
 [zram0]
 zram-size = min(ram / 2, 16384)
 compression-algorithm = zstd
 EOF
-say "configured zram swap"
+then say "configured zram swap"; else warn "could not configure zram swap"; fi
 
 # 2b. Boot menu: two-second timeout, and the default kernel on top (otherwise GRUB sorts the
 #     LTS kernel first and boots that). The LTS kernel stays in the Advanced menu.
@@ -102,9 +105,9 @@ if [[ -f /etc/default/grub ]]; then
   if grep -q '^#\?GRUB_DISABLE_OS_PROBER=' /etc/default/grub; then
     sed -i -E 's/^#?GRUB_DISABLE_OS_PROBER=.*/GRUB_DISABLE_OS_PROBER=false/' /etc/default/grub
   else
-    echo 'GRUB_DISABLE_OS_PROBER=false' >>/etc/default/grub
+    add_line /etc/default/grub 'GRUB_DISABLE_OS_PROBER=false'
   fi
-  grep -q '^GRUB_TOP_LEVEL=' /etc/default/grub || echo 'GRUB_TOP_LEVEL="/boot/vmlinuz-linux-cachyos"' >>/etc/default/grub
+  grep -q '^GRUB_TOP_LEVEL=' /etc/default/grub || add_line /etc/default/grub 'GRUB_TOP_LEVEL="/boot/vmlinuz-linux-cachyos"'
   # Wireless keyboards and mice drop keys or repeat them when Linux power-saves their USB receiver
   # or Bluetooth adapter (seen with a Logitech MX Mechanical on a Dell OptiPlex). Turn that off.
   grep -q 'usbcore.autosuspend' /etc/default/grub || sed -i -E "s|^(GRUB_CMDLINE_LINUX_DEFAULT=['\"])|\1usbcore.autosuspend=-1 |" /etc/default/grub
@@ -137,12 +140,13 @@ hibernate_setup() {
   local uuid offset
   uuid=$(findmnt -no UUID / 2>/dev/null)
   offset=$(btrfs inspect-internal map-swapfile -r /swap/swapfile 2>/dev/null)
-  if [[ -z $uuid || ! $offset =~ ^[0-9]+$ ]]; then
+  # the UUID goes into a sed expression below: only a UUID's characters (a | or \ would break the edit)
+  if [[ -z $uuid || ${#uuid} -gt 64 || ! $uuid =~ ^[0-9A-Fa-f-]+$ || ! $offset =~ ^[0-9]+$ ]]; then
     warn "could not read the swap file's resume offset"
     rm -f /swap/swapfile; btrfs subvolume delete /swap >/dev/null 2>&1; return 1
   fi
   # fstab: lower priority than zram so ordinary swapping stays in RAM.
-  grep -q '^/swap/swapfile' /etc/fstab || printf '/swap/swapfile none swap defaults,pri=1 0 0\n' >>/etc/fstab
+  grep -q '^/swap/swapfile' /etc/fstab || add_line /etc/fstab '/swap/swapfile none swap defaults,pri=1 0 0'
   # Kernel command line: resume device and file offset.
   if [[ -f /etc/default/grub ]]; then
     sed -i -E "s|^(GRUB_CMDLINE_LINUX_DEFAULT=['\"])([^'\"]*)(['\"])|\1\2 resume=UUID=${uuid} resume_offset=${offset}\3|" /etc/default/grub

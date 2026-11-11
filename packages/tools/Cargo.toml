@@ -60,6 +60,19 @@ path = "src/bin/labyrinth-first-components.rs"
 name = "labyrinth-agent"
 path = "src/bin/labyrinth-agent.rs"
 
+# the shell scripts' ports (profile/airootfs/usr/local/bin; the switch: branch scripts-rust-switch)
+[[bin]]
+name = "labyrinth-rollback"
+path = "src/bin/labyrinth-rollback.rs"
+
+[[bin]]
+name = "labyrinth-install-bootfinish"
+path = "src/bin/labyrinth-install-bootfinish.rs"
+
+[[bin]]
+name = "labyrinth-install-cleanup"
+path = "src/bin/labyrinth-install-cleanup.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""compare: Labyrinth's Rust programs (packages/tools) and the Python scripts they replace, run as programs on the same made-up
-worlds. Every tool they call is a stand-in in WORLD/bin that writes down how it was called (and what it read, when a case asks)
+"""compare: Labyrinth's Rust programs (packages/tools) and the Python and shell scripts they replace, run as programs on the same
+made-up worlds. Every tool they call is a stand-in in WORLD/bin that writes down how it was called (and what it read, when a case asks)
 and answers as the case says; every file they read or write is under the scratch WORLD (made again from scratch, at the same
 path, before each run) or, for moves across file systems, under packages/tools/target/parity-xdev. Nothing on the computer is
 changed and nothing is installed.
@@ -14,9 +14,10 @@ to the stand-ins, and files afterwards (names, modes, contents), byte for byte, 
     (the Python script stopped here with a traceback)": the two standard errors are not compared;
   - what a case lists in `differs` (a difference on purpose, said in the module's "Not 1:1").
 
-    compare.py [--python DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep] [--show]
+    compare.py [--python DIR] [--shell DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep] [--show]
 
 --python: the folder with the Python scripts (default: ../python, else the repository's profile/airootfs/usr/local/bin)
+--shell: the folder with the shell scripts (default: ../shell, else the repository's profile/airootfs/usr/local/bin or sbin)
 --bin: the folder with the Rust programs (default: ../target/release; build with cargo build --release)
 """
 import argparse
@@ -73,13 +74,15 @@ def stubs(names):
 
 
 def snapshot(root, skip=("bin", "calls", "ov")):
+    """Every file and folder under root (name, mode, contents); a name in skip is left out at the top, a path with a slash in
+    skip (world/x/y) wherever it is."""
     out = {}
     if not os.path.isdir(root):
         return out
     for d, dirs, files in os.walk(root):
         dirs.sort()
         rel = os.path.relpath(d, root)
-        if rel.split(os.sep)[0] in skip or "__pycache__" in rel:
+        if rel.split(os.sep)[0] in skip or rel in skip or "__pycache__" in rel:
             dirs[:] = []
             continue
         for n in sorted(files) + sorted(x for x in dirs if os.path.islink(os.path.join(d, x))):
@@ -155,7 +158,8 @@ def fastclock():
 
 
 class Case:
-    """prog: the program the steps run (a step may name another with "prog"); steps: [{args, env, stdin, cwd, prog, wrap}];
+    """prog: the program the steps run (a step may name another with "prog"); steps: [{args, env, stdin, cwd, prog, wrap}]
+    (bare: the program's path is given as it is, also for a script without its x bit: the wrap copies it into the world);
     setup(paths): makes the world; env: for every step; differs: what is not compared ("calls", "tree", ("out", i), ("err", i));
     settle: seconds to wait after each step (for what a program left running); watch(paths): for a program that keeps
     running, what happens while it runs (it is stopped afterwards); sort_calls: the calls' order is not compared (threads);
@@ -164,8 +168,8 @@ class Case:
     run, before the world is wiped (what a namespace gave another account given back)."""
 
     def __init__(self, prog, name, steps, setup=None, env=None, differs=(), settle=0.0, roots=(), watch=None, sort_calls=False, norm=None,
-                 snap=None, check=None, teardown=None):
-        self.prog, self.name, self.steps, self.setup = prog, name, steps, setup
+                 snap=None, check=None, teardown=None, bare=False):
+        self.prog, self.name, self.steps, self.setup, self.bare = prog, name, steps, setup, bare
         self.env, self.differs, self.settle, self.roots, self.watch = env or {}, differs, settle, roots, watch
         self.sort_calls, self.norm, self.snap, self.check, self.teardown = sort_calls, norm, snap, check, teardown
 
@@ -177,12 +181,38 @@ def case(*a, **k):
     CASES.append(Case(*a, **k))
 
 
+# the shell scripts' ports (their scripts in profile/airootfs/usr/local/bin, labyrinth-agent-window in sbin; after the switch in
+# packages/tools/shell)
+SHELL_NAMES = ["labyrinth-rollback", "labyrinth-install-bootfinish", "labyrinth-install-cleanup", "labyrinth-agent-setup", "labyrinth-agent-window",
+               "labyrinth-ecosystem-setup", "labyrinth-hardware-setup", "labyrinth-grub-theme", "labyrinth-security-setting", "labyrinth-gaming",
+               "labyrinth-sarina", "labyrinth-sarina-setting", "labyrinth-rea", "labyrinth-rea-setup", "labyrinth-claude-code", "labyrinth-sarina-reflect",
+               "labyrinth-sarina-voice-setup", "labyrinth-sarina-warm", "labyrinth-install", "labyrinth-notify-activate"]
+
+
+def interpreter(path):
+    """How to run a script git keeps without its x bit: the interpreter its first line names."""
+    with open(path, "rb") as f:
+        first = f.readline().decode("utf-8", "replace")
+    if "python" in first:
+        return ["python3"]
+    if "bash" in first:
+        return ["bash"]
+    return ["sh"]
+
+
 def impl_paths(kind):
     """{program name: how to run it} for one implementation."""
     names = ["labyrinth-scan-downloads", "labyrinth-quarantine", "labyrinth-appnet", "labyrinth-appnet-ask", "labyrinth-appnet-ask-agent",
              "labyrinth-launch", "labyrinth-apps", "labyrinth-selfcheck", "ipconfig", "steam_playall.py", "labyrinth-first-components",
              "labyrinth-agent"]
     out = {}
+    for n in SHELL_NAMES:
+        if kind == "python":
+            own = os.path.join(ARGS.shell, n)
+            where = "sbin" if n == "labyrinth-agent-window" else "bin"
+            out[n] = own if os.path.exists(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", where, n)
+        else:
+            out[n] = os.path.join(ARGS.bin, n)
     for n in names:
         if kind == "python":
             # a script still in the image (not switched yet) is read from there
@@ -231,7 +261,8 @@ def run_case(c, kind):
                 env.pop(k, None)
             else:
                 env[k] = fill(v, paths)
-        exe = [paths[prog]] if os.access(paths[prog], os.X_OK) else ["python3", paths[prog]]  # a script git keeps without its x bit
+        # a script git keeps without its x bit: its interpreter
+        exe = [paths[prog]] if (c.bare or os.access(paths[prog], os.X_OK)) else interpreter(paths[prog]) + [paths[prog]]
         argv = step.get("wrap", []) + exe + [fill(a, paths) for a in step.get("args", [])]
         cwd = fill(step.get("cwd", WORLD), paths)
         if c.watch:
@@ -302,6 +333,7 @@ import cases_selfcheck  # noqa: E402,F401
 import cases_ipconfig  # noqa: E402,F401
 import cases_small  # noqa: E402,F401
 import cases_agent  # noqa: E402,F401
+import cases_root  # noqa: E402,F401
 
 
 
@@ -310,6 +342,7 @@ def main():
     global ARGS
     ap = argparse.ArgumentParser()
     ap.add_argument("--python")
+    ap.add_argument("--shell")
     ap.add_argument("--bin", default=os.path.join(TOOLS, "target", "release"))
     ap.add_argument("--only")
     ap.add_argument("-v", action="store_true")
@@ -320,6 +353,9 @@ def main():
     if not ARGS.python:
         own = os.path.join(TOOLS, "python")
         ARGS.python = own if os.path.isdir(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", "bin")
+    if not ARGS.shell:
+        own = os.path.join(TOOLS, "shell")
+        ARGS.shell = own if os.path.isdir(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", "bin")
     only = set(ARGS.only.split(",")) if ARGS.only else None
     counts, failed = {}, 0
     try:

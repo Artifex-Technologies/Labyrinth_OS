@@ -15,13 +15,20 @@
 //!   playall     steam_playall               Steam Play for all titles in Steam's config.vdf (labyrinth-gaming setup)
 //!   first_components  labyrinth-first-components  the optional parts chosen in the installer, at the first login
 //!   agent       labyrinth-agent             the engineering agent's root actions, each checked (the gate sudo lets it run)
+//!
+//! The shell scripts' ports (sh: what they share):
+//!   rollback         labyrinth-rollback            the whole system back to a snapshot, and back again
+//!   bootfinish       labyrinth-install-bootfinish  the installer's last step in the installed system
+//!   install_cleanup  labyrinth-install-cleanup     the live medium's pieces out of the installed system, the kernels back
 
 pub mod agent;
 pub mod appnet;
 pub mod appnet_ask;
 pub mod apps;
 pub mod ask_agent;
+pub mod bootfinish;
 pub mod first_components;
+pub mod install_cleanup;
 pub mod ipconfig;
 pub mod launch;
 pub mod playall;
@@ -29,8 +36,10 @@ pub mod py;
 pub mod pycompat;
 pub mod pyre;
 pub mod quarantine;
+pub mod rollback;
 pub mod scan;
 pub mod selfcheck;
+pub mod sh;
 
 #[cfg(test)]
 pub mod testutil;

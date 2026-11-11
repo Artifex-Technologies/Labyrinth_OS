@@ -33,7 +33,7 @@ usage() { sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 while (($#)); do
   case $1 in
-    --device) DEVICE=${2:-}; shift ;;
+    --device) (($# >= 2)) || usage 2; DEVICE=$2; shift ;;
     --device=*) DEVICE=${1#*=} ;;
     --dry-run) DRY=1 ;;
     --yes|-y) YES=1 ;;
@@ -89,7 +89,8 @@ mount_top() {
 }
 
 is_subvol() { btrfs subvolume show "$1" >/dev/null 2>&1; }
-xml() { sed -n "s:.*<$2>\(.*\)</$2>.*:\1:p" "$1" 2>/dev/null | head -1; }
+# (|| true: without info.xml, sed's failure would stop the script through pipefail and set -e)
+xml() { sed -n "s:.*<$2>\(.*\)</$2>.*:\1:p" "$1" 2>/dev/null | head -1 || true; }
 when() { local d; d=$(xml "$1" date); [[ -n $d ]] && date -d "$d UTC" '+%F %H:%M' 2>/dev/null || printf '%s' "$d"; } # snapper keeps UTC
 grub_differs() { # GRUB's modules in $1 (the system now) and $2 (the one that will boot) are not the same
   [[ -d $1/boot/grub/x86_64-efi && -d $2/boot/grub ]] && ! diff -rq "$1/boot/grub/x86_64-efi" "$2/boot/grub/x86_64-efi" >/dev/null 2>&1
@@ -189,6 +190,8 @@ cmd_undo() {
   aside=@rolled-back-$(date +%Y-%m-%d-%H%M%S)
   say "Put back ${last##*/} as the system on $DEVICE; the current one is kept as $aside."
   if [[ $DRY == 1 ]]; then say "Dry run: nothing was changed."; return 0; fi
+  # mv would move @ INTO a folder of that name (and the snapshots with it)
+  [[ ! -e $TOP/$aside ]] || die "$aside already exists"
   confirm "It takes effect at the next restart."
   note "undo: ${last##*/} becomes the system again; the current one is kept as $aside"
   mv "$TOP/@" "$TOP/$aside"
