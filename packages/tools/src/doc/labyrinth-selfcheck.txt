@@ -1,0 +1,14 @@
+labyrinth-selfcheck: is the desktop in a sane state? Run it after an upgrade (or when something looks off).
+
+  labyrinth-selfcheck            print a list of checks: ok, warn or FAIL, with what to do
+  labyrinth-selfcheck --quiet    print only warnings and failures; exit status 1 on any FAIL, 2 on a warning
+
+What it looks at (read-only, nothing is changed):
+  * the session needs a log out: Hyprland started before it or Yggdrasil's session, lock screen or panel were last
+    upgraded (a lock screen newer than its session can fail to start: this really happened under Plasma on 2026-10-16)
+  * the running kernel is not the newest installed one (reboot)
+  * Hyprland reports the screen(s), and the panel is running
+  * greetd is the login screen and its greeter is installed
+  * who owns the notification service (should be the Labyrinth panel)
+  * Labyrinth's services (Ollama, Limbo, Heimdall, Sarina, per-app network and power limits) and failed units
+  * Heimdall answers, and its file-integrity watch covers the binaries installed from the AUR

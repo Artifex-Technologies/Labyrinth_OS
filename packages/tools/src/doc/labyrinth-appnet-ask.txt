@@ -1,0 +1,25 @@
+labyrinth-appnet-ask: the "ask" half of Settings > Apps > Network (root service, one per machine).
+
+An app whose network setting is "Ask" may only reach loopback and the destinations you allowed. Anything else is dropped by
+nftables (rules from labyrinth-appnet) after a rate-limited log line. This service reads those lines from the kernel log,
+turns each NEW destination of an app into one question, hands it to the person's session (labyrinth-appnet-ask-agent,
+a notification with Allow / Allow all / Deny), and applies the answer:
+
+  Allow       the destination (an address, any port) is added to the app's allowed set at once and remembered
+  Deny        remembered, never asked about again, stays dropped
+  Allow all   the app goes back to "any connection"
+  (nothing)   asked again after a minute, the next time the app tries
+
+One question per app and destination, never per connection. Apps that are not in ask mode are never touched, so system
+components (updates, time sync, Heimdall) are not asked about.
+
+Talking to it: a unix socket, /run/labyrinth/appnet-ask.sock, open to every local user. The kernel says who is on the other end
+(SO_PEERCRED), and a person only sees and answers questions about their own apps. JSON lines.
+  client -> {"op":"subscribe"}                       then receive {"type":"ask","id":N,"app":..,"ip":..,"port":..,"proto":..}
+  client -> {"op":"decide","id":N,"verdict":"allow"|"deny"|"allow-all"|"ignore","name":"host name, if known"}
+  client -> {"op":"list"}                            answer {"type":"list","apps":{app:{"allow":{ip:name},"deny":{ip:name}}}}
+  client -> {"op":"forget","app":..,"ip":..}         the destination is asked about again next time
+An answer can only be given to a question that was actually asked (a program cannot pre-approve addresses it has not tried).
+
+Honest limits: the person's own programs can answer the questions too (same as OpenSnitch or Little Snitch); destinations are
+addresses, not names, so a big content network can look like many; IPv4 and IPv6 only.

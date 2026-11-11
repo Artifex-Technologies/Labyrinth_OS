@@ -1,0 +1,12 @@
+labyrinth-apps: install or remove Labyrinth's optional software.
+
+  labyrinth-apps list
+  labyrinth-apps info ID
+  labyrinth-apps install ID...        or  --preset NAME
+  labyrinth-apps remove ID...
+  add --dry-run to print the commands without running anything
+
+Components are described in /usr/share/labyrinth/components.json. Packages come from
+pacman; components with a "pkgbuild" are built with makepkg from
+/usr/share/labyrinth/pkgbuilds/<name>/ (a copy in a temp dir, so the source is never
+modified). Installing needs network access and sudo.

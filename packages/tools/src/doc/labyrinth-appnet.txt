@@ -1,0 +1,33 @@
+labyrinth-appnet: network rules for single apps (Settings > Apps).
+
+An app started with labyrinth-launch runs in its own systemd slice. This program keeps one nftables table,
+`inet labyrinth_apps`, with a rule for each app that has a limit; the rule matches that app's slice (cgroup), so it
+covers the app and everything it starts, and nothing else.
+
+Modes:
+  block      the app cannot send anything off this computer (loopback still works)
+  ethernet   it may send only over a wired connection
+  wifi       it may send only over Wi-Fi
+  ask        every destination is held until you allow it (see labyrinth-appnet-ask): loopback is free, a destination you
+             allowed is free, anything else is dropped and logged so a prompt can ask about it
+  allow      no limit (removes the rule)
+
+Commands:
+  labyrinth-appnet set APP MODE   change one app (run it with pkexec: needs root; the person who asked is the owner)
+  labyrinth-appnet apply          load every rule (run as root at boot and at login by labyrinth-appnet.service)
+  labyrinth-appnet get            print the rules as JSON
+  labyrinth-appnet prepare        as the user, at login: start the slices of apps that have a rule, then ask for `apply`
+  labyrinth-appnet ruleset        print the nftables ruleset that `apply` would load (needs no root)
+
+Rules live in /etc/labyrinth/app-network.json: {"rules": {"1000": {"firefox": "block", ...}}} (readable by all, written
+by root only). The nftables rule needs the slice's cgroup to exist when it is loaded, which is why `prepare` keeps
+the slices alive, and `apply` skips an app whose slice is not running (nothing of it is running, so nothing to limit).
+
+A blocked app gets no DNS at all (any address, port 53: the resolver here listens on 127.0.0.1 and ::1, and a lookup
+can carry data out), and a blocked or ask-mode app cannot reach the local services that fetch from the internet or hold
+private data: Ollama (it downloads from any registry it is told to), Sarina and Heimdall (RELAY_PORTS).
+
+Honest limits: this matches programs the launcher started (dock, start menu, Settings); something started another way
+is not in the app's slice, and an app that starts a program through `systemd-run --user` or asks the desktop to open a
+link (xdg-open, a portal) has that program run outside its slice. If the rules fail to load, nothing is limited: the
+failure is written to the journal (tag labyrinth-appnet) where Heimdall reads it.

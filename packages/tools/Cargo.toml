@@ -1,0 +1,34 @@
+[package]
+name = "labyrinth-tools"
+version = "0.1.0"
+edition = "2021"
+description = "Labyrinth OS's own command-line programs in Rust, replacing the Python scripts of the same names with the same interface: the malware scan of new files and its quarantine, the per-app network rules and their questions, the app launcher, the optional software, the self-check, ipconfig, Steam Play for all, the first-login installs"
+license = "MPL-2.0"
+
+[lib]
+name = "labyrinth_tools"
+path = "src/lib.rs"
+
+# installed under these names by packages/pkgbuilds/labyrinth-tools (the switch: branch tools-rust-switch)
+[[bin]]
+name = "labyrinth-scan-downloads"
+path = "src/bin/labyrinth-scan-downloads.rs"
+
+[[bin]]
+name = "labyrinth-quarantine"
+path = "src/bin/labyrinth-quarantine.rs"
+
+[dependencies]
+libc = "0.2"
+serde_json = { version = "1", features = ["preserve_order"] }
+sha2 = "0.10"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }

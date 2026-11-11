@@ -1,0 +1,24 @@
+labyrinth-scan-downloads: look for malware in the places files arrive from outside, and deal with what is certain.
+
+Watched (when they exist): Downloads, Desktop, removable drives (/run/media/you), the caches mail programs unpack attachments into
+(Thunderbird, Evolution, Geary), and any folders listed in ~/.config/labyrinth/scan-folders. A scan uses Heimdall's scanner (ClamAV).
+Unchanged files are skipped, so a scan takes a moment.
+
+What happens to a find (set `action` in ~/.config/labyrinth/scan.conf):
+  action = quarantine   (default) when the signature is a definite malware (not "possibly unwanted" or a heuristic guess) and the file
+                        is yours, in one of the places above: it is MOVED to quarantine (labyrinth-quarantine) and you get a
+                        notification with Restore / Delete. Anything less certain, or not yours: a warning, nothing is moved.
+  action = notify       never move anything; always a warning
+Nothing is ever deleted without you. "Restore" puts the file back and remembers it, so the same file is not caught again.
+
+To stop it looking at something, put a folder, file or pattern (one per line) in ~/.config/labyrinth/scan-exclude, e.g.:
+    ~/Downloads/big-isos
+    *.iso
+
+  labyrinth-scan-downloads            one scan now
+  labyrinth-scan-downloads --full     the whole home folder (weekly, labyrinth-scan-full.timer): everything but caches, game libraries,
+                                      toolchains, build output and disk images (FULL_EXCLUDE); unchanged files are skipped, so after
+                                      the first run it is quick. A find outside the places above is reported, never moved.
+  labyrinth-scan-downloads --watch    keep running: scan a folder a few seconds after new files land in it (labyrinth-scan-watch.service)
+  labyrinth-scan-downloads --off      stop the timer;   --on  start it again
+Needs: ClamAV (clamscan) with its signatures (freshclam), and Heimdall's `heimdalld` with `scan-files`.

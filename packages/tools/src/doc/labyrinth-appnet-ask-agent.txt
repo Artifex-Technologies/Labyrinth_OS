@@ -1,0 +1,9 @@
+labyrinth-appnet-ask-agent: shows the questions of labyrinth-appnet-ask as notifications (a user service, started at login).
+
+For an app set to "Ask" in Settings > Apps, a first connection to a new destination arrives here as one notification:
+  "<App> wants to connect to <name or address>"   [Allow] [Allow all] [Deny]
+Allow: this destination, from now on. Allow all: this app may use the network freely again. Deny: never ask about this
+destination again (change it later in Settings > Apps). Closing the notification without answering asks again in a minute,
+when the app next tries.
+
+  labyrinth-appnet-ask-agent          run (reconnects by itself if the service restarts)

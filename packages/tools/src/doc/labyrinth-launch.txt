@@ -1,0 +1,15 @@
+labyrinth-launch ID [FILE-OR-URL ...]   start an app the Labyrinth way.
+
+Used by the dock, the start menu and Settings (Apps) so that each app runs in a systemd scope of its own, inside a
+slice named after it. That is what makes per-app controls possible:
+
+  * network: the firewall helper (labyrinth-appnet) matches the app's slice, so one app can be cut off, or limited to
+    Ethernet or Wi-Fi, without touching the others;
+  * a launch is counted (~/.local/share/labyrinth/app-usage.json), which is what "sort by usage" in Settings uses;
+  * the optional sandbox (bubblewrap): which folders the app can see, and whether it can see other programs.
+
+The app's settings are in ~/.config/labyrinth/apps/ID.json (written by Settings; every key is optional):
+
+    {"sandbox": false, "files": "all" | "folders", "folders": ["/home/me/Documents"], "see_others": true}
+
+Without that file the app starts as it always did, only inside its scope. ID is the desktop file's name without .desktop.

@@ -1,0 +1,9 @@
+Turn on "Enable Steam Play for all other titles" in Steam's config.vdf.
+
+Steam stores that setting as a default compatibility tool: CompatToolMapping
+entry "0". This inserts one if missing and never changes an existing choice.
+Text-level edit (no full VDF parser), so it is deliberately conservative: if
+the file does not look the way we expect it refuses and changes nothing.
+
+Usage: steam_playall.py CONFIG_VDF [TOOL_NAME]   (Steam must NOT be running)
+Exit: 0 changed or already set, 1 refused / nothing safe to do, 2 usage.

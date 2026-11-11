@@ -1,0 +1,9 @@
+Windows' `ipconfig`, laid out the way Windows prints it, from `ip` and NetworkManager.
+
+  ipconfig              addresses, masks and gateways of each adapter
+  ipconfig /all         also the adapter model, MAC, DHCP, lease and DNS servers
+  ipconfig /release     drop the DHCP lease (disconnects the adapters, like Windows)
+  ipconfig /renew       get a new lease (reconnects the adapters)
+  ipconfig /flushdns    clear the DNS cache
+
+Options may be written /all, -all or --all. `ip a` still works and shows the Linux view.

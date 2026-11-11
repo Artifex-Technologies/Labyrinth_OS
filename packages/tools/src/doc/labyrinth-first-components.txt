@@ -1,0 +1,6 @@
+labyrinth-first-components: at the first login after installing, installs the optional parts chosen in the installer that
+the installer medium did not carry (Sarina, Heimdall...). The installer leaves their component ids in
+/var/lib/labyrinth/first-login-components.json, owned by the new user; this runs from the session's autostart, says what it is
+doing in notifications, and installs them with labyrinth-apps through Agora's password box (they are built or fetched, so they
+need the internet). When everything is in, the file is removed; otherwise it tries again at the next login, and Agora can
+install them at any time.

@@ -1,0 +1,12 @@
+labyrinth-quarantine: a safe place for files the malware scan is confident about, and the way back.
+
+  labyrinth-quarantine add PATH --signature NAME   move a regular file into quarantine (it is made unreadable by other users and
+                                                   not executable; nothing is deleted)
+  labyrinth-quarantine list [--json]               what is in quarantine
+  labyrinth-quarantine restore ID                  put it back where it was (never over an existing file) and remember its
+                                                   content, so the scan does not quarantine the same file again
+  labyrinth-quarantine delete ID                   delete it for good
+  labyrinth-quarantine allowed SHA256              exit 0 if you said "keep this file" for that content
+
+Everything lives in ~/.local/share/labyrinth/quarantine/ (one folder per item: payload + info.json) and
+~/.config/labyrinth/scan-allow (hashes you restored). Nothing here needs root; quarantine never touches files you do not own.
