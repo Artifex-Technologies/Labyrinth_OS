@@ -5,7 +5,7 @@
 
 use std::ffi::{CStr, CString, OsStr, OsString};
 use std::io::{self, Read, Write};
-use std::os::unix::ffi::{OsStrExt, OsStringExt};
+use std::os::unix::ffi::OsStringExt;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::path::Path;
@@ -142,11 +142,6 @@ pub fn load_json(path: &str) -> Result<Value, Option<String>> {
         Err(ReadError::Decode(m)) => return Err(Some(m)),
     };
     pyjson::loads(&text).map_err(Some)
-}
-
-/// text[:n] in characters.
-pub fn take_chars(s: &str, n: usize) -> String {
-    s.chars().take(n).collect()
 }
 
 /// str.partition(sep)
@@ -891,10 +886,6 @@ pub fn args() -> Vec<String> {
 /// The program's arguments as given.
 pub fn args_os() -> Vec<OsString> {
     std::env::args_os().collect()
-}
-
-pub fn os_bytes(s: &OsStr) -> &[u8] {
-    s.as_bytes()
 }
 
 pub fn os_from_bytes(b: Vec<u8>) -> OsString {

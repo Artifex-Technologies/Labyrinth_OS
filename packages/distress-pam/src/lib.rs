@@ -13,7 +13,6 @@ use std::process::{Command, Stdio};
 
 const PAM_SUCCESS: c_int = 0;
 const PAM_IGNORE: c_int = 25;
-const PAM_USER: c_int = 2;
 const PAM_AUTHTOK: c_int = 6;
 
 #[link(name = "pam")]
@@ -107,9 +106,6 @@ pub extern "C" fn pam_sm_authenticate(pamh: *mut c_void, _flags: c_int, _argc: c
 pub extern "C" fn pam_sm_setcred(_pamh: *mut c_void, _flags: c_int, _argc: c_int, _argv: *const *const c_char) -> c_int {
     PAM_IGNORE
 }
-
-#[allow(dead_code)]
-const _: c_int = PAM_USER;
 
 #[cfg(test)]
 mod tests {

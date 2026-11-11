@@ -72,6 +72,3 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
-
-[dev-dependencies]
-serde_json = { version = "1", features = ["preserve_order"] }
