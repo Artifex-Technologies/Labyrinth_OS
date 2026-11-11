@@ -1,7 +1,8 @@
 """Tests for Labyrinth's side of the installer: its integration file (labyrinth-installer.conf), the browser and optional-part
 lists, and labyrinth-first-components. The install program itself is Yggdrasil's yggdrasil-install-system (since 2026-11-07;
-its own tests are in Yggdrasil's packages/installer/helpers/tests); the tests that run it need a Yggdrasil checkout next to this
-repository (or YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
+its own tests are in Yggdrasil's packages/install-system and packages/installer/helpers/tests); the tests that run it load
+the Python script Yggdrasil keeps for a rollback, so they need a Yggdrasil checkout next to this repository (or
+YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
 import importlib.machinery
 import importlib.util
 import os
@@ -12,7 +13,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AIROOTFS = os.path.join(ROOT, "profile", "airootfs")
 CONF = os.path.join(AIROOTFS, "usr", "share", "yggdrasil", "integrations", "labyrinth-installer.conf")
 YGG = os.environ.get("YGGDRASIL_DIR") or os.path.join(os.path.dirname(ROOT), "Yggdrasil")
-TOOL = os.path.join(YGG, "packages", "installer", "helpers", "install-system")
+# the Python script, which Yggdrasil keeps for a rollback since its Rust port (packages/install-system) replaced it on
+# 2026-11-11; the two do the same (Yggdrasil's packages/install-system/parity/compare.py), and the script can be loaded here
+TOOL = os.path.join(YGG, "packages", "installer", "helpers", "python", "install-system")
 inst = None
 if os.path.isfile(TOOL):
     loader = importlib.machinery.SourceFileLoader("install_system", TOOL)
