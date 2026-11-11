@@ -164,7 +164,7 @@ Three more, closed the same day (my rule: security over speed):
 | tests/test_ipconfig.py (2) | src/ipconfig.rs |
 | tests/test_steam_playall.py (7, and 1 for the fix) | src/playall.rs |
 | tests/test_install_system.py's 2 of labyrinth-first-components | src/first_components.rs |
-| tests/test_labyrinth_agent.py (6, and 13 for the holes) | src/agent/tests.rs (with 60,000 random command lines against src/agent/audit.rs), tests/agent.rs |
+| tests/test_labyrinth_agent.py (6, and 16 for the holes) | src/agent/tests.rs (with 60,000 random command lines against src/agent/audit.rs), tests/agent.rs |
 
 `parity/compare.py` runs each program and its script on the same made-up worlds: every tool they call is a stand-in that writes
 down how it was called, every file is in a scratch folder (and, for moves across file systems, `target/parity-xdev`), `set` runs
