@@ -12,6 +12,8 @@ while games and a local model share the computer).
 | `labyrinth-appnet-ask-agent` | the ask mode's notifications | always (user service `labyrinth-appnet-ask-agent`) | done |
 | `labyrinth-appnet` | per-app network rules (nftables) | at boot and login, from Settings (pkexec) | done |
 | `labyrinth-launch` | starts apps in their own scope and slice | every app started from the dock, start menu, Settings | done |
+| `labyrinth-apps` | Labyrinth's optional software (Agora's component installer, the first login) | on demand | done |
+| `labyrinth-selfcheck`, `ipconfig`, `steam_playall.py`, `labyrinth-first-components` | | on demand | still Python (next) |
 
 Each module (`src/*.rs`) says what it is and where it is not 1:1. Where a script stopped with a traceback (exit code 1), its port
 stops too, with exit code 1 and one line on standard error. `src/pycompat` is a copy of Yggdrasil's `packages/pycompat` (the few
@@ -38,6 +40,9 @@ Python's own \w, \d and \s.
 - `labyrinth-appnet-ask-agent` asks the C library for an address's host name with getnameinfo() (the script used gethostbyaddr(),
   which also resolved a destination that was a name rather than an address); a line from the service that is not UTF-8 is skipped
   (it stopped the script).
+- `labyrinth-apps` writes each "==>" line as its step starts (the script's output was block-buffered when not a terminal, so in
+  Agora or a log those lines came after the steps' own output); for a components.json that is not JSON the parser's own words after
+  "cannot read FILE: " differ; component ids that are not text are refused (exit code 1).
 - JSON files with numbers beyond 64 bits keep them as floating point (Python kept the exact integer).
 
 ## Found while porting (kept as the script does it, to fix in both)
@@ -61,6 +66,7 @@ Python's own \w, \d and \s.
 | tests/test_labyrinth_appnet.py (6) | src/appnet/tests.rs |
 | tests/test_labyrinth_appnet_ask.py (15: rules 4, parse 1, engine 8, agent 1, service 1) | src/appnet/tests.rs, src/appnet_ask/tests.rs, src/ask_agent.rs |
 | tests/test_labyrinth_launch.py (5) | src/launch/tests.rs |
+| tests/test_labyrinth_apps.py (16 of 22; the 6 Generator tests are of scripts/gen-packages.py, which stays Python) | src/apps/tests.rs, tests/apps.rs |
 
 `parity/compare.py` runs each program and its script on the same made-up worlds: every tool they call is a stand-in that writes
 down how it was called, every file is in a scratch folder (and, for moves across file systems, `target/parity-xdev`), `set` runs
@@ -80,6 +86,7 @@ Results (2026-11-10):
 | labyrinth-appnet-ask | 4/4 (one is a 47-line conversation: questions, answers, lists, forgets, the cooldown, bad requests) |
 | labyrinth-appnet-ask-agent | 3/3 |
 | labyrinth-launch | 34/34 |
+| labyrinth-apps | 32/32 (the builds run in a copy, through stand-ins for pacman, yay, makepkg, sudo) |
 
 ## Memory of what runs all the time (the same scratch world for both, after some work, idle)
 

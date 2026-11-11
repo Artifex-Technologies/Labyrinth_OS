@@ -109,6 +109,7 @@ def base_normalize(text):
     text = re.sub(r"(?<![0-9a-f])[0-9a-f]{12}(?![0-9a-f])", idsub, text)
     text = re.sub(r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d", "<TIME>", text)
     text = re.sub(r"restored \d{4}-\d\d-\d\d", "restored <DATE>", text)
+    text = re.sub(r"labyrinth-build-[0-9a-z_]+", "labyrinth-build-<RANDOM>", text)
     text = re.sub(r"\.labyrinth-\d{9,}\.bak", ".labyrinth-<EPOCH>.bak", text)
     return text
 
@@ -183,7 +184,8 @@ def run_case(c, kind):
                 env.pop(k, None)
             else:
                 env[k] = fill(v, paths)
-        argv = step.get("wrap", []) + [paths[prog]] + [fill(a, paths) for a in step.get("args", [])]
+        exe = [paths[prog]] if os.access(paths[prog], os.X_OK) else ["python3", paths[prog]]  # a script git keeps without its x bit
+        argv = step.get("wrap", []) + exe + [fill(a, paths) for a in step.get("args", [])]
         cwd = fill(step.get("cwd", WORLD), paths)
         if c.watch:
             p = subprocess.Popen(argv, env=env, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
@@ -242,6 +244,7 @@ def same(c, py, rs):
 sys.path.insert(0, HERE)
 import cases_scan  # noqa: E402,F401  (each cases_*.py adds its cases with case())
 import cases_appnet  # noqa: E402,F401
+import cases_apps  # noqa: E402,F401
 
 
 def main():

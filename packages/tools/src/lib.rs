@@ -9,7 +9,9 @@
 //!   appnet_ask  labyrinth-appnet-ask        the ask mode's questions (always on: a root service)
 //!   ask_agent   labyrinth-appnet-ask-agent  the ask mode's notifications (always on: a user service)
 //!   launch      labyrinth-launch            the app launcher (dock, start menu, Settings)
+//!   apps        labyrinth-apps              the optional software (Agora, the first login)
 
+pub mod apps;
 pub mod appnet;
 pub mod appnet_ask;
 pub mod ask_agent;
