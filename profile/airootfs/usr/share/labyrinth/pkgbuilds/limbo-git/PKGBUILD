@@ -5,6 +5,9 @@
 # repository instead. The ISO's own build uses packages/pkgbuilds/limbo-git, which builds the checkout next to Labyrinth_OS.
 # Limbo's runtime (libvirt, QEMU, ...) is not a dependency: the "virtualization" component, or `sudo limbo setup`, installs it.
 # To build a local checkout instead: LIMBO_SRC=file://$HOME/Documents/Github/Limbo makepkg -si
+# The same build as packages/pkgbuilds/limbo-git. Two binaries since 2026-11-11: /usr/bin/limbo is limbo-rs, the Rust
+# build (the daemon that limbo.service runs, and every command but `net watch` and `capture`), which hands those two,
+# unchanged, to the Go build at /usr/lib/limbo/limbo-go (Limbo's docs/RUST_PORT.md "Packaging").
 
 pkgname=limbo-git
 pkgver=0.1.0.r0.g0000000
@@ -13,8 +16,8 @@ pkgdesc='Limbo: run Windows and Linux guest apps as sandboxed host windows, with
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Limbo'
 license=('MPL-2.0')
-depends=('glibc')
-makedepends=('go' 'git')
+depends=('glibc' 'gcc-libs')
+makedepends=('go' 'git' 'rust')
 optdepends=(
   'libvirt: manages guests'
   'qemu-base: the hypervisor'
@@ -24,6 +27,8 @@ optdepends=(
   'libisoburn: builds the cloud-init seed disk'
   'waypipe: seamless windows for Linux guests'
   'freerdp: seamless windows for Windows guests (RemoteApp)'
+  'bubblewrap: the sandbox of the Wine backend (limbo wine refuses to run without it)'
+  'wine: Windows programs on the desktop through limbo wine (or wine-staging)'
 )
 provides=('limbo')
 conflicts=('limbo')
@@ -37,20 +42,34 @@ pkgver() {
   printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
+prepare() {
+  cd "$srcdir/limbo/rust"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
 build() {
   cd "$srcdir/limbo"
   export CGO_ENABLED=0
-  go build -trimpath -ldflags "-s -w" -o limbo ./cmd/limbo
+  go build -trimpath -ldflags "-s -w" -o limbo-go ./cmd/limbo
+  cd rust
+  export RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target
+  cargo build --frozen --release -p limbo --bin limbo-rs
 }
 
 check() {
   cd "$srcdir/limbo"
-  go test ./...   # unit tests only: the integration scripts need a hypervisor and root
+  # unit tests only: the integration scripts need a hypervisor and root, and -short skips the real Wine run
+  go test -short ./...
+  # the Rust build against the Go fixtures (testdata/parity), its properties and its hand-over to the Go build
+  cd rust
+  RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target cargo test --frozen -p limbo
 }
 
 package() {
   cd "$srcdir/limbo"
-  install -Dm755 limbo "$pkgdir/usr/bin/limbo"
+  install -Dm755 rust/target/release/limbo-rs "$pkgdir/usr/bin/limbo"
+  install -Dm755 limbo-go "$pkgdir/usr/lib/limbo/limbo-go"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 docs/QUARANTINE.md "$pkgdir/usr/share/doc/$pkgname/QUARANTINE.md"
@@ -60,6 +79,21 @@ package() {
   install -Dm644 packaging/arch/limbo.sysusers "$pkgdir/usr/lib/sysusers.d/limbo.conf"
   install -Dm644 examples/validation-profile.json "$pkgdir/usr/share/doc/$pkgname/examples/validation-profile.json"
   install -Dm644 examples/analysis-linux.json "$pkgdir/usr/share/doc/$pkgname/examples/analysis-linux.json"
+  install -Dm644 examples/wine-profile.json "$pkgdir/usr/share/doc/$pkgname/examples/wine-profile.json"
+  # the weekly full re-check of base images proven by a full hash (limbo image verify); held during games by game time
+  install -Dm644 packaging/arch/limbo-image-verify.service "$pkgdir/usr/lib/systemd/system/limbo-image-verify.service"
+  install -Dm644 packaging/arch/limbo-image-verify.timer "$pkgdir/usr/lib/systemd/system/limbo-image-verify.timer"
+  install -Dm644 packaging/arch/limbo-image-verify-gametime.conf \
+    "$pkgdir/usr/lib/systemd/system/limbo-image-verify.service.d/gametime.conf"
+  install -dm755 "$pkgdir/usr/lib/systemd/system/timers.target.wants"
+  ln -s ../limbo-image-verify.timer "$pkgdir/usr/lib/systemd/system/timers.target.wants/limbo-image-verify.timer"
+  # Limbo's wine: programs that run `wine` from PATH land in Limbo's sandbox. Not on PATH by itself; it is linked from
+  # a folder before /usr/bin (sudo ln -s /usr/lib/limbo/bin/wine /usr/local/bin/wine). Wine's other command names are
+  # links to the shim, which runs the matching program inside the sandbox.
+  install -Dm755 packaging/wine/wine "$pkgdir/usr/lib/limbo/bin/wine"
+  for name in wineboot winecfg wineconsole winedbg winefile winemine winepath msiexec notepad regedit regsvr32; do
+    ln -s wine "$pkgdir/usr/lib/limbo/bin/$name"
+  done
   # validation profiles define what a run may do, so the directory is root-only writable
   install -dm755 "$pkgdir/etc/limbo/validation"
   install -dm700 "$pkgdir/etc/limbo/keys"
