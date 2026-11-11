@@ -2,7 +2,7 @@
 Description=Scan new files for malware as they arrive (Downloads, mail attachments, drives)
 
 [Service]
-ExecStart=/usr/local/bin/labyrinth-scan-downloads --watch
+ExecStart=/usr/bin/labyrinth-scan-downloads --watch
 Restart=on-failure
 RestartSec=20
 Nice=19

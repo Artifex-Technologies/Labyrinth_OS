@@ -1,5 +1,5 @@
 {
-  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/local/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR). enable_global: user services enabled for every user (systemctl --global); enable_system: system services (systemctl enable --now).",
+  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR). enable_global: user services enabled for every user (systemctl --global); enable_system: system services (systemctl enable --now).",
   "components": [
     {
       "id": "steam",

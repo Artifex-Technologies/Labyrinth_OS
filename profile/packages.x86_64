@@ -132,6 +132,7 @@ nss-mdns
 gutenprint
 foomatic-db
 foomatic-db-engine
+labyrinth-tools
 # component: steam
 steam
 lib32-nvidia-utils

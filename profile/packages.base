@@ -176,3 +176,5 @@ nss-mdns
 gutenprint
 foomatic-db
 foomatic-db-engine
+# Labyrinth's own programs in Rust (packages/tools): scan, quarantine, per-app network, launcher, optional software
+labyrinth-tools

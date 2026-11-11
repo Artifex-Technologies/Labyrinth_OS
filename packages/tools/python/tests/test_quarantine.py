@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import unittest
 
-BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profile", "airootfs", "usr", "local", "bin")
+BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 Q = os.path.join(BIN, "labyrinth-quarantine")
 SCAN = os.path.join(BIN, "labyrinth-scan-downloads")
 

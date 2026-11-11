@@ -8,10 +8,21 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from test_labyrinth_apps import ROOT, load_module  # noqa: E402
+import importlib.machinery
+import importlib.util
 
-BIN = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin")
+
+def load_module(name, path):
+    loader = importlib.machinery.SourceFileLoader(name, path)
+    spec = importlib.util.spec_from_loader(name, loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 appnet = load_module("labyrinth_appnet_for_ask", os.path.join(BIN, "labyrinth-appnet"))
 ask = load_module("labyrinth_appnet_ask", os.path.join(BIN, "labyrinth-appnet-ask"))
 agent = load_module("labyrinth_appnet_ask_agent", os.path.join(BIN, "labyrinth-appnet-ask-agent"))

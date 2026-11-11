@@ -5,7 +5,7 @@ After=network-pre.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/labyrinth-appnet apply
+ExecStart=/usr/bin/labyrinth-appnet apply
 
 [Install]
 WantedBy=multi-user.target

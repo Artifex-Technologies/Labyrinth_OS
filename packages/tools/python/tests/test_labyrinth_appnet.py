@@ -5,10 +5,21 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from test_labyrinth_apps import ROOT, load_module  # noqa: E402
+import importlib.machinery
+import importlib.util
 
-BIN = os.path.join(ROOT, "profile", "airootfs", "usr", "local", "bin")
+
+def load_module(name, path):
+    loader = importlib.machinery.SourceFileLoader(name, path)
+    spec = importlib.util.spec_from_loader(name, loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)
+    return mod
+
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 appnet = load_module("labyrinth_appnet", os.path.join(BIN, "labyrinth-appnet"))
 launch = load_module("labyrinth_launch2", os.path.join(BIN, "labyrinth-launch"))
 

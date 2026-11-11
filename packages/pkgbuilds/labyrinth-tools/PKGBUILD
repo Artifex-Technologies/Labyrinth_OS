@@ -1,0 +1,42 @@
+# Labyrinth's own programs in Rust (packages/tools in this repository), in place of the Python scripts of the same names that the
+# image kept in /usr/local/bin: the malware scan of new files and its quarantine, the per-app network rules with the ask service
+# and its notifications, the app launcher and the optional-software installer. Their units come with them (same names).
+pkgname=labyrinth-tools
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software"
+arch=('x86_64')
+url="https://github.com/Artifex-Technologies/Labyrinth_OS"
+license=('MPL-2.0')
+depends=('gcc-libs' 'glibc' 'nftables' 'systemd')
+optdepends=('heimdall-git: the malware scanner (heimdalld scan-files) the scan uses'
+            'clamav: the signatures behind that scanner'
+            'bubblewrap: the per-app sandbox of labyrinth-launch'
+            'libnotify: the notifications (notify-send)')
+makedepends=('cargo')
+options=('!lto' '!debug')
+
+_src="$startdir/../../tools"
+
+build() {
+  cd "$_src"
+  cargo build --release --locked --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$_src"
+  cargo test --release --locked --target-dir "$srcdir/target"
+}
+
+package() {
+  for b in labyrinth-scan-downloads labyrinth-quarantine labyrinth-appnet labyrinth-appnet-ask labyrinth-appnet-ask-agent labyrinth-launch labyrinth-apps; do
+    install -Dm755 "$srcdir/target/release/$b" "$pkgdir/usr/bin/$b"
+  done
+  for u in labyrinth-scan.service labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.service labyrinth-scan-full.timer \
+           labyrinth-appnet-prepare.service labyrinth-appnet-ask-agent.service; do
+    install -Dm644 "$_src/units/user/$u" "$pkgdir/usr/lib/systemd/user/$u"
+  done
+  for u in labyrinth-appnet.service labyrinth-appnet-ask.service; do
+    install -Dm644 "$_src/units/system/$u" "$pkgdir/usr/lib/systemd/system/$u"
+  done
+}

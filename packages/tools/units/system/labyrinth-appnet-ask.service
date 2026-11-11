@@ -1,10 +1,10 @@
 [Unit]
 Description=Labyrinth: ask before an app reaches a new destination (Settings > Apps > Network > Ask)
-Documentation=file:///usr/local/bin/labyrinth-appnet-ask
+Documentation=https://github.com/Artifex-Technologies/Labyrinth_OS/tree/main/packages/tools
 After=labyrinth-appnet.service
 
 [Service]
-ExecStart=/usr/bin/python3 /usr/local/bin/labyrinth-appnet-ask
+ExecStart=/usr/bin/labyrinth-appnet-ask
 Restart=on-failure
 RestartSec=5
 RuntimeDirectory=labyrinth

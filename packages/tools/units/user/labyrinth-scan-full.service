@@ -4,7 +4,7 @@ ConditionACPower=true
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/labyrinth-scan-downloads --full
+ExecStart=/usr/bin/labyrinth-scan-downloads --full
 Nice=19
 IOSchedulingClass=idle
 CPUWeight=idle
