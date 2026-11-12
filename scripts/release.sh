@@ -132,6 +132,13 @@ release() {
       sed -i "s/^const Version = \".*/const Version = \"$new\"/" "$r/$gv"
       files+=("$gv")
     fi
+    # Sarina's Python helpers name the version in their package metadata too
+    local hp=python/sarina_helpers/pyproject.toml hi=python/sarina_helpers/sarina_helpers/__init__.py
+    if [[ -f $r/$hp && -f $r/$hi ]]; then
+      sed -i "s/^version = \".*\"/version = \"$new\"/" "$r/$hp"
+      sed -i "s/^__version__ = '.*'/__version__ = '$new'/" "$r/$hi"
+      files+=("$hp" "$hi")
+    fi
     git -C "$r" commit -q -m "Release $new" -m "$(basename "$r") $cur -> $new (docs/VERSIONING.md in Labyrinth_OS)." -- "${files[@]}"
     git -C "$r" tag -a "$tag" -m "$(basename "$r") $new"
     echo "==> $(basename "$r"): $cur -> $new, committed and tagged $tag"

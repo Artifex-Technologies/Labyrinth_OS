@@ -220,6 +220,10 @@ class Release(unittest.TestCase):
         (sar / "VERSION").write_text("1.0.0\n")
         go = sar / "go/internal/version/version.go"
         go.write_text('package version\n\n// the VERSION file\nconst Version = "1.0.0"\n')
+        helpers = sar / "python/sarina_helpers"
+        (helpers / "sarina_helpers").mkdir(parents=True)
+        (helpers / "pyproject.toml").write_text('[project]\nname = "sarina-helpers"\nversion = "1.0.0"\n')
+        (helpers / "sarina_helpers/__init__.py").write_text("__version__ = '1.0.0'\n")
         sh(["git", "init", "-q", "-b", "main", str(sar)])
         sh(["git", "-C", str(sar), "add", "-A"])
         sh(["git", "-C", str(sar), "commit", "-qm", "1.0.0"])
@@ -230,6 +234,8 @@ class Release(unittest.TestCase):
         self.release("sarina", "minor")
         self.assertEqual((sar / "VERSION").read_text(), "1.1.0\n")
         self.assertEqual(go.read_text(), 'package version\n\n// the VERSION file\nconst Version = "1.1.0"\n')
+        self.assertIn('version = "1.1.0"', (helpers / "pyproject.toml").read_text())
+        self.assertEqual((helpers / "sarina_helpers/__init__.py").read_text(), "__version__ = '1.1.0'\n")
         self.assertEqual(sh(["git", "-C", str(sar), "describe", "--exact-match"]), "v1.1.0")
         self.assertEqual(sh(["git", "-C", str(sar), "status", "--porcelain"]), "", "both in the release commit")
 
