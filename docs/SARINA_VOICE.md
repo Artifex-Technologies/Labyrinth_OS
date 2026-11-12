@@ -212,3 +212,24 @@ Spoken answers are one or two short sentences now (the rules file and Sarina's s
 model's hidden thinking (`LABYRINTH_VOICE_THINK=off`, the default now; `computer` or `on` in `sarina.env` bring it back).
 Measured with typed questions and the voice path's `/no_think` (median of 5, qwen3:8b): a simple question 2.46 s with
 thinking, 0.66 s without; one that needs a tool 15.3 s with, 6.8 s without.
+
+## The voice service in Rust (2026-11-11, branch `voiced-rust-switch`)
+
+`labyrinth-voiced` and `chatterbox_engine.py` are ported to Rust: `sarina-voiced`, in Sarina's repository
+(`packaging/voiced`, its README has the design, the checks and the numbers). Same socket, requests, answers, files and
+environment variables, so `labyrinth-sarina-speak` and the warm-up talk to it unchanged. It loads the voice venv's own ONNX
+Runtime (onnxruntime-gpu 1.31.0's `libonnxruntime.so`) and CUDA libraries at run time, so it runs the build the Python ran.
+
+- **The same speech for the same seed**, checked on the processor: tokens, float samples and wav files identical for eight
+  sentences, and whole requests (with forced retries) identical with and without the pipeline. The decoder's own noise is
+  seeded by ONNX Runtime from the clock, in both, so two runs of either already differ unless the clock is fixed (the check
+  does that).
+- **Pipeline:** the next sentence's tokens are written while one is decoded; the first sentence is sent as soon as it is
+  ready, as before.
+- **Found:** a joke's ` [chuckle]` at the end of a sentence (what `dress()` adds six times in ten) indexes past the speech
+  embedding table: on the processor the request fails there; on the card the chuckle probably reads garbage. Both versions do
+  the same; the fix changes what Sarina says, so it waits for me. Also fixed by the port: a 240-character part with no comma or
+  space hung the Python service; a failed background load left it locked.
+- **Switch:** this branch makes `labyrinth-voiced.service` start `/usr/bin/sarina-voiced` (built by `sarina-git`); the Python
+  stays in the image for a rollback. Before merging, I try it on the card with a user drop-in (Sarina's
+  `packaging/voiced/README.md`, "The switch, the check on the card, and the way back").
