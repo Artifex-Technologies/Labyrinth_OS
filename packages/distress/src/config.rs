@@ -43,7 +43,20 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { enabled: false, hash: String::new(), count: 1, window_secs: 60, expires: 0, silent_login: true, decoy: false, in_prompts: false, extra: Extra::None, commands: vec![], wipe_keys: true, shutdown: true }
+        Config {
+            enabled: false,
+            hash: String::new(),
+            count: 1,
+            window_secs: 60,
+            expires: 0,
+            silent_login: true,
+            decoy: false,
+            in_prompts: false,
+            extra: Extra::None,
+            commands: vec![],
+            wipe_keys: true,
+            shutdown: true,
+        }
     }
 }
 

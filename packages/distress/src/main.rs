@@ -53,7 +53,9 @@ fn log_event(kind: &str, detail: &str) {
         }
     }
     // The system journal gets a plain line too, for Heimdall and for the administrator.
-    let _ = std::process::Command::new("logger").args(["-t", "labyrinth-distress", "-p", "auth.warning", &format!("{kind}: {detail}")]).status();
+    let _ = std::process::Command::new("logger")
+        .args(["-t", "labyrinth-distress", "-p", "auth.warning", &format!("{kind}: {detail}")])
+        .status();
 }
 
 fn events() -> Vec<Value> {
@@ -81,7 +83,12 @@ fn open(req: &Value) -> Value {
 }
 
 /// Saving rules, apart from the account password being right (checked by the caller): returns the config to store.
-fn merge_save(old: &Config, new: &Config, new_password: Option<&str>, account_password_equals: impl Fn(&str) -> bool) -> Result<Config, String> {
+fn merge_save(
+    old: &Config,
+    new: &Config,
+    new_password: Option<&str>,
+    account_password_equals: impl Fn(&str) -> bool,
+) -> Result<Config, String> {
     let mut c = new.clone();
     c.hash = old.hash.clone();
     if let Some(p) = new_password.filter(|p| !p.is_empty()) {
@@ -195,7 +202,12 @@ fn check_user(req: &Value, user: &str, prompts_only: bool) -> Value {
         if let Ok(exe) = std::env::current_exe() {
             let mut cmd = std::process::Command::new(exe);
             // without PKEXEC_UID: run-extra refuses anyone who came through pkexec, so only this helper can start it
-            cmd.arg("run-extra").arg(user).env_remove("PKEXEC_UID").stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null());
+            cmd.arg("run-extra")
+                .arg(user)
+                .env_remove("PKEXEC_UID")
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null());
             unsafe {
                 cmd.pre_exec(|| {
                     libc::setsid();

@@ -53,7 +53,11 @@ impl Ctx {
             for l in String::from_utf8_lossy(&o.stdout).lines() {
                 let w: Vec<&str> = l.split_whitespace().collect();
                 // internal, non-removable disks only: the live USB and the thumb drive in the pocket are left alone
-                if w.len() == 3 && w[1] == "disk" && w[2] == "0" && !["/dev/zram", "/dev/loop", "/dev/ram", "/dev/nbd"].iter().any(|p| w[0].starts_with(p)) {
+                if w.len() == 3
+                    && w[1] == "disk"
+                    && w[2] == "0"
+                    && !["/dev/zram", "/dev/loop", "/dev/ram", "/dev/nbd"].iter().any(|p| w[0].starts_with(p))
+                {
                     c.disks.push(w[0].to_string());
                 }
             }
@@ -92,7 +96,10 @@ pub fn extra_steps(cfg: &Config, ctx: &Ctx) -> Vec<Planned> {
                     }
                 }
                 for d in &ctx.luks {
-                    v.push(run(&format!("Erase the encryption keys of {d}; its data can never be read again"), &["cryptsetup", "luksErase", "--batch-mode", d]));
+                    v.push(run(
+                        &format!("Erase the encryption keys of {d}; its data can never be read again"),
+                        &["cryptsetup", "luksErase", "--batch-mode", d],
+                    ));
                 }
             }
             if cfg.shutdown {
@@ -101,9 +108,20 @@ pub fn extra_steps(cfg: &Config, ctx: &Ctx) -> Vec<Planned> {
         }
         Extra::FactoryReset => {
             for (u, home) in &ctx.users {
-                v.push(Planned { why: format!("Remove the account {u} and everything in {home}"), step: Step::Sh(format!("userdel -rf {u} 2>/dev/null; rm -rf {home}")) });
+                v.push(Planned {
+                    why: format!("Remove the account {u} and everything in {home}"),
+                    step: Step::Sh(format!("userdel -rf {u} 2>/dev/null; rm -rf {home}")),
+                });
             }
-            for p in ["/etc/labyrinth", "/var/lib/labyrinth", "/var/lib/AccountsService", "/etc/NetworkManager/system-connections", "/var/lib/bluetooth", "/var/lib/flatpak", "/var/cache"] {
+            for p in [
+                "/etc/labyrinth",
+                "/var/lib/labyrinth",
+                "/var/lib/AccountsService",
+                "/etc/NetworkManager/system-connections",
+                "/var/lib/bluetooth",
+                "/var/lib/flatpak",
+                "/var/cache",
+            ] {
                 v.push(Planned { why: format!("Reset {p}"), step: Step::Remove(p.to_string()) });
             }
             v.push(run("Start the first-time setup again at the next start", &["touch", "/etc/labyrinth-first-boot"]));
@@ -114,7 +132,12 @@ pub fn extra_steps(cfg: &Config, ctx: &Ctx) -> Vec<Planned> {
                 v.push(run(&format!("Erase the encryption keys of {d}"), &["cryptsetup", "luksErase", "--batch-mode", d]));
             }
             for d in &ctx.disks {
-                v.push(Planned { why: format!("Destroy the partition table and the start of {d}"), step: Step::Sh(format!("wipefs -af {d}; dd if=/dev/zero of={d} bs=1M count=64 conv=fsync 2>/dev/null; blkdiscard -f {d} 2>/dev/null; true")) });
+                v.push(Planned {
+                    why: format!("Destroy the partition table and the start of {d}"),
+                    step: Step::Sh(format!(
+                        "wipefs -af {d}; dd if=/dev/zero of={d} bs=1M count=64 conv=fsync 2>/dev/null; blkdiscard -f {d} 2>/dev/null; true"
+                    )),
+                });
             }
             v.push(run("Power off", &["systemctl", "poweroff", "-f"]));
         }
@@ -141,7 +164,9 @@ pub fn execute(steps: &[Planned], dry: bool) -> Vec<String> {
             Step::Remove(path) => {
                 let r = std::path::Path::new(path);
                 // never follow the path out of where it points: refuse anything that is not an absolute path of some depth
-                r.is_absolute() && r.components().count() >= 3 && (std::fs::remove_dir_all(r).is_ok() || std::fs::remove_file(r).is_ok() || !r.exists())
+                r.is_absolute()
+                    && r.components().count() >= 3
+                    && (std::fs::remove_dir_all(r).is_ok() || std::fs::remove_file(r).is_ok() || !r.exists())
             }
             _ => false,
         };
@@ -155,7 +180,12 @@ mod tests {
     use super::*;
 
     fn ctx() -> Ctx {
-        Ctx { user: "me".into(), users: vec![("me".into(), "/home/me".into())], luks: vec!["/dev/nvme0n1p2".into()], disks: vec!["/dev/nvme0n1".into()] }
+        Ctx {
+            user: "me".into(),
+            users: vec![("me".into(), "/home/me".into())],
+            luks: vec!["/dev/nvme0n1p2".into()],
+            disks: vec!["/dev/nvme0n1".into()],
+        }
     }
 
     #[test]

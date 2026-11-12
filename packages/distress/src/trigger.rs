@@ -13,7 +13,10 @@ pub fn register(hits: &mut Vec<i64>, now: i64, count: u32, window_secs: u32) -> 
 }
 
 pub fn load() -> Vec<i64> {
-    std::fs::read_to_string(crate::config::state_dir().join("hits.json")).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default()
+    std::fs::read_to_string(crate::config::state_dir().join("hits.json"))
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_default()
 }
 
 pub fn store(hits: &[i64]) {
