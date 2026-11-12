@@ -214,6 +214,25 @@ class Release(unittest.TestCase):
         self.release("system", "1.1.0")
         self.assertIn('VERSION="1.1"\nVERSION_ID=1.1.0\n', (self.lab / "profile/airootfs/etc/os-release").read_text())
 
+    def test_sarina_release_writes_its_go_copy(self):
+        sar = self.tmp / "Sarina"
+        (sar / "go/internal/version").mkdir(parents=True)
+        (sar / "VERSION").write_text("1.0.0\n")
+        go = sar / "go/internal/version/version.go"
+        go.write_text('package version\n\n// the VERSION file\nconst Version = "1.0.0"\n')
+        sh(["git", "init", "-q", "-b", "main", str(sar)])
+        sh(["git", "-C", str(sar), "add", "-A"])
+        sh(["git", "-C", str(sar), "commit", "-qm", "1.0.0"])
+        go.write_text(go.read_text() + "// not committed\n")
+        self.release("sarina", "patch", ok=False)
+        self.assertEqual((sar / "VERSION").read_text(), "1.0.0\n", "nothing half done")
+        sh(["git", "-C", str(sar), "checkout", "--", "go"])
+        self.release("sarina", "minor")
+        self.assertEqual((sar / "VERSION").read_text(), "1.1.0\n")
+        self.assertEqual(go.read_text(), 'package version\n\n// the VERSION file\nconst Version = "1.1.0"\n')
+        self.assertEqual(sh(["git", "-C", str(sar), "describe", "--exact-match"]), "v1.1.0")
+        self.assertEqual(sh(["git", "-C", str(sar), "status", "--porcelain"]), "", "both in the release commit")
+
     def test_refuses_what_is_not_newer_or_not_a_version(self):
         for bad in ("1.0.0", "0.9.0", "1.1", "v1.1.0"):
             self.release("heimdall", bad, ok=False)

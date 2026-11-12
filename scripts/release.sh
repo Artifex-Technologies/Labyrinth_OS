@@ -5,8 +5,9 @@
 #                                            next to the one installed on this computer (read only: builds and changes nothing)
 #   scripts/release.sh PROJECT NEW           a release: NEW is X.Y.Z, or patch / minor / major (raises that part of the
 #                                            current version). Writes the VERSION file (for the system also Yggdrasil's and
-#                                            the medium's /etc/os-release), commits only that, tags the commit vX.Y.Z and
-#                                            says how to push. Pushes nothing; every build number starts again at 1.
+#                                            the medium's /etc/os-release; for Sarina also its Go copy and its tarball
+#                                            recipe), commits only those, tags the commit vX.Y.Z and says how to push.
+#                                            Pushes nothing; every build number starts again at 1.
 #
 # PROJECT: system (Labyrinth OS: this repository and Yggdrasil), heimdall, limbo, sarina, kairos, argus (the app; the firmware
 # keeps its own ARG-... names), daedalus, huginn, icarus.
@@ -101,6 +102,13 @@ release() {
     [[ -z $(git -C "$r" status --porcelain -- VERSION) ]] || die "$r/VERSION has changes that are not committed"
     [[ $(git -C "$r" show HEAD:VERSION 2>/dev/null) == "$cur" ]] || die "$r/VERSION is not $cur (the system's two must agree)"
   done
+  # Sarina's Go module (go/) cannot embed the VERSION file above it, so it keeps the number as a constant here (its test holds
+  # the two equal); the programs of every other project read VERSION when they are built
+  local gv=go/internal/version/version.go
+  if [[ -f $d/$gv ]]; then
+    grep -q '^const Version = "' "$d/$gv" || die "$d/$gv has no 'const Version = \"...\"' line"
+    [[ -z $(git -C "$d" status --porcelain -- "$gv") ]] || die "$d/$gv has changes that are not committed"
+  fi
   local osr=profile/airootfs/etc/os-release
   if [[ $project == system ]]; then
     [[ -z $(git -C "$root" status --porcelain -- "$osr") ]] || die "$osr has changes that are not committed"
@@ -119,6 +127,10 @@ release() {
     if [[ -f $r/$pb ]] && ! grep -q '_version' "$r/$pb" && grep -q '^pkgver=' "$r/$pb"; then
       sed -i -e "s/^pkgver=.*/pkgver=$new/" -e "s/^pkgrel=.*/pkgrel=1/" "$r/$pb"
       files+=("$pb")
+    fi
+    if [[ -f $r/$gv ]]; then
+      sed -i "s/^const Version = \".*/const Version = \"$new\"/" "$r/$gv"
+      files+=("$gv")
     fi
     git -C "$r" commit -q -m "Release $new" -m "$(basename "$r") $cur -> $new (docs/VERSIONING.md in Labyrinth_OS)." -- "${files[@]}"
     git -C "$r" tag -a "$tag" -m "$(basename "$r") $new"

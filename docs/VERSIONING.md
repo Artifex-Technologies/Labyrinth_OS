@@ -86,12 +86,28 @@ scripts/release.sh system 1.1.0         # Labyrinth OS 1.1: this repository, Ygg
 PROJECT is `system`, `heimdall`, `limbo`, `sarina`, `kairos`, `argus` (the app), `daedalus`, `huginn` or `icarus`; the version
 is `patch`, `minor`, `major` or an exact `X.Y.Z`. The script checks the new version is newer and that `VERSION` has no
 uncommitted change, writes `VERSION` (for the system also Yggdrasil's and `profile/airootfs/etc/os-release`; for Sarina also
-the version in `packaging/arch/PKGBUILD`, its recipe for a released tarball), commits only those files ("Release X.Y.Z"), tags
-the commit `vX.Y.Z` and prints the `git push` that publishes it. It pushes nothing and builds nothing: the next publish after
-the push builds every package of that project as `X.Y.Z-1`, and installed systems update to it. For the system, build a new ISO
-after the push; its name carries the version.
+the version in `packaging/arch/PKGBUILD`, its recipe for a released tarball, and in `go/internal/version/version.go`, see
+below), commits only those files ("Release X.Y.Z"), tags the commit `vX.Y.Z` and prints the `git push` that publishes it. It
+pushes nothing and builds nothing: the next publish after the push builds every package of that project as `X.Y.Z-1`, and
+installed systems update to it. For the system, build a new ISO after the push; its name carries the version.
 
-## Not covered yet
+## What the programs say
 
-The programs' own version strings are separate from their packages': the Rust crates still say `version = "0.1.0"` in their
-`Cargo.toml`, and the Argus app's About shows its `ARG-1.3.3r2` name. The package's version is the one that counts for updates.
+Wherever a program names its version (`heimdalld version`, `limbo version`, `sarina version`, About, a User-Agent, an MCP
+`serverInfo`, a JSON `version` field), it is its project's `VERSION`: the system's for Yggdrasil and Labyrinth programs, its
+own for an app. The programs read the file when they are built, so a release changes nothing else:
+
+- **Rust**: `include_str!` of the repository's `VERSION` (for example `include_str!("../../../VERSION").trim_ascii()`). The
+  `version` in each `Cargo.toml` is not used for it and is left as it is.
+- **Go** (Heimdall, Limbo): `version.go` at the top of the repository embeds `VERSION` (`//go:embed`), and the commands use
+  its `Version`. No recipe passes anything in.
+- **Sarina's Go**: its module (`go/`) cannot embed a file above it, so `go/internal/version/version.go` keeps the number as a
+  constant; a test holds it equal to `VERSION`, and `scripts/release.sh` writes both.
+- **The Argus app**: `qflipper_common.pri` reads `VERSION` into `APP_VERSION` (the window, `qFlipper-cli --version`, the
+  Chymaera API); `argus-tools` reads it as the Rust programs do. The firmware keeps its own `ARG-...` names.
+
+Where Go and Rust builds of a program are compared (Heimdall's and Limbo's differentials), both read the same file, so they
+print the same version. Today: `heimdalld 1.0.0`, `limbo version` 1.0.0 and `limbo rs-version` "limbo-rs 1.0.0 (...)",
+`sarina 1.0.0 (commit ...)`, the Yggdrasil panel's notification server and `yggdrasil-weather/1.0.0`, Icarus's MCP server,
+Daedalus's STEP header ("Daedalus CAD 1.0.0") and the Argus app (1.0.0). Labyrinth's own crates, Kairos and Huginn print no
+version of their own.
