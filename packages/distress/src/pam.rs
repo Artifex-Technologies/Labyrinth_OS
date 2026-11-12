@@ -75,7 +75,7 @@ impl Pam {
             pam_end(handle, rc);
             // wipe our copy of the password
             let mut bytes = pw.into_bytes();
-            bytes.iter_mut().for_each(|b| unsafe { std::ptr::write_volatile(b, 0) });
+            bytes.iter_mut().for_each(|b| std::ptr::write_volatile(b, 0));
             // fail closed: anything but a clean success keeps the screen locked
             Ok(rc == PAM_SUCCESS)
         }
