@@ -30,6 +30,7 @@
 //!   sarina           labyrinth-sarina              Sarina with a model server behind her
 //!   sarina_setting   labyrinth-sarina-setting      Sarina's settings for Settings > Sarina
 //!   sarina_small     labyrinth-sarina-reflect, -warm, -voice-setup
+//!   sarina_voice     labyrinth-sarina-ask, labyrinth-sarina-speak   a spoken question, and the answer said aloud
 //!   rea              labyrinth-rea, labyrinth-rea-setup   REA in a sandbox, and its installation
 //!   small            labyrinth-claude-code, labyrinth-install, labyrinth-notify-activate
 
@@ -59,6 +60,7 @@ pub mod rollback;
 pub mod sarina;
 pub mod sarina_setting;
 pub mod sarina_small;
+pub mod sarina_voice;
 pub mod scan;
 pub mod security_setting;
 pub mod selfcheck;

@@ -6,12 +6,13 @@
 # names /usr/bin/labyrinth-agent), and the ports of the shell scripts (packages/tools/shell keeps the scripts): the rollback, the
 # installer's two steps, the agent's set-up and window, the ecosystem's set-up, the hardware set-up, the boot menu theme, the
 # gaming check, Sarina's launcher, settings and helpers, REA, Claude Code's installer, the live installer's launcher and the
-# notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Their
-# units come with them (same names).
+# notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Since
+# 2026-11-11 also Sarina's two voice scripts: labyrinth-sarina-ask (Super+S: the recording to her answer) and labyrinth-sarina-speak
+# (her answer said aloud). Their units come with them (same names).
 pkgname=labyrinth-tools
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers"
+pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers, Sarina's voice scripts"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
 license=('MPL-2.0')
@@ -24,7 +25,9 @@ optdepends=('heimdall-git: the malware scanner (heimdalld scan-files) the scan u
             'btrfs-progs: labyrinth-rollback and hibernation at install (btrfs)'
             'snapper: the snapshots set up at install'
             'curl: Sarina'"'"'s helpers, labyrinth-claude-code, labyrinth-rea-setup'
-            'sudo: labyrinth-agent-setup and labyrinth-agent-window (visudo)')
+            'sudo: labyrinth-agent-setup and labyrinth-agent-window (visudo)'
+            'whisper-cpp: labyrinth-sarina-ask (speech to text)'
+            'pipewire: labyrinth-sarina-speak (pw-play)')
 makedepends=('cargo')
 options=('!lto' '!debug')
 # the system version in /etc/os-release on every update (docs/VERSIONING.md)
@@ -52,7 +55,8 @@ package() {
            labyrinth-rollback labyrinth-install-bootfinish labyrinth-install-cleanup labyrinth-agent-setup labyrinth-agent-window \
            labyrinth-ecosystem-setup labyrinth-hardware-setup labyrinth-grub-theme labyrinth-security-setting labyrinth-gaming \
            labyrinth-sarina labyrinth-sarina-setting labyrinth-sarina-reflect labyrinth-sarina-voice-setup labyrinth-sarina-warm \
-           labyrinth-rea labyrinth-rea-setup labyrinth-claude-code labyrinth-install labyrinth-notify-activate; do
+           labyrinth-rea labyrinth-rea-setup labyrinth-claude-code labyrinth-install labyrinth-notify-activate \
+           labyrinth-sarina-ask labyrinth-sarina-speak; do
     install -Dm755 "$srcdir/target/release/$b" "$pkgdir/usr/bin/$b"
   done
   for u in labyrinth-scan.service labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.service labyrinth-scan-full.timer \

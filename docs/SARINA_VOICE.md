@@ -195,3 +195,20 @@ Spoken questions use read-only tools: files, her vault, and `system_status` (per
 - First numbers (10 typed spoken-style turns, idle card, no audio): route 0.02 s, prefetch 0.11 s, first token 4.22 s, first
   sentence 4.56 s, done 5.20 s (medians). Nearly all of the wait is the model: thinking on computer questions, and prompt reading
   before the first token (the prompt prefix is now reused between sessions, Sarina 43cff03 and 89a83ff).
+
+## The Rust programs (2026-11-11)
+
+Super+S runs Rust now. Sarina's package (`sarina-git`) has `/usr/bin/sarina-voice`, which the image's
+`/usr/local/bin/labyrinth-ask-sarina`, `labyrinth-sarina-checkup` and `labyrinth-sarina-speak-voiced` link to; `labyrinth-tools`
+has `/usr/bin/labyrinth-sarina-ask` and `/usr/bin/labyrinth-sarina-speak` (the scripts are kept in `packages/tools/shell` for a
+rollback), and Sarina's integration file names those. The voice service's client is started as
+`/usr/bin/sarina-voice speak-voiced`.
+
+Found while measuring: on my PC `~/.local/bin` comes first in the desktop's PATH and still held a Python
+`labyrinth-ask-sarina` and a dev build of `sarina` from 2026-11-10, so Super+S ran those and not `/usr/bin/sarina-voice`. They
+move to a dated folder (`~/.local/lib/labyrinth-py-backup/2026-11-11/`); a week later that folder goes.
+
+Spoken answers are one or two short sentences now (the rules file and Sarina's spoken brief), and a spoken question skips the
+model's hidden thinking (`LABYRINTH_VOICE_THINK=off`, the default now; `computer` or `on` in `sarina.env` bring it back).
+Measured with typed questions and the voice path's `/no_think` (median of 5, qwen3:8b): a simple question 2.46 s with
+thinking, 0.66 s without; one that needs a tool 15.3 s with, 6.8 s without.

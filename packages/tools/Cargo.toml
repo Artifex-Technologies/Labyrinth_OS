@@ -134,6 +134,14 @@ name = "labyrinth-sarina-warm"
 path = "src/bin/labyrinth-sarina-warm.rs"
 
 [[bin]]
+name = "labyrinth-sarina-ask"
+path = "src/bin/labyrinth-sarina-ask.rs"
+
+[[bin]]
+name = "labyrinth-sarina-speak"
+path = "src/bin/labyrinth-sarina-speak.rs"
+
+[[bin]]
 name = "labyrinth-install"
 path = "src/bin/labyrinth-install.rs"
 

@@ -187,7 +187,8 @@ def case(*a, **k):
 SHELL_NAMES = ["labyrinth-rollback", "labyrinth-install-bootfinish", "labyrinth-install-cleanup", "labyrinth-agent-setup", "labyrinth-agent-window",
                "labyrinth-ecosystem-setup", "labyrinth-hardware-setup", "labyrinth-grub-theme", "labyrinth-security-setting", "labyrinth-gaming",
                "labyrinth-sarina", "labyrinth-sarina-setting", "labyrinth-rea", "labyrinth-rea-setup", "labyrinth-claude-code", "labyrinth-sarina-reflect",
-               "labyrinth-sarina-voice-setup", "labyrinth-sarina-warm", "labyrinth-install", "labyrinth-notify-activate"]
+               "labyrinth-sarina-voice-setup", "labyrinth-sarina-warm", "labyrinth-install", "labyrinth-notify-activate",
+               "labyrinth-sarina-ask", "labyrinth-sarina-speak"]
 
 
 def interpreter(path):
@@ -337,6 +338,7 @@ import cases_agent  # noqa: E402,F401
 import cases_root  # noqa: E402,F401
 import cases_root2  # noqa: E402,F401
 import cases_user  # noqa: E402,F401
+import cases_voice  # noqa: E402,F401
 
 
 

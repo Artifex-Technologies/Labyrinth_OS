@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "profile", "airootfs", "usr", "local", "bin", "labyrinth-sarina-speak")
+SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "packages", "tools", "shell", "labyrinth-sarina-speak")
 
 
 def make(path, body):

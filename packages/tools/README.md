@@ -60,9 +60,11 @@ already allows any pacman and systemd-run, so it gives nothing more).
 | labyrinth-claude-code, labyrinth-install, labyrinth-notify-activate | src/small.rs | 5/5, 4/4, 4/4 |
 | labyrinth-sarina-reflect, -warm, -voice-setup | src/sarina_small.rs | 14/14, 7/7, 7/7 |
 | cls | none: on the switch it becomes a link to /usr/bin/clear (it was `exec clear "$@"`; clear does the same under any name, and no shell runs) | |
-| labyrinth-sarina-ask, labyrinth-sarina-speak | not ported: they wait for my voice test | |
+| labyrinth-sarina-ask, labyrinth-sarina-speak | src/sarina_voice.rs (2026-11-11, after my voice test) | 41/41, 24/24 |
 
-All 20 ports are done; 256 cases, all the same. Run against the scripts as they were before the fixes below (`--shell` with
+All 22 ports are done; 321 cases, all the same. The voice scripts' cases (parity/cases_voice.py) give whisper-cli, Piper,
+the player and the voice service's client as stand-ins: nothing records or plays. Their loudness numbers (the panel's voice
+island) are checked against the script's own Python program run by this computer's python3 on the same recording. Run against the scripts as they were before the fixes below (`--shell` with
 the scripts of 921bf80), the cases that show a fix differ, and only those and the ones built on them (36 of 256: in
 ecosystem-setup and claude-code nearly every case, as `ollama list` is read once and the installer is downloaded first; in
 grub-theme every install, as the made-up grub.cfg has a class with `../` in it, which the old script copied an icon to,

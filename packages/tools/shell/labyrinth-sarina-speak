@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # labyrinth-sarina-speak [TEXT]: say Sarina's answer aloud, with a local neural voice (Piper). Text comes from the arguments or standard input.
 #
-# With the voice service running (labyrinth-voiced, Chatterbox) it speaks with that; otherwise with Piper below.
+# With the voice service running (labyrinth-voiced, Chatterbox) it speaks with that (its client: /usr/bin/sarina-voice, Sarina's
+# package); otherwise with Piper below.
 # Used by the panel after a spoken question (Super+S) when "Sarina speaks her answers" is on (Settings > Sound). Nothing leaves the computer.
 # Piper runs from a private Python environment: ~/.local/share/labyrinth/tts/venv (or $LABYRINTH_TTS_DIR), voices in its voices/ folder.
 # The voice is the one line in ~/.config/labyrinth/sarina-voice (Settings > Sound; default en_US-amy-medium). Without Piper or the voice it prints why and exits 1.
@@ -67,7 +68,7 @@ sys.stdout.write(text)
 # the voice: Chatterbox through its service when it is up, else Piper
 say_voiced() {
   [[ -z $to && ${LABYRINTH_SARINA_ENGINE:-} != piper && -S ${LABYRINTH_VOICED_SOCKET:-$run/voiced.sock} ]] || return 1
-  "$(dirname "$(readlink -f "$0")")/labyrinth-sarina-speak-voiced" "$1"
+  /usr/bin/sarina-voice speak-voiced "$1"
 }
 
 if [[ -n $lines ]]; then
