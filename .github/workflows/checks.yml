@@ -28,13 +28,16 @@ jobs:
       - name: Tools
         run: pacman -Syu --noconfirm --needed git rust base-devel pkgconf wayland libxkbcommon fontconfig pam dbus
       - uses: actions/checkout@v4
-      - name: Audit and test every crate
+      - name: Format, lint, test and audit every crate
         run: |
           # RUSTSEC-2026-0370/0371/0372: zvariant, zbus_names and zvariant_derive are marked unmaintained (no vulnerability); zbus uses them
           # and every D-Bus program here depends on zbus. Revisit when zbus moves on.
           cargo install cargo-audit --locked
           for d in packages/*/; do
             [ -f "$d/Cargo.toml" ] || continue
+            # formatting (each crate's rustfmt.toml) and lints first: the debt cleared on 2026-11-11 must not come back
+            (cd "$d" && cargo fmt --check) || exit 1
+            (cd "$d" && cargo clippy --quiet --all-targets -- -D warnings) || exit 1
             (cd "$d" && cargo test --quiet) || exit 1
             (cd "$d" && ~/.cargo/bin/cargo-audit audit -D warnings --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0192 --ignore RUSTSEC-2026-0370 --ignore RUSTSEC-2026-0371 --ignore RUSTSEC-2026-0372) || exit 1
           done
