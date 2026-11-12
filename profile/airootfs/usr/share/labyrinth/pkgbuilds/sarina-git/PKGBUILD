@@ -4,13 +4,16 @@
 # (labyrinth-apps install sarina) and for an install that chose Sarina when she was not on the medium (installed at first
 # login). The ISO's own build uses packages/pkgbuilds/sarina-git, which builds the checkout next to Labyrinth_OS.
 # To build a local checkout instead: SARINA_SRC=file://$HOME/Documents/Github/Sarina makepkg -si
+# Two builds of Sarina's core (Sarina's docs/RUST_PORT.md "The switch"): the Rust build (rust/, sarina-rs) is /usr/bin/sarina
+# with its sarina-gui and sarina-service links; it runs the commands ported to it and hands every other one, unchanged, to
+# the Go build by execve. The Go build is /usr/lib/sarina/sarina (named sarina so that Heimdall still knows the process).
 # Also sarina-voice (Rust, packaging/voice): the spoken-question programs (labyrinth-ask-sarina, labyrinth-sarina-checkup,
 # labyrinth-sarina-speak-voiced) that the image's /usr/local/bin names link to. Sarina's docs/VOICE_RUST_PORT.md: what it is.
 
 pkgname=sarina-git
 pkgver=1.0.0
 pkgrel=1
-pkgdesc='Local-model agent: Go core with an optional Python ML/voice helper'
+pkgdesc='Local-model agent: Rust and Go core with an optional Python ML/voice helper'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Sarina'
 license=('MPL-2.0')
@@ -21,6 +24,8 @@ optdepends=(
   'python-onnxruntime: semantic search and desktop-audit classification (helper)'
 )
 makedepends=('go' 'cargo' 'python-build' 'python-installer' 'python-wheel' 'python-setuptools' 'git')
+# ring (TLS for the Rust build's model clients) does not link from GCC's LTO objects
+options=('!lto')
 provides=('sarina')
 conflicts=('sarina')
 source=("sarina::git+${SARINA_SRC:-https://github.com/Artifex-Technologies/Sarina.git}")
@@ -92,17 +97,25 @@ build() {
   # the spoken-question programs in one binary (it answers to the name it is started as)
   cd "$srcdir/sarina/packaging/voice"
   cargo build --release --locked --target-dir "$srcdir/target"
+
+  # the Rust build of the core: /usr/bin/sarina
+  cd "$srcdir/sarina/rust"
+  cargo build --release --locked --bin sarina-rs --target-dir "$srcdir/target"
 }
 
 check() {
   cd "$srcdir/sarina/packaging/voice"
   cargo test --release --locked --target-dir "$srcdir/target"
+  # the Rust build as it starts: names, Heimdall's lock, the ported commands, the hand-over to the Go build
+  cd "$srcdir/sarina/rust"
+  cargo test --release --locked --test sarina_rs --target-dir "$srcdir/target"
 }
 
 package() {
   cd "$srcdir/sarina"
 
-  install -Dm755 go/sarina "$pkgdir/usr/bin/sarina"
+  install -Dm755 "$srcdir/target/release/sarina-rs" "$pkgdir/usr/bin/sarina"
+  install -Dm755 go/sarina "$pkgdir/usr/lib/sarina/sarina"
   install -Dm755 "$srcdir/target/release/sarina-voice" "$pkgdir/usr/bin/sarina-voice"
   # how Sarina plugs into the desktop (Yggdrasil): hold-to-talk, voice, and her page in Settings
   install -Dm644 "$startdir/sarina.integration.conf" "$pkgdir/usr/share/yggdrasil/integrations/sarina.conf"
