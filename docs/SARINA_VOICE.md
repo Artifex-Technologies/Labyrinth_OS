@@ -224,8 +224,11 @@ Runtime (onnxruntime-gpu 1.31.0's `libonnxruntime.so`) and CUDA libraries at run
   sentences, and whole requests (with forced retries) identical with and without the pipeline. The decoder's own noise is
   seeded by ONNX Runtime from the clock, in both, so two runs of either already differ unless the clock is fixed (the check
   does that).
-- **Pipeline:** the next sentence's tokens are written while one is decoded; the first sentence is sent as soon as it is
-  ready, as before.
+- **Pipeline:** with the card, the next sentence's tokens are written while one is decoded (after the first sentence, which
+  is sent as soon as it is ready, as before). On the processor it made sentences later, so there it is off; on the card it
+  is to be measured.
+- **Measured on the processor** (fp32, the card was not to be touched): a sentence takes the same time (−0.8 %; it is all
+  ONNX Runtime), the peak memory is 274 MB lower, the waiting service 13 → 4 MB.
 - **Found:** a joke's ` [chuckle]` at the end of a sentence (what `dress()` adds six times in ten) indexes past the speech
   embedding table: on the processor the request fails there; on the card the chuckle probably reads garbage. Both versions do
   the same; the fix changes what Sarina says, so it waits for me. Also fixed by the port: a 240-character part with no comma or
