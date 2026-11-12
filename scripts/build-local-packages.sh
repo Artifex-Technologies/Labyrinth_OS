@@ -77,5 +77,7 @@ if [[ ${LABYRINTH_UNSIGNED:-} != 1 ]]; then
   sign=(--sign --key "$KEY")
 fi
 rm -f "$repo_dir"/labyrinth.db* "$repo_dir"/labyrinth.files*
-repo-add --quiet "${sign[@]}" "$repo_dir/labyrinth.db.tar.gz" "$repo_dir"/*.pkg.tar.zst
+# the folder keeps earlier builds; of each package the database lists the newest by version (--prevent-downgrade), not the last
+# file name in the folder's order (labyrinth-ollama-tuning-1.0.0-1 comes before the older 1.0.r451-2 alphabetically)
+repo-add --quiet --prevent-downgrade "${sign[@]}" "$repo_dir/labyrinth.db.tar.gz" "$repo_dir"/*.pkg.tar.zst
 echo "Built and added to local repo: $repo_dir${sign:+ (signed)}"
