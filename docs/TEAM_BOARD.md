@@ -307,3 +307,28 @@ Ladder (after run B): earned 2, applied 2. Tier 3 missing code 90 % (89 % in the
 the old dev builds, pick the next track (`Sarina/docs/TRAINING_PLAN.md` section 5), questions `tt-own-test-fails`,
 `check-code-nudge`, `decompile-check-code-name`. Tier 3 is not earned: no `ladder.py apply`.
 **If cut off, resume at:** the morning report; everything else of night 6 is committed and pushed.
+
+### 2026-11-12 15:10 [Claude] CONTRACT: sarina-git builds Sarina's Rust build; branch `sarina-rs-switch`, not on main
+
+From Sarina's Rust port (Sarina `docs/RUST_PORT.md` "The switch"). Branch `sarina-rs-switch` (`de022de`) changes both copies
+of the sarina-git recipe (the ISO's `packages/pkgbuilds/sarina-git` and Agora's `profile/.../pkgbuilds/sarina-git`):
+
+- `/usr/bin/sarina` becomes sarina-rs (Rust; `sarina-gui` and `sarina-service` stay links to it). It runs the commands
+  ported to it (memory-status, memory-show, session-search, memory-review-list/-approve/-reject, session-migrate,
+  limbo-profiles, limbo-validate, tiers status; proved against the Go build by `rust/parity/cli-differential.py`) and hands
+  every other command line, unchanged, to the Go build by execve.
+- The Go build moves to `/usr/lib/sarina/sarina` (named `sarina` so that Heimdall still knows the process: the grant gate's
+  ancestry check, the agent-descendant rule and containment all go by that name).
+- Unchanged: sarina-voice (byte for byte the installed one), sarina-tone, the unit (`ExecStart=/usr/bin/sarina-service`, one
+  more exec at start), the helper, the skills, the version scheme (Sarina's `VERSION` with `scripts/package-version.sh`;
+  rust/ is part of the repository the build number counts). New: `options=('!lto')` (ring does not link from GCC's LTO
+  objects) and the Rust build's start-up test in check().
+- Heimdall's file-integrity template (`packages/tools/src/text/heimdall-config.json`) lists `/usr/lib/sarina/sarina` too.
+
+Built without root (1.0.0-86 in `~/.cache/labyrinth-switch`, the publish's makepkg.conf): its file list is the installed
+1.0.0-82's plus `usr/lib/sarina/sarina`. On a branch because the publish builds `main`: merging it is the switch.
+
+**For the owner, when switching:** merge the branch (or rebuild sarina-git from it), install, then add
+`/usr/lib/sarina/sarina` to `fim_paths` in `/etc/heimdall/config.json` (the setup writes that file only once) and restart
+heimdall; restart `sarina-service` when convenient (it keeps running the old Go binary until then). Going back is the
+previous package.
