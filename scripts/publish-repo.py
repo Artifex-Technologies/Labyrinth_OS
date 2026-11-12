@@ -8,10 +8,11 @@ This script fills that release:
   1. fresh copies of Labyrinth_OS, Yggdrasil, Sarina, Heimdall and Limbo from GitHub (main as pushed, never a working tree
      with unfinished changes), side by side in the work folder;
   2. nothing more when none of them changed since the last publish (unless --force);
-  3. the packages built from them: scripts/build-local-packages.sh (the ISO's packages, versions stamped with the commit
-     count) and the store's own recipes (profile/airootfs/usr/share/labyrinth/pkgbuilds);
-  4. of each package the newest build; a build whose files and dependencies are the same as what is already published is not
-     published again (the published one stays, so nobody downloads the same program twice);
+  3. the packages built from them: scripts/build-local-packages.sh (the ISO's packages) and the store's own recipes
+     (profile/airootfs/usr/share/labyrinth/pkgbuilds); each recipe works out its version and build number (docs/VERSIONING.md);
+  4. of each package the newest build; a build whose files and dependencies are the same as what is already published, at the
+     same version, is not published again (the published one stays, so nobody downloads the same program twice); a release
+     (a new version) is always published;
   5. each package and the database signed with Labyrinth's key (its own keyring, ~/.local/share/labyrinth-signing/gnupg; the
      backup and how to restore it are on Proton Drive, Documents/Github/Labyrinth_OS/package-signing-key);
   6. uploaded: the packages first, the database last, then the files of the publish before last are removed (the last
@@ -103,12 +104,15 @@ def build(src):
             continue
         say(f"building the store's {d.name}")
         # always the same folder: a build path ends up inside the programs, and a new random one each time would make every
-        # build look changed (and be published again for nothing)
+        # build look changed (and be published again for nothing). makepkg reads the recipe where it is, in the clone (its
+        # build number counts the recipe's own commits, docs/VERSIONING.md), and puts everything it makes in that folder: the
+        # recipe's folder stays as committed (it goes onto the ISO).
         work = WORK / "store" / d.name
         if work.exists():
             shutil.rmtree(work)
-        shutil.copytree(d, work)
-        run(["makepkg", "--config", str(labyrinth / "scripts" / "makepkg.conf"), "-f", "-s", "-c", "--noconfirm"], cwd=work)
+        work.mkdir(parents=True)
+        env = dict(os.environ, BUILDDIR=str(work), SRCDEST=str(work), PKGDEST=str(work))
+        run(["makepkg", "--config", str(labyrinth / "scripts" / "makepkg.conf"), "-f", "-s", "-c", "--noconfirm"], cwd=d, env=env)
         for f in work.glob("*.pkg.tar.zst"):
             shutil.copy2(f, repo_dir / f.name)
     return repo_dir
@@ -160,9 +164,15 @@ def built_at_home(path):
     return any(l.split(" = ", 1)[1].startswith(("/home/", "/root/")) for l in info.splitlines() if l.startswith(("builddir = ", "startdir = ")))
 
 
+def release_of(version):
+    """The version without its build number: 1:1.0.0-37 -> 1:1.0.0."""
+    return version.rsplit("-", 1)[0]
+
+
 def choose(repo_dir, published_dir):
     """{name: path} of what this publish holds: of each package the newest build, or the published one when the newest build
-    is the same program (and the published one was not built at home)."""
+    is the same program at the same version (and the published one was not built at home). A new version (a release) is
+    always published, so every installed system shows it."""
     newest = {}
     for f in repo_dir.glob("*.pkg.tar.zst"):
         name, ver, _ = pkginfo(f)
@@ -177,7 +187,14 @@ def choose(repo_dir, published_dir):
     chosen = {}
     for name, (ver, f) in sorted(newest.items()):
         old = published.get(name)
-        if old and (vercmp(ver, old[0]) <= 0 or content(f) == content(old[1]) and not built_at_home(old[1])):
+        if old and vercmp(ver, old[0]) <= 0:
+            # the build number did not move although the program did: its recipe's _version line misses a folder it is built
+            # from, and installed systems would never get this change
+            if f != old[1] and content(f) != content(old[1]):
+                say(f"warning: {name} {ver} differs from the published {old[0]} but is not newer: not published "
+                    "(does its recipe's _version line name every folder it is built from? docs/VERSIONING.md)")
+            chosen[name] = old[1]
+        elif old and release_of(ver) == release_of(old[0]) and content(f) == content(old[1]) and not built_at_home(old[1]):
             chosen[name] = old[1]
         else:
             chosen[name] = f

@@ -8,9 +8,9 @@
 #      symlinks into text files).
 #   3. Runs mkarchiso.
 #
-# Output: out/*.iso. Env: LABYRINTH_WORK_DIR, LABYRINTH_OUT_DIR override work/ and out/.
+# Output: out/labyrinth-VERSION-DATE-x86_64.iso (VERSION: the system version, docs/VERSIONING.md). Env: LABYRINTH_WORK_DIR, LABYRINTH_OUT_DIR override work/ and out/.
 # LABYRINTH_PRESET=minimal (or gaming, creative; see components.json) builds a lighter medium from the same profile: only that
-# preset's components are on it, and the ISO is named labyrinth-PRESET-DATE.iso. The installer still offers the browsers and the AI
+# preset's components are on it, and the ISO is named labyrinth-PRESET-VERSION-DATE.iso. The installer still offers the browsers and the AI
 # (Sarina, Heimdall); what is not on the medium is fetched during the install or at the first login.
 set -euo pipefail
 
@@ -24,6 +24,12 @@ command -v mkarchiso >/dev/null || { echo "error: install archiso: pacman -S --n
 
 echo "==> Checking the generated package list is current"
 python3 "$repo_root/scripts/gen-packages.py" --check
+
+# The system version (docs/VERSIONING.md): VERSION, also in the medium's /etc/os-release and in the ISO's name
+# (labyrinth-1.0.0-2026.11.11-x86_64.iso)
+version=$(<"$repo_root/VERSION")
+grep -qx "VERSION_ID=$version" "$repo_root/profile/airootfs/etc/os-release" \
+  || { echo "error: profile/airootfs/etc/os-release does not say VERSION_ID=$version (scripts/release.sh writes both)" >&2; exit 1; }
 
 echo "==> Labyrinth's package key on the build host"
 # The local packages are signed (scripts/build-local-packages.sh) and the build checks them (profile/pacman.conf). The key comes
@@ -81,6 +87,8 @@ if [[ -n ${LABYRINTH_PRESET:-} ]]; then
   python3 "$repo_root/scripts/gen-packages.py" --preset "$LABYRINTH_PRESET" --out "$profile_build_dir/packages.x86_64"
   sed -i "s|^iso_name=\"labyrinth\"|iso_name=\"labyrinth-$LABYRINTH_PRESET\"|" "$profile_build_dir/profiledef.sh"
 fi
+
+sed -i "s|^iso_version=\"|iso_version=\"$version-|" "$profile_build_dir/profiledef.sh"
 
 # Service wiring as symlinks (mkarchiso copies airootfs over the pacstrapped root as-is).
 sysd="$profile_build_dir/airootfs/etc/systemd/system"

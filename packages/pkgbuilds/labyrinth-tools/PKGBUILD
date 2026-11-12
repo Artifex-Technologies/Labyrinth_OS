@@ -9,8 +9,8 @@
 # notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Their
 # units come with them (same names).
 pkgname=labyrinth-tools
-pkgver=0.1.0
-pkgrel=4
+pkgver=1.0.0
+pkgrel=1
 pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
@@ -27,8 +27,14 @@ optdepends=('heimdall-git: the malware scanner (heimdalld scan-files) the scan u
             'sudo: labyrinth-agent-setup and labyrinth-agent-window (visudo)')
 makedepends=('cargo')
 options=('!lto' '!debug')
+# the system version in /etc/os-release on every update (docs/VERSIONING.md)
+install=labyrinth-tools.install
 
 _src="$startdir/../../tools"
+# The version is the system's (VERSION at the top of this repository); the build number counts the commits since that release
+# which touch packages/tools, the crates it uses and this recipe (scripts/package-version.sh, docs/VERSIONING.md)
+. "$startdir/../../../scripts/package-version.sh"
+_version "$startdir" "$_src"
 
 build() {
   cd "$_src"

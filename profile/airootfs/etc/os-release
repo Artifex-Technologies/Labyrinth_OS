@@ -1,5 +1,7 @@
 NAME="Labyrinth OS"
 PRETTY_NAME="Labyrinth OS"
+VERSION="1.0"
+VERSION_ID=1.0.0
 ID=labyrinth
 LOGO=labyrinthos
 ID_LIKE=arch

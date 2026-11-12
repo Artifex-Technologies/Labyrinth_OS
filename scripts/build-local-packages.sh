@@ -26,27 +26,16 @@ mkdir -p "$repo_dir"
 # compiler settings for any 64-bit PC, not this machine's CPU (scripts/makepkg.conf)
 makepkg_conf="$repo_root/scripts/makepkg.conf"
 
-# Packages built from source in this repo (or the Yggdrasil or Sarina checkout next to it): their version does
-# not change when the code does, so they are always rebuilt. Every other package is pinned to a
-# released version and checksum, and is skipped when that exact version is already in the repo
-# Naming packages rebuilds them regardless.
+# Packages built from source in this repo (or the Yggdrasil or Sarina checkout next to it): always rebuilt. Every other package is
+# pinned to a released version and checksum, and is skipped when that exact version is already in the repo. Naming packages
+# rebuilds them regardless.
 local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-spell yggdrasil-calculator yggdrasil-taskmanager yggdrasil-leakwatch yggdrasil-crashwatch yggdrasil-appusage yggdrasil-gametime saga-md yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove yggdrasil-installer yggdrasil-player yggdrasil-spell yggdrasil-clipboard yggdrasil-colorpicker labyrinth-distress labyrinth-tools labyrinth-ollama-tuning labyrinth-keyring kairos-git daedalus-cad-git argus-git sarina-git heimdall-git limbo-git)
 
-# A package built from source here keeps the version its PKGBUILD names (0.1.0-27) until someone raises it by hand, so an
-# installed system would never see a new build as an update. Its version is stamped with the number of commits in the
-# repository it is built from: 0.1.0-27 becomes 0.1.0.r405-27, which pacman orders after 0.1.0-27 and after every earlier
-# stamp. Not for -git recipes (their pkgver() already does this), recipes pinned to a download, or the keyring (its date is
-# its version).
-stamped_pkgbuild() {   # stamped_pkgbuild DIR NAME: prints the build script to use (PKGBUILD, or a stamped copy next to it)
-  local dir=$1 name=$2 n
-  if [[ " ${local_source[*]} " != *" $name "* || $name == *-git || $name == labyrinth-keyring ]] || grep -q '^pkgver()' "$dir/PKGBUILD" \
-     || grep -A6 '^source=' "$dir/PKGBUILD" | grep -q 'https\?://' \
-     || ! n=$(git -C "$dir" rev-list --count HEAD 2>/dev/null); then
-    echo PKGBUILD; return
-  fi
-  sed -E "s/^pkgver=([0-9A-Za-z._]+)\$/pkgver=\1.r$n/" "$dir/PKGBUILD" > "$dir/PKGBUILD.stamped"
-  echo PKGBUILD.stamped
-}
+# Versions (docs/VERSIONING.md): each recipe works out its own, with scripts/package-version.sh. Labyrinth's and Yggdrasil's
+# packages have the system version (VERSION at the top of this repository and Yggdrasil's), Sarina, Heimdall, Limbo, Kairos,
+# Daedalus and Argus their own; the build number (pkgrel) counts the commits since that release which touch the package's
+# source, so every change is a newer package for installed systems. (Until 2026-11-11 this script stamped the commit count
+# into the version instead: 0.1.0.r405-27.) labyrinth-keyring and yggdrasil-spell-packs keep their data's date as their version.
 
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
@@ -66,10 +55,8 @@ for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
   (
     cd "$dir"
     rm -rf pkg src ./*.pkg.tar.zst
-    script=$(stamped_pkgbuild "$dir" "$name")
     # -c: makepkg removes its src/ and pkg/ folders after a successful build (they held gigabytes of build files)
-    makepkg --config "$makepkg_conf" -p "$script" -f -s -c --noconfirm
-    rm -f PKGBUILD.stamped
+    makepkg --config "$makepkg_conf" -f -s -c --noconfirm
     cp -f ./*.pkg.tar.zst "$repo_dir/"
   )
 done

@@ -1,0 +1,22 @@
+# The system version in /etc/os-release (docs/VERSIONING.md): this package's version is Labyrinth OS's, so each update writes it as
+# VERSION ("1.0", "1.1", "1.1.1": the patch only when there is one) and VERSION_ID (1.0.0), which Settings > About and every
+# program that asks what the system is read. The rest of the file stays as it is. Only on Labyrinth (ID=labyrinth): another
+# system using these packages keeps its own, and a link to the distribution's /usr/lib/os-release is left alone.
+
+post_install() {
+  f=/etc/os-release
+  v=${1#*:}
+  v=${v%-*}
+  [ -f "$f" ] && [ ! -L "$f" ] && grep -qE '^ID="?labyrinth"?$' "$f" || return 0
+  tmp=$(mktemp /etc/.os-release.XXXXXX) || return 0
+  awk -v show="${v%.0}" -v id="$v" '
+    /^VERSION=|^VERSION_ID=/ { next }
+    { print }
+    /^PRETTY_NAME=/ && !done { printf "VERSION=\"%s\"\nVERSION_ID=%s\n", show, id; done = 1 }
+    END { if (!done) printf "VERSION=\"%s\"\nVERSION_ID=%s\n", show, id }' "$f" > "$tmp" \
+    && chmod 644 "$tmp" && mv -f "$tmp" "$f" || rm -f "$tmp"
+}
+
+post_upgrade() {
+  post_install "$1"
+}

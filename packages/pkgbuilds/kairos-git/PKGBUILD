@@ -2,8 +2,8 @@
 # 32-bit games, and its launcher (kairos %command% in a game's Steam launch options; Settings > Games chooses per game).
 # Built from its public repository. The layer does nothing unless a game is started with it switched on.
 pkgname=kairos-git
-pkgver=0.1.0.r10.g1ae20fe
-pkgrel=2
+pkgver=1.0.0
+pkgrel=1
 pkgdesc='Kairos frame generation for games (Vulkan and Proton), Labyrinth OS preview'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Kairos'
@@ -19,9 +19,19 @@ options=('!lto' '!debug')
 source=("kairos::git+${KAIROS_SRC:-https://github.com/Artifex-Technologies/Kairos.git}")
 sha256sums=('SKIP')
 
+# The version is Kairos's own (the VERSION file in its repository); the build number counts its commits since that release
+# and this recipe's (Labyrinth_OS docs/VERSIONING.md). Both come from makepkg's clone: worked out here for the packaging step
+# (makepkg reads this file again for it), and in pkgver() and prepare() for the rest of the build, once the clone is up to date.
+. "$startdir/../../../scripts/package-version.sh"
+_version "$(_srcdir)/kairos"
+
 pkgver() {
-  cd "$srcdir/kairos"
-  printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+  _version "$srcdir/kairos"
+  echo "$pkgver"
+}
+
+prepare() {
+  _version "$srcdir/kairos"
 }
 
 build() {
