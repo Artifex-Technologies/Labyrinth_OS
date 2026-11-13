@@ -95,8 +95,9 @@ Security (this is the LykanOS machine):
 
 The laptop's long-term system is LykanOS (Arch + BlackArch on Yggdrasil). Its ISO is built from the LykanOS repository, and it
 takes Yggdrasil, Sarina and Heimdall from the same `[labyrinth]` repo. What is learned here (drivers, rotation, fingerprint,
-suspend) goes into Yggdrasil and the installer's components, so both systems get it. Before switching, decide with me: keep
-Labyrinth for testing, or reinstall with LykanOS (with disk encryption).
+suspend) goes into Yggdrasil and the installer's components, so both systems get it. Decided 2026-11-12: LykanOS comes
+onto this laptop only after Labyrinth is fine-tuned here and the Rust porting is done; then LykanOS is built out and installed
+(with disk encryption). Until then the laptop stays on Labyrinth.
 
 ## Rules for the laptop session
 
