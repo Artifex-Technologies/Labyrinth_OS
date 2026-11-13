@@ -358,13 +358,42 @@
     {
       "id": "fingerprint",
       "name": "Fingerprint reader (fprintd)",
-      "description": "fprintd and libfprint: enrol your fingers in Settings > Users. Signing in with a finger is off until you turn it on there (for sudo first; the lock screen and password boxes come later).",
+      "description": "fprintd and libfprint: enrol your fingers in Settings > Users. Enrolling waits until Secure Boot is on and the system disk is encrypted (a fingerprint is only as safe as the system that checks it); signing in with a finger is off until you turn it on there (for sudo first; the lock screen and password boxes come later).",
       "proprietary": false,
       "packages": [
         "fprintd",
         "libfprint"
       ],
-      "notes": "Settings > Users > Fingerprint: add a finger, then turn on \"Use for sudo\" if you want it. Nothing in PAM changes until you do."
+      "notes": "Settings > Users > Fingerprint: greyed out until Secure Boot and disk encryption are on; then add a finger, and turn on \"Use for sudo\" if you want it. Nothing in PAM changes until you do."
+    },
+    {
+      "id": "firmware-updates",
+      "name": "Firmware updates (fwupd)",
+      "description": "fwupd: firmware for the BIOS, Thunderbolt, docks, fingerprint readers, SSDs and more, from the Linux Vendor Firmware Service (LVFS), where Lenovo, Dell, HP and others publish it. Firmware is never shared with other computers on the network here (P2pPolicy=nothing).",
+      "proprietary": false,
+      "packages": [
+        "fwupd"
+      ],
+      "after_install": [
+        [
+          "fwupdtool",
+          "modify-config",
+          "fwupd",
+          "P2pPolicy",
+          "nothing"
+        ]
+      ],
+      "notes": "fwupdmgr refresh, then fwupdmgr get-updates lists what can be updated; fwupdmgr update installs it (some updates finish at the next restart)."
+    },
+    {
+      "id": "thunderbolt",
+      "name": "Thunderbolt docks (bolt)",
+      "description": "bolt: Thunderbolt and USB4 devices (docks, external graphics, storage) on computers that ask before connecting one (the firmware's security level \"user\"). A device approved once connects by itself afterwards.",
+      "proprietary": false,
+      "packages": [
+        "bolt"
+      ],
+      "notes": "A new device is approved once: boltctl list, then boltctl enroll --policy auto UUID. Settings will ask instead later."
     },
     {
       "id": "thermald",

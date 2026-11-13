@@ -1749,7 +1749,7 @@
    "id": "fingerprint",
    "name": "Fingerprint reader",
    "subtitle": "Enrol fingers, sudo with a finger",
-   "description": "fprintd and libfprint for the fingerprint readers of most laptops (Synaptics, Goodix, Elan, FPC and others). Enrol in Settings > Users; using a finger for sudo is a switch there, off until you turn it on.",
+   "description": "fprintd and libfprint for the fingerprint readers of most laptops (Synaptics, Goodix, Elan, FPC and others). Enrol in Settings > Users once Secure Boot is on and the system disk is encrypted; using a finger for sudo is a switch there, off until you turn it on.",
    "category": "Utilities",
    "subcategory": "System",
    "source": {
@@ -1764,6 +1764,49 @@
     "laptop",
     "sudo",
     "login"
+   ]
+  },
+  {
+   "id": "firmware-updates",
+   "name": "Firmware updates",
+   "subtitle": "BIOS, docks and devices from LVFS",
+   "description": "fwupd: firmware updates for the BIOS, Thunderbolt, docks, fingerprint readers, SSDs and more, from the Linux Vendor Firmware Service. Nothing is shared with other computers on your network.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "firmware-updates"
+   },
+   "icon": "software-update-available-symbolic",
+   "reviewed": true,
+   "tags": [
+    "firmware",
+    "bios",
+    "fwupd",
+    "lvfs",
+    "laptop",
+    "update"
+   ]
+  },
+  {
+   "id": "thunderbolt",
+   "name": "Thunderbolt docks",
+   "subtitle": "Docks and devices over Thunderbolt and USB4",
+   "description": "bolt: lets Thunderbolt and USB4 docks, external graphics and storage connect on computers that ask before connecting one. A device approved once connects by itself afterwards.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "thunderbolt"
+   },
+   "icon": "thunderbolt-symbolic",
+   "reviewed": true,
+   "tags": [
+    "thunderbolt",
+    "usb4",
+    "dock",
+    "bolt",
+    "laptop"
    ]
   },
   {
