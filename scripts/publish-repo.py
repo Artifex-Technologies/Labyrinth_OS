@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """publish-repo.py: Labyrinth's package repository, built, signed and put online.
 
+Replaced on 2026-11-13 by labyrinth-publish-repo (packages/publish-repo, the same publish in Rust; 33 of 33 publishes the same
+in its differential). Kept only for a rollback: it goes, with tests/test_publish_repo.py, one week after the timer first runs
+the Rust one (docs/RUST_PORT_REMAINING.md, "Copies kept for a rollback"). Fixes go into both until then.
+
 Every installed Labyrinth system takes Labyrinth's own software (the desktop, Sarina, Heimdall, Limbo, the store's apps) from
 the [labyrinth] repository in its /etc/pacman.conf: the release named "packages" of github.com/Artifex-Technologies/Labyrinth_OS.
 This script fills that release:

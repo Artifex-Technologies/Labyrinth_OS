@@ -65,7 +65,8 @@ publish keeps an unchanged program's published file only when that file was not 
 
 ## Publishing
 
-`scripts/publish-repo.py` builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
+`labyrinth-publish-repo` (the Rust program in `packages/publish-repo`; until 2026-11-13 `scripts/publish-repo.py`, kept a week
+for a rollback) builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
 `/var/lib/labyrinth-publish` (outside the home folder, see above; made once with
 `sudo install -d -o $USER -g $USER /var/lib/labyrinth-publish`, or set `LABYRINTH_PUBLISH_DIR`), then signs, uploads the packages, uploads the database last, and removes the files of the
 publish before last. It does nothing when no repository changed (`--force` to publish anyway, `--dry-run` to build and sign
@@ -77,9 +78,12 @@ Recipes that build from the publish copy itself (`git+file://`: heimdall-git, sa
 each copy's `main` is moved to GitHub's on every publish. Until 2026-11-07 (6238b19) the copies were checked out detached, `main`
 stayed at the first clone, and the published Heimdall and Sarina were days behind.
 
-On the build PC it can run daily at 05:30 (after Sarina's night training); switching the timer on is the owner's choice:
+On the build PC it can run daily at 05:30 (after Sarina's night training); switching the timer on is the owner's choice. The
+timer runs the installed program, `~/.local/bin/labyrinth-publish-repo`, so it is built and installed first, and again after
+every change to it:
 
 ```
+(cd packages/publish-repo && cargo build --release --locked && install -Dm755 target/release/labyrinth-publish-repo ~/.local/bin/)
 cp scripts/systemd/labyrinth-publish.{service,timer} ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now labyrinth-publish.timer
 journalctl --user -u labyrinth-publish     # what the last publish did

@@ -68,7 +68,7 @@ build, once the clone is up to date) and in `pkgver()`. Its own folder is in ano
 since the app's release count by date. `argus-git` also counts the firmware's commits since the app's release: either one
 moving on is a newer package.
 
-The publish (`scripts/publish-repo.py`) publishes the newest build of each package unless the published one is the same program
+The publish (`labyrinth-publish-repo`, `packages/publish-repo`) publishes the newest build of each package unless the published one is the same program
 at the same version; a release is always published, so every system shows the new version. If a build differs from the
 published one but its version is not newer, the publish says so and keeps the published one: the recipe's `_version` line is
 missing a folder the package is built from.
