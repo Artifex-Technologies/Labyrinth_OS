@@ -33,11 +33,19 @@ package was switched and the old one deleted (git keeps it). Numbers: Yggdrasil'
 | The os-release edit in `labyrinth-tools.install` (VERSION and VERSION_ID at every update, as root) | an awk program in the scriptlet | `labyrinth-os-release` (labyrinth-tools); the scriptlet is one line calling it | the old scriptlet function and the program on 9 made-up files (Labyrinth's, quoted ID, no newline at the end, two PRETTY_NAME lines, another system, empty, a link, none) times 3 versions: 27 of 27 the same (contents and modes) |
 | Pacman hook `60-labyrinth-nosuid` | `Exec = /bin/sh -c 'for f in ...; do [ -e "$f" ] && chmod u-s,g-s "$f"; done; true'` | two hooks, one per file, `Exec = /usr/bin/chmod u-s,g-s FILE` (pacman runs it with no shell, only when that file was just installed or upgraded) | the old line and the two commands on setuid files in a scratch folder, all four cases (both, one, the other, none): same modes, same results |
 
-## Ported on 2026-11-13
+## Ported on 2026-11-13 (Yggdrasil e5bdd00)
 
 | Program | Was | Now | Differential |
 | --- | --- | --- | --- |
+| `yggdrasil-session` (the session's launcher: the environment, MangoHud's look, Hyprland's crash watchdog and safe mode, the log copies, the monitor log, the restart or shut-down after it) | bash, 164 lines, plus a copy loop that started `ls`, `head`, `grep` and `sleep` every five seconds for the whole session | Yggdrasil `packages/session` (`src/session.rs`), one process with two threads | 43 cases the same (`tools/parity-shell-ports.py`, in user, mount and process namespaces: a stand-in Hyprland that crashes, is killed or signs out on cue, the environment it is given, every call, file and exit code); and the nested-session test the plan asked for (`packages/session/tests/nested_session.rs`): the launcher with Yggdrasil's own compositor, headless, as its compositor, running the session's real autostart line from yggdrasil.lua against stand-ins, coming up, ending cleanly, and started again after it is killed |
 | `scripts/publish-repo.py` (the daily package publish: fresh copies from GitHub, the builds, signing, repo-add, the upload to the release) | Python, 349 lines, started by my user timer at 05:30 | `labyrinth-publish-repo` (`packages/publish-repo`), installed to `~/.local/bin` on my PC (not a package); the Arch tools it calls stay | 22 cases, 33 publishes the same (`packages/publish-repo/parity/compare.py`: user, mount, PID and network namespaces, a throw-away key, my keyring covered; the real gpg, bsdtar, vercmp and repo-add; every call in order, the files, the database, exit codes and messages, the refusal paths: a changed build that is not newer, no key, a failed build, a partial upload). Nothing wrong found in the script. Measured: the daily nothing-changed run 67.3 → 22.2 ms, its own peak memory 20.9 → 2.8 MB (the package's README) |
+
+Nothing that matters was found wrong in the script. One oddity is kept as it was, for the comparison: udevadm's own header
+line "KERNEL - the kernel uevent" starts with KERNEL, so every login writes it into the monitor log. Bash's job notes
+("Killed", "Terminated" with the job's text) in session-output.log are the one difference by design: the port has no jobs,
+and the crash is in the system log and the monitor log with its exit code. Measured (Yggdrasil's `docs/PORT_NUMBERS.md`):
+8.11 → 3.13 ms from the launcher's start to Hyprland's, 21 → 4 processes on the way, and while the session runs 44 processes
+a minute → none, 4 processes and 9.5 MB → 1 process and 2.7 MB.
 
 Bugs found on the way (fixed in the scripts first, Yggdrasil f54dc78): `yggdrasil-mount-open` opened the wrong folder for a
 drive whose name has " at " in it ("Photos at home" opened "home"); `liki-minos-icon - - plain` stopped on a picture called
@@ -63,10 +71,12 @@ switched package the day of its switch); the tests and parity scripts that only 
 | Yggdrasil `packages/installer/helpers/python/install-system` (and its tests) | `packages/install-system` | 2026-11-11 | 2026-11-18 |
 | `packages/tools/python/` (the 12 Python programs and their tests) | `labyrinth-tools` | 2026-11-11 | 2026-11-18 |
 | `packages/tools/shell/` (the 20 shell scripts, and labyrinth-sarina-ask and -speak) | `labyrinth-tools` | 2026-11-11 | 2026-11-18 |
+| Yggdrasil `packages/session/tests/fixtures/yggdrasil-session.sh` (the old launcher, byte for byte; the differential reads it from there) | `yggdrasil-session` (`packages/session`) | 2026-11-13 | 2026-11-20 |
 | `scripts/publish-repo.py` and `tests/test_publish_repo.py` (the old side of `packages/publish-repo/parity/`) | `labyrinth-publish-repo` (`packages/publish-repo`) | in the repository 2026-11-13; my timer still starts the script until I install the program and change the unit's `ExecStart=` (on my to-do list) | one week after the timer first runs the program |
 
 The parity scripts that compare against them (`packages/*/parity/`, `packages/tools/parity/`) take the old versions from git
-where they can; those that read the `python/` or `shell/` folders are changed to git or go with them.
+where they can; those that read the `python/` or `shell/` folders are changed to git or go with them. When the launcher's
+fixture goes, `tools/parity-shell-ports.py` takes it from git (the commit before the switch) like the other ten scripts.
 
 ## Must stay (the platform needs it)
 
@@ -87,11 +97,10 @@ where they can; those that read the `python/` or `shell/` folders are changed to
 
 ## To port
 
-Smallest risk first. None of these runs as a service; the first two ship or run on my PC.
+Smallest risk first. None of these runs as a service; the first one ships.
 
 | What | Language, size | Runs | Plan |
 | --- | --- | --- | --- |
-| Yggdrasil `packages/session/bin/yggdrasil-session` (the session's launcher: environment, MangoHud's config, Hyprland's crash watchdog and safe mode, the monitor log, the restart or shut-down after it) | bash, 164 lines | every login | next: into `packages/session` with the four ported today. A mistake there means no desktop, so it needs a nested-session test first (Hyprland stand-in that crashes on cue) |
 | `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py` (Sarina's voice server, Chatterbox Turbo on PyTorch) | Python | Sarina's spoken answers (user service) | the planned next big port: Chatterbox through ONNX in Rust (`scripts/voice/chatterbox_onnx_test.py` is the probe) |
 | Yggdrasil `packages/settings/helpers/gpuunlock` and `packages/settings/data/41_gpu_unlock` (grub.d fragment) | Python 841 lines (root), sh 22 lines | Settings > Power > Graphics card unlock; grub-mkconfig | after the GPU plan (`docs/GPU_UNLOCK.md`); safety-critical, its tests carried over |
 | `profile/airootfs/usr/share/labyrinth/grub-evodevo/install.sh` (the boot menu theme's own installer, vendored, MIT) | sh, 884 lines | as root, by `labyrinth-grub-theme` at install | labyrinth-grub-theme does the few steps Labyrinth needs itself (copy the theme, set GRUB_THEME) and the vendored script goes |
