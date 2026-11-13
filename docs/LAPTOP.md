@@ -118,7 +118,8 @@ Basics:
       the screen did not turn: the session had started at 09:08:00 and the update came at 09:08:52, so the watcher was not running
       (no `tablet` process). To try again after logging out and in.
 - [ ] On-screen keyboard: add "On-screen keyboard" from Agora (wvkbd, from the AUR; ask me first). 2026-11-13: OK given; not
-      yet installed: the shop's guest network resets connections to aur.archlinux.org. To do on another network. Folded with no keyboard plugged
+      yet installed: the shop's guest network resets connections to aur.archlinux.org. Installed later the same day on another
+      network (wvkbd 0.21 from the AUR, its PKGBUILD read first; scdoc to build it); `tablet json` says keyboard_installed. Folded with no keyboard plugged
       in it shows; plugging in a USB or Bluetooth keyboard hides it; opening the laptop hides it.
 - [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
       Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
