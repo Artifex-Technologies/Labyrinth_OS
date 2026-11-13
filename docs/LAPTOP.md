@@ -94,6 +94,8 @@ Basics:
       (a dock, an eGPU) is not connected until something authorises it, and without bolt nothing does: expect a Thunderbolt dock
       to stay dark (USB-C displays and USB devices that are not Thunderbolt are unaffected). Not tried with a device yet; bolt is a
       package to ask about, or the BIOS level could be lowered (a BIOS change: ask).
+      2026-11-13: bolt installed with my OK ("Thunderbolt docks" in Agora, 2464d89). A new device is enrolled once with boltctl
+      until Settings asks (to build).
 - [ ] Battery: charge limit really stops charging at the set level; power modes change the fans and the battery life
 - [ ] VS Code's workspace-trust dialog (and its other pop-ups) fits the screen at my scale, centred, with nothing to drag
       around (Yggdrasil `d058852`: no floating window opens bigger than its screen). Also check a window kept from before a
@@ -113,7 +115,8 @@ Basics:
       `"accelerometer":true,"tablet_switch":true`. Folding already turned the keyboard off (the firmware does that by itself), but
       the screen did not turn: the session had started at 09:08:00 and the update came at 09:08:52, so the watcher was not running
       (no `tablet` process). To try again after logging out and in.
-- [ ] On-screen keyboard: add "On-screen keyboard" from Agora (wvkbd, from the AUR; ask me first). Folded with no keyboard plugged
+- [ ] On-screen keyboard: add "On-screen keyboard" from Agora (wvkbd, from the AUR; ask me first). 2026-11-13: OK given; not
+      yet installed: the shop's guest network resets connections to aur.archlinux.org. To do on another network. Folded with no keyboard plugged
       in it shows; plugging in a USB or Bluetooth keyboard hides it; opening the laptop hides it.
 - [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
       Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
@@ -125,7 +128,8 @@ Basics:
 
 Security (this is the LykanOS machine):
 - [ ] Disk encryption: was it chosen in the installer? If not, write it down. Reinstalling with encryption comes with LykanOS.
-      2026-11-13: **not encrypted**. nvme0n1p2 is plain btrfs (no LUKS), with the EFI partition beside it; swap is zram.
+      2026-11-13: **not encrypted**, on purpose: this install is for testing, and LykanOS comes with encryption. nvme0n1p2 is
+      plain btrfs (no LUKS); swap is a 31 GB swapfile (hibernation works: resume= is set) and zram.
 - [ ] Heimdall is running (`systemctl status heimdall`), and its alerts make sense on a laptop moving between networks
       2026-11-13: running. Two false alarms on my phone's hotspot ("needs care"): "1 other device heard on this network" while
       the laptop was the only client (the device heard is the phone itself, the hotspot); and "the router's hardware address
@@ -150,7 +154,10 @@ Security (this is the LykanOS machine):
       Settings > Users > Fingerprint, then (with my OK again, it changes /etc/pam.d/sudo) turn on "Use for sudo" and try
       `sudo -k; sudo true` with the finger, then with Ctrl+C and the password. Turning it off must leave /etc/pam.d/sudo as it was.
       2026-11-13: **Synaptics 06cb:00fc** ("Prometheus Fingerprint Reader"). It is in the repository's installer-extras.json, but
-      not in the copy on this laptop (installed from the 2026-11-12 ISO, before the list was added). Nothing installed or enrolled.
+      not in the copy on this laptop (installed from the 2026-11-12 ISO, before the list was added). The reader is in the power
+      button, match-on-chip (the template stays in the sensor). fprintd installed with my OK; **nothing enrolled**: my rule is no
+      fingerprint until Secure Boot is on and the disk is encrypted, now enforced (Yggdrasil c2003ab: the helper refuses, Settings
+      shows it greyed out with the reason).
 - [ ] Crashes seen 2026-11-13 (coredumpctl): avahi-daemon aborted 4 times, each at a Wi-Fi change, inside its own shutdown
       (avahi_server_free): heimdall-wifi-guard stops it on untrusted networks, and the abort leaves the unit failed. Harmless
       (it is meant to be off there), but a quieter way to switch it off would be tidier. hyprsunset (Night Light) aborted once
@@ -161,7 +168,8 @@ Security (this is the LykanOS machine):
       and the thermal profile follows the power mode (platform_profile: low-power, balanced, performance).
 - [ ] Firmware updates: fwupd is **not** on the ISO. ThinkPads get BIOS, Thunderbolt and fingerprint firmware from LVFS. Write
       down what `fwupdmgr get-devices` would cover (install fwupd only with my OK). Firmware updates go through Agora/Settings later.
-      2026-11-13: fwupd is not installed, so `get-devices` waits for your OK.
+      2026-11-13: fwupd installed with my OK, firmware sharing off (P2pPolicy=nothing; passim came with it). Now a component,
+      "Firmware updates" in Agora (Labyrinth 2464d89).
 - [ ] Secure Boot later: sbctl is on the ISO. Our own keys and signed kernels are a later plan; don't enrol keys now.
 
 ## Later: LykanOS on this laptop
