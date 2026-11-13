@@ -72,6 +72,20 @@ fi
 compgen -G "$repo_root/repo/x86_64/labyrinth.db*" >/dev/null \
   || { echo "error: no local repo at repo/x86_64; run scripts/build-local-packages.sh as a regular user first" >&2; exit 1; }
 
+echo "==> Stale copies of the local packages in pacman's cache"
+# scripts/build-local-packages.sh rebuilds some packages under the same version, so a file of the same name can sit in this host's
+# pacman cache with other contents. mkarchiso uses that cache, finds the old file first and stops on its checksum (2026-11-12:
+# labyrinth-keyring). Such a copy is only an older build of one of these packages: it goes, its signature with it.
+while read -r cache; do
+  for f in "$repo_root"/repo/x86_64/*.pkg.tar.zst; do
+    c="$cache/${f##*/}"
+    if [[ -f $c ]] && ! cmp -s "$f" "$c"; then
+      rm -f -- "$c" "$c.sig"
+      echo "    removed the older $c"
+    fi
+  done
+done < <(pacman-conf CacheDir)
+
 echo "==> Preparing the work copy of profile/"
 rm -rf --one-file-system "${profile_build_dir:?}"
 mkdir -p "$work_dir"
