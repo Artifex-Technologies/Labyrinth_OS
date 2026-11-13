@@ -7,8 +7,10 @@ photo and video work, CAD, everyday browsing.
 
 ![The desktop: the top bar, the dock, and notification pop-ups at the bottom right](assets/screenshots/desktop.png)
 
-*The desktop: the top bar (start button, workspaces, the open app's name, network, Bluetooth, date and time), the dock, and
-notification pop-ups at the bottom right. The black tab at the top middle is Fylgja, the notch.*
+*The desktop: the top bar (start button, workspaces, the open app's name, the status icons, the notification count, date and
+time), the dock, and notification pop-ups at the bottom right. The black tab at the top middle is Fylgja, the notch. This picture,
+the installer's and the distress password's below are made with Yggdrasil's `scripts/screenshots.sh` on its headless compositor,
+with a made-up computer and account.*
 
 ![fastfetch on Labyrinth](assets/screenshots/fastfetch.png)
 
