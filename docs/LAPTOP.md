@@ -127,7 +127,10 @@ Basics:
       - in landscape it was short and stretched across the whole screen: `-L` (landscape height) and `--width`/`--ratio`;
       - landscape should offer split or normal: wvkbd has no split layout (`--list-layers`: full, landscape, special ...); the
         nearest is `--dock left|right` with `--ratio` (narrower, to one side). A true split keyboard would be our own.
-      - moving and resizing windows with a finger did not work at all: done here (Yggdrasil yggdrasil-ui touchmove.rs). Folded with no keyboard plugged
+      - moving and resizing windows with a finger did not work at all: done here (Yggdrasil yggdrasil-ui touchmove.rs).
+        That covers Yggdrasil's own apps (their title bars and edges). Apps that draw their own (VS Code, Vivaldi) ask the
+        compositor to move them with a pointer serial, which Hyprland ignores for a touch: for Yggdrasil's own (Smithay)
+        compositor, honour xdg_toplevel move/resize requests made from a touch (a touch grab), so every app moves by finger. Folded with no keyboard plugged
       in it shows; plugging in a USB or Bluetooth keyboard hides it; opening the laptop hides it.
 - [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
       Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
