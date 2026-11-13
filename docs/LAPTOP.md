@@ -123,6 +123,14 @@ Security (this is the LykanOS machine):
 - [ ] Heimdall is running (`systemctl status heimdall`), and its alerts make sense on a laptop moving between networks
       2026-11-13: running. Its alerts on another network still to see.
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
+      2026-11-13, a shop's guest network (Enhanced Open in transition mode, OWE-TM, with a sign-in page): Settings showed a lock
+      and wanted a password (fixed: Yggdrasil 8c7c6e5). Joined, the laptop correctly took the encrypted hidden half, whose real
+      name is `_owetm_` + part of the name + digits; **Heimdall's verdict shows that raw name** (to show the friendly one).
+      Before the terms are accepted the network answers every https site with its own certificate: Heimdall called it
+      critical (right) and every page said "not private". The panel's "Sign in to this Wi-Fi network" notification (Yggdrasil
+      8c7c6e5, 5c983f5) **did not appear**: NetworkManager logged no portal state, so its check may not see this kind of portal.
+      To do on the next such network: `nmcli networking connectivity check` while joined, and a manual "Open sign-in page"
+      button in Settings > Wi-Fi for a network whose portal is not detected. The hotspot was used instead.
       2026-11-13: ufw is on (enabled, incoming dropped), and nothing listens on the network but Vivaldi's local-network discovery.
       No passwordless sudo, no live user and no live login were left over from the installer. Public-network checks still to do.
 - [ ] Fingerprint reader: which one it is (`lsusb`: Synaptics 06cb or Goodix 27c6), and whether its id is in the installer's list
