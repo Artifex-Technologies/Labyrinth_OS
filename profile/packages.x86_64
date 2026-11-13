@@ -144,8 +144,6 @@ proton-cachyos
 protonup-qt
 protontricks
 umu-launcher
-# component: spotify
-spotify-launcher
 # component: obsidian
 obsidian
 # component: weather
