@@ -76,7 +76,13 @@ Basics:
       (s2idle is expected) and battery drain overnight while suspended.
       2026-11-13: `mem_sleep` is `[s2idle]`, as expected. Resume and overnight drain still to try.
 - [ ] Lid closed with an external screen attached: stays awake and uses only the external screen.
-- [ ] Brightness keys, volume keys, mic-mute key and its light, the F-keys' other functions (Fn lock)
+- [x] Brightness keys, volume keys, mic-mute key and its light, the F-keys' other functions (Fn lock)
+      2026-11-13: all working. F1-F3 volume, F4 mic mute (its light follows), F5/F6 brightness with the pop-up: they did
+      nothing at first because brightnessctl is not on a Labyrinth install; yggdrasil-mediakey now sets the backlight through
+      logind when brightnessctl is missing (Yggdrasil 03db61e). F7 Settings > Displays, F8 airplane mode, F9 notifications, F12
+      (the star key; ThinkPads send KEY_BOOKMARKS, XF86Favorites in the keymap) whatever Settings > Peripherals > Keyboard > Star
+      key says, Sarina by default (219b6d2, 77c0f4c). F10/F11 (phone) left to the app in front. Fn+Esc is Fn lock. No ePrivacy
+      screen on this unit (thinkpad_acpi lcdshadow: not supported).
 - [ ] Sound: speakers and headphone jack (sof-firmware and alsa-ucm-conf are on the ISO); the microphones
 - [ ] Camera: check whether it is a USB camera (`lsusb`) or a MIPI camera on Intel IPU6 (`lspci`; it would need the IPU6 driver
       and libcamera). Write down which, and don't install anything for it yet.
@@ -145,6 +151,10 @@ Security (this is the LykanOS machine):
       `sudo -k; sudo true` with the finger, then with Ctrl+C and the password. Turning it off must leave /etc/pam.d/sudo as it was.
       2026-11-13: **Synaptics 06cb:00fc** ("Prometheus Fingerprint Reader"). It is in the repository's installer-extras.json, but
       not in the copy on this laptop (installed from the 2026-11-12 ISO, before the list was added). Nothing installed or enrolled.
+- [ ] Crashes seen 2026-11-13 (coredumpctl): avahi-daemon aborted 4 times, each at a Wi-Fi change, inside its own shutdown
+      (avahi_server_free): heimdall-wifi-guard stops it on untrusted networks, and the abort leaves the unit failed. Harmless
+      (it is meant to be off there), but a quieter way to switch it off would be tidier. hyprsunset (Night Light) aborted once
+      around a screen-scale change and was restarted by the panel.
 - [ ] thermald: not for this laptop (its firmware runs the cooling; thermald stops itself where
       `/sys/devices/platform/thinkpad_acpi/dytc_lapmode` exists). Check that file exists here, so the installer's rule is right.
       2026-11-13: it exists (it read 1: lap mode), so the rule is right. Settings > Power > Cooling shows the firmware's two fans,
