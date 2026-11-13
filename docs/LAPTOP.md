@@ -74,6 +74,9 @@ Basics:
 - [ ] External screens over USB-C / Thunderbolt and HDMI: plug in and out while running; the dock and windows follow
 - [ ] Thunderbolt devices are authorised (bolt is not on the ISO; check whether anything is needed)
 - [ ] Battery: charge limit really stops charging at the set level; power modes change the fans and the battery life
+- [ ] VS Code's workspace-trust dialog (and its other pop-ups) fits the screen at my scale, centred, with nothing to drag
+      around (Yggdrasil `d058852`: no floating window opens bigger than its screen). Also check a window kept from before a
+      scale change in Settings > Displays comes back no bigger than the screen.
 
 2-in-1:
 - [ ] Pen: pressure, the side buttons, the eraser end, palm rejection while writing
