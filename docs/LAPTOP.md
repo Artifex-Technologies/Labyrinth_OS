@@ -119,7 +119,15 @@ Basics:
       (no `tablet` process). To try again after logging out and in.
 - [ ] On-screen keyboard: add "On-screen keyboard" from Agora (wvkbd, from the AUR; ask me first). 2026-11-13: OK given; not
       yet installed: the shop's guest network resets connections to aur.archlinux.org. Installed later the same day on another
-      network (wvkbd 0.21 from the AUR, its PKGBUILD read first; scdoc to build it); `tablet json` says keyboard_installed. Folded with no keyboard plugged
+      network (wvkbd 0.21 from the AUR, its PKGBUILD read first; scdoc to build it); `tablet json` says keyboard_installed.
+      Tried folded, my notes for the on-demand keyboard being built on the desktop PC (laptop/src/tablet.rs starts it):
+      - it should cover the dock, not sit above it: wvkbd `--wayland-layer overlay` (and `--non-exclusive`, so windows are not
+        pushed up);
+      - only while a text field has the focus: wvkbd 0.21 has `--auto` (follows text-input focus), with `--hidden` to start;
+      - in landscape it was short and stretched across the whole screen: `-L` (landscape height) and `--width`/`--ratio`;
+      - landscape should offer split or normal: wvkbd has no split layout (`--list-layers`: full, landscape, special ...); the
+        nearest is `--dock left|right` with `--ratio` (narrower, to one side). A true split keyboard would be our own.
+      - moving and resizing windows with a finger did not work at all: done here (Yggdrasil yggdrasil-ui touchmove.rs). Folded with no keyboard plugged
       in it shows; plugging in a USB or Bluetooth keyboard hides it; opening the laptop hides it.
 - [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
       Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
