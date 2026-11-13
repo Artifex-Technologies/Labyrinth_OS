@@ -59,6 +59,8 @@ From the desktop PC's session, for the laptop:
 - **Location without Wi-Fi.** I don't want nearby Wi-Fi networks or their hardware IDs used to find where the computer is. The
   automatic time zone and Weather's "Automatic" place are moving to IP-only, and they pause while a VPN is on. Until that update
   arrives, leave "Set time zone automatically" **off**.
+  2026-11-13: it had been switched on here the night before (it asked beaconDB once, at the first check); now off
+  (`yggdrasil-autozone.timer` disabled). The time zone stays as set, by hand.
 - **Laptop hardware set:** landed (see "Already done"); test it here (below). Still open on the desktop PC: fingerprint on the
   lock screen and in password boxes (the plan is in Yggdrasil's docs/DESKTOP.md), rotation on Yggdrasil's own compositor, and
   an on-screen keyboard you can open on demand.
@@ -72,13 +74,20 @@ Write what you find under each item, and what works without changes.
 Basics:
 - [ ] Suspend and resume (lid close, power key, idle): comes back with Wi-Fi, sound and touch. Check `cat /sys/power/mem_sleep`
       (s2idle is expected) and battery drain overnight while suspended.
+      2026-11-13: `mem_sleep` is `[s2idle]`, as expected. Resume and overnight drain still to try.
 - [ ] Lid closed with an external screen attached: stays awake and uses only the external screen.
 - [ ] Brightness keys, volume keys, mic-mute key and its light, the F-keys' other functions (Fn lock)
 - [ ] Sound: speakers and headphone jack (sof-firmware and alsa-ucm-conf are on the ISO); the microphones
 - [ ] Camera: check whether it is a USB camera (`lsusb`) or a MIPI camera on Intel IPU6 (`lspci`; it would need the IPU6 driver
       and libcamera). Write down which, and don't install anything for it yet.
+      2026-11-13: a **USB camera** (Chicony 04f2:b751, "Integrated Camera"), on the kernel's uvcvideo driver: /dev/video0-3
+      exist. No IPU6, nothing to install.
 - [ ] External screens over USB-C / Thunderbolt and HDMI: plug in and out while running; the dock and windows follow
 - [ ] Thunderbolt devices are authorised (bolt is not on the ISO; check whether anything is needed)
+      2026-11-13: two Thunderbolt domains, security level **`user`** (the firmware's default). At that level a Thunderbolt device
+      (a dock, an eGPU) is not connected until something authorises it, and without bolt nothing does: expect a Thunderbolt dock
+      to stay dark (USB-C displays and USB devices that are not Thunderbolt are unaffected). Not tried with a device yet; bolt is a
+      package to ask about, or the BIOS level could be lowered (a BIOS change: ask).
 - [ ] Battery: charge limit really stops charging at the set level; power modes change the fans and the battery life
 - [ ] VS Code's workspace-trust dialog (and its other pop-ups) fits the screen at my scale, centred, with nothing to drag
       around (Yggdrasil `d058852`: no floating window opens bigger than its screen). Also check a window kept from before a
@@ -94,24 +103,38 @@ Basics:
       Settings > Displays > Tablet mode > Lock rotation keeps the screen as it is. If nothing happens on folding, write what
       `hyprctl devices` lists under switches (the binds are named after them) and whether `/usr/lib/yggdrasil/tablet mode on`
       typed by hand turns it.
+      2026-11-13: the packages arrived (yggdrasil-settings 1.0.0-32, -session 1.0.0-25) and `tablet json` says
+      `"accelerometer":true,"tablet_switch":true`. Folding already turned the keyboard off (the firmware does that by itself), but
+      the screen did not turn: the session had started at 09:08:00 and the update came at 09:08:52, so the watcher was not running
+      (no `tablet` process). To try again after logging out and in.
 - [ ] On-screen keyboard: add "On-screen keyboard" from Agora (wvkbd, from the AUR; ask me first). Folded with no keyboard plugged
       in it shows; plugging in a USB or Bluetooth keyboard hides it; opening the laptop hides it.
 - [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
       Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
       monitor plugged in stays at its own scale. If Settings > Displays already wrote a scale for eDP-1 before, that one is kept.
+      2026-11-13: still scale 1 at 1920x1200, in the session from before the update; to check after logging out and in.
 
 Security (this is the LykanOS machine):
 - [ ] Disk encryption: was it chosen in the installer? If not, write it down. Reinstalling with encryption comes with LykanOS.
+      2026-11-13: **not encrypted**. nvme0n1p2 is plain btrfs (no LUKS), with the EFI partition beside it; swap is zram.
 - [ ] Heimdall is running (`systemctl status heimdall`), and its alerts make sense on a laptop moving between networks
+      2026-11-13: running. Its alerts on another network still to see.
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
+      2026-11-13: ufw is on (enabled, incoming dropped), and nothing listens on the network but Vivaldi's local-network discovery.
+      No passwordless sudo, no live user and no live login were left over from the installer. Public-network checks still to do.
 - [ ] Fingerprint reader: which one it is (`lsusb`: Synaptics 06cb or Goodix 27c6), and whether its id is in the installer's list
       (`installer-extras.json`, the readers libfprint supports). With my OK: add "Fingerprint reader" from Agora, enrol a finger in
       Settings > Users > Fingerprint, then (with my OK again, it changes /etc/pam.d/sudo) turn on "Use for sudo" and try
       `sudo -k; sudo true` with the finger, then with Ctrl+C and the password. Turning it off must leave /etc/pam.d/sudo as it was.
+      2026-11-13: **Synaptics 06cb:00fc** ("Prometheus Fingerprint Reader"). It is in the repository's installer-extras.json, but
+      not in the copy on this laptop (installed from the 2026-11-12 ISO, before the list was added). Nothing installed or enrolled.
 - [ ] thermald: not for this laptop (its firmware runs the cooling; thermald stops itself where
       `/sys/devices/platform/thinkpad_acpi/dytc_lapmode` exists). Check that file exists here, so the installer's rule is right.
+      2026-11-13: it exists (it read 1: lap mode), so the rule is right. Settings > Power > Cooling shows the firmware's two fans,
+      and the thermal profile follows the power mode (platform_profile: low-power, balanced, performance).
 - [ ] Firmware updates: fwupd is **not** on the ISO. ThinkPads get BIOS, Thunderbolt and fingerprint firmware from LVFS. Write
       down what `fwupdmgr get-devices` would cover (install fwupd only with my OK). Firmware updates go through Agora/Settings later.
+      2026-11-13: fwupd is not installed, so `get-devices` waits for your OK.
 - [ ] Secure Boot later: sbctl is on the ISO. Our own keys and signed kernels are a later plan; don't enrol keys now.
 
 ## Later: LykanOS on this laptop
