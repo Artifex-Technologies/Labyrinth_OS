@@ -47,15 +47,21 @@ From the desktop PC's session, for the laptop:
       fix, which is why its Wi-Fi had to be joined again.
 - [x] Settings > Peripherals: Mouse and Keyboard pages (pointer speed, repeat, layout, Razer lights) (`8db2e4a`)
 - [x] Keyboard and mouse lights off while dimmed, fixed for good (`840fbc7`)
+- [x] Laptop hardware set (2026-11-12): tablet mode and screen rotation with the touchscreen and pen turned along, the on-screen
+      keyboard in tablet mode, Settings > Displays > Tablet mode (rotation lock), Settings > Users > Fingerprint (enrol; sudo
+      with a finger, off until I turn it on), the installer's "This laptop" components (fingerprint, thermald, on-screen
+      keyboard), the laptop's own screen at automatic scale. Yggdrasil `e2807e8`, `34817e8`, `934c24e`; Labyrinth `7426158`.
+      Reference: [HARDWARE.md](HARDWARE.md). Reaches the laptop with the next day's `[labyrinth]` packages (yggdrasil-settings,
+      yggdrasil-session, yggdrasil-installer); the components come from Agora.
 
 ## In progress on the desktop PC (do not start these here)
 
 - **Location without Wi-Fi.** I don't want nearby Wi-Fi networks or their hardware IDs used to find where the computer is. The
   automatic time zone and Weather's "Automatic" place are moving to IP-only, and they pause while a VPN is on. Until that update
   arrives, leave "Set time zone automatically" **off**.
-- **Laptop hardware set:** fingerprint reader (fprintd as an online component; turning it on for login and sudo is my choice in
-  Settings, off by default), thermald, screen rotation from the accelerometer, tablet mode with an on-screen keyboard, and a
-  hardware page in `docs/HARDWARE.md`. When that work lands, test it here (below).
+- **Laptop hardware set:** landed (see "Already done"); test it here (below). Still open on the desktop PC: fingerprint on the
+  lock screen and in password boxes (the plan is in Yggdrasil's docs/DESKTOP.md), rotation on Yggdrasil's own compositor, and
+  an on-screen keyboard you can open on demand.
 - **Review of the commits above.** Another session reviews this laptop session's commits for security and for anything that breaks
   on a desktop without a battery. If it changes something you wrote, pull before you edit those files again.
 
@@ -81,15 +87,29 @@ Basics:
 2-in-1:
 - [ ] Pen: pressure, the side buttons, the eraser end, palm rejection while writing
 - [ ] Touch: tap, scroll, pinch in apps; touch on the right screen with an external one attached
-- [ ] Rotation and tablet mode: once the desktop PC's work lands, folding into tablet mode rotates the screen, maps touch and pen
-      with it, and shows the on-screen keyboard; the rotation lock works
+- [ ] Rotation and tablet mode (Yggdrasil `934c24e`): after `sudo pacman -Syu`, log out and in (the watcher starts with the
+      session: `/usr/lib/yggdrasil/tablet json` should say `"accelerometer":true,"tablet_switch":true`). Fold into tablet mode:
+      the screen turns with the laptop, and in all four directions a finger and the pen land where they touch (if the screen turns
+      the wrong way, or touch is mirrored, write which reading did it: `left-up`, `bottom-up`, `right-up`). Open it again: upright.
+      Settings > Displays > Tablet mode > Lock rotation keeps the screen as it is. If nothing happens on folding, write what
+      `hyprctl devices` lists under switches (the binds are named after them) and whether `/usr/lib/yggdrasil/tablet mode on`
+      typed by hand turns it.
+- [ ] On-screen keyboard: add "On-screen keyboard" from Agora (wvkbd, from the AUR; ask me first). Folded with no keyboard plugged
+      in it shows; plugging in a USB or Bluetooth keyboard hides it; opening the laptop hides it.
+- [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
+      Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
+      monitor plugged in stays at its own scale. If Settings > Displays already wrote a scale for eDP-1 before, that one is kept.
 
 Security (this is the LykanOS machine):
 - [ ] Disk encryption: was it chosen in the installer? If not, write it down. Reinstalling with encryption comes with LykanOS.
 - [ ] Heimdall is running (`systemctl status heimdall`), and its alerts make sense on a laptop moving between networks
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
-- [ ] Fingerprint reader: which one it is (`lsusb`: Synaptics 06cb or Goodix 27c6); once the component lands, enrol a finger and
-      test login and sudo (only with my OK)
+- [ ] Fingerprint reader: which one it is (`lsusb`: Synaptics 06cb or Goodix 27c6), and whether its id is in the installer's list
+      (`installer-extras.json`, the readers libfprint supports). With my OK: add "Fingerprint reader" from Agora, enrol a finger in
+      Settings > Users > Fingerprint, then (with my OK again, it changes /etc/pam.d/sudo) turn on "Use for sudo" and try
+      `sudo -k; sudo true` with the finger, then with Ctrl+C and the password. Turning it off must leave /etc/pam.d/sudo as it was.
+- [ ] thermald: not for this laptop (its firmware runs the cooling; thermald stops itself where
+      `/sys/devices/platform/thinkpad_acpi/dytc_lapmode` exists). Check that file exists here, so the installer's rule is right.
 - [ ] Firmware updates: fwupd is **not** on the ISO. ThinkPads get BIOS, Thunderbolt and fingerprint firmware from LVFS. Write
       down what `fwupdmgr get-devices` would cover (install fwupd only with my OK). Firmware updates go through Agora/Settings later.
 - [ ] Secure Boot later: sbctl is on the ISO. Our own keys and signed kernels are a later plan; don't enrol keys now.
