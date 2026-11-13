@@ -29,20 +29,20 @@ makepkg_conf="$repo_root/scripts/makepkg.conf"
 # Packages built from source in this repo (or the Yggdrasil or Sarina checkout next to it): always rebuilt. Every other package is
 # pinned to a released version and checksum, and is skipped when that exact version is already in the repo. Naming packages
 # rebuilds them regardless.
-local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-spell yggdrasil-calculator yggdrasil-taskmanager yggdrasil-leakwatch yggdrasil-crashwatch yggdrasil-appusage yggdrasil-gametime saga-md yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove yggdrasil-installer yggdrasil-player yggdrasil-spell yggdrasil-clipboard yggdrasil-colorpicker labyrinth-distress labyrinth-tools labyrinth-ollama-tuning labyrinth-keyring kairos-git daedalus-cad-git argus-git sarina-git heimdall-git limbo-git)
+local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings yggdrasil-spell yggdrasil-calculator yggdrasil-taskmanager yggdrasil-leakwatch yggdrasil-crashwatch yggdrasil-appusage yggdrasil-gametime saga-md yggdrasil-panel yggdrasil-weather yggdrasil-idle yggdrasil-keyring-sync yggdrasil-lock yggdrasil-polkit yggdrasil-portal yggdrasil-agora yggdrasil-session yggdrasil-xmove yggdrasil-installer yggdrasil-player yggdrasil-spell yggdrasil-clipboard yggdrasil-colorpicker labyrinth-distress labyrinth-tools labyrinth-ollama-tuning labyrinth-keyring kairos-git daedalus-cad-git icarus-git argus-git sarina-git heimdall-git limbo-git)
 
 # Versions (docs/VERSIONING.md): each recipe works out its own, with scripts/package-version.sh. Labyrinth's and Yggdrasil's
 # packages have the system version (VERSION at the top of this repository and Yggdrasil's), Sarina, Heimdall, Limbo, Kairos,
-# Daedalus and Argus their own; the build number (pkgrel) counts the commits since that release which touch the package's
+# Daedalus, Icarus and Argus their own; the build number (pkgrel) counts the commits since that release which touch the package's
 # source, so every change is a newer package for installed systems. (Until 2026-11-11 this script stamped the commit count
 # into the version instead: 0.1.0.r405-27.) labyrinth-keyring and yggdrasil-spell-packs keep their data's date as their version.
 
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
   name="$(basename "$dir")"
-  # Packages that are not on the ISO are left out unless named: Daedalus CAD (only in the Marketplace) and Argus (LykanOS's;
+  # Packages that are not on the ISO are left out unless named: Daedalus CAD and Icarus (only in the Marketplace) and Argus (LykanOS's;
   # its firmware build fetches Flipper's ARM toolchain). The publish passes an empty list and builds them all.
-  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git argus-git} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
+  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git icarus-git argus-git} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
   if (( ${#only[@]} )) && [[ " ${only[*]} " != *" $name "* ]]; then continue; fi
   if (( ! ${#only[@]} )) && [[ " ${local_source[*]} " != *" $name "* ]]; then
     built=1

@@ -1,0 +1,114 @@
+# Maintainer: Labyrinth OS
+#
+# Icarus: vehicle diagnostics and tuning in Rust (a vehicle's modules, trouble codes and live data through an OBD adapter,
+# actuator tests, ECU maps and what a tune changed), built from its public repository; the desktop entry, icons and the udev
+# rule for tuners with no Linux driver of their own are the project's own (packaging/). Only in Agora, not on the ISO
+# (scripts/build-local-packages.sh leaves it out); the publish puts it in [labyrinth]. To build a local checkout instead:
+# ICARUS_SRC=file://$HOME/Documents/Github/Icarus makepkg -si
+pkgname=icarus-git
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='Icarus: vehicle diagnostics and tuning through an OBD adapter (modules, trouble codes, live data, ECU maps)'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Icarus'
+license=('MPL-2.0')
+depends=('gcc-libs' 'glibc' 'libglvnd' 'vulkan-icd-loader' 'wayland' 'libxkbcommon' 'libxkbcommon-x11' 'libx11' 'libxcursor'
+         'libxi' 'curl' 'hicolor-icon-theme')
+optdepends=('xdg-utils: open saved reports and part searches'
+            'bluez: pair Bluetooth OBD adapters'
+            'sarina-git: ask Sarina about a session Icarus learned from')
+makedepends=('cargo' 'git')
+provides=('icarus')
+conflicts=('icarus')
+options=('!lto')
+source=("icarus::git+${ICARUS_SRC:-https://github.com/Artifex-Technologies/Icarus.git}")
+sha256sums=('SKIP')
+
+# The version is Icarus's own (the VERSION file in its repository); the build number counts its commits since that release and
+# this recipe's (Labyrinth_OS docs/VERSIONING.md). Both come from makepkg's clone: worked out here for the packaging step
+# (makepkg reads this file again for it), and in pkgver() and prepare() for the rest of the build, once the clone is up to date.
+# --- package version (scripts/package-version.sh) ---
+# _version CHECKOUT [PATH...]: sets pkgver and pkgrel. pkgver is the VERSION file at the top of CHECKOUT's git repository (as
+# committed); pkgrel, the build number, is 1 + the commits since that file last changed (the release) that touch the PATHs
+# in that repository (relative ones are from its top), with the Rust crates they use from it (their path dependencies), or
+# the whole repository when no PATH is in it. The recipe's own folder counts too; so does every PATH in another repository
+# (by date: its commits since the release). Without a VERSION file (no clone yet: makepkg reads a recipe before it fetches)
+# pkgver and pkgrel stay as they are.
+_version() {
+  local top base since rel=1 a q t todo=() paths=() others=("${startdir:-}")
+  top=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) && base=$(git -C "$top" log -1 --format=%H -- VERSION 2>/dev/null) \
+    && [[ -n $base ]] || return 0
+  for a in "${@:2}"; do
+    [[ $a == /* ]] || a=$top/$a
+    a=$(realpath -m "$a")
+    if [[ $a == "$top" || $a == "$top"/* ]]; then todo+=("$a"); else others+=("$a"); fi
+  done
+  while ((${#todo[@]})); do
+    a=${todo[0]}; todo=("${todo[@]:1}")
+    [[ " ${paths[*]} " == *" $a "* ]] && continue
+    paths+=("$a")
+    for q in $(sed -n 's/^[^#]*path *= *"\(\.\.[^"]*\)".*/\1/p' "$a/Cargo.toml" 2>/dev/null); do todo+=("$(realpath -m "$a/$q")"); done
+  done
+  since=$(git -C "$top" log -1 --format=%ct "$base")
+  for a in "${others[@]}"; do
+    [[ -n $a ]] && t=$(git -C "$a" rev-parse --show-toplevel 2>/dev/null) || continue
+    if [[ $t == "$top" ]]; then ((${#paths[@]})) && paths+=("$(realpath "$a")")
+    # another checkout of the same repository (an app's own recipe, built from a clone of it): counted above already
+    elif [[ $(git -C "$t" rev-list --max-parents=0 HEAD) == "$(git -C "$top" rev-list --max-parents=0 HEAD)" ]]; then continue
+    else rel=$((rel + $(git -C "$a" rev-list --count --since="@$since" HEAD -- .))); fi
+  done
+  pkgver=$(git -C "$top" show HEAD:VERSION)
+  pkgrel=$((rel + $(git -C "$top" rev-list --count "$base..HEAD" -- "${paths[@]}")))
+}
+# _srcdir: makepkg's $srcdir, also while makepkg reads the recipe before setting it (for the clones of -git recipes)
+_srcdir() {
+  if [[ -n ${srcdir:-} ]]; then echo "$srcdir"
+  elif [[ ${BUILDDIR:-} -ef ${startdir:-} ]]; then echo "$BUILDDIR/src"
+  else echo "${BUILDDIR:-}/$pkgname/src"; fi
+}
+# --- end of package version ---
+_version "$(_srcdir)/icarus"
+
+pkgver() {
+  _version "$srcdir/icarus"
+  echo "$pkgver"
+}
+
+prepare() {
+  _version "$srcdir/icarus"
+  # everything the build and the tests need, fetched here: build() and check() then work without a network
+  cd "$srcdir/icarus"
+  cargo fetch --locked
+}
+
+build() {
+  cd "$srcdir/icarus"
+  cargo build --frozen --release -p icarus -p icarus-app --target-dir "$srcdir/target"
+}
+
+check() {
+  cd "$srcdir/icarus"
+  # no test needs a vehicle, an adapter or a network (a simulated vehicle stands in); the home is a scratch one, so nothing a
+  # test writes lands in the builder's (cargo's and rustup's own folders stay where they are)
+  local home="$srcdir/check-home"
+  rm -rf "$home" && mkdir -p "$home"
+  CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}" HOME="$home" \
+    XDG_CONFIG_HOME="$home/.config" XDG_STATE_HOME="$home/.local/state" XDG_DATA_HOME="$home/.local/share" \
+    cargo test --frozen --release --workspace --target-dir "$srcdir/target"
+}
+
+package() {
+  cd "$srcdir/icarus"
+  install -Dm755 "$srcdir/target/release/icarus" "$pkgdir/usr/bin/icarus"
+  install -Dm755 "$srcdir/target/release/icarus-app" "$pkgdir/usr/bin/icarus-app"
+  install -Dm644 packaging/icarus.desktop "$pkgdir/usr/share/applications/icarus.desktop"
+  # Liki has its own icarus glyph (Yggdrasil packages/liki); these are the app's icon everywhere else
+  install -Dm644 packaging/icons/icarus.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/icarus.svg"
+  local n
+  for n in 16 24 32 48 64 128 256 512; do
+    install -Dm644 "packaging/icons/${n}x${n}/icarus.png" "$pkgdir/usr/share/icons/hicolor/${n}x${n}/apps/icarus.png"
+  done
+  # tuners with no Linux driver (raw USB) and the CP210x serial ports: opened by the person at the seat only (uaccess)
+  install -Dm644 packaging/70-icarus-tuners.rules "$pkgdir/usr/lib/udev/rules.d/70-icarus-tuners.rules"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

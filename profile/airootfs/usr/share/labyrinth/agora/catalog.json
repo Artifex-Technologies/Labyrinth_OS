@@ -1630,6 +1630,32 @@
    "repo": "https://github.com/Artifex-Technologies/Daedalus_CAD"
   },
   {
+   "id": "icarus",
+   "name": "Icarus",
+   "subtitle": "Vehicle diagnostics and tuning",
+   "description": "Plug an OBD adapter into a car or truck and see what its computers say: every module's trouble codes in plain words with where to start, live data, freeze frames, and tests that run the fan, pumps or throttle while you hold a button. It also opens ECU maps and shows what a tune changed. Made by Artifex, in Rust.",
+   "category": "Utilities",
+   "subcategory": "Vehicles",
+   "source": {
+    "type": "component",
+    "id": "icarus"
+   },
+   "icon": "icarus",
+   "reviewed": true,
+   "note": "Made by Artifex. Early software. It will not delete emissions equipment, bypass an immobilizer or change an odometer, and never writes to airbag modules; before any change it saves what was there, with a way back.",
+   "tags": [
+    "artifex",
+    "car",
+    "obd",
+    "obd2",
+    "ecu",
+    "tuning",
+    "diagnostics",
+    "check engine"
+   ],
+   "repo": "https://github.com/Artifex-Technologies/Icarus"
+  },
+  {
    "id": "coolercontrol",
    "name": "CoolerControl",
    "subtitle": "Fan curves and AIO coolers",
@@ -2076,6 +2102,7 @@
  },
  "local_builds": [
   "daedalus-cad-git",
+  "icarus-git",
   "heimdall-git",
   "yggdrasil-calculator",
   "yggdrasil-taskmanager",

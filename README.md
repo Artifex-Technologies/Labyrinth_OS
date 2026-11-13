@@ -61,7 +61,8 @@ needs to start. Everything else comes from the internet when it is wanted:
 - **The installer's Optional software page** offers Sarina and Heimdall, and device software (Logitech, gaming mice, Razer,
   Corsair, Xbox controllers, HP printers), each ticked when such a device is plugged in. They are installed at the first login.
   Its Browsers page installs other browsers (Firefox, Brave, LibreWolf ...).
-- **Agora**, the app store, has the rest: Labyrinth's own apps, Steam, Proton's apps, VS Code, ArtCraft, Daedalus CAD and more.
+- **Agora**, the app store, has the rest: Labyrinth's own apps, Steam, Proton's apps, VS Code, ArtCraft, Daedalus CAD, Icarus
+  and more.
 - **Updates** reach every installed system, whatever ISO it came from: Labyrinth's own software is published, signed, to its
   package repository ([docs/PACKAGE_REPO.md](docs/PACKAGE_REPO.md)), so `pacman -Syu` and Agora's updates keep the desktop, Sarina,
   Heimdall and the apps current alongside Arch and CachyOS.
@@ -115,7 +116,7 @@ Labyrinth is a **distribution profile, not a kernel rewrite**. It assembles upst
 | [Hyprland](https://hyprland.org) | The compositor Yggdrasil's session runs on (until Yggdrasil's own compositor is ready) |
 | [Omarchy](https://github.com/omacom/omarchy) | Ideas: keyboard-first shortcuts, fast start-up |
 | [EdenExplorer](https://github.com/mtucciarone/EdenExplorer) (MIT, Rust/egui) | The model for Minos, the file manager |
-| Artifex ecosystem | Yggdrasil, Heimdall, Limbo, Sarina, Daedalus_CAD, Argus_App; shared with LykanOS |
+| Artifex ecosystem | Yggdrasil, Heimdall, Limbo, Sarina, Daedalus_CAD, Icarus, Argus_App; shared with LykanOS |
 
 It is built and tested first on one machine (Intel i9-9900K, 64 GB, NVIDIA RTX 2080 Ti, 1 TB), where it replaces Windows.
 

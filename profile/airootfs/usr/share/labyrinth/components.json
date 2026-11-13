@@ -240,6 +240,14 @@
       "notes": "Early software. Saves its own .daedalus files; opens and exports STL, OBJ, DXF and DAE; lengths in mm, cm, m, inches or feet and inches."
     },
     {
+      "id": "icarus",
+      "name": "Icarus",
+      "description": "Icarus, vehicle diagnostics and tuning in Rust: a vehicle's modules, trouble codes and live data through an OBD adapter, actuator tests, ECU maps and what a tune changed. From Labyrinth's package repository (signed), or built from its repository when that cannot be reached.",
+      "proprietary": false,
+      "pkgbuild": "icarus-git",
+      "notes": "Early software. No emissions deletes, no immobilizer or odometer changes. Tuners without a Linux driver of their own are opened by the person at the computer (a udev rule comes with it): plug one in again after installing."
+    },
+    {
       "id": "heimdall",
       "name": "Heimdall (security watcher)",
       "description": "Heimdall watches this computer for attacks: file changes, open ports and connections, firewall and SSH logins, known holes in installed packages and kernels, Wi-Fi and network impersonation, and malware (ClamAV, held and fingerprinted). It explains every alert in plain language and tells you what to do; Settings > Security shows the alerts and the held files. Works on its own; with Sarina he can also explain in conversation and watch her sessions for prompt injection. Comes with ClamAV (its malware scanning) and keeps ClamAV's signatures up to date.",

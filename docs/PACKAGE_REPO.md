@@ -20,7 +20,7 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## The key
 
@@ -37,11 +37,11 @@ through the **labyrinth-keyring** package (on the ISO; `pacman-init.service` pop
 ## Versions
 
 Since 2026-11-11 every package has a version and a build number: the system version (Labyrinth OS 1.0) for Labyrinth's and
-Yggdrasil's own, each app's own for Sarina, Heimdall, Limbo, Kairos, Daedalus and Argus, and as `pkgrel` the count of commits
-since that release which touch the package's source (`1.0.0-37`). Each recipe works them out itself; the whole scheme, and how to
-make a release, is in [VERSIONING.md](VERSIONING.md). (Before, `build-local-packages.sh` stamped the repository's commit count
-into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at the same
-version, is not published again; a release always is.
+Yggdrasil's own, each app's own for Sarina, Heimdall, Limbo, Kairos, Daedalus, Icarus and Argus, and as `pkgrel` the count of
+commits since that release which touch the package's source (`1.0.0-37`). Each recipe works them out itself; the whole scheme,
+and how to make a release, is in [VERSIONING.md](VERSIONING.md). (Before, `build-local-packages.sh` stamped the repository's
+commit count into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at
+the same version, is not published again; a release always is.
 
 The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn moved to a private repository) have `epoch=1` since 2026-11-07, and `argus-git` since 2026-11-11 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08). The apps' version
 ended in Yggdrasil's newest commit, so two builds with the same count were ordered at random; Argus's were commit counts
