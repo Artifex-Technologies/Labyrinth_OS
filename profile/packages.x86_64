@@ -144,8 +144,6 @@ proton-cachyos
 protonup-qt
 protontricks
 umu-launcher
-# component: obsidian
-obsidian
 # component: weather
 yggdrasil-weather
 # component: proton-drive

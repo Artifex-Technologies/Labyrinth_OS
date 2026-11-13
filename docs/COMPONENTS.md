@@ -30,8 +30,8 @@ the machine only when that cannot be reached.
 | `local-ai` | Ollama for Sarina (CUDA on NVIDIA, Vulkan otherwise) | Not in the image (~6 GB with CUDA); Sarina offers to install it on first use. Competes with games for GPU memory |
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
-obsidian), `everything` (all of the above including weather; your own setup). Spotify is in no preset (2026-11-13): it is
-not part of the OS, and Agora installs it.
+obsidian), `everything` (all of the above including weather; your own setup). Spotify is in no preset and Obsidian only in
+`creative` (2026-11-13): neither is part of the OS, and Agora installs both.
 
 ## Software that only lists Fedora or Debian
 
