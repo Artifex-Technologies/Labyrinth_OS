@@ -28,9 +28,9 @@ FIRST = os.path.join(ROOT, "packages", "tools", "python", "labyrinth-first-compo
 needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with the install program at {TOOL}")
 
 
-def conf_values():
+def conf_values(path=CONF):
     values = {}
-    for line in open(CONF).read().splitlines():
+    for line in open(path).read().splitlines():
         line = line.split("#", 1)[0].strip()
         if "=" in line:
             k, v = line.split("=", 1)
@@ -57,6 +57,18 @@ class TheIntegrationFile(unittest.TestCase):
     def test_the_first_login_list_is_where_labyrinth_first_components_reads_it(self):
         first = open(FIRST).read()
         self.assertIn(conf_values()["first_login"], first)
+        # its unit starts only while the list is there
+        unit = open(os.path.join(ROOT, "packages", "tools", "units", "user", "labyrinth-first-components.service")).read()
+        self.assertIn("ConditionPathExists=" + conf_values()["first_login"] + "\n", unit)
+
+    def test_the_installed_system_offers_the_same_device_list(self):
+        # the installer integration is removed from the installed system (labyrinth-install-cleanup); the packages one stays and
+        # names the same files for Yggdrasil's device offers
+        packages = conf_values(os.path.join(AIROOTFS, "usr", "share", "yggdrasil", "integrations", "labyrinth-packages.conf"))
+        c = conf_values()
+        self.assertEqual(packages["devices"], c["extras"])
+        self.assertEqual(packages["first_login"], c["first_login"])
+        self.assertEqual(packages["components"], c["components"])
 
     @needs_program
     def test_labyrinth_installs_as_it_did_with_its_own_program(self):
@@ -162,8 +174,17 @@ class Extras(unittest.TestCase):
         devices = [e for e in self.cat if e.get("group") == "Devices"]
         self.assertTrue({"logitech", "gaming-mice", "razer", "xbox-controllers", "hp-printers"} <= {e["id"] for e in devices})
         for e in devices:
-            self.assertTrue(e.get("chosen_if_usb") and all(len(v) == 4 for v in e["chosen_if_usb"]), e["id"])
+            ids = e.get("chosen_if_usb") or []
+            self.assertTrue(ids and all(re.fullmatch(r"[0-9a-f]{4}(:[0-9a-f]{4})?", v) for v in ids), e["id"])
+            self.assertEqual(len(ids), len(set(ids)), e["id"])
             self.assertNotIn("chosen_if_exists", e, "device software is never on the medium")
+        # a maker's id counts only for its kind of device where the maker makes other things too (Yggdrasil's device_offers)
+        kinds = {e["id"]: e.get("usb_kind") for e in devices}
+        self.assertEqual(kinds, {"logitech": "input", "gaming-mice": "mouse", "razer": None, "ckb-next": "input",
+                                 "xbox-controllers": "gamepad", "hp-printers": "printer"},
+                         "a Corsair fan controller is no keyboard, a HyperX mouse (HP's id) no printer, a webcam no mouse")
+        mice = next(e for e in devices if e["id"] == "gaming-mice")["chosen_if_usb"]
+        self.assertTrue({"046d", "1038", "1e7d", "0b05", "258a:0036"} <= set(mice), "libratbag's makers")
         # nothing of it is on the medium, so choosing it queues it for the first login (online)
         p = inst.extras_plan(self.cat, ["razer"], self.comps, set())
         self.assertEqual(p["queue"], ["razer"])

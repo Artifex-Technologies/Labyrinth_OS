@@ -75,9 +75,33 @@ repos into pacman. They tend to break on library versions, and uninstalling leav
 The installer's **Optional software** page (`/usr/share/labyrinth/installer-extras.json`) offers Sarina and Heimdall under "AI
 and security", the device components under "Devices", each ticked when such a USB device is plugged in, and a laptop's under
 "This laptop", ticked by what the computer is (`chosen_if_machine`: processor maker, battery, tablet-mode switch) or by the
-exact reader (`chosen_if_usb` with vendor:product). What the medium
+exact reader (`chosen_if_usb` with vendor:product). Where a maker also makes other things, its id counts only for its kind of device
+(`usb_kind`, read from the device's USB interfaces): Logitech and Corsair for keyboards and mice, the gaming-mouse makers for mice
+(plus the exact mice libratbag supports from smaller makers), HP for printers, Microsoft for Xbox controllers. So a Corsair fan
+controller does not tick ckb-next, and a HyperX mouse (HP's vendor id) does not tick HPLIP. HP scanners without a printer part are
+not ticked; Agora has HPLIP for them. What the medium
 does not carry is installed at the first login, online (`labyrinth-first-components`). Its **Browsers** page
 (`installer-browsers.json`) does the same for browsers.
+
+An install with no internet at all works from the medium alone. A browser that is not on it is left for Agora with a warning, and
+chosen parts wait in the first-login list. `labyrinth-first-components` (a user unit since 2026-11-13, was an autostart entry) runs
+at sign-in and again whenever the computer comes online (Yggdrasil's `yggdrasil-online.target`, which NetworkManager's dispatcher
+starts). So an offline install gets them as soon as there is a connection, not only at the next login. After a failed install it
+waits for the next login, so a reconnect does not bring up the password box again.
+
+## Device software later, by itself
+
+A computer installed offline, or with a device's software switched off, is offered it later. Yggdrasil's
+`yggdrasil-device-offers` reads the same `installer-extras.json` (`devices` in `labyrinth-packages.conf`), so the device list
+stays in one place. It looks at sign-in, when a USB device is plugged in, and when the computer comes online, and only offers
+when online. One notification names what is missing for this computer's devices:
+
+- **Install**: `labyrinth-apps install ...` through Agora's password box;
+- **Don't ask again**;
+- closing it means not now (asked again next session).
+
+Nothing installs without the click. Nothing polls or keeps running: udev, the dispatcher and the session start a short user
+service. See Yggdrasil's `packages/device-offers/README.md`.
 
 ## Not done
 

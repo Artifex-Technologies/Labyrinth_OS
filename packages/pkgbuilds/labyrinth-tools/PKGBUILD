@@ -61,8 +61,13 @@ package() {
     install -Dm755 "$srcdir/target/release/$b" "$pkgdir/usr/bin/$b"
   done
   for u in labyrinth-scan.service labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.service labyrinth-scan-full.timer \
-           labyrinth-appnet-prepare.service labyrinth-appnet-ask-agent.service; do
+           labyrinth-appnet-prepare.service labyrinth-appnet-ask-agent.service labyrinth-first-components.service; do
     install -Dm644 "$_src/units/user/$u" "$pkgdir/usr/lib/systemd/user/$u"
+  done
+  # the optional parts chosen in the installer: at sign-in, and again when the computer comes online (Yggdrasil's target)
+  for t in graphical-session.target yggdrasil-online.target; do
+    install -dm755 "$pkgdir/usr/lib/systemd/user/$t.wants"
+    ln -s ../labyrinth-first-components.service "$pkgdir/usr/lib/systemd/user/$t.wants/labyrinth-first-components.service"
   done
   for u in labyrinth-appnet.service labyrinth-appnet-ask.service; do
     install -Dm644 "$_src/units/system/$u" "$pkgdir/usr/lib/systemd/system/$u"
