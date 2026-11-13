@@ -53,6 +53,45 @@ drive whose name has " at " in it ("Photos at home" opened "home"); `liki-minos-
 folder named like a picture as imported; three usage texts printed lines of the script's code. In Labyrinth: the distress
 reset's shell line split a home with a space.
 
+## Ported on 2026-11-13: the graphics card unlock (Yggdrasil 2c4f2cf)
+
+| Program | Was | Now | Differential |
+| --- | --- | --- | --- |
+| `/usr/lib/yggdrasil/gpuunlock` (Settings > Power > Graphics card unlock: `status`, and as root through pkexec and its two services `arm`, `disarm`, `reenable`, `release`, `boot`, `verify`, `bench`) | Python, 841 lines, run as root | Yggdrasil `packages/settings-helpers` (`src/gpuunlock.rs`, the binary `gpuunlock`); every program by argv with no standard input, no shell; the state files written whole and never through a link | 489 of 489 cases the same (`packages/settings-helpers/parity/gpuunlock.py`: each world a whole file system of its own, from `unshare -rmnpf` and pivot_root, with a made-up /sys, /proc, boot menu, state folder and support table; stand-ins for modinfo, snapper, grub-mkconfig, systemctl, logger, nvidia-smi, journalctl, nvcc, the benchmark and Ollama's port; as root and as a user; exit codes, output, errors, every call in order, every file with its mode). Its 47 Python tests are Rust tests (51) |
+| `/etc/grub.d/41_gpu_unlock` (run by grub-mkconfig at every kernel update) | sh, 22 lines: entry.cfg checked with head, tail, grep and printed with cat | sh, 3 lines that call `gpuunlock grub-entry` (the checks, in Rust, sharing the writer's id, option and address pattern) and always exit 0 | in the same 489: 34 shapes of entry.cfg, a link and a folder, through both fragments, directly and through the stand-in grub-mkconfig |
+
+The fragment stays sh, the smallest it can be: grub-mkconfig runs each grub.d file as a program (any executable would do), but
+with `set -e`, so a fragment that fails stops a kernel update from writing the boot menu. Three lines of sh guarantee exit 0
+whatever happens to the program (missing, refused, stopped); the program writes the entry in one piece only after checking it.
+
+Bugs found while listing its behaviours, fixed in the script and the fragment first (Yggdrasil ff5b6de, each with a test that
+failed first), so the differential compares like with like:
+
+1. `arm`: a boot menu that is not UTF-8 after grub-mkconfig (another system's entry in latin-1, from os-prober) stopped arming
+   with a traceback after the menu was rewritten, leaving the one-try entry in the menu with no power hold and no follow-up
+   services. Now everything is put back (and a menu that is not UTF-8 before arming is refused before anything is done).
+2. The state folder's files (power-hold, armed, trying, state.json, baseline.json, entry.cfg, log) were written through links,
+   and entry.cfg not atomically. Now each is a new file renamed over the old one, never through a link.
+3. `GRUB_TIMEOUT=²` (a digit to `isdigit()`, not a number to `int()`) stopped `status` with a traceback.
+4. The exact-identity patterns (the table's ids and VBIOS, the PCI address) took a final newline (Python's `$`).
+5. `judge`: a benchmark rate of "nan" passed both the control and the ratio check, so a benchmark with no numbers was judged
+   an unlock (rule 8); "inf" too.
+6. `bench --baseline`: a power limit of "nan" passed the at-default-watts check.
+7. Something that is not HTTP on Ollama's port (anyone may listen there when Ollama does not) stopped `arm` and `bench` with
+   a traceback.
+8. The fragment printed an entry.cfg with no final newline, which glued grub-mkconfig's "### END" line to the closing brace
+   (a broken grub.cfg), and printed through a link.
+
+And one in Yggdrasil's `packages/pycompat`: serde_json read some numbers one bit off (the unlock ratio, written and read
+back, came out ...752 instead of ...754); it reads them as Python does now (`float_roundtrip`).
+
+Stricter than the script by design (not in the differential, said in the package's README): JSON with NaN or Infinity is not
+read; Ollama's port gets one plain request (no proxy, no redirect, at most 1 MiB); `grub-entry` prints only UTF-8 with no
+NUL. Measured (`tools/bench-port.py --only gpuunlock`, Yggdrasil's `docs/PORT_NUMBERS.md`): `status --json`, which Settings
+runs whenever the Power page opens, 55.3 → 1.69 ms and 23.6 → 3.9 MB (0.49 ms with no NVIDIA card); `boot` 54.8 → 1.67 ms;
+the fragment while armed 6.41 → 1.49 ms, and with nothing armed 0.89 → 1.44 ms (slower by half a millisecond: it starts the
+program to find no file). yggdrasil-settings no longer depends on Python.
+
 ## Copies kept for a rollback
 
 They ship in no package; they are the old programs, kept beside the ports with the same fixes, plus the Python tests and
@@ -72,6 +111,7 @@ switched package the day of its switch); the tests and parity scripts that only 
 | `packages/tools/python/` (the 12 Python programs and their tests) | `labyrinth-tools` | 2026-11-11 | 2026-11-18 |
 | `packages/tools/shell/` (the 20 shell scripts, and labyrinth-sarina-ask and -speak) | `labyrinth-tools` | 2026-11-11 | 2026-11-18 |
 | Yggdrasil `packages/session/tests/fixtures/yggdrasil-session.sh` (the old launcher, byte for byte; the differential reads it from there) | `yggdrasil-session` (`packages/session`) | 2026-11-13 | 2026-11-20 |
+| Yggdrasil `packages/settings/helpers/python/gpuunlock`, `python/41_gpu_unlock` and `python/tests/test_gpuunlock.py` (the old side of `packages/settings-helpers/parity/gpuunlock.py`, which can take them from git: `--git ff5b6de`; CI's gpuunlock job runs the tests) | `gpuunlock` (`packages/settings-helpers`) and the 3-line fragment | 2026-11-13 | 2026-11-20 |
 | `scripts/publish-repo.py` and `tests/test_publish_repo.py` (the old side of `packages/publish-repo/parity/`) | `labyrinth-publish-repo` (`packages/publish-repo`) | in the repository 2026-11-13; my timer still starts the script until I install the program and change the unit's `ExecStart=` (on my to-do list) | one week after the timer first runs the program |
 
 The parity scripts that compare against them (`packages/*/parity/`, `packages/tools/parity/`) take the old versions from git
@@ -102,7 +142,6 @@ Smallest risk first. None of these runs as a service; the first one ships.
 | What | Language, size | Runs | Plan |
 | --- | --- | --- | --- |
 | `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py` (Sarina's voice server, Chatterbox Turbo on PyTorch) | Python | Sarina's spoken answers (user service) | the planned next big port: Chatterbox through ONNX in Rust (`scripts/voice/chatterbox_onnx_test.py` is the probe) |
-| Yggdrasil `packages/settings/helpers/gpuunlock` and `packages/settings/data/41_gpu_unlock` (grub.d fragment) | Python 841 lines (root), sh 22 lines | Settings > Power > Graphics card unlock; grub-mkconfig | after the GPU plan (`docs/GPU_UNLOCK.md`); safety-critical, its tests carried over |
 | `profile/airootfs/usr/share/labyrinth/grub-evodevo/install.sh` (the boot menu theme's own installer, vendored, MIT) | sh, 884 lines | as root, by `labyrinth-grub-theme` at install | labyrinth-grub-theme does the few steps Labyrinth needs itself (copy the theme, set GRUB_THEME) and the vendored script goes |
 | `packages/labyrinth-driverlab/probe.sh` (hardware facts as JSON for the Driver Lab) | bash + python3 (only to escape JSON) | nothing runs it yet | a labyrinth-tools program when the Driver Lab is built |
 | Build and release tooling here: `scripts/build.sh` (wraps mkarchiso), `build-local-packages.sh` (wraps makepkg), `release.sh`, `release-check.sh`, `gen-packages.py`, `gen-wallpaper.py`, `gen-plymouth-rain.py`, `gen-logo.sh`, `logo-to-braille.py`, `icons/*.py`, `vm/*`, `xvfb/xv.sh`, `wsl-test.sh`, `voice/chatterbox_onnx_test.py` | bash, Python | by hand on my PC; not shipped | as each is touched; the Arch tools they call stay |

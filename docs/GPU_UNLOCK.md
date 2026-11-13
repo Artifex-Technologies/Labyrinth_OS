@@ -257,15 +257,15 @@ the pattern: a Python helper in `packages/settings/helpers/`, a polkit policy in
 
 | File | Purpose |
 | --- | --- |
-| `packages/settings/helpers/gpuunlock` | The helper. Commands: `status [--json]`, `arm`, `disarm`, `verify` (run by the service), `bench`, `reenable` (after a failure). Python, no third-party modules, same style as `powerlimit` |
+| `packages/settings-helpers/src/gpuunlock.rs` | The helper, `/usr/lib/yggdrasil/gpuunlock`. Commands: `status [--json]`, `arm`, `disarm`, `verify` (run by the service), `bench`, `reenable` (after a failure), `release`, `boot`, and `grub-entry` for the fragment. Rust since 2026-11-13 (it was Python; the script is kept in `packages/settings/helpers/python/` for a rollback until 2026-11-20) |
 | `packages/settings/data/gpu-unlock-supported.json` | The support table (7.2). Installed to `/usr/share/yggdrasil/gpu-unlock/supported.json` |
 | `packages/settings/data/org.yggdrasil.gpuunlock.policy` | polkit: action `org.yggdrasil.gpuunlock.arm` with `auth_admin` for `arm`, `disarm`, `reenable`; `status` and `bench` need no root |
 | `packages/settings/data/yggdrasil-gpu-unlock-verify.service` | `Type=oneshot`, `After=graphical.target nvidia-persistenced.service`, runs `gpuunlock verify` |
 | `packages/settings/data/yggdrasil-gpu-unlock-boot.service` | Added in Phase 0: `Type=oneshot`, early (`Before=sysinit.target`), runs `gpuunlock boot` (rule 3). Both services start only while a marker exists; `arm` enables them |
-| `packages/settings/data/41_gpu_unlock` | `/etc/grub.d/41_gpu_unlock`: emits the one-shot menu entry only if `/var/lib/yggdrasil/gpu-unlock/loader.conf` exists (written by `arm`); otherwise nothing, so `grub-mkconfig` on a normal machine is unchanged |
+| `packages/settings/data/41_gpu_unlock` | `/etc/grub.d/41_gpu_unlock`: emits the one-shot menu entry only while `/var/lib/yggdrasil/gpu-unlock/entry.cfg` exists (written by `arm`); otherwise nothing, so `grub-mkconfig` on a normal machine is unchanged. Since 2026-11-13 a few lines of sh that call `gpuunlock grub-entry` (which checks the entry's shape) and always exit 0, as grub-mkconfig runs with `set -e` |
 | `packages/settings/src/sys.rs` | `parse_gpu_unlock(json) -> Option<GpuUnlock>` with state, reason, since, ratio, log path |
 | `packages/settings/src/main.rs` | The "Graphics card" group: state text, buttons, the confirmation dialog, the slider cap |
-| `packages/settings/helpers/tests/test_gpuunlock.py` | Tests for every rule in section 6 that can be tested without a GPU (identity matching, marker logic, power cap, Secure Boot refusal, grub entry generation) |
+| `packages/settings-helpers/src/gpuunlock_tests.rs` | Tests for every rule in section 6 that can be tested without a GPU (identity matching, marker logic, power cap, Secure Boot refusal, grub entry generation); the Python ones they came from are in `packages/settings/helpers/python/tests/test_gpuunlock.py`, and `packages/settings-helpers/parity/gpuunlock.py` runs the two helpers side by side |
 
 State directory: `/var/lib/yggdrasil/gpu-unlock/` (root-owned, 0755, files 0644 except `armed`): `state.json`, `armed`,
 `baseline.json` (locked benchmark numbers), `log` (append-only, one line per event with the boot id).
