@@ -104,6 +104,18 @@ fn mkdir_p(p: &Path) -> R<()> {
     fs::create_dir_all(p).map_err(|e| io("cannot make the folder", p, e))
 }
 
+/// One publish at a time: two in the same work folder build in the same places and break each other's builds. The lock is
+/// the kernel's, on a file in the work folder, so it is let go when the process ends, however it ends.
+fn hold_lock(work: &Path) -> R<fs::File> {
+    let p = work.join("publish.lock");
+    let f = fs::OpenOptions::new().create(true).truncate(false).write(true).open(&p).map_err(|e| io("cannot open", &p, e))?;
+    match f.try_lock() {
+        Ok(()) => Ok(f),
+        Err(fs::TryLockError::WouldBlock) => Err(format!("error: another publish is running in {} (it holds {})", shown(work), shown(&p))),
+        Err(fs::TryLockError::Error(e)) => Err(io("cannot lock", &p, e)),
+    }
+}
+
 /// Path.mkdir(parents=True): the folder must not be there yet
 fn mkdir_new(p: &Path) -> R<()> {
     if let Some(parent) = p.parent() {
@@ -550,6 +562,7 @@ pub fn publish(opts: &Options) -> R<()> {
     }
     let work = &ctx.work;
     mkdir_p(work)?;
+    let _lock = hold_lock(work)?;
     let state = work.join("published.json");
     let src = work.join("src");
     let heads = fresh_copies(&src)?;
@@ -583,4 +596,22 @@ pub fn publish(opts: &Options) -> R<()> {
     fs::write(&state, state_json(&heads, &files)).map_err(|e| io("cannot write", &state, e))?;
     say(&format!("published: https://github.com/{GH_REPO}/releases/tag/{TAG}"));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_second_publish_is_refused_while_one_runs() {
+        let dir = std::env::temp_dir().join(format!("publish-lock-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let first = hold_lock(&dir).expect("the first publish takes the lock");
+        let second = hold_lock(&dir).expect_err("a second publish must be refused");
+        assert!(second.contains("another publish is running"), "{second}");
+        drop(first);
+        hold_lock(&dir).expect("free again once the first has ended");
+        fs::remove_dir_all(&dir).unwrap();
+    }
 }

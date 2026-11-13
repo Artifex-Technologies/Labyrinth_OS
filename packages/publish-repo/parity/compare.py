@@ -17,7 +17,8 @@ be the same: exit code; standard output; standard error (except the program's ow
 traceback against the port's one line; a message the script gave itself with sys.exit must be the same word for word); every
 call (program, arguments, folder, the environment variables the publish sets) in order; and every file of the work folder and
 of the "release" (contents and modes; the databases by the files inside them, as their archives carry the time they were
-made). The release's notes name the program that made it, the one intended difference.
+made). Two differences are intended: the release's notes name the program that made it, and the port leaves its
+lock file (publish.lock, one publish at a time) in the work folder.
 """
 import argparse
 import gzip
@@ -219,6 +220,8 @@ def run_step(prog, step, wj, verbose):
             calls.append(c)
     files = snapshot(os.path.join(W, "work"), skip={os.path.join("src", n, ".git") for n in
                                                    ("Labyrinth_OS", "Yggdrasil", "Sarina", "Heimdall", "Limbo")})
+    # the port's lock file (one publish at a time; the script had none): an intended difference, left out
+    files.pop("publish.lock", None)
     release = snapshot(os.path.join(W, "release")) if os.path.isdir(os.path.join(W, "release")) else None
     if verbose:
         sys.stderr.write(f"--- {prog[-1]} {step.get('args', [])}: exit {p.returncode}\n{p.stdout.decode(errors='replace')}"

@@ -24,6 +24,10 @@ install -Dm755 target/release/labyrinth-publish-repo ~/.local/bin/labyrinth-publ
 by copying it again (`cp scripts/systemd/labyrinth-publish.service ~/.config/systemd/user/ && systemctl --user daemon-reload`),
 or by changing its `ExecStart=` line to that path. A test without uploading: `~/.local/bin/labyrinth-publish-repo --dry-run`.
 
+One publish at a time: a run holds a lock on `publish.lock` in the work folder, and a second run started meanwhile stops at
+once with "another publish is running". Two runs in the same folder build in the same places and break each other's
+builds (it happened on 2026-11-13 with two dry runs). The script had no lock; this is the one change in behaviour.
+
 The timer runs the installed copy, not the checkout: a change here reaches the daily publish when I build and install it
 again (the script ran from my working tree, unfinished edits included).
 
