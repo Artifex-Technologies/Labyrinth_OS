@@ -112,7 +112,10 @@ Basics:
 - [ ] Screen scale: the laptop's own screen now picks its scale automatically (Yggdrasil `34817e8`), as long as Settings >
       Displays has not set one. Check the scale it picked (`hyprctl monitors`), that text is a comfortable size, and that an external
       monitor plugged in stays at its own scale. If Settings > Displays already wrote a scale for eDP-1 before, that one is kept.
-      2026-11-13: still scale 1 at 1920x1200, in the session from before the update; to check after logging out and in.
+      2026-11-13: after logging out and in, Hyprland's automatic scale picked **150 %** for the 13.3-inch 1920x1200 panel
+      (about 170 px per inch; Windows recommends 150 % too). Too big for me: I set **125 %** in Settings > Displays, which wrote
+      eDP-1 to monitors.lua, and that is kept at every start, as designed. If 125 % should be the default for panels like this,
+      the automatic rule would need its own steps rather than Hyprland's.
 
 Security (this is the LykanOS machine):
 - [ ] Disk encryption: was it chosen in the installer? If not, write it down. Reinstalling with encryption comes with LykanOS.
