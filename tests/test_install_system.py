@@ -72,6 +72,14 @@ class TheIntegrationFile(unittest.TestCase):
         finally:
             inst.configure({}, {})
 
+    @needs_program
+    def test_the_live_account_is_the_one_the_installer_knows(self):
+        # the install hands a saved network only the live account could use (permissions=user:live:;) to the new account: the
+        # live medium's account must be the one it looks for
+        sysusers = open(os.path.join(AIROOTFS, "etc", "sysusers.d", "live.conf")).read().splitlines()
+        self.assertEqual([l.split()[1] for l in sysusers if l.startswith("u ")], [inst.LIVE_USER])
+        self.assertIn(inst.LIVE_USER, inst.RESERVED)
+
 
 CATALOG = os.path.join(AIROOTFS, "usr", "share", "labyrinth", "installer-browsers.json")
 
