@@ -121,7 +121,13 @@ Security (this is the LykanOS machine):
 - [ ] Disk encryption: was it chosen in the installer? If not, write it down. Reinstalling with encryption comes with LykanOS.
       2026-11-13: **not encrypted**. nvme0n1p2 is plain btrfs (no LUKS), with the EFI partition beside it; swap is zram.
 - [ ] Heimdall is running (`systemctl status heimdall`), and its alerts make sense on a laptop moving between networks
-      2026-11-13: running. Its alerts on another network still to see.
+      2026-11-13: running. Two false alarms on my phone's hotspot ("needs care"): "1 other device heard on this network" while
+      the laptop was the only client (the device heard is the phone itself, the hotspot); and "the router's hardware address
+      is different from last time": an iPhone's hotspot changes it when it restarts. `heimdall-wifi-guard trust` remembers the
+      router's address, so it would keep tripping. Wanted: count the gateway out of "other devices", and a way to trust a phone
+      hotspot whose address changes. Its Wi-Fi verdict shows an OWE-TM network by its hidden `_owetm_` name.
+      Also seen: labyrinth-appnet-ask failed every 5 s from boot (no /etc/labyrinth; 1,933 restarts): fixed in Labyrinth
+      7744b9b (ConfigurationDirectory), and /etc/labyrinth made by hand here meanwhile.
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
       2026-11-13, a shop's guest network (Enhanced Open in transition mode, OWE-TM, with a sign-in page): Settings showed a lock
       and wanted a password (fixed: Yggdrasil 8c7c6e5). Joined, the laptop correctly took the encrypted hidden half, whose real
