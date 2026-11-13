@@ -74,7 +74,9 @@ Write what you find under each item, and what works without changes.
 Basics:
 - [ ] Suspend and resume (lid close, power key, idle): comes back with Wi-Fi, sound and touch. Check `cat /sys/power/mem_sleep`
       (s2idle is expected) and battery drain overnight while suspended.
-      2026-11-13: `mem_sleep` is `[s2idle]`, as expected. Resume and overnight drain still to try.
+      2026-11-13: `mem_sleep` is `[s2idle]`, as expected. Resume and overnight drain still to try. The lid now does what I asked:
+      lock at once, sleep after 5 minutes closed, hibernate 30 minutes after closing (yggdrasil-idle holds logind's lid lock;
+      Settings > Power > When the lid is closed; Yggdrasil 58186b5). Hibernation works here (31 GB swapfile, resume= set).
 - [ ] Lid closed with an external screen attached: stays awake and uses only the external screen.
 - [x] Brightness keys, volume keys, mic-mute key and its light, the F-keys' other functions (Fn lock)
       2026-11-13: all working. F1-F3 volume, F4 mic mute (its light follows), F5/F6 brightness with the pop-up: they did
@@ -136,6 +138,10 @@ Security (this is the LykanOS machine):
       is different from last time": an iPhone's hotspot changes it when it restarts. `heimdall-wifi-guard trust` remembers the
       router's address, so it would keep tripping. Wanted: count the gateway out of "other devices", and a way to trust a phone
       hotspot whose address changes. Its Wi-Fi verdict shows an OWE-TM network by its hidden `_owetm_` name.
+      Also a false "DNS spoofing" (critical) on a relative's home network: github.com resolved to a Microsoft address (AS8075),
+      which GitHub uses; three resolvers gave three different GitHub addresses and the one given passed GitHub's certificate
+      check. Judging by who owns the address breaks for services on their parent company's network; checking the TLS
+      certificate (or knowing GitHub is Microsoft's) would not.
       Also seen: labyrinth-appnet-ask failed every 5 s from boot (no /etc/labyrinth; 1,933 restarts): fixed in Labyrinth
       7744b9b (ConfigurationDirectory), and /etc/labyrinth made by hand here meanwhile.
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
