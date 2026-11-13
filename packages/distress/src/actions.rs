@@ -7,10 +7,15 @@ use crate::config::{Config, Extra};
 pub enum Step {
     /// Run a program with arguments.
     Run(Vec<String>),
-    /// Run a shell command line.
+    /// Run a program with arguments, its errors not shown.
+    Quiet(Vec<String>),
+    /// Run a shell command line: only the commands the owner wrote in Settings ("Run commands"). Names read from the computer
+    /// (accounts, homes, disks) never go into one: they are arguments of Run and Quiet, or paths of Remove.
     Sh(String),
     /// Delete a file or folder.
     Remove(String),
+    /// Several steps, one after another; done when the last one is, or always.
+    Each { steps: Vec<Step>, always: bool },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -67,7 +72,11 @@ impl Ctx {
 }
 
 fn run(why: &str, args: &[&str]) -> Planned {
-    Planned { why: why.into(), step: Step::Run(args.iter().map(|s| s.to_string()).collect()) }
+    Planned { why: why.into(), step: Step::Run(argv(args)) }
+}
+
+fn argv(args: &[&str]) -> Vec<String> {
+    args.iter().map(|s| s.to_string()).collect()
 }
 
 /// Section 1 when the real account is locked and the decoy session is used.
@@ -108,9 +117,11 @@ pub fn extra_steps(cfg: &Config, ctx: &Ctx) -> Vec<Planned> {
         }
         Extra::FactoryReset => {
             for (u, home) in &ctx.users {
+                // was the shell line `userdel -rf {u} 2>/dev/null; rm -rf {home}`: a home with a space in it removed two other
+                // folders (2026-11-12)
                 v.push(Planned {
                     why: format!("Remove the account {u} and everything in {home}"),
-                    step: Step::Sh(format!("userdel -rf {u} 2>/dev/null; rm -rf {home}")),
+                    step: Step::Each { steps: vec![Step::Quiet(argv(&["userdel", "-rf", u])), Step::Remove(home.clone())], always: false },
                 });
             }
             for p in [
@@ -132,11 +143,17 @@ pub fn extra_steps(cfg: &Config, ctx: &Ctx) -> Vec<Planned> {
                 v.push(run(&format!("Erase the encryption keys of {d}"), &["cryptsetup", "luksErase", "--batch-mode", d]));
             }
             for d in &ctx.disks {
+                // was the shell line `wipefs -af {d}; dd ... of={d} ... 2>/dev/null; blkdiscard -f {d} 2>/dev/null; true`
                 v.push(Planned {
                     why: format!("Destroy the partition table and the start of {d}"),
-                    step: Step::Sh(format!(
-                        "wipefs -af {d}; dd if=/dev/zero of={d} bs=1M count=64 conv=fsync 2>/dev/null; blkdiscard -f {d} 2>/dev/null; true"
-                    )),
+                    step: Step::Each {
+                        steps: vec![
+                            Step::Run(argv(&["wipefs", "-af", d])),
+                            Step::Quiet(argv(&["dd", "if=/dev/zero", &format!("of={d}"), "bs=1M", "count=64", "conv=fsync"])),
+                            Step::Quiet(argv(&["blkdiscard", "-f", d])),
+                        ],
+                        always: true,
+                    },
                 });
             }
             v.push(run("Power off", &["systemctl", "poweroff", "-f"]));
@@ -158,21 +175,37 @@ pub fn execute(steps: &[Planned], dry: bool) -> Vec<String> {
             log.push(format!("would: {} ({:?})", p.why, p.step));
             continue;
         }
-        let ok = match &p.step {
-            Step::Run(a) if !a.is_empty() => std::process::Command::new(&a[0]).args(&a[1..]).status().map(|s| s.success()).unwrap_or(false),
-            Step::Sh(c) => std::process::Command::new("sh").args(["-c", c]).status().map(|s| s.success()).unwrap_or(false),
-            Step::Remove(path) => {
-                let r = std::path::Path::new(path);
-                // never follow the path out of where it points: refuse anything that is not an absolute path of some depth
-                r.is_absolute()
-                    && r.components().count() >= 3
-                    && (std::fs::remove_dir_all(r).is_ok() || std::fs::remove_file(r).is_ok() || !r.exists())
-            }
-            _ => false,
-        };
+        let ok = carry_out(&p.step);
         log.push(format!("{}: {}", if ok { "done" } else { "failed" }, p.why));
     }
     log
+}
+
+/// One step; whether it succeeded.
+fn carry_out(step: &Step) -> bool {
+    use std::process::{Command, Stdio};
+    match step {
+        Step::Run(a) if !a.is_empty() => Command::new(&a[0]).args(&a[1..]).status().map(|s| s.success()).unwrap_or(false),
+        Step::Quiet(a) if !a.is_empty() => {
+            Command::new(&a[0]).args(&a[1..]).stderr(Stdio::null()).status().map(|s| s.success()).unwrap_or(false)
+        }
+        Step::Sh(c) => Command::new("sh").args(["-c", c]).status().map(|s| s.success()).unwrap_or(false),
+        Step::Remove(path) => {
+            let r = std::path::Path::new(path);
+            // never follow the path out of where it points: refuse anything that is not an absolute path of some depth
+            r.is_absolute()
+                && r.components().count() >= 3
+                && (std::fs::remove_dir_all(r).is_ok() || std::fs::remove_file(r).is_ok() || !r.exists())
+        }
+        Step::Each { steps, always } => {
+            let mut last = true;
+            for s in steps {
+                last = carry_out(s);
+            }
+            last || *always
+        }
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -206,7 +239,7 @@ mod tests {
         let c = Config { extra: Extra::WipeSystem, ..Config::default() };
         let s = extra_steps(&c, &ctx());
         assert_eq!(s.last().unwrap().why, "Power off");
-        assert!(s.iter().any(|p| matches!(&p.step, Step::Sh(c) if c.contains("/dev/nvme0n1"))));
+        assert!(s.iter().any(|p| matches!(&p.step, Step::Each { steps, always: true } if steps.contains(&Step::Run(argv(&["wipefs", "-af", "/dev/nvme0n1"]))))));
     }
 
     #[test]
@@ -220,5 +253,74 @@ mod tests {
     fn shallow_removals_are_refused() {
         let s = [Planned { why: "x".into(), step: Step::Remove("/etc".into()) }];
         assert!(execute(&s, false)[0].starts_with("failed"));
+    }
+
+    // the accounts' names and homes and the disks' paths come from /etc/passwd and lsblk: none of them may reach a shell
+    #[test]
+    fn account_and_disk_names_never_reach_a_shell() {
+        let odd = Ctx {
+            user: "me".into(),
+            users: vec![("me".into(), "/home/my home".into()), ("x;reboot".into(), "/home/x $(id)".into())],
+            luks: vec![],
+            disks: vec!["/dev/sda b".into()],
+        };
+        for extra in [Extra::FactoryReset, Extra::WipeSystem] {
+            let c = Config { extra, ..Config::default() };
+            for p in extra_steps(&c, &odd) {
+                assert!(!format!("{:?}", p.step).contains("Sh("), "{}: {:?}", p.why, p.step);
+            }
+        }
+    }
+
+    /// The words a shell made of the old lines (plain names: no quotes, no expansions), each command without its redirection.
+    fn shell_words(line: &str) -> Vec<Vec<String>> {
+        line.split(';')
+            .map(|c| c.split_whitespace().filter(|w| *w != "2>/dev/null").map(str::to_string).collect::<Vec<_>>())
+            .filter(|c| !c.is_empty() && c != &["true"])
+            .collect()
+    }
+
+    fn commands(step: &Step) -> Vec<Vec<String>> {
+        match step {
+            Step::Run(a) | Step::Quiet(a) => vec![a.clone()],
+            Step::Remove(p) => vec![vec!["rm".into(), "-rf".into(), p.clone()]],
+            Step::Each { steps, .. } => steps.iter().flat_map(commands).collect(),
+            Step::Sh(c) => shell_words(c),
+        }
+    }
+
+    // differential: for ordinary names, the same programs with the same arguments in the same order as the shell lines the
+    // steps replaced (Remove standing for rm -rf)
+    #[test]
+    fn the_same_commands_as_the_old_shell_lines() {
+        let c = ctx();
+        let reset = extra_steps(&Config { extra: Extra::FactoryReset, ..Config::default() }, &c);
+        assert_eq!(commands(&reset[0].step), shell_words("userdel -rf me 2>/dev/null; rm -rf /home/me"));
+        let wipe = extra_steps(&Config { extra: Extra::WipeSystem, ..Config::default() }, &c);
+        let disk = wipe.iter().find(|p| p.why.starts_with("Destroy")).unwrap();
+        assert_eq!(
+            commands(&disk.step),
+            shell_words(
+                "wipefs -af /dev/nvme0n1; dd if=/dev/zero of=/dev/nvme0n1 bs=1M count=64 conv=fsync 2>/dev/null; blkdiscard -f /dev/nvme0n1 2>/dev/null; true"
+            )
+        );
+    }
+
+    // the old line `rm -rf /tmp/.../my home` removed ".../my" and "home" and left the home itself
+    #[test]
+    fn a_home_with_a_space_is_removed_whole_and_alone() {
+        let t = std::env::temp_dir().join(format!("distress-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&t);
+        for d in ["my home/files", "my", "home"] {
+            std::fs::create_dir_all(t.join(d)).unwrap();
+        }
+        let home = t.join("my home").to_string_lossy().into_owned();
+        let step = Step::Each { steps: vec![Step::Remove(home.clone())], always: false };
+        assert!(carry_out(&step));
+        assert!(!t.join("my home").exists());
+        assert!(t.join("my").exists() && t.join("home").exists());
+        assert!(!carry_out(&Step::Each { steps: vec![Step::Remove("/".into())], always: false }), "too shallow");
+        assert!(carry_out(&Step::Each { steps: vec![Step::Remove("/".into())], always: true }), "always");
+        let _ = std::fs::remove_dir_all(&t);
     }
 }
