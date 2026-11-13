@@ -87,4 +87,40 @@ mod tests {
         assert_eq!(edit("ID=labyrinth\n", "1.1", "1.1.0"), "ID=labyrinth\nVERSION=\"1.1\"\nVERSION_ID=1.1.0\n");
         assert_eq!(edit("", "1.1", "1.1.0"), "VERSION=\"1.1\"\nVERSION_ID=1.1.0\n");
     }
+
+    fn run(text: &str, version: &str) -> (String, Vec<String>) {
+        let d = std::env::temp_dir().join(format!("os-release-test-{}-{version}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        let f = d.join("os-release");
+        std::fs::write(&f, text).unwrap();
+        assert_eq!(main(&["labyrinth-os-release".into(), version.into(), f.to_string_lossy().into_owned()]), 0);
+        let out = std::fs::read_to_string(&f).unwrap();
+        let mut files: Vec<String> =
+            std::fs::read_dir(&d).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        files.sort();
+        let _ = std::fs::remove_dir_all(&d);
+        (out, files)
+    }
+
+    // was tests/test_package_version.py, for the scriptlet's awk program
+    #[test]
+    fn written_on_an_update() {
+        let before = "NAME=\"Labyrinth OS\"\nPRETTY_NAME=\"Labyrinth OS\"\nID=labyrinth\nBUILD_ID=rolling\nIMAGE_VERSION=2026.10.13\n";
+        let (after, files) = run(before, "1.0.0-3");
+        assert_eq!(
+            after,
+            "NAME=\"Labyrinth OS\"\nPRETTY_NAME=\"Labyrinth OS\"\nVERSION=\"1.0\"\nVERSION_ID=1.0.0\nID=labyrinth\nBUILD_ID=rolling\nIMAGE_VERSION=2026.10.13\n"
+        );
+        assert_eq!(files, ["os-release"], "no temporary file left");
+        let (again, _) = run(&after, "1:1.1.1-1");
+        assert!(again.contains("VERSION=\"1.1.1\"\nVERSION_ID=1.1.1\n"));
+        assert_eq!(again.matches("VERSION=").count(), 2, "replaced, not added (IMAGE_VERSION stays)");
+    }
+
+    #[test]
+    fn another_system_keeps_its_own() {
+        let other = "NAME=\"LykanOS\"\nID=lykanos\nVERSION=\"2\"\n";
+        assert_eq!(run(other, "1.0.0-1").0, other);
+    }
 }
