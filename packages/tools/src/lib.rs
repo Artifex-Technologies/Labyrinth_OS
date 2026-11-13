@@ -33,6 +33,7 @@
 //!   sarina_voice     labyrinth-sarina-ask, labyrinth-sarina-speak   a spoken question, and the answer said aloud
 //!   rea              labyrinth-rea, labyrinth-rea-setup   REA in a sandbox, and its installation
 //!   small            labyrinth-claude-code, labyrinth-install, labyrinth-notify-activate
+//!   os_release       labyrinth-os-release          the system version in /etc/os-release (from the package's scriptlet)
 
 pub mod agent;
 pub mod agent_setup;
@@ -50,6 +51,7 @@ pub mod hardware;
 pub mod install_cleanup;
 pub mod ipconfig;
 pub mod launch;
+pub mod os_release;
 pub mod playall;
 pub mod py;
 pub mod pycompat;

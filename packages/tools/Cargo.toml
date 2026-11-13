@@ -149,6 +149,11 @@ path = "src/bin/labyrinth-install.rs"
 name = "labyrinth-notify-activate"
 path = "src/bin/labyrinth-notify-activate.rs"
 
+# run as root by the package's scriptlet at every update (was an awk program in labyrinth-tools.install until 2026-11-12)
+[[bin]]
+name = "labyrinth-os-release"
+path = "src/bin/labyrinth-os-release.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }

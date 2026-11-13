@@ -30,6 +30,7 @@ package was switched and the old one deleted (git keeps it). Numbers: Yggdrasil'
 | `/usr/lib/yggdrasil/spell-global` (pkexec, root) | sh | Yggdrasil `packages/spell` | 5 the same |
 | The panel's speed test | `sh -c 'head -c 5000000 /dev/zero \| curl ...'` from Rust | curl by argv, the zeros written from the panel | a test runs the old lines and the new code against one stand-in curl: same arguments, same bytes |
 | The distress password's factory reset and system wipe | `sh -c "userdel -rf {name}; rm -rf {home}"` and `sh -c "wipefs -af {disk}; dd ...; blkdiscard ..."` built from /etc/passwd and lsblk, run as root | argv steps (`Step::Each`, `Quiet`, `Remove`); only the commands I write myself in Settings stay shell lines | a test compares the programs and arguments with the old lines' words; a home with a space removed two other folders (test failed on the old code first) |
+| The os-release edit in `labyrinth-tools.install` (VERSION and VERSION_ID at every update, as root) | an awk program in the scriptlet | `labyrinth-os-release` (labyrinth-tools); the scriptlet is one line calling it | the old scriptlet function and the program on 9 made-up files (Labyrinth's, quoted ID, no newline at the end, two PRETTY_NAME lines, another system, empty, a link, none) times 3 versions: 27 of 27 the same (contents and modes) |
 | Pacman hook `60-labyrinth-nosuid` | `Exec = /bin/sh -c 'for f in ...; do [ -e "$f" ] && chmod u-s,g-s "$f"; done; true'` | two hooks, one per file, `Exec = /usr/bin/chmod u-s,g-s FILE` (pacman runs it with no shell, only when that file was just installed or upgraded) | the old line and the two commands on setuid files in a scratch folder, all four cases (both, one, the other, none): same modes, same results |
 
 Bugs found on the way (fixed in the scripts first, Yggdrasil f54dc78): `yggdrasil-mount-open` opened the wrong folder for a
@@ -65,7 +66,7 @@ where they can; those that read the `python/` or `shell/` folders are changed to
 | What | Language | Why |
 | --- | --- | --- |
 | Every `PKGBUILD`, `scripts/makepkg.conf`, `scripts/package-version.sh` (both repositories; sourced by every PKGBUILD) | bash | makepkg's format |
-| `.install` scriptlets: labyrinth-keyring, labyrinth-tools, limbo-git, yggdrasil-gametime, yggdrasil-spell | sh | pacman runs scriptlets with bash; they only call systemctl, pacman-key and, in labyrinth-tools, the os-release edit below (to port) |
+| `.install` scriptlets: labyrinth-keyring, labyrinth-tools, limbo-git, yggdrasil-gametime, yggdrasil-spell | sh | pacman runs scriptlets with bash; they only call systemctl, pacman-key and, in labyrinth-tools, labyrinth-os-release |
 | `profile/profiledef.sh` | bash | archiso's format |
 | `profile/airootfs/etc/profile.d/labyrinth-path.sh` | sh | read by every login shell |
 | Pacman hooks (`61-labyrinth-proton-perms.hook`, Yggdrasil's `90-yggdrasil-power.hook`, the two nosuid hooks) | pacman's format | they name one program by argv (chmod, `/usr/lib/yggdrasil/power adopt`); no shell |
@@ -79,11 +80,10 @@ where they can; those that read the `python/` or `shell/` folders are changed to
 
 ## To port
 
-Smallest risk first. None of these runs as a service; the first four ship or run on my PC.
+Smallest risk first. None of these runs as a service; the first three ship or run on my PC.
 
 | What | Language, size | Runs | Plan |
 | --- | --- | --- | --- |
-| The os-release edit in `labyrinth-tools.install` (VERSION and VERSION_ID from the package's version) | awk in a scriptlet, 10 lines | as root at every labyrinth-tools update | a small labyrinth-tools program that writes the file whole and renames it into place; the scriptlet keeps one line calling it |
 | Yggdrasil `packages/session/bin/yggdrasil-session` (the session's launcher: environment, MangoHud's config, Hyprland's crash watchdog and safe mode, the monitor log, the restart or shut-down after it) | bash, 164 lines | every login | next: into `packages/session` with the four ported today. A mistake there means no desktop, so it needs a nested-session test first (Hyprland stand-in that crashes on cue) |
 | `scripts/publish-repo.py` (the daily package publish: git, makepkg, repo-add, gh) | Python, 349 lines | daily at 05:30 on my PC (labyrinth-publish.timer) | a Rust program; the Arch tools it calls stay |
 | `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py` (Sarina's voice server, Chatterbox Turbo on PyTorch) | Python | Sarina's spoken answers (user service) | the planned next big port: Chatterbox through ONNX in Rust (`scripts/voice/chatterbox_onnx_test.py` is the probe) |

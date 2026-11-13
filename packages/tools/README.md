@@ -61,6 +61,7 @@ already allows any pacman and systemd-run, so it gives nothing more).
 | labyrinth-sarina-reflect, -warm, -voice-setup | src/sarina_small.rs | 14/14, 7/7, 7/7 |
 | cls | none: on the switch it becomes a link to /usr/bin/clear (it was `exec clear "$@"`; clear does the same under any name, and no shell runs) | |
 | labyrinth-sarina-ask, labyrinth-sarina-speak | src/sarina_voice.rs (2026-11-11, after my voice test) | 41/41, 24/24 |
+| labyrinth-tools.install's awk program (the system version in /etc/os-release) | src/os_release.rs, `labyrinth-os-release` (2026-11-12) | 27/27 (9 files, 3 versions; contents and modes) |
 
 All 22 ports are done; 321 cases, all the same. The voice scripts' cases (parity/cases_voice.py) give whisper-cli, Piper,
 the player and the voice service's client as stand-ins: nothing records or plays. Their loudness numbers (the panel's voice
