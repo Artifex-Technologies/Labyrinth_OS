@@ -170,6 +170,32 @@ class Extras(unittest.TestCase):
         razer = self.comps["razer"]["packages"]
         self.assertTrue({"dkms", "linux-cachyos-headers", "linux-cachyos-lts-headers"} <= set(razer), "a driver built on the machine brings what it needs")
 
+    def test_laptop_software_is_online_and_ticked_by_the_hardware(self):
+        laptop = {e["id"]: e for e in self.cat if e.get("group") == "This laptop"}
+        self.assertEqual(set(laptop), {"fingerprint", "thermald", "on-screen-keyboard"})
+        with open(os.path.join(ROOT, "profile", "packages.x86_64"), encoding="utf-8") as f:
+            iso = set(f.read().split())
+        for e in laptop.values():
+            self.assertNotIn("chosen_if_exists", e, "laptop software is never on the medium")
+            for c in e["components"]:
+                self.assertFalse(set(self.comps[c].get("packages", []) + self.comps[c].get("aur", [])) & iso, c)
+        # the fingerprint readers libfprint drives, by exact device: Synaptics (06cb) and Goodix (27c6) also make readers it cannot
+        fp = laptop["fingerprint"]["chosen_if_usb"]
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{4}", v) for v in fp), "vendor:product, lowercase hex")
+        self.assertEqual(len(fp), len(set(fp)))
+        self.assertIn("06cb:00fc", fp)
+        self.assertNotIn("06cb:00a2", fp, "a Synaptics reader on libfprint's unsupported list")
+        self.assertEqual(laptop["thermald"]["chosen_if_machine"],
+                         {"cpu_vendor": "GenuineIntel", "battery": True, "absent": "/sys/devices/platform/thinkpad_acpi/dytc_lapmode"},
+                         "Intel laptops, except ThinkPads whose firmware runs the cooling (thermald stops there by design)")
+        self.assertEqual(self.comps["thermald"]["enable_system"], ["thermald.service"])
+        self.assertEqual(laptop["on-screen-keyboard"]["chosen_if_machine"], {"tablet_switch": True})
+        self.assertEqual(self.comps["on-screen-keyboard"]["aur"], ["wvkbd"])
+        self.assertFalse(self.comps["fingerprint"].get("enable_system") or self.comps["fingerprint"].get("after_install"),
+                         "installing fprintd changes nothing in PAM: fingerprint sign-in is the owner's switch in Settings")
+        p = inst.extras_plan(self.cat, ["fingerprint", "thermald", "on-screen-keyboard"], self.comps, set())
+        self.assertEqual(p["queue"], ["fingerprint", "thermald", "on-screen-keyboard"], "all at the first login, online")
+
     def test_on_the_medium_kept_or_removed_otherwise_left_for_the_first_login(self):
         everything = {"sarina-git", "heimdall-git", "clamav"}
         p = inst.extras_plan(self.cat, ["heimdall"], self.comps, everything)

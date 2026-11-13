@@ -348,6 +348,41 @@
       ]
     },
     {
+      "id": "fingerprint",
+      "name": "Fingerprint reader (fprintd)",
+      "description": "fprintd and libfprint: enrol your fingers in Settings > Users. Signing in with a finger is off until you turn it on there (for sudo first; the lock screen and password boxes come later).",
+      "proprietary": false,
+      "packages": [
+        "fprintd",
+        "libfprint"
+      ],
+      "notes": "Settings > Users > Fingerprint: add a finger, then turn on \"Use for sudo\" if you want it. Nothing in PAM changes until you do."
+    },
+    {
+      "id": "thermald",
+      "name": "Intel laptop cooling (thermald)",
+      "description": "Intel's thermal daemon: keeps an Intel laptop under its temperature limits using the firmware's own thermal tables, and follows the power mode. Not for ThinkPads whose firmware runs the cooling itself (thermald stops on those).",
+      "proprietary": false,
+      "packages": [
+        "thermald"
+      ],
+      "enable_system": [
+        "thermald.service"
+      ],
+      "notes": "Runs on its own after installing; nothing to set up. On a ThinkPad with Lenovo's firmware cooling (DYTC) thermald exits by design and the power mode does the job."
+    },
+    {
+      "id": "on-screen-keyboard",
+      "name": "On-screen keyboard (wvkbd)",
+      "description": "A small on-screen keyboard for Wayland. On a 2-in-1 it shows when you fold the screen into a tablet and no keyboard is plugged in.",
+      "proprietary": false,
+      "packages": [],
+      "aur": [
+        "wvkbd"
+      ],
+      "notes": "Shown by Yggdrasil in tablet mode; Settings > Displays turns that off."
+    },
+    {
       "id": "razer",
       "name": "Razer keyboards and mice",
       "description": "OpenRazer (the driver) with Polychromatic for lighting, DPI and polling rate, and Input Remapper for the extra mouse buttons: give any button a key, a shortcut or a macro.",

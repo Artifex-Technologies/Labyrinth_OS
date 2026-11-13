@@ -27,6 +27,7 @@ the machine only when that cannot be reached.
 | `frame-generation` | lsfg-vk (Lossless Scaling's frame generation), from its source in the AUR | Needs Lossless Scaling from Steam; CC BY-NC-ND, so not part of Labyrinth itself |
 | `daedalus-cad` | Daedalus CAD, Artifex's SketchUp-style modeler | From the package repository |
 | Devices: `logitech`, `gaming-mice`, `razer`, `ckb-next`, `xbox-controllers`, `hp-printers` | Solaar; Piper + libratbag; OpenRazer; ckb-next (Corsair); xpadneo; HPLIP | Not on the ISO: the installer offers them (ticked when such a USB device is plugged in) and installs them at the first login. Razer and xpadneo bring dkms and both kernels' headers, which only drivers built on the machine need |
+| This laptop: `fingerprint`, `thermald`, `on-screen-keyboard` | fprintd + libfprint; thermald; wvkbd (AUR) | Not on the ISO. Ticked by the hardware: a fingerprint reader libfprint supports (by exact USB id), an Intel laptop whose firmware does not run the cooling itself (not a ThinkPad with DYTC: thermald stops there), a tablet-mode switch. Installing fprintd changes nothing in PAM; fingerprint for sudo is a switch in Settings > Users, off until I turn it on. See HARDWARE.md |
 | `local-ai` | Ollama for Sarina (CUDA on NVIDIA, Vulkan otherwise) | Not in the image (~6 GB with CUDA); Sarina offers to install it on first use. Competes with games for GPU memory |
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
@@ -72,7 +73,9 @@ repos into pacman. They tend to break on library versions, and uninstalling leav
 ## Choosing at install time
 
 The installer's **Optional software** page (`/usr/share/labyrinth/installer-extras.json`) offers Sarina and Heimdall under "AI
-and security", and the device components under "Devices", each ticked when such a USB device is plugged in. What the medium
+and security", the device components under "Devices", each ticked when such a USB device is plugged in, and a laptop's under
+"This laptop", ticked by what the computer is (`chosen_if_machine`: processor maker, battery, tablet-mode switch) or by the
+exact reader (`chosen_if_usb` with vendor:product). What the medium
 does not carry is installed at the first login, online (`labyrinth-first-components`). Its **Browsers** page
 (`installer-browsers.json`) does the same for browsers.
 

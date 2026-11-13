@@ -1720,6 +1720,71 @@
    ]
   },
   {
+   "id": "fingerprint",
+   "name": "Fingerprint reader",
+   "subtitle": "Enrol fingers, sudo with a finger",
+   "description": "fprintd and libfprint for the fingerprint readers of most laptops (Synaptics, Goodix, Elan, FPC and others). Enrol in Settings > Users; using a finger for sudo is a switch there, off until you turn it on.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "fingerprint"
+   },
+   "icon": "auth-fingerprint-symbolic",
+   "reviewed": true,
+   "tags": [
+    "fingerprint",
+    "fprintd",
+    "laptop",
+    "sudo",
+    "login"
+   ]
+  },
+  {
+   "id": "thermald",
+   "name": "Intel laptop cooling",
+   "subtitle": "thermald: temperature limits from the firmware's tables",
+   "description": "Intel's thermal daemon for Intel laptops: works from the firmware's thermal tables and follows the power mode. ThinkPads whose firmware runs the cooling do not need it (it stops there by itself).",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "thermald"
+   },
+   "icon": "temperature-symbolic",
+   "reviewed": true,
+   "tags": [
+    "thermald",
+    "intel",
+    "laptop",
+    "temperature",
+    "cooling",
+    "fans"
+   ]
+  },
+  {
+   "id": "on-screen-keyboard",
+   "name": "On-screen keyboard",
+   "subtitle": "wvkbd: a keyboard for tablet mode",
+   "description": "A small on-screen keyboard. On a 2-in-1 Yggdrasil shows it when the screen is folded into a tablet and no keyboard is plugged in.",
+   "category": "Utilities",
+   "subcategory": "Accessibility",
+   "source": {
+    "type": "component",
+    "id": "on-screen-keyboard"
+   },
+   "icon": "input-keyboard-virtual",
+   "reviewed": true,
+   "tags": [
+    "keyboard",
+    "on-screen",
+    "osk",
+    "tablet",
+    "touch",
+    "2-in-1"
+   ]
+  },
+  {
    "id": "gaming-mice",
    "name": "Gaming mice",
    "subtitle": "Piper: buttons, DPI and lights",
