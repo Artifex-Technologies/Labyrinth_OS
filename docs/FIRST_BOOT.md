@@ -47,9 +47,16 @@ installing:
 1. Tap Super, type "install", and open **Install Labyrinth**.
 2. The pages, in order:
    - **Welcome:** the language.
-   - **Network:** join a Wi-Fi network (a secured one asks for its password), or **Skip**. Without a network, device software,
-     browsers not on the stick and the latest updates wait until you connect in Settings > Wi-Fi & Network. With a network
-     cable already connected, or on a computer without Wi-Fi, this page is not shown (the summary says when you are offline).
+   - **Network:** join a Wi-Fi network (a secured one asks for its password; **Hidden network…** takes a name that is not
+     broadcast), or **Skip**. Without a network, device software, browsers not on the stick and the latest updates wait until
+     you connect in Settings > Wi-Fi & Network. With a network cable already connected, or on a computer without Wi-Fi, this
+     page is not shown (the summary says when you are offline). The page shows each Wi-Fi adapter's address (MAC) with a Copy
+     button, for a network that reserves addresses or lets only known ones in. Heimdall gives each network a private address,
+     so the join form has **Use this computer's real address**: tick it for such a network, and on the installed system trust
+     the network in Heimdall (`sudo heimdall-wifi-guard trust` while connected) so it keeps using the real one.
+   - Plugged in later: a cable connects by itself (the offline notes go); a USB Wi-Fi adapter brings a **Join a Wi-Fi network**
+     button on the page you are on, and you come back there after joining. Once online, the installer already downloads the
+     browsers and optional software you chose (the summary says how far it is), so the install is quicker.
    - **Keyboard:** first the arrangement (QWERTY, QWERTZ, AZERTY, Dvorak, Colemak or another alphabet), then the layout. Try it in
      the box.
    - **Time zone:** search by place.

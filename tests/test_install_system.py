@@ -53,6 +53,8 @@ class TheIntegrationFile(unittest.TestCase):
             self.assertTrue(os.path.isfile(AIROOTFS + c[key]), f"{key}: {c[key]} is on the medium")
         self.assertIn("nvidia_drm.modeset=1", c["kernel_options"].split())
         self.assertEqual(set(c["reserved_logins"].split()), {"heimdall", "sarina"})
+        # the window fetches the install's downloads beforehand while the choices are made (Yggdrasil's INSTALLER.md)
+        self.assertEqual(c["prefetch"], "yes")
 
     def test_the_first_login_list_is_where_labyrinth_first_components_reads_it(self):
         first = open(FIRST).read()
