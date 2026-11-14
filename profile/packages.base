@@ -3,6 +3,8 @@
 # into packages.x86_64. Comments on their own lines only.
 base
 base-devel
+# every firmware part (the meta-package): among them MediaTek, Realtek and Atheros for USB Wi-Fi adapters (mt76, rtw88,
+# rtl8xxxu, ath9k_htc in the kernel); tests/test_install_system.py checks it
 linux-firmware
 # processor microcode for both makers (the boot loader loads the one that matches)
 intel-ucode

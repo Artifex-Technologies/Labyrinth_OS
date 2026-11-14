@@ -92,6 +92,16 @@ class TheIntegrationFile(unittest.TestCase):
         self.assertEqual([l.split()[1] for l in sysusers if l.startswith("u ")], [inst.LIVE_USER])
         self.assertIn(inst.LIVE_USER, inst.RESERVED)
 
+    def test_usb_wifi_adapters_have_their_firmware_on_the_medium(self):
+        # the installer's Network step joins Wi-Fi on the live medium, and the installed system is a copy of it: the firmware
+        # the in-kernel drivers of common USB adapters load (mt76: MediaTek; rtw88 and rtl8xxxu: Realtek; ath9k_htc: Atheros)
+        # comes with linux-firmware (all its parts) or must be named part by part
+        with open(os.path.join(ROOT, "profile", "packages.x86_64"), encoding="utf-8") as f:
+            iso = set(f.read().split())
+        parts = {"linux-firmware-mediatek", "linux-firmware-realtek", "linux-firmware-atheros"}
+        self.assertTrue("linux-firmware" in iso or parts <= iso, parts - iso)
+        self.assertFalse({p for p in iso if "dkms" in p}, "no driver built on the machine on the medium")
+
 
 CATALOG = os.path.join(AIROOTFS, "usr", "share", "labyrinth", "installer-browsers.json")
 

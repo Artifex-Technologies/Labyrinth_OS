@@ -9,7 +9,8 @@ How to write the ISO to a USB stick, try Labyrinth live, install it, and what to
 - A USB stick of **8 GB or more**. Everything on it is erased.
 - A screen, a keyboard and a mouse. A network helps: the parts chosen on the installer's Optional software page come from the
   internet at the first login. There is no need to connect before starting the installer: its step after the language joins a
-  Wi-Fi network (or shows the cable's connection; with a cable already connected the step is skipped), and it can be skipped.
+  Wi-Fi network (a USB Wi-Fi adapter works too, see HARDWARE.md), and it can be skipped; with a cable already connected, or
+  without any Wi-Fi adapter, the step is not shown.
   A network joined there is kept for the installed system.
 
 ## 1. Flash the USB stick (on Windows)
@@ -48,7 +49,7 @@ installing:
    - **Welcome:** the language.
    - **Network:** join a Wi-Fi network (a secured one asks for its password), or **Skip**. Without a network, device software,
      browsers not on the stick and the latest updates wait until you connect in Settings > Wi-Fi & Network. With a network
-     cable already connected, this page is not shown.
+     cable already connected, or on a computer without Wi-Fi, this page is not shown (the summary says when you are offline).
    - **Keyboard:** first the arrangement (QWERTY, QWERTZ, AZERTY, Dvorak, Colemak or another alphabet), then the layout. Try it in
      the box.
    - **Time zone:** search by place.

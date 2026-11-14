@@ -58,3 +58,21 @@ own copy changes).
 The screen's turn follows iio-sensor-proxy's reading the way GNOME does: `normal` upright, `left-up` turned 90°, `bottom-up` 180°,
 `right-up` 270° (Hyprland transforms 0 to 3). Whether the direction and the touch turn are right on this panel is on the laptop's
 checklist.
+
+## USB Wi-Fi adapters (ALFA Network and others)
+
+Written 2026-11-14, for the installer's Network step (Yggdrasil's docs/INSTALLER.md) and everyday use. The common chipsets in
+USB Wi-Fi adapters have drivers in the kernel (both of ours, linux-cachyos and linux-cachyos-lts) and their firmware in the
+linux-firmware parts the ISO carries; the installed system is a copy of the ISO, so it has them too. Nothing is built on the
+machine (no DKMS, no headers) and nothing was added to the ISO for them: `linux-firmware` already pulls every part.
+
+| Chipset (examples) | Kernel driver | Firmware package |
+| --- | --- | --- |
+| MediaTek MT7612U, MT7610U, MT7921AU | `mt76x2u`, `mt76x0u`, `mt7921u` (mt76) | `linux-firmware-mediatek` |
+| Realtek RTL8812AU, RTL8821AU, RTL8814AU, RTL8812BU | `rtw88_8812au`, `rtw88_8821au`, `rtw88_8814au`, `rtw88_8822bu` (rtw88) | `linux-firmware-realtek` |
+| Realtek RTL8188/8192 family | `rtl8xxxu` | `linux-firmware-realtek` |
+| Atheros AR9271 | `ath9k_htc` | `linux-firmware-atheros` |
+
+An adapter plugged in while the installer's Network page is open shows up within a few seconds with its networks; with two
+Wi-Fi adapters the page lists the networks both see and joins on the one that hears the chosen network best. Settings >
+Wi-Fi & Network does the same afterwards. `tests/test_install_system.py` checks that the firmware stays on the ISO.
