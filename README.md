@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo/labyrinth-tile.png" width="128" alt="Labyrinth OS icon"></p>
+
 # Labyrinth OS
 
 **Labyrinth OS** is a privacy- and security-first Linux distribution (CachyOS-based) with the Artifex ecosystem built in. Its desktop
