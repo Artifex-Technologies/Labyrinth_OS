@@ -190,6 +190,41 @@ Security (this is the LykanOS machine):
       "Firmware updates" in Agora (Labyrinth 2464d89).
 - [ ] Secure Boot later: sbctl is on the ISO. Our own keys and signed kernels are a later plan; don't enrol keys now.
 
+## Own compositor on the real screen (from 2026-11-15; this laptop session does it)
+
+Yggdrasil's own compositor, which is to replace Hyprland, now drives a screen by itself: `yggdrasil-compositor --drm`
+(Yggdrasil `packages/compositor/src/udev.rs`, 758766e). It was checked only in a VM with one virtual screen (Yggdrasil
+docs/COMPOSITOR.md, "The hardware backend", and the README's table). This laptop is the next step: its own screen and its
+Intel graphics. I said yes to these tests on 2026-11-15, with me in the room. Hyprland stays the laptop's desktop; the tests
+run beside it on another text console.
+
+How a test run goes:
+1. Pull Yggdrasil and build the compositor (release) here, capped like every build. If `libseat` (package `seatd`), `libinput`
+   or mesa are missing, ask me before installing.
+2. Write a small start script (in the repo, e.g. `packages/compositor/tests/laptop-drm.sh`) that starts
+   `yggdrasil-compositor --drm` with the panel and a terminal, logs to a file in `~/.local/state`, and **quits by itself after
+   10 minutes** (`ctl quit`, then SIGTERM), so the laptop always comes back.
+3. I switch to a free console (Ctrl+Alt+F3), log in and run the script; Ctrl+Alt+F1/F2 takes me back to Hyprland at any time.
+   You keep running in Hyprland and read the log and the compositor's control socket (yggdrasil-wm) while it runs; tell me in
+   chat what to try next.
+4. Write what happened under each item below, then fix what fails in `src/udev.rs` and its neighbours, push, and run again.
+
+The milestone, in order (from the VM run's "next" list):
+- [ ] The built-in screen (eDP-1) comes up at its own mode; a sensible default scale from its size in millimetres.
+- [ ] Keyboard, touchpad (tap to click, natural scrolling, two-finger scrolling, from Settings' input.conf) and the TrackPoint.
+- [ ] Console switching away and back, several times; a clean exit back to the console.
+- [ ] Lid: closing turns the built-in screen off (libinput switch event); opening brings it back. With an external screen
+      plugged in, only the external one stays on.
+- [ ] A monitor plugged in and out (USB-C/Thunderbolt and HDMI): added and removed while running.
+- [ ] A screen switched off in Settings gives up its CRTC; screen blanking (DPMS) on idle.
+- [ ] Suspend and resume while it runs (s2idle): the screen and input come back.
+- [ ] Screen copies from GPU buffers (wlr-screencopy, ext-image-copy-capture) so grim and the dock's previews work.
+- [ ] Relative pointer, pointer constraints and presentation feedback.
+- [ ] Idle numbers on real hardware (CPU and memory, as the VM run measured them).
+
+Known from the VM run, being fixed on the desktop PC (leave these): Settings redraws several times a second while idle under
+a GPU compositor, ignores SIGTERM, and its window can be left partly off-screen after the mode shrinks.
+
 ## Later: LykanOS on this laptop
 
 The laptop's long-term system is LykanOS (Arch + BlackArch on Yggdrasil). Its ISO is built from the LykanOS repository, and it
