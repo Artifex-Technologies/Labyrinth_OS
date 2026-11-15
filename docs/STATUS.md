@@ -27,7 +27,7 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   switch per app. Sarina is optional. See [SECURITY_ROADMAP.md](SECURITY_ROADMAP.md).
 - **Location sounds (2026-11-15):** the private microphone removes aircraft tones and mains hum, which can place or date a
   recording, from everything the microphone records (on by default; Settings > Security > Privacy), and Minos scrubs files.
-  Heimdall's; see [LOCATION_SOUNDS.md](LOCATION_SOUNDS.md).
+  On every install (`heimdall-private-mic-git`, in the base system), with or without Heimdall; see [LOCATION_SOUNDS.md](LOCATION_SOUNDS.md).
 
 **Seen working:** the ISO builds and boots (last built 2026-10-26); the installer completes on real hardware, also beside Windows
 and encrypted; the desktop runs on my main PC every day. `scripts/release-check.sh` runs every check that needs no root

@@ -22,7 +22,7 @@ the machine only when that cannot be reached.
 | `virtualization` | QEMU, libvirt, UEFI firmware, dnsmasq, nftables (for Limbo) | |
 | `dev` | Node.js, npm, jq, the GitHub CLI, pip, fd, bubblewrap and socat: what Claude Code and most command-line development want (git is in the base system) | See [CLAUDE_CODE.md](CLAUDE_CODE.md); on in every preset except `minimal` |
 | `sarina` | Sarina, with her reverse-engineering tools (Java for Ghidra, Node for REA, bubblewrap, binutils) | Optional; the installer offers her |
-| `heimdall` | Heimdall, with ClamAV (its malware scanning) and ClamAV's signature updates; also the private microphone and `heimdall-scrub` ([LOCATION_SOUNDS.md](LOCATION_SOUNDS.md)) | Optional; the installer offers it. It dissects malware inside Limbo's sealed guest, not on the host. Without it there is no private microphone |
+| `heimdall` | Heimdall, with ClamAV (its malware scanning) and ClamAV's signature updates | Optional; the installer offers it. It dissects malware inside Limbo's sealed guest, not on the host. The private microphone is not part of it: `heimdall-private-mic-git` is in the base system, on every install ([LOCATION_SOUNDS.md](LOCATION_SOUNDS.md)) |
 | `kairos` | Kairos, Labyrinth's own frame generation (preview; `labyrinth-framegen` until 2026-11-07): a Vulkan layer for 64- and 32-bit games and its launcher | Settings > Games chooses games and 2x/3x/4x |
 | `frame-generation` | lsfg-vk (Lossless Scaling's frame generation), from its source in the AUR | Needs Lossless Scaling from Steam; CC BY-NC-ND, so not part of Labyrinth itself |
 | `daedalus-cad` | Daedalus CAD, Artifex's SketchUp-style modeler | From the package repository |

@@ -18,6 +18,9 @@ pipewire-alsa
 pipewire-pulse
 pipewire-jack
 wireplumber
+# the private microphone: aircraft tones and mains hum, which can place or date a recording, removed from everything the
+# microphone records, and heimdall-scrub for files (Heimdall's; on every install, with or without Heimdall: LOCATION_SOUNDS.md)
+heimdall-private-mic-git
 # kernels: default and the LTS fallback, each with open NVIDIA modules (prebuilt: no headers or dkms needed; the device
 # drivers that build their own module, Razer and Xbox controllers, bring headers and dkms from Agora)
 linux-cachyos

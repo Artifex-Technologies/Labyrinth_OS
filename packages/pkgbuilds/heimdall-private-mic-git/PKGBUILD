@@ -1,0 +1,58 @@
+# Maintainer: Labyrinth OS
+#
+# The private microphone and heimdall-scrub (Heimdall's docs/LOCATION_SOUNDS.md), a package of its own so every Labyrinth OS
+# and LykanOS install has it, with or without Heimdall: on the ISO's base list, not the optional Heimdall component.
+# Built from the Heimdall repository checked out next to this one, like heimdall-git (committed work only). Layout needed:
+# <dir>/Heimdall and <dir>/Labyrinth_OS/packages/pkgbuilds/heimdall-private-mic-git/PKGBUILD. The file list lives in
+# Heimdall's packaging/install.sh (its private-mic part); heimdall-git ships none of these files.
+
+_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
+
+pkgname=heimdall-private-mic-git
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='The private microphone: aircraft tones and mains hum, which can place or date a recording, removed from everything the microphone records; and heimdall-scrub for files'
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Heimdall'
+license=('MPL-2.0' 'MIT')
+depends=('glibc' 'gcc-libs' 'pipewire' 'wireplumber')
+optdepends=('ffmpeg: heimdall-scrub, scrubbed copies of audio and video files (on the ISO already)')
+makedepends=('rust' 'git')
+provides=('heimdall-private-mic')
+conflicts=('heimdall-private-mic')
+options=('!debug')
+source=("heimdall::git+file://${_src}")
+sha256sums=('SKIP')
+
+# The version is Heimdall's own (the VERSION file in its repository); the build number counts the commits since that release
+# that touch this package's files (the crates, packaging/privacy, install.sh, the doc) and this recipe's (docs/VERSIONING.md).
+. "$startdir/../../../scripts/package-version.sh"
+_paths=(rust/scrub rust/scrub-ladspa rust/Cargo.toml rust/Cargo.lock packaging/privacy packaging/install.sh docs/LOCATION_SOUNDS.md)
+_version "$(_srcdir)/heimdall" "${_paths[@]}"
+
+pkgver() {
+  _version "$srcdir/heimdall" "${_paths[@]}"
+  echo "$pkgver"
+}
+
+prepare() {
+  _version "$srcdir/heimdall" "${_paths[@]}"
+  cd "$srcdir/heimdall/rust"
+  cargo fetch --locked
+}
+
+build() {
+  cd "$srcdir/heimdall/rust"
+  cargo build --release --locked --offline -p heimdall-scrub -p heimdall-scrub-ladspa
+}
+
+check() {
+  cd "$srcdir/heimdall/rust"
+  cargo test --release --locked --offline -p heimdall-scrub -p heimdall-scrub-ladspa -p flyover-attack
+}
+
+package() {
+  cd "$srcdir/heimdall"
+  # the file list lives in Heimdall itself (one place for every system that packages it)
+  ./packaging/install.sh "$pkgdir" private-mic
+}

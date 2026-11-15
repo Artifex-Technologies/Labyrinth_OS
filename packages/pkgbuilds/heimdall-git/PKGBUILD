@@ -16,11 +16,8 @@ arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
 depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'iw' 'networkmanager' 'dnsmasq' 'nftables')
-makedepends=('go' 'git' 'rust')
-optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)'
-            'ffmpeg: heimdall-scrub, scrubbed copies of audio and video files (on the ISO already)'
-            'pipewire: the private microphone'
-            'wireplumber: the private microphone made the input every app records')
+makedepends=('go' 'git')
+optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)')
 provides=('heimdall')
 conflicts=('heimdall')
 backup=('etc/heimdall/dns-allow.txt' 'etc/NetworkManager/dnsmasq.d/heimdall-blocklist.conf')
@@ -47,15 +44,11 @@ build() {
   cd "$srcdir/heimdall"
   export CGO_ENABLED=0
   go build -trimpath -ldflags "-s -w" -o heimdalld ./cmd/heimdalld
-  # location sounds: heimdall-scrub, heimdall-private-mic and the private microphone's LADSPA filter (Heimdall's
-  # docs/LOCATION_SOUNDS.md); install.sh installs them with the rest
-  (cd rust && cargo build --release --locked -p heimdall-scrub -p heimdall-scrub-ladspa)
 }
 
 check() {
   cd "$srcdir/heimdall"
   go test ./...
-  (cd rust && cargo test --release --locked -p heimdall-scrub -p heimdall-scrub-ladspa -p flyover-attack)
 }
 
 package() {

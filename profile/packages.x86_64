@@ -15,6 +15,7 @@ pipewire-alsa
 pipewire-pulse
 pipewire-jack
 wireplumber
+heimdall-private-mic-git
 linux-cachyos
 linux-cachyos-nvidia-open
 linux-cachyos-lts
