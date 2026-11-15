@@ -102,6 +102,15 @@ Basics:
 - [ ] VS Code's workspace-trust dialog (and its other pop-ups) fits the screen at my scale, centred, with nothing to drag
       around (Yggdrasil `d058852`: no floating window opens bigger than its screen). Also check a window kept from before a
       scale change in Settings > Displays comes back no bigger than the screen.
+- [ ] Task Manager graphics on the Intel chip (Yggdrasil `c3e078d`, comes with the daily packages; nothing to install). The AMD
+      and Intel side was only tested with the kernel documentation's examples on the desktop PC, so this is its first real run.
+      Write down the driver (`readlink /sys/class/drm/card*/device/driver`: i915 or xe). Ctrl+Shift+Esc > Performance should list
+      "GPU 0" with Intel's name for the chip (e.g. Iris Xe Graphics), graphs for 3D, Copy, Video codec and Video processing marked
+      as your programs' use, shared memory, the clock and its top; power only if `/sys/class/powercap/intel-rapl:0:1/energy_uj`
+      is readable without root (usually not: then no power line, not 0 W). Play a video in Vivaldi: Video codec (or 3D) should
+      rise. Processes and Details: GPU, GPU engine ("GPU 0 - 3D") and Shared GPU filled for the compositor, Vivaldi and the
+      like, empty for programs that do not draw. Note anything missing, wrong or stuck at 0, and the Task Manager's CPU with
+      Processes open (`top -p $(pgrep -x yggdrasil-taskm)`; on the desktop PC it is about 6 %).
 
 2-in-1:
 - [ ] Pen: pressure, the side buttons, the eraser end, palm rejection while writing
