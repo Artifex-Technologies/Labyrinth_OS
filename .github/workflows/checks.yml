@@ -18,15 +18,17 @@ jobs:
         run: |
           useradd -m ci
           chown -R ci "$GITHUB_WORKSPACE"
-          # the installer tests run Yggdrasil's install program with Labyrinth's settings (tests/test_install_system.py)
+          # the installer tests run Yggdrasil's install program with Labyrinth's settings (tests/test_install_system.py): its Python
+          # script, taken from the commit that last had it (removed 2026-11-15)
           su ci -c "git clone --quiet --depth 1 https://github.com/Artifex-Technologies/Yggdrasil.git /home/ci/Yggdrasil"
+          su ci -c "git -C /home/ci/Yggdrasil fetch --quiet --depth 1 origin f9c76a5b6af82198f91b242a4460628d41770599"
           su ci -c "cd '$GITHUB_WORKSPACE' && YGGDRASIL_DIR=/home/ci/Yggdrasil scripts/release-check.sh quick"
   rust:
     runs-on: ubuntu-latest
     container: archlinux:latest
     steps:
       - name: Tools
-        run: pacman -Syu --noconfirm --needed git rust base-devel pkgconf wayland libxkbcommon fontconfig pam dbus
+        run: pacman -Syu --noconfirm --needed git rust base-devel pkgconf wayland libxkbcommon fontconfig pam dbus python
       - uses: actions/checkout@v4
       - name: Format, lint, test and audit every crate
         run: |
@@ -41,3 +43,9 @@ jobs:
             (cd "$d" && cargo test --quiet) || exit 1
             (cd "$d" && ~/.cargo/bin/cargo-audit audit -D warnings --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0192 --ignore RUSTSEC-2026-0370 --ignore RUSTSEC-2026-0371 --ignore RUSTSEC-2026-0372) || exit 1
           done
+      - name: The Python and shell tests of labyrinth-tools' programs, on the debug build the tests above made
+        run: |
+          d=packages/tools/target/debug
+          LABYRINTH_CLEANUP=$d/labyrinth-install-cleanup bash tests/test_install_cleanup.sh
+          LABYRINTH_SARINA_ASK=$d/labyrinth-sarina-ask python3 tests/test_labyrinth_sarina_ask.py
+          LABYRINTH_SARINA_SPEAK=$d/labyrinth-sarina-speak python3 tests/test_sarina_speak.py

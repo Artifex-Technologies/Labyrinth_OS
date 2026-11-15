@@ -64,15 +64,16 @@ found while porting"). The ones that mattered:
   labyrinth-agent-setup makes /var/lib/limbo/build-agent root's own, 0755, so only I put manifests there.
 
 The switch to the Rust gate: sudo's rule names /usr/bin/labyrinth-agent, which the labyrinth-tools package installs (0.1.0-4,
-together with the shell scripts' ports); the Python script is kept in packages/tools/python/ for a rollback.
+together with the shell scripts' ports); the Python script was kept in packages/tools/python/ for a rollback until 2026-11-15
+(git has it).
 
 ## Built, in the repository
 
-- `labyrinth-agent-setup` (labyrinth-tools, packages/tools/src/agent_setup.rs; read it first, or its script in packages/tools/shell): creates `claude-agent` (password locked), writes
+- `labyrinth-agent-setup` (labyrinth-tools, packages/tools/src/agent_setup.rs; read it first): creates `claude-agent` (password locked), writes
   `/etc/sudoers.d/50-labyrinth-agent` (validated with visudo), installs `claude-sudo`, and tells Heimdall who may open a
   maintenance window. `sudo labyrinth-agent-setup --owner USER [--owner-login]`; undo the rules with `--remove`.
 - `labyrinth-agent` (packages/tools, bin `labyrinth-agent`, installed as /usr/bin/labyrinth-agent by labyrinth-tools; the Python
-  script it replaced is packages/tools/python/labyrinth-agent) and `labyrinth-agent-window` (/usr/bin, labyrinth-tools; above).
+  script it replaced was packages/tools/python/labyrinth-agent until 2026-11-15) and `labyrinth-agent-window` (/usr/bin, labyrinth-tools; above).
 - Heimdall (commit "Maintenance window..."): 
   - **Maintenance window:** `sudo heimdalld maintenance on --for 2h --reason "why"`, `off`, `status`. At most 4 hours, a reason is required,
     root only, and only the users listed in `maintenance_actors` (empty = any root user). The file lives in /etc/heimdall (Heimdall only reads

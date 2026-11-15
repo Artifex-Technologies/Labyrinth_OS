@@ -1,7 +1,10 @@
 #!/usr/bin/python3 -I
 """compare.py: scripts/publish-repo.py against labyrinth-publish-repo (this crate), on made-up worlds.
 
-    cargo build --release && python3 -I parity/compare.py [--old FILE] [--new FILE] [--only CASE[,CASE]] [-v]
+    cargo build --release && python3 -I parity/compare.py [--git REV | --old FILE] [--new FILE] [--only CASE[,CASE]] [-v]
+
+The script was kept for a rollback until 2026-11-15; it comes from git now, at --git (default OLD_REV below, the last commit
+that had it), written into the namespace's tmpfs; --old names a file instead.
 
 Everything runs inside a user, mount, PID and network namespace of its own (unshare -rmnpf): nothing reaches the network,
 the world is a tmpfs mounted on /mnt inside the namespace (gone when the run ends), and Labyrinth's real keyring folder
@@ -38,6 +41,18 @@ W = "/mnt/w"
 KEYHOME = "/mnt/keyhome"
 PKGS = "/mnt/pkgs"
 KEY = "C9CE784C8BD9B661042075972D3BD4B1E7CD07A5"
+# the last commit with scripts/publish-repo.py (removed on 2026-11-15)
+OLD_REV = "5ed56c8"
+
+
+def old_from_git(rev):
+    """Inside the namespace, after prepare(): scripts/publish-repo.py as git has it at REV, written to the tmpfs on /mnt."""
+    body = subprocess.run(["/usr/bin/git", "-C", REPO, "show", f"{rev}:scripts/publish-repo.py"], check=True, capture_output=True).stdout
+    os.makedirs("/mnt/old", exist_ok=True)
+    path = "/mnt/old/publish-repo.py"
+    with open(path, "wb") as f:
+        f.write(body)
+    return path
 TOOLS = ["git", "gh", "makepkg", "gpg", "bsdtar", "gzip", "vercmp", "repo-add"]
 
 
@@ -370,7 +385,8 @@ def prepare():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--old", default=os.path.join(REPO, "scripts", "publish-repo.py"))
+    ap.add_argument("--git", default=OLD_REV)
+    ap.add_argument("--old")
     ap.add_argument("--new", default=os.path.join(CRATE, "target", "release", "labyrinth-publish-repo"))
     ap.add_argument("--only", default="")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -378,10 +394,11 @@ def main():
     a = ap.parse_args()
     if not a.inside:
         os.execv("/usr/bin/unshare", ["unshare", "-rmnpf", "--mount-proc", "--kill-child", "--", "/usr/bin/python3", "-I",
-                                      os.path.abspath(__file__), "--inside", "--old", os.path.abspath(a.old),
-                                      "--new", os.path.abspath(a.new)] + (["--only", a.only] if a.only else [])
+                                      os.path.abspath(__file__), "--inside", "--git", a.git, "--new", os.path.abspath(a.new)]
+                 + (["--old", os.path.abspath(a.old)] if a.old else []) + (["--only", a.only] if a.only else [])
                  + (["-v"] if a.verbose else []))
     test_key = prepare()
+    a.old = a.old or old_from_git(a.git)
     packages = make_packages()
     old = ["/usr/bin/python3", "-I", a.old]
     new = [a.new]

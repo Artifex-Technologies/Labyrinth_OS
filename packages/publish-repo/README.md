@@ -31,9 +31,9 @@ builds (it happened on 2026-11-13 with two dry runs). The script had no lock; th
 The timer runs the installed copy, not the checkout: a change here reaches the daily publish when I build and install it
 again (the script ran from my working tree, unfinished edits included).
 
-`scripts/publish-repo.py` stays for a rollback (put the old `ExecStart=` back) until one week after the timer first runs this
-program; then it goes, with `tests/test_publish_repo.py` and the parity harness's old side
-([docs/RUST_PORT_REMAINING.md](../../docs/RUST_PORT_REMAINING.md), "Copies kept for a rollback").
+`scripts/publish-repo.py` was kept for a rollback until 2026-11-15 (the timer ran this program on 2026-11-14 and -15), and
+went then with `tests/test_publish_repo.py`; git has both. `parity/compare.py` and `parity/bench.py` take the script from git
+(`--git`, the last commit that had it by default).
 
 ## Where it is not 1:1
 

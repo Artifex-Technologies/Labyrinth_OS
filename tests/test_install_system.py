@@ -1,31 +1,36 @@
 """Tests for Labyrinth's side of the installer: its integration file (labyrinth-installer.conf), the browser and optional-part
 lists, and labyrinth-first-components. The install program itself is Yggdrasil's yggdrasil-install-system (since 2026-11-07;
-its own tests are in Yggdrasil's packages/install-system and packages/installer/helpers/tests); the tests that run it load
-the Python script Yggdrasil keeps for a rollback, so they need a Yggdrasil checkout next to this repository (or
-YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
-import importlib.machinery
-import importlib.util
+its own tests are in Yggdrasil's packages/install-system); the tests that run it load the Python script it replaced, which
+Yggdrasil kept for a rollback until 2026-11-15, from git, so they need a Yggdrasil checkout with that commit next to this
+repository (or YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
 import os
 import re
-import tempfile
+import subprocess
+import sys
+import types
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AIROOTFS = os.path.join(ROOT, "profile", "airootfs")
 CONF = os.path.join(AIROOTFS, "usr", "share", "yggdrasil", "integrations", "labyrinth-installer.conf")
 YGG = os.environ.get("YGGDRASIL_DIR") or os.path.join(os.path.dirname(ROOT), "Yggdrasil")
-# the Python script, which Yggdrasil keeps for a rollback since its Rust port (packages/install-system) replaced it on
-# 2026-11-11; the two do the same (Yggdrasil's packages/install-system/parity/compare.py), and the script can be loaded here
-TOOL = os.path.join(YGG, "packages", "installer", "helpers", "python", "install-system")
+# the Python script its Rust port (packages/install-system) replaced on 2026-11-11; the two do the same (Yggdrasil's
+# packages/install-system/parity/compare.py), and the script can be loaded here. Yggdrasil kept it for a rollback until
+# 2026-11-15; it comes from git, the last commit that had it (CI fetches that commit into its shallow clone).
+YGG_REV = "f9c76a5b6af82198f91b242a4460628d41770599"
+TOOL = "packages/installer/helpers/python/install-system"
 inst = None
-if os.path.isfile(TOOL):
-    loader = importlib.machinery.SourceFileLoader("install_system", TOOL)
-    spec = importlib.util.spec_from_loader("install_system", loader)
-    inst = importlib.util.module_from_spec(spec)
-    loader.exec_module(inst)
-# the script, kept for a rollback since labyrinth-tools' Rust program replaced it (the image runs /usr/bin/labyrinth-first-components)
-FIRST = os.path.join(ROOT, "packages", "tools", "python", "labyrinth-first-components")
-needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with the install program at {TOOL}")
+try:
+    source = subprocess.run(["git", "-C", YGG, "show", f"{YGG_REV}:{TOOL}"], capture_output=True, check=True).stdout
+except (OSError, subprocess.CalledProcessError):
+    source = None
+if source:
+    inst = types.ModuleType("install_system")
+    sys.modules["install_system"] = inst
+    exec(compile(source, TOOL, "exec"), inst.__dict__)
+# labyrinth-tools' Rust program (the image runs /usr/bin/labyrinth-first-components)
+FIRST = os.path.join(ROOT, "packages", "tools", "src", "first_components.rs")
+needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with commit {YGG_REV[:7]} at {YGG}")
 
 
 def conf_values(path=CONF):
@@ -250,19 +255,6 @@ class Extras(unittest.TestCase):
             self.assertEqual(inst.check_plan(dict(base, extras="sarina")), "unknown optional part chosen")
         finally:
             inst.EXTRAS_FILE = old
-
-    def test_the_first_login_list_is_only_the_new_users(self):
-        floader = importlib.machinery.SourceFileLoader("first_components", FIRST)
-        fspec = importlib.util.spec_from_loader("first_components", floader)
-        first = importlib.util.module_from_spec(fspec)
-        floader.exec_module(first)
-        d = tempfile.mkdtemp()
-        f = os.path.join(d, "list.json")
-        open(f, "w").write('{"user": "ada", "components": ["sarina", "heimdall", "bad; rm -rf /"]}')
-        self.assertEqual(first.todo(f, "ada"), ["sarina", "heimdall"], "ids only")
-        self.assertEqual(first.todo(f, "bob"), [])
-        self.assertEqual(first.todo(os.path.join(d, "none.json"), "ada"), [])
-
 
 
 if __name__ == "__main__":

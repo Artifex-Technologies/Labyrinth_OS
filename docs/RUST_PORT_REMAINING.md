@@ -3,7 +3,8 @@
 Written 2026-11-12. My rule: everything of ours that can be Rust becomes Rust, in the order security, stability, speed.
 Something stays in another language only where the platform needs it (PKGBUILDs and pacman's scriptlets, archiso's profile,
 GLSL/CUDA, Hyprland's Lua config and its C++ plugin until our own compositor, the Flipper-side C in Argus, model training). The
-Python and shell copies kept after a switch, for a rollback, stay one week after the switched package runs on my PC, then go.
+Python and shell copies kept after a switch, for a rollback, stay one week after the switched package runs on my PC, then go
+(the copies of 2026-11-09 to -13 went on 2026-11-15).
 Pacman, the AUR, the Arch and CachyOS repositories and their tooling (makepkg, mkarchiso, repo-add, pacman-key) are not ours
 and stay as they are.
 
@@ -94,29 +95,8 @@ program to find no file). yggdrasil-settings no longer depends on Python.
 
 ## Copies kept for a rollback
 
-They ship in no package; they are the old programs, kept beside the ports with the same fixes, plus the Python tests and
-parity scripts that need them. Each goes one week after its switch ran on my PC (the dates below assume I installed the
-switched package the day of its switch); the tests and parity scripts that only exist to compare against it go with it.
-
-| Copy | Replaced by | Switched | Remove after |
-| --- | --- | --- | --- |
-| Yggdrasil `packages/settings/helpers/python/` tune, casefan, gpufan, powerlimit (and their tests) | `packages/power-helpers` (yggdrasil-power) | 2026-11-09 | 2026-11-16 |
-| Yggdrasil `packages/settings/helpers/python/` account, bootscreen, game-fix, gpu-run (and their tests) | `packages/settings-helpers` | 2026-11-10 | 2026-11-17 |
-| Yggdrasil `packages/appusage/python/` (labyrinth-appusage and its test) | `packages/appusage` | 2026-11-10 | 2026-11-17 |
-| Yggdrasil `packages/market/helpers/python/pkg-root` (`tests/test_agora_pkg_root.py`) | `packages/agora-helpers` | 2026-11-10 | 2026-11-17 |
-| Yggdrasil `packages/theme/python/ygg-theme` (`tests/test_ygg_theme.py`) | `packages/theme` | 2026-11-10 | 2026-11-17 |
-| Yggdrasil `packages/theme/python/ygg-cursors` | `packages/theme` | 2026-11-11 | 2026-11-18 |
-| Yggdrasil `packages/liki/python/` liki-build, liki-icns, liki-icon-import (`tests/test_liki_icon_import.py`) | `packages/liki` | 2026-11-11 | 2026-11-18 |
-| Yggdrasil `packages/installer/helpers/python/install-system` (and its tests) | `packages/install-system` | 2026-11-11 | 2026-11-18 |
-| `packages/tools/python/` (the 12 Python programs and their tests) | `labyrinth-tools` | 2026-11-11 | 2026-11-18 |
-| `packages/tools/shell/` (the 20 shell scripts, and labyrinth-sarina-ask and -speak) | `labyrinth-tools` | 2026-11-11 | 2026-11-18 |
-| Yggdrasil `packages/session/tests/fixtures/yggdrasil-session.sh` (the old launcher, byte for byte; the differential reads it from there) | `yggdrasil-session` (`packages/session`) | 2026-11-13 | 2026-11-20 |
-| Yggdrasil `packages/settings/helpers/python/gpuunlock`, `python/41_gpu_unlock` and `python/tests/test_gpuunlock.py` (the old side of `packages/settings-helpers/parity/gpuunlock.py`, which can take them from git: `--git ff5b6de`; CI's gpuunlock job runs the tests) | `gpuunlock` (`packages/settings-helpers`) and the 3-line fragment | 2026-11-13 | 2026-11-20 |
-| `scripts/publish-repo.py` and `tests/test_publish_repo.py` (the old side of `packages/publish-repo/parity/`) | `labyrinth-publish-repo` (`packages/publish-repo`) | in the repository 2026-11-13; my timer still starts the script until I install the program and change the unit's `ExecStart=` (on my to-do list) | one week after the timer first runs the program |
-
-The parity scripts that compare against them (`packages/*/parity/`, `packages/tools/parity/`) take the old versions from git
-where they can; those that read the `python/` or `shell/` folders are changed to git or go with them. When the launcher's
-fixture goes, `tools/parity-shell-ports.py` takes it from git (the commit before the switch) like the other ten scripts.
+None now: the copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git
+keeps them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there.
 
 ## Must stay (the platform needs it)
 
@@ -132,7 +112,7 @@ fixture goes, `tools/parity-shell-ports.py` takes it from git (the commit before
 | Command lines a person types or writes: Task Manager's "Run new task", Minos running a script you double-click, the distress password's "Run commands" | sh | the shell is the feature; everything the computer itself supplies goes by argv |
 | The compositor's key bindings run through `/bin/sh` (Yggdrasil `packages/compositor`) | sh | binding lines are command lines; the compositor's own work, not this pass |
 | Sarina's Python helpers (embeddings, the ONNX classifier) and model training | Python | Sarina's repository and plan; training stays Python |
-| The measuring and differential harnesses: Yggdrasil `tools/bench-port.py`, `tools/parity-shell-ports.py`, `packages/*/parity/`; `packages/tools/parity/` and `packages/publish-repo/parity/` here | Python (standard library) | they run the old Python and shell programs side by side with the ports; not shipped. They go, or move to Rust, when nothing old is left to compare against |
+| The measuring and differential harnesses: Yggdrasil `tools/bench-port.py`, `tools/parity-shell-ports.py`, `packages/*/parity/`; `packages/tools/parity/` and `packages/publish-repo/parity/` here | Python (standard library) | they run the old Python and shell programs (from git) side by side with the ports; not shipped. They go, or move to Rust, when nothing old is left to compare against |
 | `scripts/windows/Reset-UsbDrive.ps1` and `.cmd` | PowerShell | runs on Windows, to reset a USB stick |
 
 ## To port

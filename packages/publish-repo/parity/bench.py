@@ -2,7 +2,9 @@
 """bench.py: scripts/publish-repo.py against labyrinth-publish-repo, timed on a made-up world (compare.py's: a user, mount,
 PID and network namespace, a tmpfs on /mnt, a throw-away key; the real keyring and gh's settings covered).
 
-    cargo build --release && python3 -I parity/bench.py [--runs 20] [--old FILE] [--new FILE]
+    cargo build --release && python3 -I parity/bench.py [--runs 20] [--git REV | --old FILE] [--new FILE]
+
+The script comes from git as in compare.py (--git, default compare.py's OLD_REV; --old a file instead).
 
 The world is made by one real publish (the new program, compare.py's stand-ins), then the stand-ins are swapped for small
 shell ones (git, gh, makepkg, build-local-packages.sh answer from files in about a millisecond) so they weigh little next to
@@ -182,7 +184,8 @@ def pct(xs, q):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--old", default=os.path.join(C.REPO, "scripts", "publish-repo.py"))
+    ap.add_argument("--git", default=C.OLD_REV)
+    ap.add_argument("--old")
     ap.add_argument("--new", default=os.path.join(C.CRATE, "target", "release", "labyrinth-publish-repo"))
     ap.add_argument("--runs", type=int, default=20)
     ap.add_argument("--json")
@@ -190,9 +193,11 @@ def main():
     a = ap.parse_args()
     if not a.inside:
         os.execv("/usr/bin/unshare", ["unshare", "-rmnpf", "--mount-proc", "--kill-child", "--", "/usr/bin/python3", "-I",
-                                      os.path.abspath(__file__), "--inside", "--old", os.path.abspath(a.old), "--new",
-                                      os.path.abspath(a.new), "--runs", str(a.runs)] + (["--json", os.path.abspath(a.json)] if a.json else []))
+                                      os.path.abspath(__file__), "--inside", "--git", a.git, "--new", os.path.abspath(a.new), "--runs",
+                                      str(a.runs)] + (["--old", os.path.abspath(a.old)] if a.old else [])
+                 + (["--json", os.path.abspath(a.json)] if a.json else []))
     test_key = C.prepare()
+    a.old = a.old or C.old_from_git(a.git)
     launch = "/mnt/bench/launch"
     os.makedirs("/mnt/bench")
     with open("/mnt/bench/launch.c", "w") as f:

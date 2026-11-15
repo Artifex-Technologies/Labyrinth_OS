@@ -27,7 +27,7 @@ class GreetdLive(unittest.TestCase):
     def test_greetd_reads_the_live_config_and_the_installer_removes_it(self):
         dropin = open(os.path.join(ETC, "systemd", "system", "greetd.service.d", "live.conf")).read()
         self.assertIn("--config /etc/greetd/live.toml", dropin)
-        # the clean-up is labyrinth-tools' labyrinth-install-cleanup (its script is kept in packages/tools/shell)
+        # the clean-up is labyrinth-tools' labyrinth-install-cleanup (Rust)
         cleanup = open(os.path.join(ROOT, "packages", "tools", "src", "install_cleanup.rs")).read()
         self.assertIn("/etc/greetd/live.toml", cleanup)
         self.assertIn("/etc/systemd/system/greetd.service.d/live.conf", cleanup)

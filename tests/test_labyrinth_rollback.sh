@@ -6,7 +6,9 @@
 #
 #   SUDO=sudo bash tests/test_labyrinth_rollback.sh [path/to/labyrinth-rollback]
 set -euo pipefail
-TOOL=${1:-$(dirname "$0")/../packages/tools/shell/labyrinth-rollback}   # the Rust one: packages/tools/target/release/labyrinth-rollback
+# labyrinth-tools' Rust program (cargo build --release in packages/tools first); the shell script it replaced was kept in
+# packages/tools/shell until 2026-11-15
+TOOL=${1:-$(dirname "$0")/../packages/tools/target/release/labyrinth-rollback}
 SUDO=${SUDO:-sudo}
 W=$(mktemp -d)
 LOOP=""

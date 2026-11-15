@@ -5,7 +5,11 @@ import subprocess
 import tempfile
 import unittest
 
-SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "packages", "tools", "shell", "labyrinth-sarina-speak")
+# the Rust program (labyrinth-tools; the shell script it replaced was kept in packages/tools/shell until 2026-11-15): a build in
+# packages/tools/target, or LABYRINTH_SARINA_SPEAK=PATH (CI's Rust job runs these with its debug build)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROGRAM = os.environ.get("LABYRINTH_SARINA_SPEAK") or next(
+    (p for p in (os.path.join(ROOT, "packages", "tools", "target", k, "labyrinth-sarina-speak") for k in ("release", "debug")) if os.path.exists(p)), None)
 
 
 def make(path, body):
@@ -14,6 +18,7 @@ def make(path, body):
     os.chmod(path, os.stat(path).st_mode | stat.S_IEXEC)
 
 
+@unittest.skipUnless(PROGRAM, "labyrinth-sarina-speak is not built (cargo build --release in packages/tools) and LABYRINTH_SARINA_SPEAK is not set")
 class Speak(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -31,7 +36,7 @@ class Speak(unittest.TestCase):
         self.env = {"PATH": "/usr/bin:/bin", "HOME": self.d, "XDG_RUNTIME_DIR": self.d, "LABYRINTH_TTS_DIR": self.tts, "LABYRINTH_TTS_PYTHON": self.piper, "LABYRINTH_PLAYER": self.player, "LABYRINTH_NO_ENVELOPE": "1"}
 
     def run_it(self, *args, stdin="", env=None):
-        return subprocess.run(["bash", SCRIPT, *args], input=stdin, capture_output=True, text=True, env=dict(self.env, **(env or {})))
+        return subprocess.run([PROGRAM, *args], input=stdin, capture_output=True, text=True, env=dict(self.env, **(env or {})))
 
     def test_it_cleans_the_text_and_plays_the_speech(self):
         r = self.run_it(stdin="<think>hidden thoughts</think>\n**It is** `noon`.\n\nSee [the docs](http://x.y) for more.\n")

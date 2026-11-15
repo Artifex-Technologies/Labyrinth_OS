@@ -65,8 +65,8 @@ publish keeps an unchanged program's published file only when that file was not 
 
 ## Publishing
 
-`labyrinth-publish-repo` (the Rust program in `packages/publish-repo`; until 2026-11-13 `scripts/publish-repo.py`, kept a week
-for a rollback) builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
+`labyrinth-publish-repo` (the Rust program in `packages/publish-repo`; until 2026-11-13 `scripts/publish-repo.py`, kept for a
+rollback until 2026-11-15, after the timer had run the program twice; git has it) builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
 `/var/lib/labyrinth-publish` (outside the home folder, see above; made once with
 `sudo install -d -o $USER -g $USER /var/lib/labyrinth-publish`, or set `LABYRINTH_PUBLISH_DIR`), then signs, uploads the packages, uploads the database last, and removes the files of the
 publish before last. It does nothing when no repository changed (`--force` to publish anyway, `--dry-run` to build and sign

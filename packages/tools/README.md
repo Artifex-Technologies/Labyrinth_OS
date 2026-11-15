@@ -34,8 +34,8 @@ share); `parity/cases_root.py`, `cases_root2.py` and `cases_user.py` run each ag
 
 The switch (branch `scripts-rust-switch`, merged with `agent-gate-rust` into one switch): labyrinth-tools 0.1.0-4 installs the
 20 programs in /usr/bin, and the agent's gate with them; the scripts leave
-the image and are kept in `packages/tools/shell/` for a rollback (with the switched paths, so they stay the ports' specification,
-and the parity runs against them); `cls` is a link to /usr/bin/clear. The paths to them are /usr/bin now: the installer's
+the image and were kept in `packages/tools/shell/` for a rollback until 2026-11-15 (with the switched paths, so they stay the
+ports' specification; the parity takes them from git now); `cls` is a link to /usr/bin/clear. The paths to them are /usr/bin now: the installer's
 integration file (clean-up, finish, boot menu theme), the security and Sarina integration files (sarina-git 0.1.0-2 / -3),
 the notifications' D-Bus activation, labyrinth-sarina-reflect.service, the gate's rollback (the Python gate and the Rust one),
 labyrinth-agent-setup's checks of the gate and the window (both /usr/bin; it removes the Python gate from /usr/local/sbin, script
@@ -405,8 +405,8 @@ minutes (coverage 1233), none outside.
 
 ## The Python scripts
 
-They stay in `profile/airootfs/usr/local/bin` (after the switch, in `packages/tools/python/` with their tests) for a rollback,
-until these have run a while. The first seven were switched on 2026-11-11 (the package `labyrinth-tools` installs them in place of
+They stayed in `profile/airootfs/usr/local/bin` (after the switch, in `packages/tools/python/` with their tests) for a rollback,
+until 2026-11-15; git has them, and `parity/compare.py` takes them (and the shell scripts) from there. The first seven were switched on 2026-11-11 (the package `labyrinth-tools` installs them in place of
 the scripts); the last four with pkgrel 2 (branch `tools-rust-switch-2`): the image's autostart runs
 /usr/bin/labyrinth-first-components and `labyrinth-gaming setup` runs /usr/bin/steam_playall. labyrinth-agent with pkgrel 4
 (branch `agent-gate-rust`, switched together with the shell scripts): sudo's rule written by labyrinth-agent-setup names /usr/bin/labyrinth-agent, and the setup removes

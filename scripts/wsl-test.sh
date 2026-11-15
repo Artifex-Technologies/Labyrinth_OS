@@ -20,18 +20,18 @@ deps() {
 }
 
 tests() {
-  step "installer cleanup script (mock root)"
+  step "installer cleanup program (mock root)"
+  (cd packages/tools && run cargo build --release --bin labyrinth-install-cleanup)
   run bash tests/test_install_cleanup.sh
   step "desktop scripts"
   run bash tests/test_desktop_scripts.sh
-  step "components, app manager, package list"
+  step "components, package list"
   run python3 tests/test_labyrinth_apps.py
   step "display layout"
   step "steam config editor"
-  run python3 packages/tools/python/tests/test_steam_playall.py
+  (cd packages/tools && run cargo test --lib playall)
   step "shell syntax and shellcheck"
-  for f in packages/tools/shell/labyrinth-install-* packages/tools/shell/labyrinth-gaming \
-           packages/labyrinth-driverlab/probe.sh profile/profiledef.sh; do
+  for f in packages/labyrinth-driverlab/probe.sh profile/profiledef.sh; do
     run bash -n "$f"
   done
   step "Rust: file explorer"

@@ -200,8 +200,8 @@ Spoken questions use read-only tools: files, her vault, and `system_status` (per
 
 Super+S runs Rust now. Sarina's package (`sarina-git`) has `/usr/bin/sarina-voice`, which the image's
 `/usr/local/bin/labyrinth-ask-sarina`, `labyrinth-sarina-checkup` and `labyrinth-sarina-speak-voiced` link to; `labyrinth-tools`
-has `/usr/bin/labyrinth-sarina-ask` and `/usr/bin/labyrinth-sarina-speak` (the scripts are kept in `packages/tools/shell` for a
-rollback), and Sarina's integration file names those. The voice service's client is started as
+has `/usr/bin/labyrinth-sarina-ask` and `/usr/bin/labyrinth-sarina-speak` (the scripts were kept in `packages/tools/shell` for a
+rollback until 2026-11-15; git has them), and Sarina's integration file names those. The voice service's client is started as
 `/usr/bin/sarina-voice speak-voiced`.
 
 Found while measuring: on my PC `~/.local/bin` comes first in the desktop's PATH and still held a Python

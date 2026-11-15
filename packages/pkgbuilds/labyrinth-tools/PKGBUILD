@@ -3,7 +3,7 @@
 # and its notifications, the app launcher and the optional-software installer; since pkgrel 2 also the self-check, ipconfig,
 # Steam Play for all (steam_playall, was steam_playall.py) and the first-login installs; since pkgrel 4 also labyrinth-agent, the
 # gate sudo lets the engineering agent's account run as root (was /usr/local/sbin/labyrinth-agent; labyrinth-agent-setup's rule
-# names /usr/bin/labyrinth-agent), and the ports of the shell scripts (packages/tools/shell keeps the scripts): the rollback, the
+# names /usr/bin/labyrinth-agent), and the ports of the shell scripts: the rollback, the
 # installer's two steps, the agent's set-up and window, the ecosystem's set-up, the hardware set-up, the boot menu theme, the
 # gaming check, Sarina's launcher, settings and helpers, REA, Claude Code's installer, the live installer's launcher and the
 # notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Since
