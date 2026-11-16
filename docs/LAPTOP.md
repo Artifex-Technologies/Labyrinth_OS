@@ -204,6 +204,14 @@ Security (this is the LykanOS machine):
       button, match-on-chip (the template stays in the sensor). fprintd installed with my OK; **nothing enrolled**: my rule is no
       fingerprint until Secure Boot is on and the disk is encrypted, now enforced (Yggdrasil c2003ab: the helper refuses, Settings
       shows it greyed out with the reason).
+- [ ] Phone hotspot joins but gets no address (2026-11-16, on a drive): for about 45 minutes the laptop joined my phone's
+      hotspot (WPA2 handshake fine) and asked for an address every minute; no answer came, then it worked by itself. I had
+      signal for the first 15-25 minutes; turning the hotspot off and on did not help. The firewall logged nothing blocked
+      and Heimdall did nothing on those joins, but replies sent to everyone (broadcast) are not logged, so the phone vs the
+      laptop is not settled. NetworkManager now logs the address requests in detail (/etc/NetworkManager/conf.d/
+      90-dhcp-debug.conf, DHCP4 at TRACE; remove it to turn it off): next time, `journalctl -u NetworkManager` around that time
+      shows whether any offer arrived. Settings should also say "joined, but the hotspot is not giving out an address" after
+      two tries instead of NetworkManager's "base network connection was interrupted" (seen when I tapped it during a retry).
 - [ ] Crashes seen 2026-11-13 (coredumpctl): avahi-daemon aborted 4 times, each at a Wi-Fi change, inside its own shutdown
       (avahi_server_free): heimdall-wifi-guard stops it on untrusted networks, and the abort leaves the unit failed. Harmless
       (it is meant to be off there), but a quieter way to switch it off would be tidier. hyprsunset (Night Light) aborted once
