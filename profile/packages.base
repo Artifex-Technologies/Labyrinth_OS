@@ -21,6 +21,9 @@ wireplumber
 # the private microphone: aircraft tones and mains hum, which can place or date a recording, removed from everything the
 # microphone records, and heimdall-scrub for files (Heimdall's; on every install, with or without Heimdall: LOCATION_SOUNDS.md)
 heimdall-private-mic-git
+# several internet connections at once (Heimdall's heimdall-multilink, MULTILINK.md): off until switched on in Settings >
+# Wi-Fi & Network; small (one Rust binary), so on every install
+heimdall-multilink-git
 # kernels: default and the LTS fallback, each with open NVIDIA modules (prebuilt: no headers or dkms needed; the device
 # drivers that build their own module, Razer and Xbox controllers, bring headers and dkms from Agora)
 linux-cachyos
