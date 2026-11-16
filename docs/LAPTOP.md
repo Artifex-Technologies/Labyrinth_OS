@@ -172,6 +172,17 @@ Security (this is the LykanOS machine):
       certificate (or knowing GitHub is Microsoft's) would not.
       Also seen: labyrinth-appnet-ask failed every 5 s from boot (no /etc/labyrinth; 1,933 restarts): fixed in Labyrinth
       7744b9b (ConfigurationDirectory), and /etc/labyrinth made by hand here meanwhile.
+      2026-11-15: the hotspot false alarms are fixed in Heimdall 398d129: the check counts the gateway (and anything with its
+      hardware address) out of "other devices", and a trusted network is recognized by its profile, name, lock (WPA2/WPA3-
+      Personal) and saved password, not the router's address, so a hotspot that changes its address on restart stays trusted.
+      The DNS check now lets the site's certificate decide (no more GitHub-on-Microsoft false alarm). The levels changed what
+      `trust` means: `sudo heimdall-wifi-guard trust` is now **trusted** (quiet notices, every protection kept, a private
+      address); a home network is `trust --home`, and a network that reserves addresses needs `trust --home --real-address`.
+      My decisions: the "no VPN" notice stays on every connection to an untrusted network; off home Wi-Fi the laptop stays
+      quiet (does not announce itself), with a per-network **discoverable** choice (`heimdall-wifi-guard discoverable on|off`)
+      that needs the administrator's password. Settings has that switch: a saved Wi-Fi network's page, card "Heimdall", "Let
+      this laptop be discovered on this network", with the network's level beside it (Yggdrasil 1637b66). It needs the new
+      Heimdall installed (its units and polkit rule); with the old one the switch shows greyed, "Needs a newer Heimdall".
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
       2026-11-13, a shop's guest network (Enhanced Open in transition mode, OWE-TM, with a sign-in page): Settings showed a lock
       and wanted a password (fixed: Yggdrasil 8c7c6e5). Joined, the laptop correctly took the encrypted hidden half, whose real

@@ -52,8 +52,13 @@ installing:
      you connect in Settings > Wi-Fi & Network. With a network cable already connected, or on a computer without Wi-Fi, this
      page is not shown (the summary says when you are offline). The page shows each Wi-Fi adapter's address (MAC) with a Copy
      button, for a network that reserves addresses or lets only known ones in. Heimdall gives each network a private address,
-     so the join form has **Use this computer's real address**: tick it for such a network, and on the installed system trust
-     the network in Heimdall (`sudo heimdall-wifi-guard trust` while connected) so it keeps using the real one.
+     so the join form has **Use this computer's real address**: tick it for such a network, and on the installed system make it
+     a home network with the real address in Heimdall (`sudo heimdall-wifi-guard trust --home --real-address` while connected)
+     so it keeps using the real one. Heimdall's levels: plain `sudo heimdall-wifi-guard trust` makes a network **trusted** (no
+     "untrusted" notices, every protection kept, a private address); `trust --home` makes it your home network (the device list
+     and discovery on). To let others on one network find this computer (casting, printers, KDE Connect, Syncthing) whatever its
+     level: `sudo heimdall-wifi-guard discoverable on`, or the switch on the network's page in Settings > Wi-Fi & Network, which
+     asks for the password.
    - Plugged in later: a cable connects by itself (the offline notes go); a USB Wi-Fi adapter brings a **Join a Wi-Fi network**
      button on the page you are on, and you come back there after joining. Once online, the installer already downloads the
      browsers and optional software you chose (the summary says how far it is), so the install is quicker.
