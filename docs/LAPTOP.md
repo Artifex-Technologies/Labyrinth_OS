@@ -39,6 +39,10 @@ From this laptop's own session (Yggdrasil):
 - [x] Window buttons (minimize, maximize, close) on every window by default (`b7dcc14`); Weather °F before a place is set
       (`4c417ee`)
 - [x] Labyrinth: Spotify and Obsidian left the ISO, Agora installs them; Agora pinned in the dock (`71c9e26`, `ff94fc5`)
+- [x] 2026-11-15: Agora shows the ArtCraft apps' own icons before they are installed (they are on neither this computer nor
+      Flathub): the catalog's `icon_url`, each app's repository icon pinned to a commit, fetched once with online lookups on
+      (Yggdrasil `c5a872b`). No package owns `/usr/share/labyrinth/agora/catalog.json`: an installed system keeps the ISO's copy,
+      so the new catalog reaches it only by copying it there by hand (or a newer ISO).
 
 From the desktop PC's session, for the laptop:
 

@@ -260,6 +260,7 @@
     ]
    },
    "icon": "ai.storyteller.designcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/designcraft/278aba4a1428f67196dcbc0afed676d78d6e9b3c/assets/app-icon/hicolor/128x128/apps/ai.storyteller.designcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -283,6 +284,7 @@
     ]
    },
    "icon": "ai.storyteller.vectorcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/vectorcraft/cad4bb0c6e8f15bdc6f94fb1820507b5a7b6d1af/assets/app-icon/hicolor/128x128/apps/ai.storyteller.vectorcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -306,6 +308,7 @@
     ]
    },
    "icon": "ai.storyteller.photocraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/photocraft/51e8a99bf07199c6728512920c84514fef44e760/assets/app-icon/hicolor/128x128/apps/ai.storyteller.photocraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -329,6 +332,7 @@
     ]
    },
    "icon": "ai.storyteller.filmcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/filmcraft/892126cb72ab0c8ae5f668ed1928bf61713d142a/assets/app-icon/hicolor/128x128/apps/ai.storyteller.filmcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -352,6 +356,7 @@
     ]
    },
    "icon": "ai.storyteller.soundcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/soundcraft/4898ff03eed9c2a44914d2cd2415c1ea9a5e9427/assets/app-icon/hicolor/128x128/apps/ai.storyteller.soundcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -375,6 +380,7 @@
     ]
    },
    "icon": "ai.storyteller.cadcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/cadcraft/0e3f62f50d6230406f5bfb6cb12ba93445cdaa0a/assets/app-icon/hicolor/128x128/apps/ai.storyteller.cadcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -398,6 +404,7 @@
     ]
    },
    "icon": "ai.storyteller.figcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/figcraft/b025312aa1967f0b9dbbab99ecb750fa1506d9a8/assets/app-icon/hicolor/128x128/apps/ai.storyteller.figcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -444,6 +451,7 @@
     ]
    },
    "icon": "ai.storyteller.pdfcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/pdfcraft/e191b0ea69b7dcc4e554c1c4e51b6214bec1c590/assets/app-icon/hicolor/128x128/apps/ai.storyteller.pdfcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -467,6 +475,7 @@
     ]
    },
    "icon": "ai.storyteller.wordcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/wordcraft/cc90520b9d8fb0d1e6be2c2688e6f915319e850a/assets/app-icon/hicolor/128x128/apps/ai.storyteller.wordcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -490,6 +499,7 @@
     ]
    },
    "icon": "ai.storyteller.gridcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/gridcraft/407e0e1fa9146df5ddf632750a93aabfbb079208/assets/app-icon/hicolor/128x128/apps/ai.storyteller.gridcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -513,6 +523,7 @@
     ]
    },
    "icon": "ai.storyteller.deckcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/deckcraft/bb2c2254ee60761b2b4dab2053fe33d7190b6804/assets/app-icon/hicolor/128x128/apps/ai.storyteller.deckcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
