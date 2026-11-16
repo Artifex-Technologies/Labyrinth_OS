@@ -19,8 +19,9 @@ are web addresses, a `.desktop`, `.url` or `.webloc` shortcut.
 Heimdall's `heimdall-fileguard` (a user service, started at login) watches `~/Downloads`, the download folders of the
 torrent clients that have one set (Deluge, qBittorrent, Transmission) and any folder I add to its settings. When a file is
 finished (partial names such as `.part`, `.crdownload` and `.!qB` are skipped; it waits until the file is closed and has
-been quiet for a second) it reads it and looks for such content. Archives (zip, 7z, tar) are listed, never unpacked, and a
-file of that kind inside is named.
+been quiet for a second) it reads it and looks for such content. Archives are never unpacked to disk: the files in a ZIP that
+can contact a server are checked in memory, one level deep; tar, 7z and rar are listed (in a sandbox without network) and a
+shortcut or playlist in them is named.
 
 It **never changes the file**: a torrent keeps seeding and a signature stays valid. When it finds something, a notification
 says so in plain words ("This file tries to contact a server when opened.") with:
@@ -41,8 +42,9 @@ Photos, videos, music and documents carry information that is not seen: where a 
 serial number, the author, the company, who last changed a document and the folder its template came from. Right-click a
 file in Minos > **Remove hidden info** (beside Scrub location sounds) writes a copy, "name (clean).ext", beside it and
 lists what it removed. The original is never changed and an existing file is never overwritten. It covers JPEG, PNG, WebP,
-HEIC and TIFF pictures, MP4, MOV and MKV videos (the streams are copied as they are), audio tags, PDF, Office and
-OpenDocument files, and ZIP archives. In a terminal: `heimdall-strip IN [OUT]`.
+HEIC and TIFF pictures, PDF, Office and OpenDocument files, ZIP archives, MP3, FLAC and WAV (Heimdall's own code), and MP4,
+MOV, M4A, MKV, WebM, Ogg, Opus and AVI with ffmpeg (the streams are copied as they are, the location a phone writes included in
+what goes). In a terminal: `heimdall-strip IN [OUT]`.
 
 Switch: Settings > Security > Privacy, the Minos entry (`remove_hidden_info` in `~/.config/heimdall/privacy.json`).
 
@@ -99,9 +101,10 @@ Switch: Settings > Security > Privacy, look-alike warnings (`lookalike_warnings`
 
 ## Honest limits
 
-- The per-app rules cover apps started by Labyrinth's launcher: the dock, the start menu and Settings. An app started another
-  way (a terminal, another program, a file opened with xdg-open, which is how Minos opens files today) is not in its slice,
-  so its rule does not apply there.
+- The per-app rules cover apps started by Labyrinth's launcher: the dock, the start menu, Settings, and files opened in Minos
+  (since Yggdrasil 1717800 Minos starts a file's default app through labyrinth-launch). An app started another way (a
+  terminal, another program, a link opened through xdg-open or a portal) is not in its slice, so its rule does not apply
+  there.
 - The downloads guard reads the file's own content; it does not follow what a file loads after it is opened, and it cannot see
   inside an encrypted archive or document. A file that is not flagged can still be harmful in other ways: Heimdall's malware
   scan and quarantine are a separate protection.

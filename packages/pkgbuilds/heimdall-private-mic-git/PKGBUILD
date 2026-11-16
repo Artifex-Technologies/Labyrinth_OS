@@ -11,12 +11,15 @@ _src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
 pkgname=heimdall-private-mic-git
 pkgver=1.0.0
 pkgrel=1
-pkgdesc='The private microphone: aircraft tones and mains hum, which can place or date a recording, removed from everything the microphone records; and heimdall-scrub for files'
+pkgdesc='The private microphone: aircraft tones and mains hum, which can place or date a recording, removed from everything the microphone records; heimdall-scrub for files; and the privacy pack: the downloads guard and Remove hidden info'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0' 'MIT')
 depends=('glibc' 'gcc-libs' 'pipewire' 'wireplumber')
-optdepends=('ffmpeg: heimdall-scrub, scrubbed copies of audio and video files (on the ISO already)')
+optdepends=('ffmpeg: heimdall-scrub, scrubbed copies of audio and video files; heimdall-strip, clean copies of videos (on the ISO already)'
+            'libnotify: the downloads guard'"'"'s notices (notify-send)'
+            'bubblewrap: the downloads guard lists archives in a sandbox without network'
+            'poppler: heimdall-strip checks a cleaned PDF with pdfinfo')
 makedepends=('rust' 'git')
 provides=('heimdall-private-mic')
 conflicts=('heimdall-private-mic')
@@ -27,7 +30,7 @@ sha256sums=('SKIP')
 # The version is Heimdall's own (the VERSION file in its repository); the build number counts the commits since that release
 # that touch this package's files (the crates, packaging/privacy, install.sh, the doc) and this recipe's (docs/VERSIONING.md).
 . "$startdir/../../../scripts/package-version.sh"
-_paths=(rust/scrub rust/scrub-ladspa rust/Cargo.toml rust/Cargo.lock packaging/privacy packaging/install.sh docs/LOCATION_SOUNDS.md)
+_paths=(rust/scrub rust/scrub-ladspa rust/privacy packaging/privacy-pack docs/PRIVACY_PACK.md rust/Cargo.toml rust/Cargo.lock packaging/privacy packaging/install.sh docs/LOCATION_SOUNDS.md)
 _version "$(_srcdir)/heimdall" "${_paths[@]}"
 
 pkgver() {
@@ -43,12 +46,12 @@ prepare() {
 
 build() {
   cd "$srcdir/heimdall/rust"
-  cargo build --release --locked --offline -p heimdall-scrub -p heimdall-scrub-ladspa
+  cargo build --release --locked --offline -p heimdall-scrub -p heimdall-scrub-ladspa -p heimdall-privacy
 }
 
 check() {
   cd "$srcdir/heimdall/rust"
-  cargo test --release --locked --offline -p heimdall-scrub -p heimdall-scrub-ladspa -p flyover-attack
+  cargo test --release --locked --offline -p heimdall-scrub -p heimdall-scrub-ladspa -p flyover-attack -p heimdall-privacy
 }
 
 package() {
