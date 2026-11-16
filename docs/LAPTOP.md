@@ -115,6 +115,9 @@ Basics:
       rise. Processes and Details: GPU, GPU engine ("GPU 0 - 3D") and Shared GPU filled for the compositor, Vivaldi and the
       like, empty for programs that do not draw. Note anything missing, wrong or stuck at 0, and the Task Manager's CPU with
       Processes open (`top -p $(pgrep -x yggdrasil-taskm)`; on the desktop PC it is about 6 %).
+      2026-11-15: driver i915, Intel Iris Xe (Raptor Lake-P, 8086:a7a1) in the i7-1365U. intel-rapl:0:1/energy_uj is root-only
+      here, so no power line is right. Performance looked right to me ("everything looks good"). The Task Manager's own CPU with
+      it open: about 1.5 %. Still to note: Video codec/3D rising while a video plays in Vivaldi, and the GPU columns in Processes.
 
 2-in-1:
 - [ ] Pen: pressure, the side buttons, the eraser end, palm rejection while writing
