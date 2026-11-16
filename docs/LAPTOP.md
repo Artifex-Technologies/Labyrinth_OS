@@ -182,7 +182,8 @@ Security (this is the LykanOS machine):
       quiet (does not announce itself), with a per-network **discoverable** choice (`heimdall-wifi-guard discoverable on|off`)
       that needs the administrator's password. Settings has that switch: a saved Wi-Fi network's page, card "Heimdall", "Let
       this laptop be discovered on this network", with the network's level beside it (Yggdrasil 1637b66). It needs the new
-      Heimdall installed (its units and polkit rule); with the old one the switch shows greyed, "Needs a newer Heimdall".
+      Heimdall installed (its two units; polkit's default for starting units asks for the password); with the old one the
+      switch shows greyed, "Needs a newer Heimdall".
 - [ ] The firewall (ufw) is on; Wi-Fi checks on public networks (Settings > Network)
       2026-11-13, a shop's guest network (Enhanced Open in transition mode, OWE-TM, with a sign-in page): Settings showed a lock
       and wanted a password (fixed: Yggdrasil 8c7c6e5). Joined, the laptop correctly took the encrypted hidden half, whose real
