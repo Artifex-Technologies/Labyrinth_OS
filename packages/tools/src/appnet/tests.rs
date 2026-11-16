@@ -175,3 +175,98 @@ fn crc32_as_zlib() {
     assert_eq!(crc32(b"pdfcraft"), 0x5a58_77d1);
     assert_eq!(crc32(b"The quick brown fox jumps over the lazy dog"), 0x414f_a339);
 }
+
+// ---- viewer apps on "ask" (appnet/viewers.rs)
+
+#[test]
+fn every_viewer_id_can_go_into_the_ruleset() {
+    for a in viewers::VIEWERS {
+        assert!(valid_app(a), "{a}");
+    }
+    let mut seen = std::collections::HashSet::new();
+    assert!(viewers::VIEWERS.iter().all(|a| seen.insert(*a)), "no id twice");
+    for a in ["yggdrasil-player", "vlc", "mpv", "libreoffice-writer", "org.gnome.Evince", "org.gnome.Loupe"] {
+        assert!(viewers::VIEWERS.contains(&a), "{a}");
+    }
+    // not browsers, mail, streaming or the Markdown reader (which never loads pictures from the web)
+    for a in ["vivaldi-stable", "firefox", "thunderbird", "spotify", "saga-md"] {
+        assert!(!viewers::VIEWERS.contains(&a), "{a}");
+    }
+}
+
+#[test]
+fn viewers_are_seeded_once_and_a_later_choice_stays() {
+    let mut r = rules(&[("1000", &[("vlc", "block")])]);
+    let mut st = viewers::State::new();
+    assert!(viewers::seed(&mut r, &mut st, "1000"));
+    let mine = &r[0].1;
+    assert!(mine.contains(&("vlc".to_string(), "block".to_string())), "a rule of the person's own is kept");
+    assert!(mine.contains(&("mpv".to_string(), "ask".to_string())));
+    assert_eq!(mine.len(), viewers::VIEWERS.len());
+    assert!(st[0].1.had_rule.contains(&"vlc".to_string()) && !st[0].1.seeded.contains(&"vlc".to_string()));
+    // Allow in Settings removes the rule; the next apply does not put it back
+    r[0].1.retain(|(a, _)| a != "mpv");
+    assert!(!viewers::seed(&mut r, &mut st, "1000"), "nothing new");
+    assert!(!r[0].1.iter().any(|(a, _)| a == "mpv"));
+    assert!(!viewers::asking(&r, &st, "1000").contains(&"mpv".to_string()));
+    assert!(viewers::asking(&r, &st, "1000").contains(&"org.gnome.Evince".to_string()));
+}
+
+#[test]
+fn switching_viewers_off_takes_back_only_its_own_ask_rules() {
+    let mut r = rules(&[("1000", &[("firefox", "block")])]);
+    let mut st = viewers::State::new();
+    viewers::seed(&mut r, &mut st, "1000");
+    // the person changed two: Evince to block, Loupe stays ask (but by the defaults)
+    for (a, m) in r[0].1.iter_mut() {
+        if a == "org.gnome.Evince" {
+            *m = "block".into();
+        }
+    }
+    viewers::turn_off(&mut r, &mut st, "1000");
+    assert_eq!(r, rules(&[("1000", &[("firefox", "block"), ("org.gnome.Evince", "block")])]));
+    assert!(!viewers::is_on(&st, "1000"));
+    assert!(!viewers::seed(&mut r, &mut st, "1000"), "off: nothing is added at login");
+    viewers::turn_on(&mut r, &mut st, "1000");
+    assert!(viewers::is_on(&st, "1000"));
+    assert!(r[0].1.contains(&("vlc".to_string(), "ask".to_string())));
+    assert!(r[0].1.contains(&("org.gnome.Evince".to_string(), "block".to_string())), "the person's block stays");
+    // off with only seeded rules leaves no empty entry behind
+    let mut r2 = Rules::new();
+    let mut st2 = viewers::State::new();
+    viewers::seed(&mut r2, &mut st2, "1001");
+    viewers::turn_off(&mut r2, &mut st2, "1001");
+    assert!(r2.is_empty());
+}
+
+#[test]
+fn viewer_state_reads_back_and_bad_entries_are_dropped() {
+    let d = TempDir::new();
+    let p = d.p("v.json");
+    std::fs::write(&p, r#"{"1000": {"on": false, "seeded": ["vlc", "../x", 5], "had_rule": ["mpv"]}, "root": {}, "1001": 3}"#).unwrap();
+    let st = viewers::load(&p);
+    assert_eq!(st.len(), 1);
+    assert!(!st[0].1.on && st[0].1.seeded == ["vlc"] && st[0].1.had_rule == ["mpv"]);
+    viewers::save(&st, &p).unwrap();
+    assert_eq!(viewers::load(&p), st);
+    use std::os::unix::fs::PermissionsExt;
+    assert_eq!(std::fs::metadata(&p).unwrap().permissions().mode() & 0o777, 0o644);
+    std::fs::write(&p, "not json").unwrap();
+    assert!(viewers::load(&p).is_empty());
+    assert!(viewers::is_on(&viewers::load(&p), "1000"), "no record: on");
+}
+
+#[test]
+fn only_people_logged_in_are_seeded() {
+    let d = TempDir::new();
+    for (uid, manager) in [("1000", true), ("1001", false), ("999", true), ("65534", true), ("x", true)] {
+        let s = d.p(&format!("user.slice/user-{uid}.slice"));
+        std::fs::create_dir_all(&s).unwrap();
+        if manager {
+            std::fs::create_dir_all(format!("{s}/user@{uid}.service")).unwrap();
+        }
+    }
+    std::fs::create_dir_all(d.p("user.slice/user-1002.slice/user@1002.service")).unwrap();
+    assert_eq!(viewers::logged_in(&d.p("")), ["1000", "1002"]);
+    assert!(viewers::logged_in(&d.p("missing")).is_empty());
+}

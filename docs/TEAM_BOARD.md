@@ -332,3 +332,15 @@ Built without root (1.0.0-86 in `~/.cache/labyrinth-switch`, the publish's makep
 `/usr/lib/sarina/sarina` to `fim_paths` in `/etc/heimdall/config.json` (the setup writes that file only once) and restart
 heimdall; restart `sarina-service` when convenient (it keeps running the old Go binary until then). Going back is the
 previous package.
+
+### 2026-11-15 18:00 [Claude] The privacy pack: viewer apps on "ask", look-alike names in the network question
+
+- `labyrinth-appnet apply` gives PDF viewers, office suites, image viewers and media players (a list in
+  `packages/tools/src/appnet/viewers.rs`) the rule "ask" for each person logged in, once per app; a later Allow stays.
+  New: `labyrinth-appnet viewers status --json` (`{"on","apps","asking"}`) and `viewers on|off` (pkexec), which Settings >
+  Security > Privacy runs. State: `/var/lib/labyrinth/app-network-viewers.json`.
+- `labyrinth-appnet-ask-agent` names the app as its desktop entry does, always says which program really runs, and warns
+  about a look-alike app, program or host name (`packages/tools/src/lookalike.rs`, the same file as Heimdall's
+  `rust/privacy/src/lookalike.rs`; change it there first). `~/.config/heimdall/privacy.json` `"lookalike_warnings": false`
+  turns the warning off.
+- The page: docs/PRIVACY_PACK.md (with Heimdall's downloads guard and Remove hidden info).

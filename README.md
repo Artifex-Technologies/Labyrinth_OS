@@ -91,6 +91,10 @@ For games, Settings > Games (Yggdrasil) has frame generation per game (Labyrinth
   - BPF output is hardened.
 
   User namespaces stay on, since Steam, Flatpak and browsers need them, and so does nested virtualisation.
+- **The privacy pack**, on by default: downloaded files that would contact a server when opened are pointed out (never
+  changed); Minos makes a copy of a file without its hidden information (GPS, camera, author); PDF viewers, office suites,
+  image viewers and media players ask before they first go online; names that imitate others with look-alike letters are
+  marked. One switch each in Settings > Security > Privacy. See [docs/PRIVACY_PACK.md](docs/PRIVACY_PACK.md).
 - **Limbo** runs untrusted things in disposable virtual machines.
 - **Sarina**, the local AI assistant (optional, nothing leaves the computer), helps:
   - reviews Heimdall's findings every day and proposes fixes, which you approve and run;
@@ -136,6 +140,7 @@ is built and what is not.
 - [PACKAGE_REPO.md](docs/PACKAGE_REPO.md): the signed package repository that keeps installed systems up to date
 - [VERSIONING.md](docs/VERSIONING.md): versions (Labyrinth OS 1.0 and each app's own), build numbers, and how to make a release
 - [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md): security
+- [PRIVACY_PACK.md](docs/PRIVACY_PACK.md), [LOCATION_SOUNDS.md](docs/LOCATION_SOUNDS.md): privacy
 - [DRIVER_LAB.md](docs/DRIVER_LAB.md): the Sarina + Limbo driver idea
 - [GPU_UNLOCK.md](docs/GPU_UNLOCK.md): the gated Settings option for a GeForce tensor-rate unlock (facts, risks, phases; Phase 0 changes nothing on the GPU)
 - [PROTON_GAMES.md](docs/PROTON_GAMES.md): Valve's Proton (Windows games in Steam); [PROTON_AG.md](docs/PROTON_AG.md): Proton AG's services

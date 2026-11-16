@@ -8,6 +8,7 @@
 //!   appnet      labyrinth-appnet            per-app network rules (nftables)
 //!   appnet_ask  labyrinth-appnet-ask        the ask mode's questions (always on: a root service)
 //!   ask_agent   labyrinth-appnet-ask-agent  the ask mode's notifications (always on: a user service)
+//!   lookalike   (shared with Heimdall and Yggdrasil) names that imitate others: mixed alphabets, look-alike letters
 //!   launch      labyrinth-launch            the app launcher (dock, start menu, Settings)
 //!   apps        labyrinth-apps              the optional software (Agora, the first login)
 //!   selfcheck   labyrinth-selfcheck         is the desktop in a sane state (after an upgrade)
@@ -51,6 +52,7 @@ pub mod hardware;
 pub mod install_cleanup;
 pub mod ipconfig;
 pub mod launch;
+pub mod lookalike;
 pub mod os_release;
 pub mod playall;
 pub mod py;
