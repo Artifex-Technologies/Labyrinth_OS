@@ -10,7 +10,7 @@
 #                                            Pushes nothing; every build number starts again at 1.
 #
 # PROJECT: system (Labyrinth OS: this repository and Yggdrasil), heimdall, limbo, sarina, kairos, argus (the app; the firmware
-# keeps its own ARG-... names), daedalus, huginn, icarus.
+# keeps its own ARG-... names), daedalus, ratatoskr (the video app, called Huginn until 2026-11-15), icarus.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,8 +18,8 @@ parent="$(dirname "$root")"
 ygg="${YGGDRASIL_DIR:-$parent/Yggdrasil}"
 declare -A dirs=([system]="$root" [heimdall]="$parent/Heimdall" [limbo]="$parent/Limbo" [sarina]="$parent/Sarina"
                  [kairos]="$parent/Kairos" [argus]="$parent/Argus_App" [daedalus]="$parent/Daedalus_CAD"
-                 [huginn]="$parent/Huginn" [icarus]="$parent/Icarus")
-order=(system heimdall limbo sarina kairos argus daedalus huginn icarus)
+                 [ratatoskr]="$parent/Ratatoskr" [icarus]="$parent/Icarus")
+order=(system heimdall limbo sarina kairos argus daedalus ratatoskr icarus)
 die() { echo "error: $*" >&2; exit 1; }
 
 # --- the list ------------------------------------------------------------------------------------------------------------
