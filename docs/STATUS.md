@@ -1,4 +1,4 @@
-# Status (updated 2026-11-07)
+# Status (updated 2026-11-15)
 
 What Labyrinth OS is today, what is in progress, and what comes next. The older dated entries (the Windows and WSL builds,
 Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STATUS.md`.
@@ -9,13 +9,19 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   open modules. Built with archiso from `profile/` ([ARCHITECTURE.md](ARCHITECTURE.md)).
 - **Desktop:** Yggdrasil, in its own repository ([Artifex-Technologies/Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil)),
   as a session on Hyprland 0.57. Top bar, dock, Fylgja (the notch), Settings, Agora (the app store), Minos (files), the lock
-  screen, notifications, the screenshot tool, the clipboard history, the colour picker, the video player and spell check. No KDE:
+  screen, notifications, the screenshot tool, the clipboard history, the colour picker, the video player, spell check and the
+  Task Manager (Ctrl+Shift+Esc; since 2026-11-15 with GPU columns, a page for every graphics card and the AI models Ollama has
+  loaded). Small tools (Task Manager, Settings, calculator, the password box) float on tiling screens. Yggdrasil's own
+  compositor is not the desktop yet: its hardware backend (DRM/KMS) reached its first milestone on 2026-11-15 in a virtual
+  machine; the laptop tests are next ([LAPTOP.md](LAPTOP.md)). No KDE:
   Plasma, KWin and SDDM left on 2026-10-24; the old Omarchy-style tiling desktop (waybar, mako, fuzzel and the rest) on 2026-11-05.
 - **Login:** greetd with Yggdrasil's greeter. On the live medium greetd signs the live user in by itself (`/etc/greetd/live.toml`,
   which the install removes).
 - **Installer:** Yggdrasil's installer window (`yggdrasil-installer`) and its install program (`yggdrasil-install-system`; Labyrinth's
   own `labyrinth-install-system` until 2026-11-07, moved to Yggdrasil so LykanOS installs the same way). Labyrinth's settings for it
   (clean-up, last checks, boot menu theme, kernel options) are in `labyrinth-installer.conf`.
+  Since 2026-11-14 its first step after Welcome is the network: Wi-Fi, Ethernet or a USB adapter, hidden networks, each
+  adapter's MAC address, networks that turn up later, or skip; the install's downloads are fetched while the rest is asked.
   Erase a disk or choose partitions by hand (beside Windows, keeping its EFI partition); LUKS2 encryption on by default; btrfs with
   snapper and grub-btrfs; GRUB with Labyrinth's theme. Calamares was removed on 2026-11-07 (df5b5a2); there is no fallback installer.
 - **Software:** the ISO stays under 4 GB. Vivaldi is the one browser on it. The installer's Browsers page adds others; its Optional
@@ -25,17 +31,26 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   installed system current from any ISO. Since 2026-11-07 the ISO build's own packages are signed and checked too.
 - **Security:** Heimdall, Limbo, the hardening defaults, the firewall (ufw, incoming blocked), the distress password, a network
   switch per app. Sarina is optional. See [SECURITY_ROADMAP.md](SECURITY_ROADMAP.md).
+- **The privacy pack (2026-11-15):** the downloads guard, Remove hidden info in Minos, viewer apps on "ask" before they first go
+  online, and look-alike name warnings in Agora and Settings > Apps, each on by default with its own switch in Settings >
+  Security > Privacy ([PRIVACY_PACK.md](PRIVACY_PACK.md)).
 - **Location sounds (2026-11-15):** the private microphone removes aircraft tones and mains hum, which can place or date a
   recording, from everything the microphone records (on by default; Settings > Security > Privacy), and Minos scrubs files.
-  On every install (`heimdall-private-mic-git`, in the base system), with or without Heimdall; see [LOCATION_SOUNDS.md](LOCATION_SOUNDS.md).
+  It shows up as "Microphone (private)". On every install (`heimdall-private-mic-git`, in the base system), with or without
+  Heimdall; see [LOCATION_SOUNDS.md](LOCATION_SOUNDS.md).
+- **Rust:** Labyrinth's and Yggdrasil's own tools are Rust; the Python and shell copies kept for a rollback were removed on
+  2026-11-15 ([RUST_PORT_REMAINING.md](RUST_PORT_REMAINING.md)). Limbo is Rust only (its Go is gone). Heimdall's Rust port is
+  done but not switched on yet. Sarina is about half ported; the rest still hands over to Go.
 
-**Seen working:** the ISO builds and boots (last built 2026-10-26); the installer completes on real hardware, also beside Windows
-and encrypted; the desktop runs on my main PC every day. `scripts/release-check.sh` runs every check that needs no root
-([RELEASE_CHECKS.md](RELEASE_CHECKS.md)); GitHub runs its quick part on every push. That run fails today on two shell tests
-(`test_install_cleanup.sh`, `test_labyrinth_rollback.sh`), which fail on this PC too; not looked into yet.
+**Seen working:** the ISO builds and boots (last built 2026-11-12, Labyrinth OS 1.0.0); the installer completes on real hardware,
+also beside Windows and encrypted, and on the ThinkPad X1 Yoga from that ISO ([LAPTOP.md](LAPTOP.md)); the desktop runs on my
+main PC every day. `scripts/release-check.sh` runs every check that needs no root
+([RELEASE_CHECKS.md](RELEASE_CHECKS.md)); GitHub runs its quick part on every push, and it passes.
 
 ## In progress
 
+- The laptop (ThinkPad X1 Yoga Gen 8): what works and what is left to check is in [LAPTOP.md](LAPTOP.md).
+- Yggdrasil's own compositor on real screens: the hardware backend's next milestones, the laptop first.
 - Sarina's night training: `sarina-night.timer`, 22:30 to 04:20. Reports in `docs/sarina-evals/`, wrap-ups in
   [TEAM_BOARD.md](TEAM_BOARD.md).
 - Frame generation for games: Kairos, Labyrinth's own Vulkan layer (`kairos-git`, a preview; named 2026-11-07, it was
@@ -50,18 +65,18 @@ and encrypted; the desktop runs on my main PC every day. `scripts/release-check.
 
 ## Next
 
-1. A clean ISO build from scratch: the first one without Calamares and with signed local packages. Then the install check in
-   [GO_LIVE.md](GO_LIVE.md) §2: no live-user sudo or autologin carried over, ufw on.
+1. The install check in [GO_LIVE.md](GO_LIVE.md) §2 on every new ISO (the 2026-11-12 one, the first without Calamares and with
+   signed local packages, installed with ufw on): no live-user sudo or autologin carried over.
 2. The rest of GO_LIVE §1: a way back (a snapshot after install, the GRUB snapshot menu, a rescue USB).
 3. Privacy (GO_LIVE §3): the phone-home audit, hardened Vivaldi defaults, encrypted DNS. Then AppArmor.
 4. Decisions ([CATCH_UP_2026-11-07.md](CATCH_UP_2026-11-07.md) §A), all made 2026-11-07: GNOME Keyring stays; ghostwriter
    stays and Kdenlive goes; Secure Boot left alone for now; Super+S tap to start and stop; frame generation is Kairos.
 5. The installer: shrink a partition to make room, partitions on more than one disk, the keyboard layout at the disk password.
-6. The desktop: a Yggdrasil task manager, a global menu, accessibility (sticky keys, magnifier, on-screen keyboard, screen reader).
+6. The desktop: a global menu, and the accessibility still missing (sticky, slow and bounce keys, mouse keys). The Task
+   Manager came on 2026-11-07; the magnifier and the screen reader switch are in, and the on-screen keyboard is on the laptop.
 
 ## Known issues
 
-- Ctrl+Shift+Esc opens `btop` in a terminal; Yggdrasil has no task manager of its own yet.
 - No global menu: apps keep their own menus.
 - Secure Boot is not set up. Turn it off in the firmware before booting the stick.
 - Installing beside another system needs free space or a partition to give up; the installer cannot shrink one yet.

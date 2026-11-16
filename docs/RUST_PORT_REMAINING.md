@@ -2,14 +2,15 @@
 
 Written 2026-11-12. My rule: everything of ours that can be Rust becomes Rust, in the order security, stability, speed.
 Something stays in another language only where the platform needs it (PKGBUILDs and pacman's scriptlets, archiso's profile,
-GLSL/CUDA, Hyprland's Lua config and its C++ plugin until our own compositor, the Flipper-side C in Argus, model training). The
+GLSL/CUDA, Hyprland's Lua config and its C++ plugin until our own compositor, firmware-side C, model training). The
 Python and shell copies kept after a switch, for a rollback, stay one week after the switched package runs on my PC, then go
 (the copies of 2026-11-09 to -13 went on 2026-11-15).
 Pacman, the AUR, the Arch and CachyOS repositories and their tooling (makepkg, mkarchiso, repo-add, pacman-key) are not ours
 and stay as they are.
 
 This page covers this repository and Yggdrasil. Heimdall, Limbo and Sarina keep their own porting plans in their repositories
-(Heimdall and Limbo have their Rust ports, switching now; Sarina's Go and Python are being ported, see its `docs/RUST_PORT.md`).
+(as of 2026-11-15: Limbo is Rust only, its Go deleted; Heimdall's Rust port is done but not switched on yet; Sarina is about
+half ported, the rest still handed over to Go, see its `docs/RUST_PORT.md`).
 
 How it was made: every file with a `#!` line or a `.sh`/`.py`/`.lua` name in both repositories; every `install` line of the
 PKGBUILDs (what ships); everything under `profile/airootfs` (what the image carries); every `ExecStart`/`Exec=` of the units,
