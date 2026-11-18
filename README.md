@@ -150,6 +150,7 @@ is built and what is not.
 - [VERSIONING.md](docs/VERSIONING.md): versions (Labyrinth OS 1.0 and each app's own), build numbers, and how to make a release
 - [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md): security
 - [PRIVACY_PACK.md](docs/PRIVACY_PACK.md), [LOCATION_SOUNDS.md](docs/LOCATION_SOUNDS.md): privacy
+- [REFERENCE_PLAN_2026-11.md](docs/REFERENCE_PLAN_2026-11.md): ideas taken from reference projects, rewritten in Rust (plan, priorities, decisions)
 - [DRIVER_LAB.md](docs/DRIVER_LAB.md): the Sarina + Limbo driver idea
 - [GPU_UNLOCK.md](docs/GPU_UNLOCK.md): the gated Settings option for a GeForce tensor-rate unlock (facts, risks, phases; Phase 0 changes nothing on the GPU)
 - [PROTON_GAMES.md](docs/PROTON_GAMES.md): Valve's Proton (Windows games in Steam); [PROTON_AG.md](docs/PROTON_AG.md): Proton AG's services
