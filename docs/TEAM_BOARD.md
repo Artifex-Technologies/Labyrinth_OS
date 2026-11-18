@@ -359,3 +359,16 @@ previous package.
   `docs/REFERENCE_PLAN_2026-11.md`.
 - **For the owner:** nothing to do now. heimdall-git built from the Heimdall checkout picks this up (to-do step 5 when it has not
   run yet; otherwise the next heimdall-git build); Settings comes with the next daily update.
+
+### 2026-11-18 [Claude] Ghidra BSim: similar programs for Sarina's analysis (REA.md)
+
+- Sarina `2290596`: `reverse_engineer` command `similar` (Go and Rust, CLI differential): inside labyrinth-rea's sandbox,
+  Ghidra's headless analyzer and Sarina's `LabyrinthBSim.java` compare a file's functions with the similarity library (a local
+  BSim H2 database, `rea-work/bsim/library.mv.db`, seen as `/work/bsim/library.mv.db`), then add the file. Nothing is run;
+  without the library nothing happens.
+- Heimdall `05cc4ca`: when Sarina's service has that library, `heimdalld immunity analyze --sarina` asks her for `similar`
+  too; the kept analysis records `similar: true`.
+- Labyrinth: nothing in the tools changed (the sandbox already gives Ghidra `/work`); `docs/REA.md` has the library, the
+  command that makes it and the real test on made-up programs.
+- **For the owner:** to-do step 7 makes both libraries (yours and Sarina's service account's), installs the Sarina build with
+  `similar` and, when step 5 has not brought it, rebuilds heimdall-git.

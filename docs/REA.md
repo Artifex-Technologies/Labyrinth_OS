@@ -12,7 +12,7 @@ virtual machine: REA's runtime features (a debugger running the sample) would ru
 `labyrinth-rea-setup` installs everything again on another machine (needs a JDK 21: `pacman -S jdk21-openjdk`, Node.js, bubblewrap).
 
 **Sarina:** the tool `reverse_engineer` (`Sarina/go/reverse`, on when `SARINA_REVERSE=on`, which `~/.config/labyrinth/sarina.env` now has). Static commands only (`analyze`, `functions`,
-`decompile`, `xrefs`, `search`, `search-bytes`, the `inspect-*` family); the debugger, capture and device commands are not offered; paths outside the analysis folder and the quarantine are
+`decompile`, `xrefs`, `search`, `search-bytes`, the `inspect-*` family, `similar`); the debugger, capture and device commands are not offered; paths outside the analysis folder and the quarantine are
 refused; every result ends with a reminder to report only what the output shows. Evals (group "reverse"): she finds the rule of the sample program (6 characters, starts with L, ends with 7)
 3 times out of 3 after the tool listed functions for her (before that she invented a rule: `analyze` alone does not show logic), and she refuses `/etc/passwd`. Her playbook is in her vault:
 `Playbooks/Reverse engineering playbook.md`; the Playbooks folder is owner-only, she cannot change it.
@@ -30,5 +30,27 @@ and the most critical one (containment) is when Sarina must not be asked. Settin
 "Sarina's analysis", has the steps. Why this is worth doing: drivers and new malware have no write-ups; reading what they do is how a
 signature, a detection rule or a block gets written.
 
-**Not done:** Ghidra BSim (finding known functions in a new sample; next); REA's MCP server for other tools; Hopper/IDA/JEB providers (commercial); `functions` needs a symbol table (stripped programs: use `search` and `xrefs`);
+**Similar programs: Ghidra BSim (built 2026-11-18).** Every program analysed with Sarina's `similar` command goes into a
+similarity library, so a new file can be matched against it: "shares three functions with sample X at 1.000". The library
+is a local BSim database (H2: one file, no server, nothing on the network) at `~/.local/share/labyrinth/rea-work/bsim/library.mv.db`,
+seen in the sandbox as `/work/bsim/library.mv.db`; Sarina's service account has its own under
+`/var/lib/sarina/.local/share/labyrinth/rea-work/bsim`. It is made once, with Ghidra's own command, inside the sandbox:
+
+```
+labyrinth-rea --exec sh -c 'mkdir -p /work/bsim && GHIDRA_MAXMEM=1G /opt/ghidra/support/bsim createdatabase file:/work/bsim/library medium_nosize'
+```
+
+(`medium_nosize` matches 32-bit with 64-bit code; the to-do step does this for both.) `similar` then runs Ghidra's headless
+analyzer in the same sandbox: the file is imported read-only into a throwaway project, analysed (never run), and Sarina's
+Ghidra script (`LabyrinthBSim.java`, Ghidra's BSim API) compares its functions with the library before adding them. The
+report lists the closest programs (how many of this file's functions match, the best similarity, the total significance)
+and the closest function pairs, bounded, with Ghidra's log left out; code every C program has (`_start`, the
+constructor and destructor stubs) is not compared. Names in the report come from earlier files and are untrusted; a match
+says code is shared (a common library matches too), not that two files are one family. Without the library nothing runs.
+When the service's library exists, Heimdall's request asks Sarina for `similar` too and keeps the result with her analysis
+(Heimdall `docs/IMMUNITY.md`, "Similar programs"). Tested here on made-up programs only: two sharing three functions
+matched them at 1.000, an unrelated one matched nothing, a stripped copy matched by its code alone, an `-O2` rebuild at
+0.70 to 0.78; about 9 s each.
+
+**Not done:** REA's MCP server for other tools; Hopper/IDA/JEB providers (commercial); `functions` needs a symbol table (stripped programs: use `search` and `xrefs`);
 speed (Ghidra takes about 8 s for a tiny program, minutes for a large driver: the tool waits up to 6 minutes).
