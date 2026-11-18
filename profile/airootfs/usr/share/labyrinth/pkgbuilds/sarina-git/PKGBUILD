@@ -11,20 +11,25 @@
 # labyrinth-sarina-speak-voiced) that the image's /usr/local/bin names link to. Sarina's docs/VOICE_RUST_PORT.md: what it is.
 # And sarina-voiced (Rust, packaging/voiced): the voice service the image's labyrinth-voiced.service starts. It loads ONNX
 # Runtime at run time from the voice venv (or onnxruntime-cpu); nothing of ONNX Runtime is linked or downloaded at build time.
+# And sarina-helpers (Rust, packaging/helpers): the ML and voice helper (memory-search, desktop-audit --model-dir,
+# voice-chat) at /usr/lib/sarina/sarina-helpers, which the core runs when it is there. The Python package it replaces
+# (python/sarina_helpers) stays installed for the rollback week (SARINA_HELPERS=python), then goes (Sarina's
+# docs/RUST_PORT.md "The ML and voice helper").
 
 pkgname=sarina-git
 pkgver=1.0.0
 pkgrel=1
-pkgdesc='Local-model agent: Rust and Go core with an optional Python ML/voice helper'
+pkgdesc='Local-model agent: Rust and Go core with an optional ML/voice helper'
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Sarina'
 license=('MPL-2.0')
 depends=('glibc')
 optdepends=(
   'ollama: a local model server for Sarina to talk to (ollama-cuda on an NVIDIA machine)'
-  'python: the optional ML/voice helper (sarina-helpers)'
-  'python-onnxruntime: semantic search and desktop-audit classification (helper)'
-  'onnxruntime-cpu: the voice service on the processor when the voice venv is missing'
+  'python: the Python ML/voice helper, during the rollback week only (SARINA_HELPERS=python)'
+  'whisper-cpp: speech-to-text for sarina voice-chat (the helper runs whisper-cli with a ggml model)'
+  'espeak-ng: phonemes for sarina voice-chat speech (a Piper voice)'
+  'onnxruntime-cpu: the ML/voice helper; the voice service on the processor when the voice venv is missing'
 )
 makedepends=('go' 'cargo' 'python-build' 'python-installer' 'python-wheel' 'python-setuptools' 'git')
 # ring (TLS for the Rust build's model clients) does not link from GCC's LTO objects
@@ -105,6 +110,10 @@ build() {
   cd "$srcdir/sarina/packaging/voiced"
   cargo build --release --locked --target-dir "$srcdir/target"
 
+  # the ML and voice helper (embeddings, memory search, voice chat)
+  cd "$srcdir/sarina/packaging/helpers"
+  cargo build --release --locked --target-dir "$srcdir/target"
+
   # the Rust build of the core: /usr/bin/sarina
   cd "$srcdir/sarina/rust"
   cargo build --release --locked --bin sarina-rs --target-dir "$srcdir/target"
@@ -112,6 +121,8 @@ build() {
 
 check() {
   cd "$srcdir/sarina/packaging/voice"
+  cargo test --release --locked --target-dir "$srcdir/target"
+  cd "$srcdir/sarina/packaging/helpers"
   cargo test --release --locked --target-dir "$srcdir/target"
   # the Rust build as it starts: names, Heimdall's lock, the ported commands, the hand-over to the Go build
   cd "$srcdir/sarina/rust"
@@ -123,6 +134,7 @@ package() {
 
   install -Dm755 "$srcdir/target/release/sarina-rs" "$pkgdir/usr/bin/sarina"
   install -Dm755 go/sarina "$pkgdir/usr/lib/sarina/sarina"
+  install -Dm755 "$srcdir/target/release/sarina-helpers" "$pkgdir/usr/lib/sarina/sarina-helpers"
   install -Dm755 "$srcdir/target/release/sarina-voice" "$pkgdir/usr/bin/sarina-voice"
   install -Dm755 "$srcdir/target/release/sarina-voiced" "$pkgdir/usr/bin/sarina-voiced"
   # how Sarina plugs into the desktop (Yggdrasil): hold-to-talk, voice, and her page in Settings
