@@ -96,8 +96,14 @@ program to find no file). yggdrasil-settings no longer depends on Python.
 
 ## Copies kept for a rollback
 
-None now: the copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git
-keeps them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there.
+The copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git keeps
+them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there.
+
+- Sarina's voice server, `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py`
+  (Python, Chatterbox Turbo through ONNX Runtime): switched on 2026-11-17 to `sarina-voiced` (Rust, Sarina's
+  `packaging/voiced`, built by `sarina-git`; `labyrinth-voiced.service` starts `/usr/bin/sarina-voiced`). I had run the Rust
+  one through a drop-in since 2026-11-12. The Python stays one week after the switched package runs on my PC, for a rollback
+  (a drop-in with the old `ExecStart`, `docs/SARINA_VOICE.md`), then goes with `tests/test_voiced_text.py`.
 
 ## Must stay (the platform needs it)
 
@@ -122,7 +128,6 @@ Smallest risk first. None of these runs as a service; the first one ships.
 
 | What | Language, size | Runs | Plan |
 | --- | --- | --- | --- |
-| `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py` (Sarina's voice server, Chatterbox Turbo on PyTorch) | Python | Sarina's spoken answers (user service) | the planned next big port: Chatterbox through ONNX in Rust (`scripts/voice/chatterbox_onnx_test.py` is the probe) |
 | `profile/airootfs/usr/share/labyrinth/grub-evodevo/install.sh` (the boot menu theme's own installer, vendored, MIT) | sh, 884 lines | as root, by `labyrinth-grub-theme` at install | labyrinth-grub-theme does the few steps Labyrinth needs itself (copy the theme, set GRUB_THEME) and the vendored script goes |
 | `packages/labyrinth-driverlab/probe.sh` (hardware facts as JSON for the Driver Lab) | bash + python3 (only to escape JSON) | nothing runs it yet | a labyrinth-tools program when the Driver Lab is built |
 | Build and release tooling here: `scripts/build.sh` (wraps mkarchiso), `build-local-packages.sh` (wraps makepkg), `release.sh`, `release-check.sh`, `gen-packages.py`, `gen-wallpaper.py`, `gen-plymouth-rain.py`, `gen-logo.sh`, `logo-to-braille.py`, `icons/*.py`, `vm/*`, `xvfb/xv.sh`, `wsl-test.sh`, `voice/chatterbox_onnx_test.py` | bash, Python | by hand on my PC; not shipped | as each is touched; the Arch tools they call stay |

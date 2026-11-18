@@ -2,7 +2,12 @@
 Description=Sarina's voice (Chatterbox Turbo), loaded when she first speaks
 
 [Service]
-ExecStart=%h/.local/share/labyrinth/tts/gpu-venv/bin/python /usr/local/bin/labyrinth-voiced
+# sarina-voiced (Rust, Sarina's packaging/voiced, installed by sarina-git). It loads ONNX Runtime and the CUDA libraries from
+# the voice venv, ~/.local/share/labyrinth/tts/gpu-venv, as the Python did. The Python service stays in the image for a
+# rollback: a drop-in with ExecStart= and then
+#   ExecStart=%h/.local/share/labyrinth/tts/gpu-venv/bin/python /usr/local/bin/labyrinth-voiced
+# (docs/SARINA_VOICE.md, "The voice service in Rust").
+ExecStart=/usr/bin/sarina-voiced
 Restart=on-failure
 RestartSec=10
 Nice=5
