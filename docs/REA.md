@@ -17,10 +17,18 @@ refused; every result ends with a reminder to report only what the output shows.
 3 times out of 3 after the tool listed functions for her (before that she invented a rule: `analyze` alone does not show logic), and she refuses `/etc/passwd`. Her playbook is in her vault:
 `Playbooks/Reverse engineering playbook.md` (and `Pentest.md`); the Playbooks folder is owner-only, she cannot change it.
 
-**Heimdall (design, not built):** Heimdall does not call REA by itself. The path would be: Heimdall asks Sarina's integration service to examine a quarantined file (the file is already
-visible read-only as /quarantine/...), Sarina runs `reverse_engineer`, and the finding comes back to Heimdall as evidence with the analysis recorded in her session (which he watches). "Heimdall
-may ask" is a standing permission you can switch off. In a high-risk case (a critical alert on an unknown file) he may ask without waiting, but the analysis stays static and sandboxed; nothing
-is ever run. Why this is worth doing: drivers and new malware have no write-ups; reading what they do is how a signature, a detection rule or a block gets written.
+**Heimdall (built 2026-11-17):** Heimdall does not call REA by itself; it asks Sarina. `sudo heimdalld immunity analyze --sarina SHA256`
+lends her sandbox a read-only copy of a held file (`/var/lib/heimdall-sarina-share`, seen by her service account as `/quarantine/<sha256>.sample`),
+opens a session on her integration service whose only tool is `reverse_engineer` (nothing is sent unless the service confirms exactly that one
+tool), and keeps her answer with the held file as her analysis: untrusted text shown labelled as hers, which can never release, delete or run
+anything. A YARA rule in it only becomes a rule draft that root tests and you approve. The copy is taken back on every path, one analysis runs at a
+time, none while Sarina is contained, and her session is in her session folder, which Heimdall watches. "Heimdall may ask" is the standing
+permission `sarina_analysis` in `/etc/heimdall/config.json`: `ask` (the default: only when you ask; a new held file's notification offers it),
+`auto` (every new held file ClamAV does not know, at once), `off`. Asking without waiting in a critical case is not built: holds carry no severity,
+and the most critical one (containment) is when Sarina must not be asked. Setting up her service account (REA and Ghidra visible to it,
+`SARINA_REVERSE=on` in `/etc/sarina/service.env`, its quarantine folder linked to the share) is done once; Heimdall `docs/IMMUNITY.md`,
+"Sarina's analysis", has the steps. Why this is worth doing: drivers and new malware have no write-ups; reading what they do is how a
+signature, a detection rule or a block gets written.
 
-**Not done:** Heimdall's request path; REA's MCP server for other tools; Hopper/IDA/JEB providers (commercial); `functions` needs a symbol table (stripped programs: use `search` and `xrefs`);
+**Not done:** Ghidra BSim (finding known functions in a new sample; next); REA's MCP server for other tools; Hopper/IDA/JEB providers (commercial); `functions` needs a symbol table (stripped programs: use `search` and `xrefs`);
 speed (Ghidra takes about 8 s for a tiny program, minutes for a large driver: the tool waits up to 6 minutes).
