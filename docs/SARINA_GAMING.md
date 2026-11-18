@@ -66,8 +66,12 @@ Results are at the end of this note; the reports are `docs/sarina-evals/2026-10-
 
 ## Install step for the owner
 
+The steps as of 2026-10-23, but the first line: that day it built the Go core and copied it over `/usr/bin/sarina`. Since
+2026-11-18 that file is the Rust build from the `sarina-git` package; never copy a Go build over it, rebuild the package from the
+local Sarina checkout instead. The rest of the block is as it was that day; some of those files have moved since.
+
 ```sh
-cd ~/Documents/Github/Sarina/go && go build -o sarina ./cmd/sarina && sudo install -m755 sarina /usr/bin/sarina
+cd ~/Documents/Github/Labyrinth_OS/packages/pkgbuilds/sarina-git && makepkg -sfi
 cd ~/Documents/Github/Labyrinth_OS/profile/airootfs
 sudo install -m755 usr/local/bin/labyrinth-ask-sarina usr/local/bin/labyrinth-gaming /usr/local/bin/
 sudo install -m644 usr/share/labyrinth/sarina-voice-rules.txt /usr/share/labyrinth/

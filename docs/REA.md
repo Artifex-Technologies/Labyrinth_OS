@@ -11,7 +11,7 @@ its code; Ghidra's zip was checked against the SHA-256 GitHub publishes. REA's o
 virtual machine: REA's runtime features (a debugger running the sample) would run it on this kernel inside the sandbox, so samples that could attack the kernel belong in Limbo.
 `labyrinth-rea-setup` installs everything again on another machine (needs a JDK 21: `pacman -S jdk21-openjdk`, Node.js, bubblewrap).
 
-**Sarina:** the tool `reverse_engineer` (`Sarina/go/reverse`, on when `SARINA_REVERSE=on`, which `~/.config/labyrinth/sarina.env` now has). Static commands only (`analyze`, `functions`,
+**Sarina:** the tool `reverse_engineer` (`Sarina/rust/sarina/src/reverse.rs`, on when `SARINA_REVERSE=on`, which `~/.config/labyrinth/sarina.env` now has). Static commands only (`analyze`, `functions`,
 `decompile`, `xrefs`, `search`, `search-bytes`, the `inspect-*` family, `similar`); the debugger, capture and device commands are not offered; paths outside the analysis folder and the quarantine are
 refused; every result ends with a reminder to report only what the output shows. Evals (group "reverse"): she finds the rule of the sample program (6 characters, starts with L, ends with 7)
 3 times out of 3 after the tool listed functions for her (before that she invented a rule: `analyze` alone does not show logic), and she refuses `/etc/passwd`. Her playbook is in her vault:
