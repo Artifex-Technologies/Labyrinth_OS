@@ -386,3 +386,18 @@ previous package.
 - Heimdall's `bluetooth-privacy-off` warning goes away at its next hardening check (it reads the file); BlueZ uses it from the
   next boot.
 - **For the owner:** nothing to do; the next labyrinth-tools update brings it, and it counts from the next boot.
+
+### 2026-11-18 09:35 [Claude] R4 phase 3: YARA-X's `yr` in the package repository; Limbo's analysis image uses it
+
+- New recipe `packages/pkgbuilds/yara-x`: the official `yr` from VirusTotal's v1.23.0 source (checksum pinned, `cargo build
+  --release --locked` on the release's own lock file), BSD-3-Clause licence installed, conflicts with the AUR's
+  `yara-x-bin`/`yara-x-git`. Its `check()` scans a one-rule file with the program just built. Pinned: built once per version.
+  Not on the ISO (`LABYRINTH_SKIP`'s default list); the publish builds it. Test build here: 3 min, 8.5 MB package, `yr` 30 MB,
+  `yr --version` and a scan from the built package pass. docs/PACKAGE_REPO.md "Built from someone else's source: yara-x";
+  THIRD_PARTY_NOTICES.md.
+- Sarina's `limbo-decompile triage` runs `yr scan` instead of C YARA's `yara -w`; the output to its callers is the same
+  (`-- yara`, then `RULE PATH` lines). The image gets `yr` as one package file downloaded (signature checked) by the host's
+  pacman and installed in the setup guest: no Labyrinth repository or key inside the guest. Sarina's
+  `packaging/limbo/decompile/README.md`, step 1.
+- **For the owner:** nothing now; the next publish adds `yara-x` to the repository. When the analysis image is next built,
+  step 1 of that README brings `yr` in (and the `yara` package stays out).

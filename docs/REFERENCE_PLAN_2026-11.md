@@ -107,6 +107,8 @@ Each item: where it goes, what exists, the phases (smallest first), what it need
   2. **My decision:** use the `yara-x` crate (BSD-3, a library dependency, not copied code) for an exact compile check
      and its slow-rule warnings, or stay with the own lint and ClamAV.
   3. Limbo's analysis image moves from C YARA to YARA-X's `yr` (a package inside a throwaway guest, as today).
+     **Done 2026-11-18:** `yara-x` in my package repository (built from VirusTotal's source, not on the ISO); the image
+     gets that one checked package file, and `limbo-decompile triage` runs `yr scan` (Sarina `packaging/limbo/decompile`).
 - **Notes:** C YARA gets fixes only; new syntax lands in YARA-X. ClamAV's YARA subset stays the install target until
   ClamAV says otherwise.
 

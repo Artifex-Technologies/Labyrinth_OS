@@ -20,7 +20,23 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), and **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+
+## Built from someone else's source: yara-x
+
+Arch's official repositories do not have YARA-X's command-line scanner `yr` (only the AUR does), and Limbo's analysis guest
+image needs it (it replaced C YARA there on 2026-11-18; Sarina's `packaging/limbo/decompile/README.md` has how the image gets
+it). So `packages/pkgbuilds/yara-x` builds it here, my own recipe (the AUR's was read for ideas only):
+
+- VirusTotal's release tarball at the tag (`v1.23.0`), its SHA-256 pinned in the recipe; `cargo build --release --locked`
+  with the release's own `Cargo.lock`, only the `yr` program. BSD-3-Clause, the licence installed with it.
+- Its `check()` scans a one-rule file with the program just built (one file must match, one must not), not the library's
+  whole test suite (minutes more for little).
+- A clean build takes about 3 minutes and 1.4 GB of build files; the package is 8.5 MB (`yr` 30 MB, glibc and gcc-libs only).
+- Pinned like any recipe not built from our own repositories: built once per version and skipped while that version is in
+  the repository. Not on the ISO (nothing there needs it), so an ISO build leaves it out unless named.
+- A new YARA-X release is my choice: `pkgver` and the checksum in the recipe, `pkgrel` back to 1. If Arch ever packages
+  `yara-x`, theirs wins (this repository is listed last) and the recipe can go.
 
 ## The key
 

@@ -1,0 +1,65 @@
+# Maintainer: Labyrinth OS
+#
+# YARA-X's command-line scanner, `yr`: VirusTotal's Rust successor to C YARA (which gets fixes only). Arch's official
+# repositories do not have it (only the AUR does), so the package repository builds it from VirusTotal's own source: the
+# release tag, checksum pinned, with the release's own Cargo.lock. Its user is Limbo's analysis guest image (the triage of
+# `limbo-decompile`, Sarina's packaging/limbo/decompile), where it replaces C YARA. Not on the ISO; nothing there needs it.
+# Pinned like any third-party recipe: built once per version, skipped while that version is in the repository. A new
+# release: change pkgver and the checksum (`curl -L <source URL> | sha256sum`), pkgrel back to 1.
+# Clean build here: about 3 minutes (4 jobs, nice 19), 1.4 GB of build files; yr is 30 MB (an 8.5 MB package).
+
+pkgname=yara-x
+pkgver=1.23.0
+pkgrel=1
+pkgdesc="YARA-X command-line scanner (yr), VirusTotal's Rust rewrite of YARA"
+arch=('x86_64')
+url='https://github.com/VirusTotal/yara-x'
+license=('BSD-3-Clause')
+depends=('glibc' 'gcc-libs')
+makedepends=('rust')
+# the AUR's binary and git builds install the same /usr/bin/yr
+conflicts=('yara-x-bin' 'yara-x-git')
+# !lto: makepkg's -flto is for C and C++ only; C code built with it inside a Rust program can fail to link
+options=('!lto' '!debug')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/VirusTotal/yara-x/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('d01d74cd1df2761bd63325138964ac5fe9f9c9f52636910d19e288a16a8b2630')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  # the release's own lock file; only this machine's target, not every platform's crates
+  cargo fetch --locked --target "$(rustc --print host-tuple)"
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  # yara-x 1.23 needs Rust 1.95 (its rust-version)
+  cargo build --release --locked --offline -p yara-x-cli --bin yr
+}
+
+# Not the library's own test suite (it builds the whole workspace again in test mode, many minutes): a scan with the
+# program just built, one rule that must match one file and not the other, in yr's plain output (rule name, then path).
+check() {
+  cd "$pkgname-$pkgver"
+  local yr=target/release/yr t
+  t=$(mktemp -d)
+  printf 'rule labyrinth_check {\n  strings:\n    $a = "labyrinth-yr-check"\n  condition:\n    $a\n}\n' >"$t/check.yar"
+  printf 'before labyrinth-yr-check after\n' >"$t/hit"
+  printf 'nothing to see\n' >"$t/miss"
+  "$yr" --version
+  [[ $("$yr" scan "$t/check.yar" "$t/hit") == "labyrinth_check $t/hit" ]]
+  [[ -z $("$yr" scan "$t/check.yar" "$t/miss") ]]
+  rm -rf "$t"
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  local yr=target/release/yr
+  install -Dm755 "$yr" "$pkgdir/usr/bin/yr"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  # shell completions, written by the program itself
+  install -d "$pkgdir/usr/share/bash-completion/completions" "$pkgdir/usr/share/zsh/site-functions" \
+    "$pkgdir/usr/share/fish/vendor_completions.d"
+  "$yr" completion bash >"$pkgdir/usr/share/bash-completion/completions/yr"
+  "$yr" completion zsh >"$pkgdir/usr/share/zsh/site-functions/_yr"
+  "$yr" completion fish >"$pkgdir/usr/share/fish/vendor_completions.d/yr.fish"
+}

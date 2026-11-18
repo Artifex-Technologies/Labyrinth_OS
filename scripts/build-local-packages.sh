@@ -40,9 +40,10 @@ local_source=(liki-icon-theme yggdrasil-theme yggdrasil-minos yggdrasil-settings
 only=("$@")   # optional: build just these package directory names (always rebuilt)
 for dir in "$pkgbuilds_dir"/*/ "$ygg_dir/packages/pkgbuilds"/*/; do
   name="$(basename "$dir")"
-  # Packages that are not on the ISO are left out unless named: Daedalus CAD and Icarus (only in the Marketplace) and Argus (LykanOS's;
-  # its firmware build fetches Flipper's ARM toolchain). The publish passes an empty list and builds them all.
-  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git icarus-git argus-git} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
+  # Packages that are not on the ISO are left out unless named: Daedalus CAD and Icarus (only in the Marketplace), Argus (LykanOS's;
+  # its firmware build fetches Flipper's ARM toolchain) and yara-x (YARA-X's yr, for Limbo's analysis guest image). The publish
+  # passes an empty list and builds them all.
+  if (( ! ${#only[@]} )) && [[ " ${LABYRINTH_SKIP-daedalus-cad-git icarus-git argus-git yara-x} " == *" $name "* ]]; then echo "==> $name: not on the ISO, skipping"; continue; fi
   if (( ${#only[@]} )) && [[ " ${only[*]} " != *" $name "* ]]; then continue; fi
   if (( ! ${#only[@]} )) && [[ " ${local_source[*]} " != *" $name "* ]]; then
     built=1
