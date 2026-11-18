@@ -5,7 +5,11 @@ import subprocess
 import tempfile
 import unittest
 
-SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "packages", "tools", "shell", "labyrinth-sarina-ask")
+# the Rust program (labyrinth-tools; the shell script it replaced was kept in packages/tools/shell until 2026-11-15): a build in
+# packages/tools/target, or LABYRINTH_SARINA_ASK=PATH (CI's Rust job runs these with its debug build)
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROGRAM = os.environ.get("LABYRINTH_SARINA_ASK") or next(
+    (p for p in (os.path.join(ROOT, "packages", "tools", "target", k, "labyrinth-sarina-ask") for k in ("release", "debug")) if os.path.exists(p)), None)
 
 
 def stub(d, name, body):
@@ -15,6 +19,7 @@ def stub(d, name, body):
     os.chmod(p, os.stat(p).st_mode | stat.S_IEXEC)
 
 
+@unittest.skipUnless(PROGRAM, "labyrinth-sarina-ask is not built (cargo build --release in packages/tools) and LABYRINTH_SARINA_ASK is not set")
 class SarinaAsk(unittest.TestCase):
     def run_it(self, whisper=None, model=True, ask="echo '**Sure.** It is `ok`.'", ollama=True, home_conf=None, tone=None, env_extra=None):
         d = tempfile.mkdtemp()
@@ -36,7 +41,7 @@ class SarinaAsk(unittest.TestCase):
             open(m, "wb").write(b"x")
             env["LABYRINTH_STT_MODEL"] = m
         env.update(env_extra or {})
-        return subprocess.run(["bash", SCRIPT, wav], capture_output=True, text=True, env=env)
+        return subprocess.run([PROGRAM, wav], capture_output=True, text=True, env=env)
 
     def test_a_tone_hint_reaches_her_prompt_only_when_switched_on(self):
         asks = 'echo "$@" | tr -d "\\n"'
@@ -63,7 +68,7 @@ class SarinaAsk(unittest.TestCase):
         self.assertNotIn("laughed", r.stdout)
 
     def test_no_recording(self):
-        r = subprocess.run(["bash", SCRIPT, "/nonexistent.wav"], capture_output=True, text=True)
+        r = subprocess.run([PROGRAM, "/nonexistent.wav"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)
         self.assertIn("no recording", r.stdout)
 

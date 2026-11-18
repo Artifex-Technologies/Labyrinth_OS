@@ -260,6 +260,7 @@
     ]
    },
    "icon": "ai.storyteller.designcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/designcraft/278aba4a1428f67196dcbc0afed676d78d6e9b3c/assets/app-icon/hicolor/128x128/apps/ai.storyteller.designcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -283,6 +284,7 @@
     ]
    },
    "icon": "ai.storyteller.vectorcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/vectorcraft/cad4bb0c6e8f15bdc6f94fb1820507b5a7b6d1af/assets/app-icon/hicolor/128x128/apps/ai.storyteller.vectorcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -306,6 +308,7 @@
     ]
    },
    "icon": "ai.storyteller.photocraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/photocraft/51e8a99bf07199c6728512920c84514fef44e760/assets/app-icon/hicolor/128x128/apps/ai.storyteller.photocraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -329,6 +332,7 @@
     ]
    },
    "icon": "ai.storyteller.filmcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/filmcraft/892126cb72ab0c8ae5f668ed1928bf61713d142a/assets/app-icon/hicolor/128x128/apps/ai.storyteller.filmcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -352,6 +356,7 @@
     ]
    },
    "icon": "ai.storyteller.soundcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/soundcraft/4898ff03eed9c2a44914d2cd2415c1ea9a5e9427/assets/app-icon/hicolor/128x128/apps/ai.storyteller.soundcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -375,6 +380,7 @@
     ]
    },
    "icon": "ai.storyteller.cadcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/cadcraft/0e3f62f50d6230406f5bfb6cb12ba93445cdaa0a/assets/app-icon/hicolor/128x128/apps/ai.storyteller.cadcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -398,6 +404,7 @@
     ]
    },
    "icon": "ai.storyteller.figcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/figcraft/b025312aa1967f0b9dbbab99ecb750fa1506d9a8/assets/app-icon/hicolor/128x128/apps/ai.storyteller.figcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -444,6 +451,7 @@
     ]
    },
    "icon": "ai.storyteller.pdfcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/pdfcraft/e191b0ea69b7dcc4e554c1c4e51b6214bec1c590/assets/app-icon/hicolor/128x128/apps/ai.storyteller.pdfcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -467,6 +475,7 @@
     ]
    },
    "icon": "ai.storyteller.wordcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/wordcraft/cc90520b9d8fb0d1e6be2c2688e6f915319e850a/assets/app-icon/hicolor/128x128/apps/ai.storyteller.wordcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -490,6 +499,7 @@
     ]
    },
    "icon": "ai.storyteller.gridcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/gridcraft/407e0e1fa9146df5ddf632750a93aabfbb079208/assets/app-icon/hicolor/128x128/apps/ai.storyteller.gridcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -513,6 +523,7 @@
     ]
    },
    "icon": "ai.storyteller.deckcraft",
+   "icon_url": "https://raw.githubusercontent.com/storytold/deckcraft/bb2c2254ee60761b2b4dab2053fe33d7190b6804/assets/app-icon/hicolor/128x128/apps/ai.storyteller.deckcraft.png",
    "reviewed": true,
    "tags": [
     "artcraft"
@@ -1630,6 +1641,32 @@
    "repo": "https://github.com/Artifex-Technologies/Daedalus_CAD"
   },
   {
+   "id": "icarus",
+   "name": "Icarus",
+   "subtitle": "Vehicle diagnostics and tuning",
+   "description": "Plug an OBD adapter into a car or truck and see what its computers say: every module's trouble codes in plain words with where to start, live data, freeze frames, and tests that run the fan, pumps or throttle while you hold a button. It also opens ECU maps and shows what a tune changed. Made by Artifex, in Rust.",
+   "category": "Utilities",
+   "subcategory": "Vehicles",
+   "source": {
+    "type": "component",
+    "id": "icarus"
+   },
+   "icon": "icarus",
+   "reviewed": true,
+   "note": "Made by Artifex. Early software. It will not delete emissions equipment, bypass an immobilizer or change an odometer, and never writes to airbag modules; before any change it saves what was there, with a way back.",
+   "tags": [
+    "artifex",
+    "car",
+    "obd",
+    "obd2",
+    "ecu",
+    "tuning",
+    "diagnostics",
+    "check engine"
+   ],
+   "repo": "https://github.com/Artifex-Technologies/Icarus"
+  },
+  {
    "id": "coolercontrol",
    "name": "CoolerControl",
    "subtitle": "Fan curves and AIO coolers",
@@ -1717,6 +1754,114 @@
     "keyboard",
     "unifying",
     "bolt"
+   ]
+  },
+  {
+   "id": "fingerprint",
+   "name": "Fingerprint reader",
+   "subtitle": "Enrol fingers, sudo with a finger",
+   "description": "fprintd and libfprint for the fingerprint readers of most laptops (Synaptics, Goodix, Elan, FPC and others). Enrol in Settings > Users once Secure Boot is on and the system disk is encrypted; using a finger for sudo is a switch there, off until you turn it on.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "fingerprint"
+   },
+   "icon": "auth-fingerprint-symbolic",
+   "reviewed": true,
+   "tags": [
+    "fingerprint",
+    "fprintd",
+    "laptop",
+    "sudo",
+    "login"
+   ]
+  },
+  {
+   "id": "firmware-updates",
+   "name": "Firmware updates",
+   "subtitle": "BIOS, docks and devices from LVFS",
+   "description": "fwupd: firmware updates for the BIOS, Thunderbolt, docks, fingerprint readers, SSDs and more, from the Linux Vendor Firmware Service. Nothing is shared with other computers on your network.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "firmware-updates"
+   },
+   "icon": "software-update-available-symbolic",
+   "reviewed": true,
+   "tags": [
+    "firmware",
+    "bios",
+    "fwupd",
+    "lvfs",
+    "laptop",
+    "update"
+   ]
+  },
+  {
+   "id": "thunderbolt",
+   "name": "Thunderbolt docks",
+   "subtitle": "Docks and devices over Thunderbolt and USB4",
+   "description": "bolt: lets Thunderbolt and USB4 docks, external graphics and storage connect on computers that ask before connecting one. A device approved once connects by itself afterwards.",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "thunderbolt"
+   },
+   "icon": "thunderbolt-symbolic",
+   "reviewed": true,
+   "tags": [
+    "thunderbolt",
+    "usb4",
+    "dock",
+    "bolt",
+    "laptop"
+   ]
+  },
+  {
+   "id": "thermald",
+   "name": "Intel laptop cooling",
+   "subtitle": "thermald: temperature limits from the firmware's tables",
+   "description": "Intel's thermal daemon for Intel laptops: works from the firmware's thermal tables and follows the power mode. ThinkPads whose firmware runs the cooling do not need it (it stops there by itself).",
+   "category": "Utilities",
+   "subcategory": "System",
+   "source": {
+    "type": "component",
+    "id": "thermald"
+   },
+   "icon": "temperature-symbolic",
+   "reviewed": true,
+   "tags": [
+    "thermald",
+    "intel",
+    "laptop",
+    "temperature",
+    "cooling",
+    "fans"
+   ]
+  },
+  {
+   "id": "on-screen-keyboard",
+   "name": "On-screen keyboard",
+   "subtitle": "wvkbd: a keyboard for tablet mode",
+   "description": "A small on-screen keyboard. On a 2-in-1 Yggdrasil shows it when the screen is folded into a tablet and no keyboard is plugged in.",
+   "category": "Utilities",
+   "subcategory": "Accessibility",
+   "source": {
+    "type": "component",
+    "id": "on-screen-keyboard"
+   },
+   "icon": "input-keyboard-virtual",
+   "reviewed": true,
+   "tags": [
+    "keyboard",
+    "on-screen",
+    "osk",
+    "tablet",
+    "touch",
+    "2-in-1"
    ]
   },
   {
@@ -2011,6 +2156,7 @@
  },
  "local_builds": [
   "daedalus-cad-git",
+  "icarus-git",
   "heimdall-git",
   "yggdrasil-calculator",
   "yggdrasil-taskmanager",

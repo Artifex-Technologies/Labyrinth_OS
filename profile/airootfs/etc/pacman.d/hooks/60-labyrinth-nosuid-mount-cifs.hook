@@ -1,0 +1,14 @@
+# Setuid-root helpers nothing here uses lose the bit, again after every update of their packages: each setuid program is a way
+# to root if it has a bug. This one: mount.cifs (users mounting SMB shares from fstab; root mounts with sudo still work, and the
+# file manager reaches shares without it). ksu has a hook of its own (60-labyrinth-nosuid-ksu.hook): one file a hook, so pacman
+# runs chmod itself, with no shell, and only when that file was just installed or upgraded (so it is there).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = usr/bin/mount.cifs
+
+[Action]
+Description = Removing setuid from mount.cifs (Labyrinth does not use it)...
+When = PostTransaction
+Exec = /usr/bin/chmod u-s,g-s /usr/bin/mount.cifs

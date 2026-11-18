@@ -15,6 +15,8 @@ pipewire-alsa
 pipewire-pulse
 pipewire-jack
 wireplumber
+heimdall-private-mic-git
+heimdall-multilink-git
 linux-cachyos
 linux-cachyos-nvidia-open
 linux-cachyos-lts
@@ -144,10 +146,6 @@ proton-cachyos
 protonup-qt
 protontricks
 umu-launcher
-# component: spotify
-spotify-launcher
-# component: obsidian
-obsidian
 # component: weather
 yggdrasil-weather
 # component: proton-drive

@@ -22,15 +22,18 @@ the machine only when that cannot be reached.
 | `virtualization` | QEMU, libvirt, UEFI firmware, dnsmasq, nftables (for Limbo) | |
 | `dev` | Node.js, npm, jq, the GitHub CLI, pip, fd, bubblewrap and socat: what Claude Code and most command-line development want (git is in the base system) | See [CLAUDE_CODE.md](CLAUDE_CODE.md); on in every preset except `minimal` |
 | `sarina` | Sarina, with her reverse-engineering tools (Java for Ghidra, Node for REA, bubblewrap, binutils) | Optional; the installer offers her |
-| `heimdall` | Heimdall, with ClamAV (its malware scanning) and ClamAV's signature updates | Optional; the installer offers it. It dissects malware inside Limbo's sealed guest, not on the host |
+| `heimdall` | Heimdall, with ClamAV (its malware scanning) and ClamAV's signature updates | Optional; the installer offers it. It dissects malware inside Limbo's sealed guest, not on the host. The private microphone is not part of it: `heimdall-private-mic-git` is in the base system, on every install ([LOCATION_SOUNDS.md](LOCATION_SOUNDS.md)). So is `heimdall-multilink-git`, several internet connections at once, off until switched on in Settings > Wi-Fi & Network (Heimdall's `docs/MULTILINK.md`) |
 | `kairos` | Kairos, Labyrinth's own frame generation (preview; `labyrinth-framegen` until 2026-11-07): a Vulkan layer for 64- and 32-bit games and its launcher | Settings > Games chooses games and 2x/3x/4x |
 | `frame-generation` | lsfg-vk (Lossless Scaling's frame generation), from its source in the AUR | Needs Lossless Scaling from Steam; CC BY-NC-ND, so not part of Labyrinth itself |
 | `daedalus-cad` | Daedalus CAD, Artifex's SketchUp-style modeler | From the package repository |
+| `icarus` | Icarus, Artifex's vehicle diagnostics and tuning app (OBD adapters, trouble codes, live data, ECU maps) | From the package repository; brings a udev rule (uaccess) for tuners with no Linux driver of their own. No emissions deletes, no immobilizer or odometer changes |
 | Devices: `logitech`, `gaming-mice`, `razer`, `ckb-next`, `xbox-controllers`, `hp-printers` | Solaar; Piper + libratbag; OpenRazer; ckb-next (Corsair); xpadneo; HPLIP | Not on the ISO: the installer offers them (ticked when such a USB device is plugged in) and installs them at the first login. Razer and xpadneo bring dkms and both kernels' headers, which only drivers built on the machine need |
+| This laptop: `fingerprint`, `thermald`, `on-screen-keyboard` | fprintd + libfprint; thermald; wvkbd (AUR) | Not on the ISO. Ticked by the hardware: a fingerprint reader libfprint supports (by exact USB id), an Intel laptop whose firmware does not run the cooling itself (not a ThinkPad with DYTC: thermald stops there), a tablet-mode switch. Installing fprintd changes nothing in PAM; fingerprint for sudo is a switch in Settings > Users, off until I turn it on. See HARDWARE.md |
 | `local-ai` | Ollama for Sarina (CUDA on NVIDIA, Vulkan otherwise) | Not in the image (~6 GB with CUDA); Sarina offers to install it on first use. Competes with games for GPU memory |
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
-obsidian), `everything` (all of the above including weather; your own setup).
+obsidian), `everything` (all of the above including weather; your own setup). Spotify is in no preset and Obsidian only in
+`creative` (2026-11-13): neither is part of the OS, and Agora installs both.
 
 ## Software that only lists Fedora or Debian
 
@@ -71,9 +74,35 @@ repos into pacman. They tend to break on library versions, and uninstalling leav
 ## Choosing at install time
 
 The installer's **Optional software** page (`/usr/share/labyrinth/installer-extras.json`) offers Sarina and Heimdall under "AI
-and security", and the device components under "Devices", each ticked when such a USB device is plugged in. What the medium
+and security", the device components under "Devices", each ticked when such a USB device is plugged in, and a laptop's under
+"This laptop", ticked by what the computer is (`chosen_if_machine`: processor maker, battery, tablet-mode switch) or by the
+exact reader (`chosen_if_usb` with vendor:product). Where a maker also makes other things, its id counts only for its kind of device
+(`usb_kind`, read from the device's USB interfaces): Logitech and Corsair for keyboards and mice, the gaming-mouse makers for mice
+(plus the exact mice libratbag supports from smaller makers), HP for printers, Microsoft for Xbox controllers. So a Corsair fan
+controller does not tick ckb-next, and a HyperX mouse (HP's vendor id) does not tick HPLIP. HP scanners without a printer part are
+not ticked; Agora has HPLIP for them. What the medium
 does not carry is installed at the first login, online (`labyrinth-first-components`). Its **Browsers** page
 (`installer-browsers.json`) does the same for browsers.
+
+An install with no internet at all works from the medium alone. A browser that is not on it is left for Agora with a warning, and
+chosen parts wait in the first-login list. `labyrinth-first-components` (a user unit since 2026-11-13, was an autostart entry) runs
+at sign-in and again whenever the computer comes online (Yggdrasil's `yggdrasil-online.target`, which NetworkManager's dispatcher
+starts). So an offline install gets them as soon as there is a connection, not only at the next login. After a failed install it
+waits for the next login, so a reconnect does not bring up the password box again.
+
+## Device software later, by itself
+
+A computer installed offline, or with a device's software switched off, is offered it later. Yggdrasil's
+`yggdrasil-device-offers` reads the same `installer-extras.json` (`devices` in `labyrinth-packages.conf`), so the device list
+stays in one place. It looks at sign-in, when a USB device is plugged in, and when the computer comes online, and only offers
+when online. One notification names what is missing for this computer's devices:
+
+- **Install**: `labyrinth-apps install ...` through Agora's password box;
+- **Don't ask again**;
+- closing it means not now (asked again next session).
+
+Nothing installs without the click. Nothing polls or keeps running: udev, the dispatcher and the session start a short user
+service. See Yggdrasil's `packages/device-offers/README.md`.
 
 ## Not done
 

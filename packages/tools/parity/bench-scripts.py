@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""bench-scripts: the shell scripts of profile/airootfs/usr/local/{bin,sbin} against their Rust ports (packages/tools), timed
+"""bench-scripts: the shell scripts that were in profile/airootfs/usr/local/{bin,sbin} against their Rust ports (packages/tools), timed
 on the parity cases' own worlds (parity/cases_root.py: a user, mount and network namespace with a root folder of its own and
 stand-ins for every outside program). Nothing on this computer is changed and nothing reaches the network.
 
     cargo build --release && python3 -I parity/bench-scripts.py [--runs 30] [--commit REV] [--only NAME[,NAME]] [--json FILE]
 
-- The old side is each script as git has it at --commit (default HEAD), written to a scratch folder; the new side is
-  target/release.
+- The old side is each script as git has it at --commit (default 5ed56c8, the last commit with packages/tools/shell, which
+  was kept for a rollback until 2026-11-15), written to a scratch folder; the new side is target/release.
 - Each case: its world is made (again before every run when the program changes it), one unmeasured run of each (their exit
   codes and output compared), then RUNS of each, alternating which goes first, one process at a time, at nice 19.
 - A small C launcher (built with cc), run inside the world in place of the program, starts it and reports its wall time, user +
@@ -134,9 +134,7 @@ def load_compare(args):
 def old_scripts(commit, dest):
     os.makedirs(dest, exist_ok=True)
     for n in (c[0] for c in CASES):
-        where = "sbin" if n == "labyrinth-agent-window" else "bin"
-        body = subprocess.run(["git", "-C", REPO, "show", "%s:profile/airootfs/usr/local/%s/%s" % (commit, where, n)], check=True,
-                              capture_output=True).stdout
+        body = subprocess.run(["git", "-C", REPO, "show", "%s:packages/tools/shell/%s" % (commit, n)], check=True, capture_output=True).stdout
         with open(os.path.join(dest, n), "wb") as f:
             f.write(body)
 
@@ -204,7 +202,7 @@ def main():
     global LAUNCH, FAKE
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=30)
-    ap.add_argument("--commit", default="HEAD")
+    ap.add_argument("--commit", default="5ed56c8")
     ap.add_argument("--only")
     ap.add_argument("--json")
     args = ap.parse_args()

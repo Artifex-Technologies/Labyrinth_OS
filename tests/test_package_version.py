@@ -147,29 +147,13 @@ class SystemVersion(unittest.TestCase):
         if YGG.is_dir():
             self.assertEqual((YGG / "VERSION").read_text().strip(), v, "Yggdrasil's VERSION is the system's")
 
-    def run_install(self, text, version):
-        d = Path(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, d)
-        (d / "os-release").write_text(text)
-        script = (ROOT / "packages/pkgbuilds/labyrinth-tools/labyrinth-tools.install").read_text()
-        script = script.replace("/etc/os-release", str(d / "os-release")).replace("/etc/.os-release", str(d / ".os-release"))
-        (d / "x.install").write_text(script)
-        subprocess.run(["sh", "-c", f". '{d}/x.install'; post_upgrade {version} 0.1.0-2"], check=True)
-        return (d / "os-release").read_text(), sorted(p.name for p in d.iterdir())
-
     def test_labyrinth_tools_writes_it_on_an_update(self):
-        before = 'NAME="Labyrinth OS"\nPRETTY_NAME="Labyrinth OS"\nID=labyrinth\nBUILD_ID=rolling\nIMAGE_VERSION=2026.10.13\n'
-        after, files = self.run_install(before, "1.0.0-3")
-        self.assertEqual(after, 'NAME="Labyrinth OS"\nPRETTY_NAME="Labyrinth OS"\nVERSION="1.0"\nVERSION_ID=1.0.0\nID=labyrinth\n'
-                                'BUILD_ID=rolling\nIMAGE_VERSION=2026.10.13\n')
-        self.assertEqual(files, ["os-release", "x.install"], "no temporary file left")
-        again, _ = self.run_install(after, "1:1.1.1-1")
-        self.assertIn('VERSION="1.1.1"\nVERSION_ID=1.1.1\n', again)
-        self.assertEqual(again.count("VERSION="), 2, "replaced, not added (IMAGE_VERSION stays)")
-
-    def test_another_system_keeps_its_own(self):
-        other = 'NAME="LykanOS"\nID=lykanos\nVERSION="2"\n'
-        self.assertEqual(self.run_install(other, "1.0.0-1")[0], other)
+        # the writing itself is labyrinth-os-release's, tested in packages/tools/src/os_release.rs
+        script = (ROOT / "packages/pkgbuilds/labyrinth-tools/labyrinth-tools.install").read_text()
+        self.assertIn('usr/bin/labyrinth-os-release "$1"', script)
+        self.assertIn("post_install \"$1\"", script)
+        recipe = (ROOT / "packages/pkgbuilds/labyrinth-tools/PKGBUILD").read_text()
+        self.assertIn("labyrinth-os-release", recipe.split("package()", 1)[1])
 
 
 class Release(unittest.TestCase):

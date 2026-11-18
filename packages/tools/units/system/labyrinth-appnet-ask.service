@@ -9,6 +9,10 @@ Restart=on-failure
 RestartSec=5
 RuntimeDirectory=labyrinth
 StateDirectory=labyrinth
+# /etc/labyrinth (app-network.json) is made here when it is not there yet: ReadWritePaths below names it, and a path it names
+# that does not exist stops the service before it starts. A new install had none, so the service failed every 5 seconds
+# from boot (seen 2026-11-13 on a laptop: over 1,900 restarts).
+ConfigurationDirectory=labyrinth
 # It needs the firewall (nft), the kernel log and its two state files, nothing else.
 ProtectSystem=strict
 ReadWritePaths=/etc/labyrinth /var/lib/labyrinth /run/labyrinth

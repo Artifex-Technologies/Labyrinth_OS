@@ -7,8 +7,11 @@ How to write the ISO to a USB stick, try Labyrinth live, install it, and what to
 
 - The ISO (`labyrinth-DATE-x86_64.iso`, under 4 GB) and its `SHA256SUMS`.
 - A USB stick of **8 GB or more**. Everything on it is erased.
-- A screen, a keyboard and a mouse. A network cable helps: the parts chosen on the installer's Optional software page come from
-  the internet at the first login.
+- A screen, a keyboard and a mouse. A network helps: the parts chosen on the installer's Optional software page come from the
+  internet at the first login. There is no need to connect before starting the installer: its step after the language joins a
+  Wi-Fi network (a USB Wi-Fi adapter works too, see HARDWARE.md), and it can be skipped; with a cable already connected, or
+  without any Wi-Fi adapter, the step is not shown.
+  A network joined there is kept for the installed system.
 
 ## 1. Flash the USB stick (on Windows)
 
@@ -44,6 +47,21 @@ installing:
 1. Tap Super, type "install", and open **Install Labyrinth**.
 2. The pages, in order:
    - **Welcome:** the language.
+   - **Network:** join a Wi-Fi network (a secured one asks for its password; **Hidden network…** takes a name that is not
+     broadcast), or **Skip**. Without a network, device software, browsers not on the stick and the latest updates wait until
+     you connect in Settings > Wi-Fi & Network. With a network cable already connected, or on a computer without Wi-Fi, this
+     page is not shown (the summary says when you are offline). The page shows each Wi-Fi adapter's address (MAC) with a Copy
+     button, for a network that reserves addresses or lets only known ones in. Heimdall gives each network a private address,
+     so the join form has **Use this computer's real address**: tick it for such a network, and on the installed system make it
+     a home network with the real address in Heimdall (`sudo heimdall-wifi-guard trust --home --real-address` while connected)
+     so it keeps using the real one. Heimdall's levels: plain `sudo heimdall-wifi-guard trust` makes a network **trusted** (no
+     "untrusted" notices, every protection kept, a private address); `trust --home` makes it your home network (the device list
+     and discovery on). To let others on one network find this computer (casting, printers, KDE Connect, Syncthing) whatever its
+     level: `sudo heimdall-wifi-guard discoverable on`, or the switch on the network's page in Settings > Wi-Fi & Network, which
+     asks for the password.
+   - Plugged in later: a cable connects by itself (the offline notes go); a USB Wi-Fi adapter brings a **Join a Wi-Fi network**
+     button on the page you are on, and you come back there after joining. Once online, the installer already downloads the
+     browsers and optional software you chose (the summary says how far it is), so the install is quicker.
    - **Keyboard:** first the arrangement (QWERTY, QWERTZ, AZERTY, Dvorak, Colemak or another alphabet), then the layout. Try it in
      the box.
    - **Time zone:** search by place.

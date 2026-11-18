@@ -16,7 +16,9 @@ STATE = os.path.join(W, "etc", "app-network.json")
 ASK = os.path.join(W, "var", "app-ask.json")
 CG = os.path.join(W, "cgroup")
 AN = "labyrinth-appnet"
-ENV = {"LABYRINTH_APPNET_STATE": STATE, "LABYRINTH_ASK_STATE": ASK, "LABYRINTH_CGROUP_ROOT": CG, "STDIN_nft": "-f"}
+# LABYRINTH_APPNET_VIEWERS="": the viewer apps' "ask" defaults (2026-11-15, not in the scripts) stay off in these worlds
+ENV = {"LABYRINTH_APPNET_STATE": STATE, "LABYRINTH_ASK_STATE": ASK, "LABYRINTH_CGROUP_ROOT": CG, "STDIN_nft": "-f",
+       "LABYRINTH_APPNET_VIEWERS": ""}
 ROOT = ["unshare", "-r"]
 
 

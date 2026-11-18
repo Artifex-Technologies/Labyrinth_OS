@@ -46,6 +46,18 @@ class Catalog(unittest.TestCase):
             text = (a.get("description", "") + " " + a.get("subtitle", "")).lower()
             self.assertNotIn("pentest", text, "nothing in the Labyrinth listing talks about penetration testing")
 
+    def test_icon_addresses_are_https_and_pinned_to_a_commit_of_the_apps_own_repository(self):
+        # Agora fetches icon_url only for an app that is neither installed nor on Flathub (Yggdrasil market/src/vendor.rs)
+        pinned = re.compile(r"^https://raw\.githubusercontent\.com/([A-Za-z0-9-]+/[A-Za-z0-9._-]+)/[0-9a-f]{40}/[A-Za-z0-9._/-]+\.(png|svg)$")
+        with_url = [a for a in APPS if "icon_url" in a]
+        for a in with_url:
+            m = pinned.match(a["icon_url"])
+            self.assertTrue(m, a["id"])
+            self.assertEqual(a.get("repo"), "https://github.com/" + m.group(1), a["id"] + ": the icon comes from the app's own repository")
+        artcraft = [a["id"] for a in APPS if "artcraft" in a.get("tags", [])]
+        self.assertEqual(len(artcraft), 11)
+        self.assertTrue(all(a in {x["id"] for x in with_url} for a in artcraft), "every ArtCraft app names its icon")
+
     def test_the_integration_points_at_this_catalog(self):
         conf = open(os.path.join(SHARE, "yggdrasil", "integrations", "labyrinth-packages.conf")).read()
         self.assertIn("catalog = /usr/share/labyrinth/agora/catalog.json", conf)

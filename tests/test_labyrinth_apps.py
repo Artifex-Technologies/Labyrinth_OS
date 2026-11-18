@@ -1,8 +1,8 @@
-"""Tests for labyrinth-apps and scripts/gen-packages.py. Run: python tests/test_labyrinth_apps.py"""
-import contextlib
+"""Tests for scripts/gen-packages.py (the ISO's package list from packages.base and components.json). labyrinth-apps itself is
+labyrinth-tools' Rust program, tested in packages/tools (src/apps/tests.rs, tests/apps.rs); its Python script and the tests of it
+here were removed on 2026-11-15. Run: python tests/test_labyrinth_apps.py"""
 import importlib.machinery
 import importlib.util
-import io
 import json
 import os
 import subprocess
@@ -21,165 +21,7 @@ def load_module(name, path):
     return mod
 
 
-apps = load_module("labyrinth_apps", os.path.join(ROOT, "packages", "tools", "python", "labyrinth-apps"))
 gen = load_module("gen_packages", os.path.join(ROOT, "scripts", "gen-packages.py"))
-apps.MANIFEST = MANIFEST
-# the commands below run as on a system that has fetched its package lists, whatever this machine has
-import tempfile as _tempfile
-_SYNC = _tempfile.mkdtemp()
-open(os.path.join(_SYNC, "core.db"), "w").close()
-os.environ["LABYRINTH_PACMAN_SYNC"] = _SYNC
-
-
-def run(argv, installed):
-    out, err = io.StringIO(), io.StringIO()
-    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-        rc = apps.main(argv, installed=installed)
-    return rc, out.getvalue(), err.getvalue()
-
-
-class Manifest(unittest.TestCase):
-    def test_presets_reference_real_components(self):
-        comps, presets = apps.load(MANIFEST)
-        self.assertIn("everything", presets)
-        self.assertEqual(presets["minimal"], [])
-
-    def test_every_component_installs_something(self):
-        comps, _ = apps.load(MANIFEST)
-        for i, c in comps.items():
-            self.assertTrue(apps.all_packages(c), i)
-
-    def test_unknown_preset_member_is_rejected(self):
-        import tempfile
-        d = json.load(open(MANIFEST, encoding="utf-8"))
-        d["presets"]["bad"] = ["nope"]
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
-            json.dump(d, f)
-        with self.assertRaises(ValueError):
-            apps.load(f.name)
-        os.unlink(f.name)
-
-
-class Commands(unittest.TestCase):
-    def test_list_shows_state(self):
-        rc, out, _ = run(["list"], installed={"obsidian", "rclone"})
-        self.assertEqual(rc, 0)
-        self.assertRegex(out, r"obsidian\s+installed")
-        self.assertRegex(out, r"proton-drive\s+partial")
-        self.assertRegex(out, r"steam\s+not installed")
-
-    def test_dry_run_install_skips_installed_and_runs_nothing(self):
-        rc, out, _ = run(["install", "obsidian", "spotify", "--dry-run"], installed={"obsidian"})
-        self.assertEqual(rc, 0)
-        self.assertIn("spotify-launcher", out)
-        self.assertNotIn("obsidian", out.split("==>")[1])
-        self.assertIn("pacman -S --needed", out)
-
-    def test_pkgbuild_component_uses_makepkg_when_no_repository_has_it(self):
-        comps, _ = apps.load(MANIFEST)
-        i = "limbo"
-        steps = apps.plan_install([i], comps, set(), in_repos=lambda name: False)
-        self.assertEqual([s[1] for s in steps if s[2]], [["makepkg", "-si"]])
-        self.assertEqual(steps[0][2], "limbo-git")
-
-    def test_pkgbuild_component_comes_from_the_repository_and_updates_there(self):
-        comps, _ = apps.load(MANIFEST)
-        i = "limbo"
-        steps = apps.plan_install([i], comps, {"limbo-git"}, in_repos=lambda name: name == "limbo-git")
-        self.assertFalse(any(s[2] for s in steps), "nothing is built on this machine")
-        pacman = [s[1] for s in steps if "pacman" in s[1]]
-        self.assertEqual(len(pacman), 1)
-        self.assertIn("--needed", pacman[0], "an installed, current build is left alone; an older one is updated")
-        self.assertIn("limbo-git", pacman[0], "asked for although installed: that is how its update arrives")
-
-    def test_a_fresh_install_fetches_the_package_lists_and_takes_builds_from_the_repository(self):
-        comps, _ = apps.load(MANIFEST)
-        steps = apps.plan_install(["limbo", "obsidian"], comps, set(), in_repos=lambda name: False, fresh=True)
-        self.assertFalse(any(s[2] for s in steps), "nothing is built on this machine")
-        pacman = [s[1] for s in steps if "pacman" in s[1]]
-        self.assertEqual(len(pacman), 1)
-        self.assertIn("-Syu", pacman[0], "lists fetched with a full update, never -Sy alone")
-        self.assertIn("limbo-git", pacman[0])
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmp:
-            self.assertTrue(apps.never_synced(tmp))
-            self.assertTrue(apps.never_synced(os.path.join(tmp, "missing")))
-            open(os.path.join(tmp, "core.db"), "w").close()
-            self.assertFalse(apps.never_synced(tmp))
-
-    def test_proton_and_vscode_come_from_proton_and_microsoft_through_the_aur(self):
-        for comp, pkg in (("proton-pass", "proton-pass-bin"), ("proton-mail", "proton-mail-bin"), ("vscode", "visual-studio-code-bin")):
-            rc, out, _ = run(["install", comp, "--dry-run"], installed=set())
-            self.assertEqual(rc, 0)
-            self.assertIn(f"yay -S --needed {pkg}", out)
-            self.assertNotIn("makepkg", out)
-
-    def test_makepkg_from_agora_asks_through_its_password_box(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmp:
-            os.environ.pop("AGORA_SUDO", None)
-            self.assertEqual(apps.makepkg_gui_args(tmp), [])
-            os.environ["AGORA_SUDO"] = "/usr/lib/agora/sudo"
-            try:
-                args = apps.makepkg_gui_args(tmp)
-            finally:
-                del os.environ["AGORA_SUDO"]
-            self.assertEqual(args[:2], ["--noconfirm", "--config"])
-            conf = open(args[2]).read()
-            self.assertIn("source /etc/makepkg.conf", conf)
-            self.assertIn("PACMAN_AUTH=(/usr/lib/agora/sudo)", conf)
-
-    def test_preset_expands(self):
-        rc, out, _ = run(["install", "--preset", "gaming", "--dry-run"], installed=set())
-        self.assertIn("steam", out)
-        self.assertNotIn("spotify", out)
-
-    def test_nothing_to_do_when_all_installed(self):
-        rc, out, _ = run(["install", "obsidian", "--dry-run"], installed={"obsidian"})
-        self.assertEqual((rc, out.strip()), (0, "nothing to do"))
-
-    def test_unknown_component_and_preset(self):
-        self.assertEqual(run(["install", "nope", "--dry-run"], set())[0], 2)
-        self.assertEqual(run(["install", "--preset", "nope", "--dry-run"], set())[0], 2)
-        self.assertEqual(run(["install", "--dry-run"], set())[0], 2)
-
-    def test_remove_only_touches_installed_packages(self):
-        rc, out, _ = run(["remove", "proton-drive", "--dry-run"], installed={"rclone"})
-        self.assertIn("pacman -Rs rclone", out)
-        self.assertNotIn("fuse3", out)
-
-    def test_weather_is_optional_and_enables_its_timer(self):
-        comps, presets = apps.load(MANIFEST)
-        self.assertIn("weather", comps)
-        self.assertNotIn("weather", presets["minimal"] + presets["gaming"] + presets["creative"])
-        rc, out, _ = run(["install", "weather", "--dry-run"], installed=set())
-        self.assertIn("makepkg -si", out)
-        self.assertIn("systemctl --global enable yggdrasil-weather-record.timer", out)
-
-    def test_removing_weather_disables_the_timer_first(self):
-        rc, out, _ = run(["remove", "weather", "--dry-run"], installed={"yggdrasil-weather"})
-        self.assertLess(out.index("--global disable"), out.index("pacman -Rs yggdrasil-weather"))
-
-    def test_minimal_iso_has_no_weather_package(self):
-        text = gen.compose(gen.read_base(os.path.join(ROOT, "profile", "packages.base")), json.load(open(MANIFEST, encoding="utf-8")), [])
-        self.assertNotIn("yggdrasil-weather", text)
-
-    def test_without_pacman_it_explains_instead_of_crashing(self):
-        orig = apps.pacman_installed
-        apps.pacman_installed = lambda: None
-        try:
-            out, err = io.StringIO(), io.StringIO()
-            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-                self.assertEqual(apps.main(["install", "obsidian"]), 2)
-                self.assertEqual(apps.main(["install", "obsidian", "--dry-run"]), 0)
-                self.assertEqual(apps.main(["list"]), 0)
-            self.assertIn("pacman not found", err.getvalue())
-        finally:
-            apps.pacman_installed = orig
-
-    def test_info_mentions_unverified_packages(self):
-        rc, out, _ = run(["info", "steam"], installed=set())
-        self.assertIn("proton-cachyos", out)
 
 
 class Generator(unittest.TestCase):
@@ -197,6 +39,10 @@ class Generator(unittest.TestCase):
         text = gen.compose(self.base, self.data, ["steam", "obsidian", "steam"])
         self.assertEqual(text.count("\nsteam\n"), 1)
         self.assertIn("\nobsidian\n", text)
+
+    def test_minimal_iso_has_no_weather_package(self):
+        text = gen.compose(self.base, self.data, [])
+        self.assertNotIn("yggdrasil-weather", text)
 
     def test_unknown_component_fails(self):
         with self.assertRaises(KeyError):

@@ -1,5 +1,10 @@
 # Notifications are shown by Yggdrasil's panel. Here, ahead of /usr/share (where mako has its own file for this name), so a
 # notification sent before the panel is up starts the panel, not mako.
+# SystemdService: D-Bus asks systemd to start the panel's own unit (made from /etc/xdg/autostart/yggdrasil-panel.desktop), so
+# a panel started this way gets that unit's drop-in (Restart=on-failure, ExitType=main) and is the same panel the session's
+# autostart and yggdrasil-session's crash recovery look after, never a second one beside it. dbus-broker passes the name to
+# systemd as written (\x2d included). Exec is for a D-Bus daemon without systemd activation.
 [D-BUS Service]
 Name=org.freedesktop.Notifications
 Exec=/usr/bin/labyrinth-notify-activate
+SystemdService=app-yggdrasil\x2dpanel@autostart.service

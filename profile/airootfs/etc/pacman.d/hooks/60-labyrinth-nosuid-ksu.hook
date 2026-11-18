@@ -1,0 +1,12 @@
+# Setuid-root helpers nothing here uses lose the bit, again after every update of their packages: each setuid program is a way
+# to root if it has a bug. This one: ksu (Kerberos su). mount.cifs has a hook of its own (60-labyrinth-nosuid-mount-cifs.hook).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Path
+Target = usr/bin/ksu
+
+[Action]
+Description = Removing setuid from ksu (Labyrinth does not use it)...
+When = PostTransaction
+Exec = /usr/bin/chmod u-s,g-s /usr/bin/ksu

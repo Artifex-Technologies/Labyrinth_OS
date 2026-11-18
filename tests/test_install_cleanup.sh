@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
 # Exercise labyrinth-install-cleanup against a mock target root (no root, no
 # Linux install needed). Run from the repo root: bash tests/test_install_cleanup.sh
-# LABYRINTH_CLEANUP=PATH tests another build of it (the Rust one: packages/tools/target/release/labyrinth-install-cleanup).
+# It tests labyrinth-tools' Rust program: packages/tools/target/release (or debug) after a cargo build there, or
+# LABYRINTH_CLEANUP=PATH (CI's Rust job gives its debug build). The shell script it replaced was kept in packages/tools/shell
+# until 2026-11-15; git has it.
 set -u
 here=$(cd "$(dirname "$0")/.." && pwd)
-script=${LABYRINTH_CLEANUP:-$here/packages/tools/shell/labyrinth-install-cleanup}
-# a script is run with bash (git keeps it without its x bit), a program as it is
-run() { if head -c2 "$script" | grep -q '#!'; then bash "$script"; else "$script"; fi; }
+script=${LABYRINTH_CLEANUP:-}
+if [[ -z $script ]]; then
+  for k in release debug; do
+    [[ -x $here/packages/tools/target/$k/labyrinth-install-cleanup ]] && { script=$here/packages/tools/target/$k/labyrinth-install-cleanup; break; }
+  done
+fi
+if [[ -z $script ]]; then
+  echo "SKIP: labyrinth-install-cleanup is not built (cargo build --release in packages/tools) and LABYRINTH_CLEANUP is not set"
+  exit 0
+fi
+run() { "$script"; }
 pass=0; failn=0
 ok()   { printf 'PASS %s\n' "$1"; pass=$((pass+1)); }
 bad()  { printf 'FAIL %s\n' "$1"; failn=$((failn+1)); }

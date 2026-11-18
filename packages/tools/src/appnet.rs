@@ -7,6 +7,10 @@
 //!   get            the rules as JSON
 //!   prepare        as the user at login: start the slices of apps with a rule, then ask for `apply`
 //!   ruleset        print the nftables ruleset `apply` would load
+//!   viewers        viewer apps start on "ask" (appnet/viewers.rs): `status [--json]`, `on|off` (root)
+//!
+//! Not 1:1 with the script since 2026-11-15: `apply` first gives the viewer apps their "ask" rule (appnet/viewers.rs), and
+//! `viewers` is new; with LABYRINTH_APPNET_VIEWERS="" it is the script again.
 //!
 //! /etc/labyrinth/app-network.json: {"rules": {"1000": {"firefox": "block"}}}; /var/lib/labyrinth/app-ask.json holds what was
 //! allowed and denied for apps in ask mode (labyrinth-appnet-ask).
@@ -548,7 +552,10 @@ fn run(argv: &[String]) -> R<i32> {
     let c = argv[1].as_str();
     match c {
         "set" if argv.len() == 4 => cmd_set(&argv[2], &argv[3]),
-        "apply" => apply(None),
+        "apply" => match viewers::seed_logged_in(&cgroup_root())? {
+            Some(rules) => apply(Some(&rules)),
+            None => apply(None),
+        },
         "get" => {
             let mut top = Map::new();
             top.insert("rules".into(), rules_value(&load_state(None)?));
@@ -556,6 +563,15 @@ fn run(argv: &[String]) -> R<i32> {
             Ok(0)
         }
         "prepare" => cmd_prepare(),
+        "viewers" => match argv.get(2).map(String::as_str) {
+            Some("status") if argv.len() == 3 => viewers::status(false),
+            Some("status") if argv.len() == 4 && argv[3] == "--json" => viewers::status(true),
+            Some(w @ ("on" | "off")) if argv.len() == 3 => viewers::switch(w == "on"),
+            _ => {
+                eprintln!("labyrinth-appnet: unknown command (see --help)");
+                Ok(2)
+            }
+        },
         "ruleset" => {
             println!("{}", ruleset_now(&load_state(None)?)?);
             Ok(0)
@@ -578,6 +594,8 @@ pub fn main(argv: &[String]) -> i32 {
         Err(e) => py::crashed("labyrinth-appnet", &e),
     }
 }
+
+pub mod viewers;
 
 #[cfg(test)]
 mod tests;

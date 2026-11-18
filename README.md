@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo/labyrinth-tile.png" width="128" alt="Labyrinth OS icon"></p>
+
 # Labyrinth OS
 
 **Labyrinth OS** is a privacy- and security-first Linux distribution (CachyOS-based) with the Artifex ecosystem built in. Its desktop
@@ -7,8 +9,10 @@ photo and video work, CAD, everyday browsing.
 
 ![The desktop: the top bar, the dock, and notification pop-ups at the bottom right](assets/screenshots/desktop.png)
 
-*The desktop: the top bar (start button, workspaces, the open app's name, network, Bluetooth, date and time), the dock, and
-notification pop-ups at the bottom right. The black tab at the top middle is Fylgja, the notch.*
+*The desktop: the top bar (start button, workspaces, the open app's name, the status icons, the notification count, date and
+time), the dock, and notification pop-ups at the bottom right. The black tab at the top middle is Fylgja, the notch. This picture,
+the installer's and the distress password's below are made with Yggdrasil's `scripts/screenshots.sh` on its headless compositor,
+with a made-up computer and account.*
 
 ![fastfetch on Labyrinth](assets/screenshots/fastfetch.png)
 
@@ -19,7 +23,9 @@ user and computer name line.*
 ## The desktop: Yggdrasil
 
 Yggdrasil runs as its own session on Hyprland: top bar and dock, Fylgja, Settings, Agora (the app store), Minos (the file manager),
-the lock and login screens (greetd), the password box, the screenshot tool, the video player and the installer. No KDE. Its README,
+the lock and login screens (greetd), the password box, the screenshot tool, the video player, the Task Manager (with a page for
+every graphics card) and the installer. No KDE. Its programs are Rust, as are Labyrinth's own tools; Yggdrasil's own compositor is on its
+way (its hardware backend's first milestone runs in a virtual machine), and Hyprland stays the compositor until it is ready. Its README,
 screenshots and docs are in [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil). Labyrinth builds its packages from a
 checkout next to this repository (`scripts/build-local-packages.sh`); what Labyrinth adds to the desktop (Heimdall, Sarina, the
 installer's steps, the distress password) plugs in through integration files in `/usr/share/yggdrasil/integrations`.
@@ -27,7 +33,8 @@ installer's steps, the distress password) plugs in through integration files in 
 ## Installing
 
 Labyrinth installs with Yggdrasil's installer (the window and its `yggdrasil-install-system`, with Labyrinth's own clean-up and boot menu steps). It asks
-for the language, the keyboard (by type: QWERTY, QWERTZ, AZERTY, Dvorak, Colemak), the time zone, the disk and the account. The disk
+for the language, the network (Wi-Fi, Ethernet or a USB adapter, hidden networks too, or skip; the install's downloads are fetched
+while you choose the rest), the keyboard (by type: QWERTY, QWERTZ, AZERTY, Dvorak, Colemak), the time zone, the disk and the account. The disk
 can be erased, or partitions chosen by hand, for example beside Windows, keeping its EFI partition. The system partition is
 encrypted by default. See [Yggdrasil's docs/INSTALLER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/INSTALLER.md).
 
@@ -59,7 +66,8 @@ needs to start. Everything else comes from the internet when it is wanted:
 - **The installer's Optional software page** offers Sarina and Heimdall, and device software (Logitech, gaming mice, Razer,
   Corsair, Xbox controllers, HP printers), each ticked when such a device is plugged in. They are installed at the first login.
   Its Browsers page installs other browsers (Firefox, Brave, LibreWolf ...).
-- **Agora**, the app store, has the rest: Labyrinth's own apps, Steam, Proton's apps, VS Code, ArtCraft, Daedalus CAD and more.
+- **Agora**, the app store, has the rest: Labyrinth's own apps, Steam, Proton's apps, VS Code, ArtCraft, Daedalus CAD, Icarus
+  and more.
 - **Updates** reach every installed system, whatever ISO it came from: Labyrinth's own software is published, signed, to its
   package repository ([docs/PACKAGE_REPO.md](docs/PACKAGE_REPO.md)), so `pacman -Syu` and Agora's updates keep the desktop, Sarina,
   Heimdall and the apps current alongside Arch and CachyOS.
@@ -86,6 +94,13 @@ For games, Settings > Games (Yggdrasil) has frame generation per game (Labyrinth
   - BPF output is hardened.
 
   User namespaces stay on, since Steam, Flatpak and browsers need them, and so does nested virtualisation.
+- **The private microphone**, on by default and on every install: "Microphone (private)" is the real microphone with aircraft
+  tones and mains hum removed, which can place or date a recording; Minos scrubs them from files too. See
+  [docs/LOCATION_SOUNDS.md](docs/LOCATION_SOUNDS.md).
+- **The privacy pack**, on by default: downloaded files that would contact a server when opened are pointed out (never
+  changed); Minos makes a copy of a file without its hidden information (GPS, camera, author); PDF viewers, office suites,
+  image viewers and media players ask before they first go online; names that imitate others with look-alike letters are
+  marked. One switch each in Settings > Security > Privacy. See [docs/PRIVACY_PACK.md](docs/PRIVACY_PACK.md).
 - **Limbo** runs untrusted things in disposable virtual machines.
 - **Sarina**, the local AI assistant (optional, nothing leaves the computer), helps:
   - reviews Heimdall's findings every day and proposes fixes, which you approve and run;
@@ -113,9 +128,10 @@ Labyrinth is a **distribution profile, not a kernel rewrite**. It assembles upst
 | [Hyprland](https://hyprland.org) | The compositor Yggdrasil's session runs on (until Yggdrasil's own compositor is ready) |
 | [Omarchy](https://github.com/omacom/omarchy) | Ideas: keyboard-first shortcuts, fast start-up |
 | [EdenExplorer](https://github.com/mtucciarone/EdenExplorer) (MIT, Rust/egui) | The model for Minos, the file manager |
-| Artifex ecosystem | Yggdrasil, Heimdall, Limbo, Sarina, Daedalus_CAD, Argus_App; shared with LykanOS |
+| Artifex ecosystem | Yggdrasil, Heimdall, Limbo, Sarina, Kairos, Daedalus_CAD, Icarus; shared with LykanOS |
 
-It is built and tested first on one machine (Intel i9-9900K, 64 GB, NVIDIA RTX 2080 Ti, 1 TB), where it replaces Windows.
+It is built and tested first on one machine (Intel i9-9900K, 64 GB, NVIDIA RTX 2080 Ti, 1 TB), where it replaces Windows, and since
+2026-11-12 on a laptop, a ThinkPad X1 Yoga Gen 8 ([docs/HARDWARE.md](docs/HARDWARE.md)).
 
 ## Status
 
@@ -129,8 +145,11 @@ is built and what is not.
 - [STATUS.md](docs/STATUS.md): what is built and what is not
 - [COMPONENTS.md](docs/COMPONENTS.md): optional software (Spotify, Obsidian, Steam, Proton Drive/Pass ...)
 - [PACKAGE_REPO.md](docs/PACKAGE_REPO.md): the signed package repository that keeps installed systems up to date
+- [RUST_PORT_REMAINING.md](docs/RUST_PORT_REMAINING.md): what of ours is not Rust yet, and why
+- [HARDWARE.md](docs/HARDWARE.md), [LAPTOP.md](docs/LAPTOP.md): the machines it is tested on, and the laptop's checks
 - [VERSIONING.md](docs/VERSIONING.md): versions (Labyrinth OS 1.0 and each app's own), build numbers, and how to make a release
 - [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md): security
+- [PRIVACY_PACK.md](docs/PRIVACY_PACK.md), [LOCATION_SOUNDS.md](docs/LOCATION_SOUNDS.md): privacy
 - [DRIVER_LAB.md](docs/DRIVER_LAB.md): the Sarina + Limbo driver idea
 - [GPU_UNLOCK.md](docs/GPU_UNLOCK.md): the gated Settings option for a GeForce tensor-rate unlock (facts, risks, phases; Phase 0 changes nothing on the GPU)
 - [PROTON_GAMES.md](docs/PROTON_GAMES.md): Valve's Proton (Windows games in Steam); [PROTON_AG.md](docs/PROTON_AG.md): Proton AG's services

@@ -89,6 +89,6 @@ Microsoft's keys, or your GPU's firmware and Windows stop booting) -> sign the
 bootloader and kernels -> sign the NVIDIA modules, probably moving to systemd-boot with
 a signed unified kernel image and giving up GRUB snapshot entries. Not built.
 
-## Testing the cleanup script yourself
+## Testing the cleanup program yourself
 
-    bash tests/test_install_cleanup.sh
+    (cd packages/tools && cargo build --release) && bash tests/test_install_cleanup.sh

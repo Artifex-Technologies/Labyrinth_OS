@@ -1,0 +1,12 @@
+# Labyrinth: installs the optional parts chosen in the installer that the medium did not carry (Sarina, Heimdall, device software),
+# once, online. Started at sign-in (graphical-session.target.wants) and whenever the computer comes online (Yggdrasil's
+# yggdrasil-online.target, which NetworkManager's dispatcher starts), so an install without internet gets them as soon as there is
+# a connection. Nothing to do once the list is gone (the condition below: not even started).
+[Unit]
+Description=Install the optional parts chosen in the installer
+ConditionPathExists=/var/lib/labyrinth/first-login-components.json
+After=graphical-session.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/labyrinth-first-components

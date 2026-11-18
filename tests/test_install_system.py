@@ -1,36 +1,41 @@
 """Tests for Labyrinth's side of the installer: its integration file (labyrinth-installer.conf), the browser and optional-part
 lists, and labyrinth-first-components. The install program itself is Yggdrasil's yggdrasil-install-system (since 2026-11-07;
-its own tests are in Yggdrasil's packages/install-system and packages/installer/helpers/tests); the tests that run it load
-the Python script Yggdrasil keeps for a rollback, so they need a Yggdrasil checkout next to this repository (or
-YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
-import importlib.machinery
-import importlib.util
+its own tests are in Yggdrasil's packages/install-system); the tests that run it load the Python script it replaced, which
+Yggdrasil kept for a rollback until 2026-11-15, from git, so they need a Yggdrasil checkout with that commit next to this
+repository (or YGGDRASIL_DIR) and are skipped without one. python tests/test_install_system.py"""
 import os
 import re
-import tempfile
+import subprocess
+import sys
+import types
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AIROOTFS = os.path.join(ROOT, "profile", "airootfs")
 CONF = os.path.join(AIROOTFS, "usr", "share", "yggdrasil", "integrations", "labyrinth-installer.conf")
 YGG = os.environ.get("YGGDRASIL_DIR") or os.path.join(os.path.dirname(ROOT), "Yggdrasil")
-# the Python script, which Yggdrasil keeps for a rollback since its Rust port (packages/install-system) replaced it on
-# 2026-11-11; the two do the same (Yggdrasil's packages/install-system/parity/compare.py), and the script can be loaded here
-TOOL = os.path.join(YGG, "packages", "installer", "helpers", "python", "install-system")
+# the Python script its Rust port (packages/install-system) replaced on 2026-11-11; the two do the same (Yggdrasil's
+# packages/install-system/parity/compare.py), and the script can be loaded here. Yggdrasil kept it for a rollback until
+# 2026-11-15; it comes from git, the last commit that had it (CI fetches that commit into its shallow clone).
+YGG_REV = "f9c76a5b6af82198f91b242a4460628d41770599"
+TOOL = "packages/installer/helpers/python/install-system"
 inst = None
-if os.path.isfile(TOOL):
-    loader = importlib.machinery.SourceFileLoader("install_system", TOOL)
-    spec = importlib.util.spec_from_loader("install_system", loader)
-    inst = importlib.util.module_from_spec(spec)
-    loader.exec_module(inst)
-# the script, kept for a rollback since labyrinth-tools' Rust program replaced it (the image runs /usr/bin/labyrinth-first-components)
-FIRST = os.path.join(ROOT, "packages", "tools", "python", "labyrinth-first-components")
-needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with the install program at {TOOL}")
+try:
+    source = subprocess.run(["git", "-C", YGG, "show", f"{YGG_REV}:{TOOL}"], capture_output=True, check=True).stdout
+except (OSError, subprocess.CalledProcessError):
+    source = None
+if source:
+    inst = types.ModuleType("install_system")
+    sys.modules["install_system"] = inst
+    exec(compile(source, TOOL, "exec"), inst.__dict__)
+# labyrinth-tools' Rust program (the image runs /usr/bin/labyrinth-first-components)
+FIRST = os.path.join(ROOT, "packages", "tools", "src", "first_components.rs")
+needs_program = unittest.skipUnless(inst, f"no Yggdrasil checkout with commit {YGG_REV[:7]} at {YGG}")
 
 
-def conf_values():
+def conf_values(path=CONF):
     values = {}
-    for line in open(CONF).read().splitlines():
+    for line in open(path).read().splitlines():
         line = line.split("#", 1)[0].strip()
         if "=" in line:
             k, v = line.split("=", 1)
@@ -53,10 +58,24 @@ class TheIntegrationFile(unittest.TestCase):
             self.assertTrue(os.path.isfile(AIROOTFS + c[key]), f"{key}: {c[key]} is on the medium")
         self.assertIn("nvidia_drm.modeset=1", c["kernel_options"].split())
         self.assertEqual(set(c["reserved_logins"].split()), {"heimdall", "sarina"})
+        # the window fetches the install's downloads beforehand while the choices are made (Yggdrasil's INSTALLER.md)
+        self.assertEqual(c["prefetch"], "yes")
 
     def test_the_first_login_list_is_where_labyrinth_first_components_reads_it(self):
         first = open(FIRST).read()
         self.assertIn(conf_values()["first_login"], first)
+        # its unit starts only while the list is there
+        unit = open(os.path.join(ROOT, "packages", "tools", "units", "user", "labyrinth-first-components.service")).read()
+        self.assertIn("ConditionPathExists=" + conf_values()["first_login"] + "\n", unit)
+
+    def test_the_installed_system_offers_the_same_device_list(self):
+        # the installer integration is removed from the installed system (labyrinth-install-cleanup); the packages one stays and
+        # names the same files for Yggdrasil's device offers
+        packages = conf_values(os.path.join(AIROOTFS, "usr", "share", "yggdrasil", "integrations", "labyrinth-packages.conf"))
+        c = conf_values()
+        self.assertEqual(packages["devices"], c["extras"])
+        self.assertEqual(packages["first_login"], c["first_login"])
+        self.assertEqual(packages["components"], c["components"])
 
     @needs_program
     def test_labyrinth_installs_as_it_did_with_its_own_program(self):
@@ -71,6 +90,24 @@ class TheIntegrationFile(unittest.TestCase):
                              "that account name is taken by the system")
         finally:
             inst.configure({}, {})
+
+    @needs_program
+    def test_the_live_account_is_the_one_the_installer_knows(self):
+        # the install hands a saved network only the live account could use (permissions=user:live:;) to the new account: the
+        # live medium's account must be the one it looks for
+        sysusers = open(os.path.join(AIROOTFS, "etc", "sysusers.d", "live.conf")).read().splitlines()
+        self.assertEqual([l.split()[1] for l in sysusers if l.startswith("u ")], [inst.LIVE_USER])
+        self.assertIn(inst.LIVE_USER, inst.RESERVED)
+
+    def test_usb_wifi_adapters_have_their_firmware_on_the_medium(self):
+        # the installer's Network step joins Wi-Fi on the live medium, and the installed system is a copy of it: the firmware
+        # the in-kernel drivers of common USB adapters load (mt76: MediaTek; rtw88 and rtl8xxxu: Realtek; ath9k_htc: Atheros)
+        # comes with linux-firmware (all its parts) or must be named part by part
+        with open(os.path.join(ROOT, "profile", "packages.x86_64"), encoding="utf-8") as f:
+            iso = set(f.read().split())
+        parts = {"linux-firmware-mediatek", "linux-firmware-realtek", "linux-firmware-atheros"}
+        self.assertTrue("linux-firmware" in iso or parts <= iso, parts - iso)
+        self.assertFalse({p for p in iso if "dkms" in p}, "no driver built on the machine on the medium")
 
 
 CATALOG = os.path.join(AIROOTFS, "usr", "share", "labyrinth", "installer-browsers.json")
@@ -154,13 +191,48 @@ class Extras(unittest.TestCase):
         devices = [e for e in self.cat if e.get("group") == "Devices"]
         self.assertTrue({"logitech", "gaming-mice", "razer", "xbox-controllers", "hp-printers"} <= {e["id"] for e in devices})
         for e in devices:
-            self.assertTrue(e.get("chosen_if_usb") and all(len(v) == 4 for v in e["chosen_if_usb"]), e["id"])
+            ids = e.get("chosen_if_usb") or []
+            self.assertTrue(ids and all(re.fullmatch(r"[0-9a-f]{4}(:[0-9a-f]{4})?", v) for v in ids), e["id"])
+            self.assertEqual(len(ids), len(set(ids)), e["id"])
             self.assertNotIn("chosen_if_exists", e, "device software is never on the medium")
+        # a maker's id counts only for its kind of device where the maker makes other things too (Yggdrasil's device_offers)
+        kinds = {e["id"]: e.get("usb_kind") for e in devices}
+        self.assertEqual(kinds, {"logitech": "input", "gaming-mice": "mouse", "razer": None, "ckb-next": "input",
+                                 "xbox-controllers": "gamepad", "hp-printers": "printer"},
+                         "a Corsair fan controller is no keyboard, a HyperX mouse (HP's id) no printer, a webcam no mouse")
+        mice = next(e for e in devices if e["id"] == "gaming-mice")["chosen_if_usb"]
+        self.assertTrue({"046d", "1038", "1e7d", "0b05", "258a:0036"} <= set(mice), "libratbag's makers")
         # nothing of it is on the medium, so choosing it queues it for the first login (online)
         p = inst.extras_plan(self.cat, ["razer"], self.comps, set())
         self.assertEqual(p["queue"], ["razer"])
         razer = self.comps["razer"]["packages"]
         self.assertTrue({"dkms", "linux-cachyos-headers", "linux-cachyos-lts-headers"} <= set(razer), "a driver built on the machine brings what it needs")
+
+    def test_laptop_software_is_online_and_ticked_by_the_hardware(self):
+        laptop = {e["id"]: e for e in self.cat if e.get("group") == "This laptop"}
+        self.assertEqual(set(laptop), {"fingerprint", "thermald", "on-screen-keyboard"})
+        with open(os.path.join(ROOT, "profile", "packages.x86_64"), encoding="utf-8") as f:
+            iso = set(f.read().split())
+        for e in laptop.values():
+            self.assertNotIn("chosen_if_exists", e, "laptop software is never on the medium")
+            for c in e["components"]:
+                self.assertFalse(set(self.comps[c].get("packages", []) + self.comps[c].get("aur", [])) & iso, c)
+        # the fingerprint readers libfprint drives, by exact device: Synaptics (06cb) and Goodix (27c6) also make readers it cannot
+        fp = laptop["fingerprint"]["chosen_if_usb"]
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{4}", v) for v in fp), "vendor:product, lowercase hex")
+        self.assertEqual(len(fp), len(set(fp)))
+        self.assertIn("06cb:00fc", fp)
+        self.assertNotIn("06cb:00a2", fp, "a Synaptics reader on libfprint's unsupported list")
+        self.assertEqual(laptop["thermald"]["chosen_if_machine"],
+                         {"cpu_vendor": "GenuineIntel", "battery": True, "absent": "/sys/devices/platform/thinkpad_acpi/dytc_lapmode"},
+                         "Intel laptops, except ThinkPads whose firmware runs the cooling (thermald stops there by design)")
+        self.assertEqual(self.comps["thermald"]["enable_system"], ["thermald.service"])
+        self.assertEqual(laptop["on-screen-keyboard"]["chosen_if_machine"], {"tablet_switch": True})
+        self.assertEqual(self.comps["on-screen-keyboard"]["aur"], ["wvkbd"])
+        self.assertFalse(self.comps["fingerprint"].get("enable_system") or self.comps["fingerprint"].get("after_install"),
+                         "installing fprintd changes nothing in PAM: fingerprint sign-in is the owner's switch in Settings")
+        p = inst.extras_plan(self.cat, ["fingerprint", "thermald", "on-screen-keyboard"], self.comps, set())
+        self.assertEqual(p["queue"], ["fingerprint", "thermald", "on-screen-keyboard"], "all at the first login, online")
 
     def test_on_the_medium_kept_or_removed_otherwise_left_for_the_first_login(self):
         everything = {"sarina-git", "heimdall-git", "clamav"}
@@ -183,19 +255,6 @@ class Extras(unittest.TestCase):
             self.assertEqual(inst.check_plan(dict(base, extras="sarina")), "unknown optional part chosen")
         finally:
             inst.EXTRAS_FILE = old
-
-    def test_the_first_login_list_is_only_the_new_users(self):
-        floader = importlib.machinery.SourceFileLoader("first_components", FIRST)
-        fspec = importlib.util.spec_from_loader("first_components", floader)
-        first = importlib.util.module_from_spec(fspec)
-        floader.exec_module(first)
-        d = tempfile.mkdtemp()
-        f = os.path.join(d, "list.json")
-        open(f, "w").write('{"user": "ada", "components": ["sarina", "heimdall", "bad; rm -rf /"]}')
-        self.assertEqual(first.todo(f, "ada"), ["sarina", "heimdall"], "ids only")
-        self.assertEqual(first.todo(f, "bob"), [])
-        self.assertEqual(first.todo(os.path.join(d, "none.json"), "ada"), [])
-
 
 
 if __name__ == "__main__":

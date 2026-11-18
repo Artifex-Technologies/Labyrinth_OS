@@ -5,9 +5,9 @@
 # repository instead. The ISO's own build uses packages/pkgbuilds/limbo-git, which builds the checkout next to Labyrinth_OS.
 # Limbo's runtime (libvirt, QEMU, ...) is not a dependency: the "virtualization" component, or `sudo limbo setup`, installs it.
 # To build a local checkout instead: LIMBO_SRC=file://$HOME/Documents/Github/Limbo makepkg -si
-# The same build as packages/pkgbuilds/limbo-git. Two binaries since 2026-11-11: /usr/bin/limbo is limbo-rs, the Rust
-# build (the daemon that limbo.service runs, and every command but `net watch` and `capture`), which hands those two,
-# unchanged, to the Go build at /usr/lib/limbo/limbo-go (Limbo's docs/RUST_PORT.md "Packaging").
+# The same build as packages/pkgbuilds/limbo-git. One binary since 2026-11-15: /usr/bin/limbo is limbo-rs, the Rust
+# build (the daemon that limbo.service runs, and every command); the Go build left Limbo's repository that day (Limbo's
+# docs/RUST_PORT.md).
 
 pkgname=limbo-git
 pkgver=1.0.0
@@ -17,7 +17,7 @@ arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Limbo'
 license=('MPL-2.0')
 depends=('glibc' 'gcc-libs')
-makedepends=('go' 'git' 'rust')
+makedepends=('git' 'rust')
 optdepends=(
   'libvirt: manages guests'
   'qemu-base: the hypervisor'
@@ -95,27 +95,21 @@ prepare() {
 }
 
 build() {
-  cd "$srcdir/limbo"
-  export CGO_ENABLED=0
-  go build -trimpath -ldflags "-s -w" -o limbo-go ./cmd/limbo
-  cd rust
+  cd "$srcdir/limbo/rust"
   export RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target
   cargo build --frozen --release -p limbo --bin limbo-rs
 }
 
 check() {
-  cd "$srcdir/limbo"
-  # unit tests only: the integration scripts need a hypervisor and root, and -short skips the real Wine run
-  go test -short ./...
-  # the Rust build against the Go fixtures (testdata/parity), its properties and its hand-over to the Go build
-  cd rust
+  # the Go fixtures (testdata/parity), the properties, the fuzz bodies, the dispatch and Limbo's recipe's optdepends;
+  # the integration scripts need a hypervisor and root
+  cd "$srcdir/limbo/rust"
   RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target cargo test --frozen -p limbo
 }
 
 package() {
   cd "$srcdir/limbo"
   install -Dm755 rust/target/release/limbo-rs "$pkgdir/usr/bin/limbo"
-  install -Dm755 limbo-go "$pkgdir/usr/lib/limbo/limbo-go"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 docs/QUARANTINE.md "$pkgdir/usr/share/doc/$pkgname/QUARANTINE.md"

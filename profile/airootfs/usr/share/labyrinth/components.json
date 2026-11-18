@@ -240,6 +240,14 @@
       "notes": "Early software. Saves its own .daedalus files; opens and exports STL, OBJ, DXF and DAE; lengths in mm, cm, m, inches or feet and inches."
     },
     {
+      "id": "icarus",
+      "name": "Icarus",
+      "description": "Icarus, vehicle diagnostics and tuning in Rust: a vehicle's modules, trouble codes and live data through an OBD adapter, actuator tests, ECU maps and what a tune changed. From Labyrinth's package repository (signed), or built from its repository when that cannot be reached.",
+      "proprietary": false,
+      "pkgbuild": "icarus-git",
+      "notes": "Early software. No emissions deletes, no immobilizer or odometer changes. Tuners without a Linux driver of their own are opened by the person at the computer (a udev rule comes with it): plug one in again after installing."
+    },
+    {
       "id": "heimdall",
       "name": "Heimdall (security watcher)",
       "description": "Heimdall watches this computer for attacks: file changes, open ports and connections, firewall and SSH logins, known holes in installed packages and kernels, Wi-Fi and network impersonation, and malware (ClamAV, held and fingerprinted). It explains every alert in plain language and tells you what to do; Settings > Security shows the alerts and the held files. Works on its own; with Sarina he can also explain in conversation and watch her sessions for prompt injection. Comes with ClamAV (its malware scanning) and keeps ClamAV's signatures up to date.",
@@ -346,6 +354,70 @@
       "packages": [
         "hplip"
       ]
+    },
+    {
+      "id": "fingerprint",
+      "name": "Fingerprint reader (fprintd)",
+      "description": "fprintd and libfprint: enrol your fingers in Settings > Users. Enrolling waits until Secure Boot is on and the system disk is encrypted (a fingerprint is only as safe as the system that checks it); signing in with a finger is off until you turn it on there (for sudo first; the lock screen and password boxes come later).",
+      "proprietary": false,
+      "packages": [
+        "fprintd",
+        "libfprint"
+      ],
+      "notes": "Settings > Users > Fingerprint: greyed out until Secure Boot and disk encryption are on; then add a finger, and turn on \"Use for sudo\" if you want it. Nothing in PAM changes until you do."
+    },
+    {
+      "id": "firmware-updates",
+      "name": "Firmware updates (fwupd)",
+      "description": "fwupd: firmware for the BIOS, Thunderbolt, docks, fingerprint readers, SSDs and more, from the Linux Vendor Firmware Service (LVFS), where Lenovo, Dell, HP and others publish it. Firmware is never shared with other computers on the network here (P2pPolicy=nothing).",
+      "proprietary": false,
+      "packages": [
+        "fwupd"
+      ],
+      "after_install": [
+        [
+          "fwupdtool",
+          "modify-config",
+          "fwupd",
+          "P2pPolicy",
+          "nothing"
+        ]
+      ],
+      "notes": "fwupdmgr refresh, then fwupdmgr get-updates lists what can be updated; fwupdmgr update installs it (some updates finish at the next restart)."
+    },
+    {
+      "id": "thunderbolt",
+      "name": "Thunderbolt docks (bolt)",
+      "description": "bolt: Thunderbolt and USB4 devices (docks, external graphics, storage) on computers that ask before connecting one (the firmware's security level \"user\"). A device approved once connects by itself afterwards.",
+      "proprietary": false,
+      "packages": [
+        "bolt"
+      ],
+      "notes": "A new device is approved once: boltctl list, then boltctl enroll --policy auto UUID. Settings will ask instead later."
+    },
+    {
+      "id": "thermald",
+      "name": "Intel laptop cooling (thermald)",
+      "description": "Intel's thermal daemon: keeps an Intel laptop under its temperature limits using the firmware's own thermal tables, and follows the power mode. Not for ThinkPads whose firmware runs the cooling itself (thermald stops on those).",
+      "proprietary": false,
+      "packages": [
+        "thermald"
+      ],
+      "enable_system": [
+        "thermald.service"
+      ],
+      "notes": "Runs on its own after installing; nothing to set up. On a ThinkPad with Lenovo's firmware cooling (DYTC) thermald exits by design and the power mode does the job."
+    },
+    {
+      "id": "on-screen-keyboard",
+      "name": "On-screen keyboard (wvkbd)",
+      "description": "A small on-screen keyboard for Wayland. On a 2-in-1 it shows when you fold the screen into a tablet and no keyboard is plugged in.",
+      "proprietary": false,
+      "packages": [],
+      "aur": [
+        "wvkbd"
+      ],
+      "notes": "Shown by Yggdrasil in tablet mode; Settings > Displays turns that off."
     },
     {
       "id": "razer",
@@ -492,8 +564,6 @@
     ],
     "everything": [
       "steam",
-      "spotify",
-      "obsidian",
       "weather",
       "proton-drive",
       "proton-pass",

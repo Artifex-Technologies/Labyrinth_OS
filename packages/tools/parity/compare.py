@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""compare: Labyrinth's Rust programs (packages/tools) and the Python and shell scripts they replace, run as programs on the same
+"""compare: Labyrinth's Rust programs (packages/tools) and the Python and shell scripts they replaced, run as programs on the same
 made-up worlds. Every tool they call is a stand-in in WORLD/bin that writes down how it was called (and what it read, when a case asks)
 and answers as the case says; every file they read or write is under the scratch WORLD (made again from scratch, at the same
 path, before each run) or, for moves across file systems, under packages/tools/target/parity-xdev. Nothing on the computer is
@@ -14,10 +14,12 @@ to the stand-ins, and files afterwards (names, modes, contents), byte for byte, 
     (the Python script stopped here with a traceback)": the two standard errors are not compared;
   - what a case lists in `differs` (a difference on purpose, said in the module's "Not 1:1").
 
-    compare.py [--python DIR] [--shell DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep] [--show]
+    compare.py [--git REV] [--python DIR] [--shell DIR] [--bin DIR] [--only NAME[,NAME]] [--case TEXT] [-v] [--keep] [--show]
 
---python: the folder with the Python scripts (default: ../python, else the repository's profile/airootfs/usr/local/bin)
---shell: the folder with the shell scripts (default: ../shell, else the repository's profile/airootfs/usr/local/bin or sbin)
+--git: the commit to take the scripts from (default: OLD_REV below, the last commit with packages/tools/python and shell, which
+       were kept for a rollback until 2026-11-15)
+--python: a folder with the Python scripts instead
+--shell: a folder with the shell scripts instead
 --bin: the folder with the Rust programs (default: ../target/release; build with cargo build --release)
 """
 import argparse
@@ -40,6 +42,8 @@ SCRATCH = tempfile.mkdtemp(prefix="labyrinth-tools-parity-")
 os.chmod(SCRATCH, 0o755)
 WORLD = os.path.join(SCRATCH, "world")
 XDEV = os.path.join(TOOLS, "target", "parity-xdev")
+# the last commit that had the scripts (packages/tools/python and packages/tools/shell, removed on 2026-11-15)
+OLD_REV = "5ed56c8"
 
 STUB = r"""#!/bin/sh
 # a stand-in: writes down how it was called, answers as the case says (OUT_x, ERR_x, RC_x; STDIN_x=1 records its input,
@@ -182,8 +186,8 @@ def case(*a, **k):
     CASES.append(Case(*a, **k))
 
 
-# the shell scripts' ports (their scripts in profile/airootfs/usr/local/bin, labyrinth-agent-window in sbin; after the switch in
-# packages/tools/shell)
+# the shell scripts' ports (their scripts were in profile/airootfs/usr/local/bin, labyrinth-agent-window in sbin; after the
+# switch in packages/tools/shell, in git since 2026-11-15)
 SHELL_NAMES = ["labyrinth-rollback", "labyrinth-install-bootfinish", "labyrinth-install-cleanup", "labyrinth-agent-setup", "labyrinth-agent-window",
                "labyrinth-ecosystem-setup", "labyrinth-hardware-setup", "labyrinth-grub-theme", "labyrinth-security-setting", "labyrinth-gaming",
                "labyrinth-sarina", "labyrinth-sarina-setting", "labyrinth-rea", "labyrinth-rea-setup", "labyrinth-claude-code", "labyrinth-sarina-reflect",
@@ -202,27 +206,30 @@ def interpreter(path):
     return ["sh"]
 
 
+# the Python programs' ports
+PYTHON_NAMES = ["labyrinth-scan-downloads", "labyrinth-quarantine", "labyrinth-appnet", "labyrinth-appnet-ask", "labyrinth-appnet-ask-agent",
+                "labyrinth-launch", "labyrinth-apps", "labyrinth-selfcheck", "ipconfig", "steam_playall.py", "labyrinth-first-components",
+                "labyrinth-agent"]
+
+
+def from_git(rev, folder, names):
+    """The scripts NAMES of FOLDER as git has them at REV, written to a scratch folder of their own (in SCRATCH); returns it."""
+    dest = tempfile.mkdtemp(prefix="old-", dir=SCRATCH)
+    for n in names:
+        body = subprocess.run(["git", "-C", REPO, "show", f"{rev}:{folder}/{n}"], check=True, capture_output=True).stdout
+        with open(os.path.join(dest, n), "wb") as f:
+            f.write(body)
+        os.chmod(os.path.join(dest, n), 0o755)
+    return dest
+
+
 def impl_paths(kind):
     """{program name: how to run it} for one implementation."""
-    names = ["labyrinth-scan-downloads", "labyrinth-quarantine", "labyrinth-appnet", "labyrinth-appnet-ask", "labyrinth-appnet-ask-agent",
-             "labyrinth-launch", "labyrinth-apps", "labyrinth-selfcheck", "ipconfig", "steam_playall.py", "labyrinth-first-components",
-             "labyrinth-agent"]
     out = {}
     for n in SHELL_NAMES:
-        if kind == "python":
-            own = os.path.join(ARGS.shell, n)
-            where = "sbin" if n == "labyrinth-agent-window" else "bin"
-            out[n] = own if os.path.exists(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", where, n)
-        else:
-            out[n] = os.path.join(ARGS.bin, n)
-    for n in names:
-        if kind == "python":
-            # a script still in the image (not switched yet) is read from there
-            own = os.path.join(ARGS.python, n)
-            where = "sbin" if n == "labyrinth-agent" else "bin"
-            out[n] = own if os.path.exists(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", where, n)
-        else:
-            out[n] = os.path.join(ARGS.bin, n.replace(".py", ""))
+        out[n] = os.path.join(ARGS.shell, n) if kind == "python" else os.path.join(ARGS.bin, n)
+    for n in PYTHON_NAMES:
+        out[n] = os.path.join(ARGS.python, n) if kind == "python" else os.path.join(ARGS.bin, n.replace(".py", ""))
     return out
 
 
@@ -346,6 +353,7 @@ import cases_voice  # noqa: E402,F401
 def main():
     global ARGS
     ap = argparse.ArgumentParser()
+    ap.add_argument("--git", default=OLD_REV)
     ap.add_argument("--python")
     ap.add_argument("--shell")
     ap.add_argument("--bin", default=os.path.join(TOOLS, "target", "release"))
@@ -355,12 +363,8 @@ def main():
     ap.add_argument("--case", help="only the cases whose name has this text")
     ap.add_argument("--show", action="store_true", help="also print what the script did (exit codes, output, calls)")
     ARGS = ap.parse_args()
-    if not ARGS.python:
-        own = os.path.join(TOOLS, "python")
-        ARGS.python = own if os.path.isdir(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", "bin")
-    if not ARGS.shell:
-        own = os.path.join(TOOLS, "shell")
-        ARGS.shell = own if os.path.isdir(own) else os.path.join(REPO, "profile", "airootfs", "usr", "local", "bin")
+    ARGS.python = ARGS.python or from_git(ARGS.git, "packages/tools/python", PYTHON_NAMES)
+    ARGS.shell = ARGS.shell or from_git(ARGS.git, "packages/tools/shell", SHELL_NAMES)
     only = set(ARGS.only.split(",")) if ARGS.only else None
     counts, failed = {}, 0
     try:

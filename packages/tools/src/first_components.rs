@@ -1,7 +1,7 @@
 //! labyrinth-first-components: at the first login after installing, installs the optional parts chosen in the installer that the
 //! medium did not carry (Sarina, Heimdall ...), with labyrinth-apps through Agora's password box, and says so in notifications.
 //! The installer leaves their ids in /var/lib/labyrinth/first-login-components.json (LABYRINTH_FIRST_COMPONENTS), owned by the new
-//! user; the session's autostart runs this. The Python script of the same name with the same waits (15 s, then up to 120 s for
+//! user; systemd runs this at sign-in and when the computer comes online (labyrinth-first-components.service). The Python script of the same name with the same waits (15 s, then up to 120 s for
 //! the internet, asking every 10 s), notifications, log (~/.local/state/labyrinth/first-components.log) and exit codes; its text
 //! is src/doc/labyrinth-first-components.txt. It takes no arguments (the script ignored any).
 
@@ -14,6 +14,11 @@ pub const AGORA_SUDO: &str = "/usr/lib/agora/sudo";
 
 pub fn list_path() -> String {
     py::env_get("LABYRINTH_FIRST_COMPONENTS", "/var/lib/labyrinth/first-login-components.json")
+}
+
+/// Where a failed install is noted for this session (the runtime folder goes at sign-out), or None without one.
+fn failed_marker() -> Option<String> {
+    py::env("XDG_RUNTIME_DIR").filter(|d| !d.is_empty()).map(|d| py::join(&d, "labyrinth-first-components.failed"))
 }
 
 fn notify(title: &str, body: &str) -> R<()> {
@@ -98,11 +103,15 @@ fn run() -> R<i32> {
     if ids.is_empty() {
         return Ok(0);
     }
+    let marker = failed_marker();
+    if marker.as_deref().is_some_and(py::exists) {
+        return Ok(0); // failed earlier in this session: not again until the next login (no password box at every reconnect)
+    }
     std::thread::sleep(Duration::from_secs(15)); // let the desktop settle first
     if !online(120.0)? {
         notify(
             "Optional parts not installed yet",
-            "No internet connection. They will be installed at the next login, or get them in Agora.",
+            "No internet connection. They will be installed when this computer is online, or get them in Agora.",
         )?;
         return Ok(0);
     }
@@ -123,6 +132,9 @@ fn run() -> R<i32> {
         let _ = std::fs::remove_file(&list);
         notify("Installed", &format!("{names} are ready."))?;
     } else {
+        if let Some(m) = &marker {
+            let _ = std::fs::write(m, "");
+        }
         notify(
             &format!("Could not install {names}"),
             "It will be tried again at the next login; Agora can install them too. Details: ~/.local/state/labyrinth/first-components.log",
@@ -164,6 +176,27 @@ mod tests {
         assert!(todo(&f, Some("ada")).is_err(), "the script stopped on a list");
     }
 
+    /// An install that failed in this session is not tried again at every reconnect: the run stops before waiting or asking.
+    #[test]
+    fn a_failure_this_session_waits_for_the_next_login() {
+        let d = TempDir::new();
+        let f = d.p("list.json");
+        std::fs::write(&f, r#"{"user": "ada", "components": ["sarina"]}"#).unwrap();
+        std::fs::write(d.p("labyrinth-first-components.failed"), "").unwrap();
+        let _env = crate::testutil::env_lock();
+        std::env::set_var("LABYRINTH_FIRST_COMPONENTS", &f);
+        std::env::set_var("USER", "ada");
+        std::env::set_var("XDG_RUNTIME_DIR", d.p(""));
+        let started = std::time::Instant::now();
+        assert_eq!(run().unwrap(), 0);
+        assert!(started.elapsed() < Duration::from_secs(5), "no 15 s wait, no internet check");
+        assert!(py::exists(&f), "the list stays for the next login");
+        assert_eq!(failed_marker(), Some(d.p("labyrinth-first-components.failed")));
+        std::env::remove_var("XDG_RUNTIME_DIR");
+        assert_eq!(failed_marker(), None);
+        std::env::remove_var("LABYRINTH_FIRST_COMPONENTS");
+    }
+
     /// tests/test_install_system.py's test_the_first_login_list_is_where_labyrinth_first_components_reads_it.
     #[test]
     fn the_first_login_list_is_where_the_installer_writes_it() {
@@ -177,5 +210,21 @@ mod tests {
         let _env = crate::testutil::env_lock();
         std::env::remove_var("LABYRINTH_FIRST_COMPONENTS");
         assert_eq!(list_path(), value);
+    }
+
+    /// The installed system keeps the list's place in the packages integration too (the installer's is removed after installing),
+    /// where Yggdrasil's device offers read it to leave these components to this program; and the unit starts only while it is there.
+    #[test]
+    fn the_device_offers_and_the_unit_know_the_list() {
+        let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../profile/airootfs/usr/share/yggdrasil/integrations/");
+        let value = |file: &str| {
+            let conf = std::fs::read_to_string(format!("{dir}{file}")).unwrap();
+            let line = conf.lines().find(|l| l.trim_start().starts_with("first_login")).expect("first_login");
+            line.split_once('=').unwrap().1.split('#').next().unwrap().trim().to_string()
+        };
+        assert_eq!(value("labyrinth-packages.conf"), value("labyrinth-installer.conf"));
+        let unit = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/units/user/labyrinth-first-components.service")).unwrap();
+        assert!(unit.contains(&format!("ConditionPathExists={}\n", value("labyrinth-installer.conf"))));
+        assert!(unit.contains("ExecStart=/usr/bin/labyrinth-first-components\n"));
     }
 }

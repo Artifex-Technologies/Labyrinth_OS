@@ -18,6 +18,14 @@ Commands:
   labyrinth-appnet get            print the rules as JSON
   labyrinth-appnet prepare        as the user, at login: start the slices of apps that have a rule, then ask for `apply`
   labyrinth-appnet ruleset        print the nftables ruleset that `apply` would load (needs no root)
+  labyrinth-appnet viewers status [--json]   are viewer apps on "ask" by default for you (needs no root)
+  labyrinth-appnet viewers on|off            switch that (run it with pkexec, like set)
+
+Viewer apps start on "ask": PDF viewers, office suites, image viewers and media players (a list built in) get the rule
+"ask" the first time `apply` runs while you are logged in, once per app, so the first time one tries to go online you are
+asked. A file opened in one of them can make it contact a server (a remote template or picture, a playlist entry, album
+art looked up online). Your own choice later (Allow in Settings > Apps) stays. `viewers off` takes back the rules it added
+that are still "ask"; `viewers on` adds them again. What it did is kept in /var/lib/labyrinth/app-network-viewers.json.
 
 Rules live in /etc/labyrinth/app-network.json: {"rules": {"1000": {"firefox": "block", ...}}} (readable by all, written
 by root only). The nftables rule needs the slice's cgroup to exist when it is loaded, which is why `prepare` keeps

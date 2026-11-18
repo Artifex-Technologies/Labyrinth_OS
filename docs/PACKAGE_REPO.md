@@ -20,7 +20,7 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## The key
 
@@ -37,13 +37,13 @@ through the **labyrinth-keyring** package (on the ISO; `pacman-init.service` pop
 ## Versions
 
 Since 2026-11-11 every package has a version and a build number: the system version (Labyrinth OS 1.0) for Labyrinth's and
-Yggdrasil's own, each app's own for Sarina, Heimdall, Limbo, Kairos, Daedalus and Argus, and as `pkgrel` the count of commits
-since that release which touch the package's source (`1.0.0-37`). Each recipe works them out itself; the whole scheme, and how to
-make a release, is in [VERSIONING.md](VERSIONING.md). (Before, `build-local-packages.sh` stamped the repository's commit count
-into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at the same
-version, is not published again; a release always is.
+Yggdrasil's own, each app's own for Sarina, Heimdall, Limbo, Kairos, Daedalus, Icarus and Argus, and as `pkgrel` the count of
+commits since that release which touch the package's source (`1.0.0-37`). Each recipe works them out itself; the whole scheme,
+and how to make a release, is in [VERSIONING.md](VERSIONING.md). (Before, `build-local-packages.sh` stamped the repository's
+commit count into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at
+the same version, is not published again; a release always is.
 
-The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn moved to a private repository) have `epoch=1` since 2026-11-07, and `argus-git` since 2026-11-11 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08). The apps' version
+The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn, now Ratatoskr, moved to a private repository) have `epoch=1` since 2026-11-07, and `argus-git` since 2026-11-11 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08). The apps' version
 ended in Yggdrasil's newest commit, so two builds with the same count were ordered at random; Argus's were commit counts
 (25.3078) that 1.0.0 sorts before without the epoch.
 
@@ -65,7 +65,8 @@ publish keeps an unchanged program's published file only when that file was not 
 
 ## Publishing
 
-`scripts/publish-repo.py` builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
+`labyrinth-publish-repo` (the Rust program in `packages/publish-repo`; until 2026-11-13 `scripts/publish-repo.py`, kept for a
+rollback until 2026-11-15, after the timer had run the program twice; git has it) builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
 `/var/lib/labyrinth-publish` (outside the home folder, see above; made once with
 `sudo install -d -o $USER -g $USER /var/lib/labyrinth-publish`, or set `LABYRINTH_PUBLISH_DIR`), then signs, uploads the packages, uploads the database last, and removes the files of the
 publish before last. It does nothing when no repository changed (`--force` to publish anyway, `--dry-run` to build and sign
@@ -73,13 +74,16 @@ without uploading). Builds run with `makepkg -c`, so no build files are left beh
 folder, so an unchanged app is recognised as unchanged and not uploaded again. The source repositories are reset with
 `git clean`; anything a recipe keeps next to itself (the clone of a `-git` recipe) must be in `.gitignore` or it is wiped.
 
-Recipes that build from the publish copy itself (`git+file://`: heimdall-git, sarina-git, limbo-git) take its `main` branch, so
+Recipes that build from the publish copy itself (`git+file://`: heimdall-git, heimdall-private-mic-git, heimdall-multilink-git, sarina-git, limbo-git) take its `main` branch, so
 each copy's `main` is moved to GitHub's on every publish. Until 2026-11-07 (6238b19) the copies were checked out detached, `main`
 stayed at the first clone, and the published Heimdall and Sarina were days behind.
 
-On the build PC it can run daily at 05:30 (after Sarina's night training); switching the timer on is the owner's choice:
+On the build PC it can run daily at 05:30 (after Sarina's night training); switching the timer on is the owner's choice. The
+timer runs the installed program, `~/.local/bin/labyrinth-publish-repo`, so it is built and installed first, and again after
+every change to it:
 
 ```
+(cd packages/publish-repo && cargo build --release --locked && install -Dm755 target/release/labyrinth-publish-repo ~/.local/bin/)
 cp scripts/systemd/labyrinth-publish.{service,timer} ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now labyrinth-publish.timer
 journalctl --user -u labyrinth-publish     # what the last publish did

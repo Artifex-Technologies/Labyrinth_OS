@@ -248,7 +248,8 @@ fn question_notification_answer_and_set_update() {
     assert_eq!((got["type"].as_str(), got["app"].as_str(), got["ip"].as_str()), (Some("ask"), Some("pdfcraft"), Some("93.184.216.34")));
     // the agent's handling, with the name it would have looked up
     let q = crate::ask_agent::Q::from(got.as_object().unwrap()).unwrap();
-    let key = crate::ask_agent::ask_user(&q, "example.com", &notify, "300");
+    let facts = crate::ask_agent::AppFacts { name: crate::ask_agent::app_title(&q.app), program: String::new() };
+    let key = crate::ask_agent::ask_user(&q, "example.com", &facts, true, &notify, "300");
     crate::ask_agent::answer(&sock, &q, "example.com", &key);
     let shown = std::fs::read_to_string(&seen).unwrap();
     assert!(shown.contains("Pdfcraft wants to connect to example.com"));

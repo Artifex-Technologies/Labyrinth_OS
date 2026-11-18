@@ -3,12 +3,13 @@
 # and its notifications, the app launcher and the optional-software installer; since pkgrel 2 also the self-check, ipconfig,
 # Steam Play for all (steam_playall, was steam_playall.py) and the first-login installs; since pkgrel 4 also labyrinth-agent, the
 # gate sudo lets the engineering agent's account run as root (was /usr/local/sbin/labyrinth-agent; labyrinth-agent-setup's rule
-# names /usr/bin/labyrinth-agent), and the ports of the shell scripts (packages/tools/shell keeps the scripts): the rollback, the
+# names /usr/bin/labyrinth-agent), and the ports of the shell scripts: the rollback, the
 # installer's two steps, the agent's set-up and window, the ecosystem's set-up, the hardware set-up, the boot menu theme, the
 # gaming check, Sarina's launcher, settings and helpers, REA, Claude Code's installer, the live installer's launcher and the
 # notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Since
 # 2026-11-11 also Sarina's two voice scripts: labyrinth-sarina-ask (Super+S: the recording to her answer) and labyrinth-sarina-speak
-# (her answer said aloud). Their units come with them (same names).
+# (her answer said aloud). Their units come with them (same names). Since 2026-11-12 also labyrinth-os-release, which the
+# scriptlet runs to write the system version into /etc/os-release (it was an awk program there).
 pkgname=labyrinth-tools
 pkgver=1.0.0
 pkgrel=1
@@ -56,12 +57,17 @@ package() {
            labyrinth-ecosystem-setup labyrinth-hardware-setup labyrinth-grub-theme labyrinth-security-setting labyrinth-gaming \
            labyrinth-sarina labyrinth-sarina-setting labyrinth-sarina-reflect labyrinth-sarina-voice-setup labyrinth-sarina-warm \
            labyrinth-rea labyrinth-rea-setup labyrinth-claude-code labyrinth-install labyrinth-notify-activate \
-           labyrinth-sarina-ask labyrinth-sarina-speak; do
+           labyrinth-sarina-ask labyrinth-sarina-speak labyrinth-os-release; do
     install -Dm755 "$srcdir/target/release/$b" "$pkgdir/usr/bin/$b"
   done
   for u in labyrinth-scan.service labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.service labyrinth-scan-full.timer \
-           labyrinth-appnet-prepare.service labyrinth-appnet-ask-agent.service; do
+           labyrinth-appnet-prepare.service labyrinth-appnet-ask-agent.service labyrinth-first-components.service; do
     install -Dm644 "$_src/units/user/$u" "$pkgdir/usr/lib/systemd/user/$u"
+  done
+  # the optional parts chosen in the installer: at sign-in, and again when the computer comes online (Yggdrasil's target)
+  for t in graphical-session.target yggdrasil-online.target; do
+    install -dm755 "$pkgdir/usr/lib/systemd/user/$t.wants"
+    ln -s ../labyrinth-first-components.service "$pkgdir/usr/lib/systemd/user/$t.wants/labyrinth-first-components.service"
   done
   for u in labyrinth-appnet.service labyrinth-appnet-ask.service; do
     install -Dm644 "$_src/units/system/$u" "$pkgdir/usr/lib/systemd/system/$u"
