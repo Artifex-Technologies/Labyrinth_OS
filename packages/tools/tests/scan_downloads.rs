@@ -56,6 +56,23 @@ fn a_find_is_notified_once() {
 }
 
 #[test]
+fn a_file_clamav_did_not_scan_in_full_is_logged_not_notified() {
+    let s = Scan::new();
+    let d = s.d.p("");
+    let heim = stub(
+        d.trim_end_matches('/'),
+        "heimdalld-big",
+        "echo \"INFECTED /home/u/Downloads/big.iso: Heuristics.Limits.Exceeded.MaxFileSize\"\necho \"scanned 1 files in 1s: 1 infected, 0 could not be scanned\"\nexit 1",
+    );
+    let env: Vec<(String, String)> =
+        s.env.iter().map(|(k, v)| (k.clone(), if k == "HEIMDALLD" { heim.clone() } else { v.clone() })).collect();
+    run(SCAN, &[], &env);
+    assert!(s.notes().is_empty(), "no notice for a big file");
+    let logged = std::fs::read_to_string(format!("{}/.local/state/labyrinth/scan.log", s.home)).unwrap_or_default();
+    assert!(logged.contains("NOT FULLY SCANNED /home/u/Downloads/big.iso: Heuristics.Limits.Exceeded.MaxFileSize"), "{logged}");
+}
+
+#[test]
 fn arguments_carry_state_exclusions_and_folders() {
     let s = Scan::new();
     let conf = format!("{}/.config/labyrinth", s.home);

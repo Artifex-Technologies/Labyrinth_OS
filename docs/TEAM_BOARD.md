@@ -416,3 +416,21 @@ From Sarina's Rust port (Sarina `docs/RUST_PORT.md` "sarina-tone"; its CLAUDE.md
   `rust/parity/tone-differential.py`). One Go bug fixed on the way: a baseline with means but no variances made every run
   panic.
 - **For the owner:** nothing to do; the next sarina-git build brings it.
+
+### 2026-11-18 16:20 [Claude] Safe file intake: ClamAV's limits said explicitly; labyrinth-scan logs "not fully scanned"
+
+From Heimdall's safe file intake (Heimdall `docs/PRIVACY_PACK.md` section 5; its CLAUDE.md 2026-11-18 (9)):
+
+- New `profile/airootfs/etc/clamav/clamd.conf`: Arch's own settings unchanged, plus ClamAV's limits said explicitly
+  (MaxFileSize 256M, MaxScanSize 512M, MaxRecursion 12, MaxFiles 10000, MaxScanTime 120000) and `AlertExceedsMax yes`, so a
+  decompression bomb is reported ("Heuristics.Limits.Exceeded.*") instead of silently half-scanned. Checked with `clamconf`.
+  It matters only where clamd runs (it is not enabled by default); clamscan gets the same limits from Heimdall on its command line.
+  On installed systems pacman keeps this file and writes a later package default as clamd.conf.pacnew.
+- labyrinth-scan-downloads: "Heuristics.Limits.Exceeded.*" is written to scan.log as NOT FULLY SCANNED, without a notice
+  and never quarantined (a big ISO or video is not malware; Heimdall's file guard warns about a real bomb itself). Test
+  `a_file_clamav_did_not_scan_in_full_is_logged_not_notified`; listed under "Not 1:1, on purpose" in `src/scan.rs`.
+- Heimdall's `heimdall-fileguard scan` / `extract` (heimdall-private-mic-git, on every install) are what Settings' fonts page
+  and Minos' Extract will call; its guard now also checks new files in Desktop, Documents, Pictures, Music and Videos and offers
+  "Scan this drive" when one is mounted.
+- **For the owner:** nothing to do now; the next ISO carries the file, the next labyrinth-tools and heimdall-private-mic-git
+  builds bring the rest. LykanOS ships no clamd.conf of its own, so nothing changes there.

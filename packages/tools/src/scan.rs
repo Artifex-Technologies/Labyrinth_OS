@@ -13,7 +13,10 @@
 //!     woke every 2 s to check): a scan starts 4 s after the last new file, where the script started it 4 to 6 s after;
 //!   - folder and file names that are not UTF-8 are watched as they are (the script stopped with a traceback at the first such
 //!     folder, and systemd restarted it, over and over); in the scanner's report such a name has its bad bytes replaced, as for
-//!     any text a tool printed that the script could not decode (it stopped there too).
+//!     any text a tool printed that the script could not decode (it stopped there too);
+//!   - "Heuristics.Limits.Exceeded.*" (ClamAV stopped at one of its limits, said since Labyrinth's clamd.conf has
+//!     AlertExceedsMax, 2026-11-18) is written to the log as NOT FULLY SCANNED, without a notice: it says a file is big, not
+//!     that it is malware (Heimdall's file guard warns about a real decompression bomb itself).
 
 use crate::py::{self, Crash, Value, R};
 use std::collections::HashMap;
@@ -244,6 +247,10 @@ pub fn handle(c: &Ctx, found: &[(String, String)], roots: &[String]) -> R<usize>
     let seen = notified(c)?;
     let mut new: Vec<String> = vec![];
     for (path, sig) in found {
+        if sig.starts_with("Heuristics.Limits.Exceeded") {
+            log(c, &format!("NOT FULLY SCANNED {path}: {sig}"))?;
+            continue;
+        }
         let name = py::basename(path);
         if py::exists(path) && sha_allowed(c, path)? {
             continue; // you said "keep this" for exactly this content
