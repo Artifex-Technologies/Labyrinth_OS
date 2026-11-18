@@ -120,7 +120,7 @@ Each item: where it goes, what exists, the phases (smallest first), what it need
 - **Never by default:** a per-hash or per-URL question to abuse.ch's API (it needs an account key and tells them what I
   have). If ever added: opt-in, per question, shown first, like Sarina's council.
 
-### R6 · Optional OTX feed, pull-only · P3 · Heimdall intel
+### R6 · Optional OTX feed, pull-only · P3 · Heimdall intel · **dropped 2026-11-18** (needs an account per user)
 
 - **Exists:** `ipintel.rs` loads threat lists (`*.list`), the DNS block list, ClamAV.
 - **Phases:** 1. With a key in `/etc/heimdall/otx-key` (absent = off), `heimdall-intel-update` downloads the indicators
@@ -290,7 +290,7 @@ switch is on (R5, R6, R11).
 9. **R8** phase 1: Limbo sinkhole network for sample runs and app vetting.
 10. **R13** configuration checks as data, then the cross-view check.
 
-Later: R2, R6, R10, R12, R14 to R18, R20 to R22.
+Later: R2, R10, R12, R14 to R18, R20 to R22.
 
 ## 5. What I decided (2026-11-18)
 
@@ -302,7 +302,8 @@ Later: R2, R6, R10, R12, R14 to R18, R20 to R22.
 4. **URLhaus ClamAV signatures: no** (changed the same day). abuse.ch now wants a personal account key for every download, and
    non-commercial use only, so every user would need an account. The DNS block list keeps malware-filter's keyless CC0 copy
    of URLhaus's hosts.
-5. **OTX: yes**, an optional account key, pull-only; absent key = off.
+5. **OTX: no** (changed the same day). Like URLhaus's feed it needs a personal account; I don't want users to need accounts
+   with outside services to get the OS's protection. R6 is dropped.
 6. **Playbooks: yes**, both restrict-only verbs may run on `auto`: `limbo-restrict` and `app-network-block` for a set time.
    Each playbook still starts as `propose`; I switch `auto` on per playbook.
 7. **Limbo: yes**, running a sample is in scope. Sinkhole first (R8 phase 1). The egress (VPN account or throwaway
