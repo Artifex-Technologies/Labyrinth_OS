@@ -19,6 +19,14 @@ installed); every systemd unit verifies; every file `profiledef.sh` lists exists
 `cargo audit` reports "unmaintained" for `paste` and `ttf-parser`, pulled in by the GUI libraries (egui and friends). Nothing to fix on our
 side; they go away when those libraries move on. Re-run the audit before each release.
 
+## Checks from the reference plan (REFERENCE_PLAN_2026-11.md §3)
+
+- **No analysis network reaches the home connection (R8):** Limbo's `sh scripts/netns-sinkhole.sh` (no root; Limbo's CI runs
+  it on every push): a guest on `sinkhole` or `none` gets zero packets out; `internet-only` is the control that must leak.
+- **Every data file has its licence and notice (R1, R3):** Heimdall's `NOTICE-ATTACK` (MITRE ATT&CK) is installed; the vendor
+  lists come from Arch's hwdata.
+- **Nothing observed is sent off the machine unless its switch is on (R5, R6, R11):** to be checked when each lands.
+
 ## Not done yet (needs root and time: ask the owner)
 
 1. Build the ISO: `scripts/build-local-packages.sh && sudo scripts/build.sh` (the first as a normal user, since makepkg refuses
