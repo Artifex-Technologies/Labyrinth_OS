@@ -372,3 +372,17 @@ previous package.
   command that makes it and the real test on made-up programs.
 - **For the owner:** to-do step 7 makes both libraries (yours and Sarina's service account's), installs the Sarina build with
   `similar` and, when step 5 has not brought it, rebuilds heimdall-git.
+
+### 2026-11-18 [Claude] R19 for Labyrinth: Bluetooth address privacy by default
+
+- New in labyrinth-tools: `labyrinth-bluetooth-privacy` (`packages/tools/src/bt_privacy.rs`), run by the package's scriptlet
+  (post_install, post_upgrade, beside `labyrinth-os-release`) and by its pacman hook after bluez is installed or updated
+  (`packages/tools/hooks/labyrinth-bluetooth-privacy.hook`; on the image bluez can come after labyrinth-tools). Only where
+  `/etc/os-release` says `ID=labyrinth`, it adds `Privacy = device` under the first `[General]` (or a `[General]` at the end)
+  in `/etc/bluetooth/main.conf` when no uncommented `Privacy` line is there. The rest stays byte for byte; written whole and
+  renamed into place with the old mode and owner; a link is never followed; a file GLib would refuse is left alone. Tested
+  against GLib 2.90 itself and bluez 5.88's own main.conf. `is_id` in `os_release.rs` is now shared by both programs.
+- Nothing is restarted: it applies at the next boot. docs/PRIVACY_PACK.md, "Bluetooth address privacy".
+- Heimdall's `bluetooth-privacy-off` warning goes away at its next hardening check (it reads the file); BlueZ uses it from the
+  next boot.
+- **For the owner:** nothing to do; the next labyrinth-tools update brings it, and it counts from the next boot.

@@ -154,6 +154,11 @@ path = "src/bin/labyrinth-notify-activate.rs"
 name = "labyrinth-os-release"
 path = "src/bin/labyrinth-os-release.rs"
 
+# run as root by the package's scriptlet and its pacman hook (after bluez is installed or updated): Privacy = device for BlueZ
+[[bin]]
+name = "labyrinth-bluetooth-privacy"
+path = "src/bin/labyrinth-bluetooth-privacy.rs"
+
 [dependencies]
 libc = "0.2"
 regex = { version = "1", default-features = false, features = ["std", "unicode", "perf"] }

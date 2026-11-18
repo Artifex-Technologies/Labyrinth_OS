@@ -2,9 +2,14 @@
 # VERSION ("1.0", "1.1", "1.1.1": the patch only when there is one) and VERSION_ID (1.0.0). labyrinth-os-release (Rust, this
 # package; an awk program here until 2026-11-12) does it only on Labyrinth (ID=labyrinth), leaves the rest of the file and a
 # link to the distribution's os-release alone, and writes the file whole.
+#
+# Bluetooth address privacy (R19, docs/PRIVACY_PACK.md): labyrinth-bluetooth-privacy (Rust, this package) adds Privacy = device
+# under [General] in /etc/bluetooth/main.conf, only on Labyrinth and only when no Privacy line is there. Nothing is restarted:
+# it applies at the next boot. The package's pacman hook runs it again after bluez is installed or updated.
 
 post_install() {
   usr/bin/labyrinth-os-release "$1" || true
+  usr/bin/labyrinth-bluetooth-privacy || true
 }
 
 post_upgrade() {

@@ -99,6 +99,25 @@ Yggdrasil (`lookalike.rs`), so every place decides the same way. Names in one al
 
 Switch: Settings > Security > Privacy, look-alike warnings (`lookalike_warnings` in `~/.config/heimdall/privacy.json`).
 
+## Bluetooth address privacy (no switch)
+
+Without it, Bluetooth Low Energy announces and connects with the computer's fixed hardware address, which anything nearby can
+record to follow the computer from place to place. With BlueZ's `Privacy = device` the address changes every 15 minutes and
+only paired devices recognise it. Labyrinth turns it on (2026-11-18, R19 of [REFERENCE_PLAN_2026-11.md](REFERENCE_PLAN_2026-11.md)):
+`labyrinth-bluetooth-privacy` (labyrinth-tools, `packages/tools/src/bt_privacy.rs`) adds the line under `[General]` in
+`/etc/bluetooth/main.conf`, with a comment above it, from the package's scriptlet at every install and update and from its
+pacman hook after bluez is installed or updated (on the image bluez can come after labyrinth-tools). The image has it, so a
+new install has it too.
+
+- Only on Labyrinth (`ID=labyrinth` in `/etc/os-release`), and only when the file has no uncommented `Privacy` line: one I
+  wrote stays, `Privacy = off` included. To keep the fixed address I write `off` in place of `device`; deleting the line
+  brings it back at the next update.
+- The rest of the file stays byte for byte. A file BlueZ cannot read (GLib then refuses all of it), a link, or a file that is
+  not UTF-8 is left alone; Heimdall's `bluetooth-settings-unread` / `bluetooth-privacy-off` checks say why.
+- Nothing is restarted: it applies at the next boot (or `sudo systemctl restart bluetooth`). A device paired before may need
+  pairing again. Classic Bluetooth keeps the fixed address while the computer is discoverable or connecting; BlueZ has no
+  private mode for it.
+
 ## Honest limits
 
 - The per-app rules cover apps started by Labyrinth's launcher: the dock, the start menu, Settings, and files opened in Minos

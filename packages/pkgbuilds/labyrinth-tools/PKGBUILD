@@ -9,11 +9,13 @@
 # notification activation. (The branches agent-gate-rust, pkgrel 3, and scripts-rust-switch were merged into one switch.) Since
 # 2026-11-11 also Sarina's two voice scripts: labyrinth-sarina-ask (Super+S: the recording to her answer) and labyrinth-sarina-speak
 # (her answer said aloud). Their units come with them (same names). Since 2026-11-12 also labyrinth-os-release, which the
-# scriptlet runs to write the system version into /etc/os-release (it was an awk program there).
+# scriptlet runs to write the system version into /etc/os-release (it was an awk program there). Since 2026-11-18 also
+# labyrinth-bluetooth-privacy, which the scriptlet and a pacman hook (after bluez is installed or updated) run to turn on BlueZ's
+# address privacy (Privacy = device in /etc/bluetooth/main.conf).
 pkgname=labyrinth-tools
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers, Sarina's voice scripts"
+pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers, Sarina's voice scripts, Bluetooth address privacy"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
 license=('MPL-2.0')
@@ -31,7 +33,7 @@ optdepends=('heimdall-git: the malware scanner (heimdalld scan-files) the scan u
             'pipewire: labyrinth-sarina-speak (pw-play)')
 makedepends=('cargo')
 options=('!lto' '!debug')
-# the system version in /etc/os-release on every update (docs/VERSIONING.md)
+# the system version in /etc/os-release on every update (docs/VERSIONING.md), Bluetooth address privacy
 install=labyrinth-tools.install
 
 _src="$startdir/../../tools"
@@ -57,7 +59,7 @@ package() {
            labyrinth-ecosystem-setup labyrinth-hardware-setup labyrinth-grub-theme labyrinth-security-setting labyrinth-gaming \
            labyrinth-sarina labyrinth-sarina-setting labyrinth-sarina-reflect labyrinth-sarina-voice-setup labyrinth-sarina-warm \
            labyrinth-rea labyrinth-rea-setup labyrinth-claude-code labyrinth-install labyrinth-notify-activate \
-           labyrinth-sarina-ask labyrinth-sarina-speak labyrinth-os-release; do
+           labyrinth-sarina-ask labyrinth-sarina-speak labyrinth-os-release labyrinth-bluetooth-privacy; do
     install -Dm755 "$srcdir/target/release/$b" "$pkgdir/usr/bin/$b"
   done
   for u in labyrinth-scan.service labyrinth-scan.timer labyrinth-scan-watch.service labyrinth-scan-full.service labyrinth-scan-full.timer \
@@ -72,4 +74,5 @@ package() {
   for u in labyrinth-appnet.service labyrinth-appnet-ask.service; do
     install -Dm644 "$_src/units/system/$u" "$pkgdir/usr/lib/systemd/system/$u"
   done
+  install -Dm644 "$_src/hooks/labyrinth-bluetooth-privacy.hook" "$pkgdir/usr/share/libalpm/hooks/labyrinth-bluetooth-privacy.hook"
 }

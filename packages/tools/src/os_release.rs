@@ -22,7 +22,7 @@ pub fn main(args: &[String]) -> i32 {
     }
     let Ok(text) = std::fs::read(file) else { return 0 };
     let text = String::from_utf8_lossy(&text);
-    if !text.split('\n').any(|l| matches!(l, "ID=labyrinth" | "ID=\"labyrinth\"" | "ID=\"labyrinth" | "ID=labyrinth\"")) {
+    if !is_id(&text, "labyrinth") {
         return 0;
     }
     let (show, id) = versions(pkgver);
@@ -30,6 +30,17 @@ pub fn main(args: &[String]) -> i32 {
         eprintln!("labyrinth-os-release: {file}: {e}");
     }
     0
+}
+
+/// Whether os-release TEXT names the system ID: a line ID=ID, quoted or not (a stray quote on one side too, as the scriptlet's
+/// awk program took it). labyrinth-bluetooth-privacy asks it as well.
+pub fn is_id(text: &str, id: &str) -> bool {
+    text.split('\n').any(|l| {
+        l.strip_prefix("ID=").is_some_and(|v| {
+            let v = v.strip_prefix('"').unwrap_or(v);
+            v.strip_suffix('"').unwrap_or(v) == id
+        })
+    })
 }
 
 /// ("1.0", "1.0.0") from "1:1.0.0-3": the epoch and the build number off, and a ".0" patch off the shown version.

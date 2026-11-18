@@ -35,6 +35,7 @@
 //!   rea              labyrinth-rea, labyrinth-rea-setup   REA in a sandbox, and its installation
 //!   small            labyrinth-claude-code, labyrinth-install, labyrinth-notify-activate
 //!   os_release       labyrinth-os-release          the system version in /etc/os-release (from the package's scriptlet)
+//!   bt_privacy       labyrinth-bluetooth-privacy   Bluetooth address privacy on in BlueZ's main.conf (scriptlet and hook)
 
 pub mod agent;
 pub mod agent_setup;
@@ -44,6 +45,7 @@ pub mod appnet_ask;
 pub mod apps;
 pub mod ask_agent;
 pub mod bootfinish;
+pub mod bt_privacy;
 pub mod ecosystem;
 pub mod first_components;
 pub mod gaming;

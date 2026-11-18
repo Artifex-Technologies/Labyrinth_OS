@@ -1,0 +1,13 @@
+# Bluetooth address privacy (Privacy = device in /etc/bluetooth/main.conf) once bluez is there: on the image bluez may be
+# installed after labyrinth-tools, whose scriptlet does the same (src/bt_privacy.rs). Only on Labyrinth; a Privacy line the
+# owner wrote stays. It applies when bluetoothd next starts.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = bluez
+
+[Action]
+Description = Turning on Bluetooth address privacy...
+When = PostTransaction
+Exec = /usr/bin/labyrinth-bluetooth-privacy
