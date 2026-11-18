@@ -112,15 +112,11 @@ Each item: where it goes, what exists, the phases (smallest first), what it need
 - **Notes:** C YARA gets fixes only; new syntax lands in YARA-X. ClamAV's YARA subset stays the install target until
   ClamAV says otherwise.
 
-### R5 · URLhaus beyond DNS · P2 · Heimdall intel
+### R5 · URLhaus beyond DNS · P2 · Heimdall intel · **dropped 2026-11-18** (needs an account per user)
 
-- **Exists:** `packaging/net/heimdall-dns-blocklist` loads malware-filter's URLhaus hosts list (CC0).
-- **Phases:** 1. `heimdall-intel-update` also fetches URLhaus's ClamAV URL signatures (download only) into ClamAV's database
-  folder, so a downloaded document or script that carries a known malware address is flagged by the scans that already
-  run. 2. Where abuse.ch publishes downloadable payload hash lists, load them as an `intel-hashes` set that
-  `heimdalld immunity check` and the downloads scan consult offline.
-- **Never by default:** a per-hash or per-URL question to abuse.ch's API (it needs an account key and tells them what I
-  have). If ever added: opt-in, per question, shown first, like Sarina's council.
+- **Exists, and stays:** `packaging/net/heimdall-dns-blocklist` loads malware-filter's URLhaus hosts list (CC0, no key).
+- **Dropped:** URLhaus's ClamAV URL signatures (built and removed the same day, Heimdall `ebe36ef`) and abuse.ch's hash
+  lists and API: abuse.ch wants a personal account key for every download now (decision 4).
 
 ### R6 · Optional OTX feed, pull-only · P3 · Heimdall intel · **dropped 2026-11-18** (needs an account per user)
 
@@ -286,7 +282,7 @@ switch is on (R5, R6, R11).
 3. **R1** ATT&CK technique table and detector tags (with MITRE's notice).
 4. **R4** phase 1: Rust lint for rule drafts; then the YARA-X decision.
 5. **R11** names beside addresses in the connection log, intel match at sight.
-6. **R5** URLhaus ClamAV URL signatures (download only).
+6. ~~R5~~ dropped (needs an account per user).
 7. **R7** response playbooks, propose-only, with the replay test.
 8. **R9** visibility labels on alerts and evidence, then the vault.
 9. **R8** phase 1: Limbo sinkhole network for sample runs and app vetting.
