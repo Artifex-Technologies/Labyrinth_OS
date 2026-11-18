@@ -56,7 +56,9 @@ installing:
      a home network with the real address in Heimdall (`sudo heimdall-wifi-guard trust --home --real-address` while connected)
      so it keeps using the real one. Heimdall's levels: plain `sudo heimdall-wifi-guard trust` makes a network **trusted** (no
      "untrusted" notices, every protection kept, a private address); `trust --home` makes it your home network (the device list
-     and discovery on). To let others on one network find this computer (casting, printers, KDE Connect, Syncthing) whatever its
+     and discovery on). A network cable gets the same private address (since 2026-11-18): for a wired home network whose router
+     reserves an address for this computer, run `sudo heimdall-wifi-guard trust --home --real-address` while plugged in, or use
+     "This is my home network" on the wired network's page in Settings. To let others on one network find this computer (casting, printers, KDE Connect, Syncthing) whatever its
      level: `sudo heimdall-wifi-guard discoverable on`, or the switch on the network's page in Settings > Wi-Fi & Network, which
      asks for the password.
    - Plugged in later: a cable connects by itself (the offline notes go); a USB Wi-Fi adapter brings a **Join a Wi-Fi network**

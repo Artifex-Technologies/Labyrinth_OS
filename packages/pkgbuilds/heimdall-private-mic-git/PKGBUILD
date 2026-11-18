@@ -1,6 +1,6 @@
 # Maintainer: Labyrinth OS
 #
-# The private microphone and heimdall-scrub (Heimdall's docs/LOCATION_SOUNDS.md), a package of its own so every Labyrinth OS
+# The private microphone and heimdall-scrub (Heimdall's docs/LOCATION_SOUNDS.md docs/VOICE_DISGUISE.md), a package of its own so every Labyrinth OS
 # and LykanOS install has it, with or without Heimdall: on the ISO's base list, not the optional Heimdall component.
 # Built from the Heimdall repository checked out next to this one, like heimdall-git (committed work only). Layout needed:
 # <dir>/Heimdall and <dir>/Labyrinth_OS/packages/pkgbuilds/heimdall-private-mic-git/PKGBUILD. The file list lives in
