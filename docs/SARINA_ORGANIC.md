@@ -43,7 +43,7 @@ glue is shell and Python today (`labyrinth-sarina-ask`, `labyrinth-sarina-speak`
 
 ## Status, 2026-10-17 (later): tone-awareness and delivery
 
-- **Tone-awareness: built** (`Sarina/go/tone`, command `sarina-tone`, tested with synthetic speech). From each spoken question's recording (deleted afterwards) it measures loudness, pitch and
+- **Tone-awareness: built** (command `sarina-tone`, Rust since 2026-11-18: Sarina's `rust/sarina/src/tone.rs`, proved against the Go original `go/tone`; tested with synthetic speech). From each spoken question's recording (deleted afterwards) it measures loudness, pitch and
   pitch movement, speaking pace and pauses, compares them with this speaker's own running averages and, only for a clear difference, gives Sarina a private style hint ("sounds rushed: be
   brief", "sounds low or tired: gentle, no jokes unless they make one", "animated: matching the energy is fine"). **No recordings are needed**: it learns from ordinary questions, says nothing until it has
   heard 12 of them, and follows slow changes (the averages move with a floor on the update weight). Kept: one private file (`~/.local/state/labyrinth/tone-baseline.json`, mode 600, a few numbers).

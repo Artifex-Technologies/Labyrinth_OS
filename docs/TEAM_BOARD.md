@@ -401,3 +401,18 @@ previous package.
   `packaging/limbo/decompile/README.md`, step 1.
 - **For the owner:** nothing now; the next publish adds `yara-x` to the repository. When the analysis image is next built,
   step 1 of that README brings `yr` in (and the `yara` package stays out).
+
+### 2026-11-18 [Claude] sarina-git: `/usr/bin/sarina-tone` is the Rust build now; the Go one is no longer built
+
+From Sarina's Rust port (Sarina `docs/RUST_PORT.md` "sarina-tone"; its CLAUDE.md 2026-11-18 (9)). Both copies of the recipe
+(`packages/pkgbuilds/sarina-git` and Agora's `profile/.../pkgbuilds/sarina-git`):
+
+- build: the Go `sarina-tone` line is gone; the Rust core's line builds `--bin sarina-rs --bin sarina-tone` (one cargo build).
+- check: `cargo test --release --locked --test parity_tone` (sarina-tone's parts against what the Go package answered).
+- package: `/usr/bin/sarina-tone` from `target/release/sarina-tone`.
+- Unchanged for its callers: `labyrinth-sarina-ask` (`sarina-tone FILE.wav`), `labyrinth-ask-sarina` (`--pattern`),
+  Settings' "Forget how I sound" (`--forget`); the same output, exit status and errors, and `~/.local/state/labyrinth/`'s
+  `tone-baseline.json` and `mood-history.jsonl` in the same format byte for byte (proved side by side: Sarina's
+  `rust/parity/tone-differential.py`). One Go bug fixed on the way: a baseline with means but no variances made every run
+  panic.
+- **For the owner:** nothing to do; the next sarina-git build brings it.
