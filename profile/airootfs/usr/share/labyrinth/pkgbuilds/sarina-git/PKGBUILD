@@ -5,8 +5,8 @@
 # login). The ISO's own build uses packages/pkgbuilds/sarina-git, which builds the checkout next to Labyrinth_OS.
 # To build a local checkout instead: SARINA_SRC=file://$HOME/Documents/Github/Sarina makepkg -si
 # Two builds of Sarina's core (Sarina's docs/RUST_PORT.md "The switch"): the Rust build (rust/, sarina-rs) is /usr/bin/sarina
-# with its sarina-gui and sarina-service links; it runs the commands ported to it and hands every other one, unchanged, to
-# the Go build by execve. The Go build is /usr/lib/sarina/sarina (named sarina so that Heimdall still knows the process).
+# with its sarina-gui and sarina-service links; since 2026-11-18 it runs every command itself. The Go build stays at
+# /usr/lib/sarina/sarina only as the rollback until the week is over (about 2026-11-25), then it goes.
 # Also sarina-voice (Rust, packaging/voice): the spoken-question programs (labyrinth-ask-sarina, labyrinth-sarina-checkup,
 # labyrinth-sarina-speak-voiced) that the image's /usr/local/bin names link to. Sarina's docs/VOICE_RUST_PORT.md: what it is.
 # And sarina-voiced (Rust, packaging/voiced): the voice service the image's labyrinth-voiced.service starts. It loads ONNX
