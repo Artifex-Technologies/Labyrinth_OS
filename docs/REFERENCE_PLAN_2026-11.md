@@ -292,17 +292,29 @@ switch is on (R5, R6, R11).
 
 Later: R2, R6, R10, R12, R14 to R18, R20 to R22.
 
-## 5. What I have to decide
+## 5. What I decided (2026-11-18)
 
-1. **YARA-X:** depend on the `yara-x` crate for compile checks (BSD-3 library), or keep my own lint plus ClamAV. And move
-   Limbo's analysis image to YARA-X's `yr`.
-2. **ATT&CK data:** ship the trimmed Enterprise table (Linux and Windows) with MITRE's notice in Heimdall.
-3. **IEEE downloads:** a monthly fetch of the four IEEE registry files by `heimdall-intel-update`, or hwdata only.
-4. **URLhaus ClamAV signatures:** on by default (download only, CC0)?
-5. **OTX:** allow an optional account key for pull-only indicator lists?
-6. **Playbooks:** which restrict-only verbs may ever run on `auto` (guest restrict, app network block for a set time)?
-7. **Limbo:** is running a sample in scope (Limbo §9.1)? If so, which egress (VPN account or throwaway server) and who
-   pays for it.
-8. **Voice disguise:** build it, and which synthetic voices.
-9. **Wired networks:** random address on untrusted wired networks on by default?
-10. **Labels:** the default visibility for each vault folder.
+1. **YARA-X: yes.** The `yara-x` crate (BSD-3) does the exact compile check and its slow-rule warnings in the Rust daemon,
+   after the own lint; Limbo's analysis image moves to YARA-X's `yr`. ClamAV's YARA subset stays the install target.
+2. **ATT&CK data: yes.** The trimmed Enterprise table (Linux and Windows) ships in Heimdall with MITRE's notice.
+3. **IEEE downloads: no.** hwdata (Arch's package) stays the only vendor source; nothing fetches the IEEE files. The crate
+   still reads `/var/lib/heimdall-ieee` if I ever put the files there by hand.
+4. **URLhaus ClamAV signatures: yes, on by default** (download only, CC0).
+5. **OTX: yes**, an optional account key, pull-only; absent key = off.
+6. **Playbooks: yes**, both restrict-only verbs may run on `auto`: `limbo-restrict` and `app-network-block` for a set time.
+   Each playbook still starts as `propose`; I switch `auto` on per playbook.
+7. **Limbo: yes**, running a sample is in scope. Sinkhole first (R8 phase 1). The egress (VPN account or throwaway
+   server) and who pays for it is chosen when phase 2 is built; until then a sample run has no route out.
+8. **Voice disguise: yes, build it.** Phase 1 (DSP) first; the synthetic voices of phase 2 are made for the purpose,
+   belong to nobody and are picked when phase 2 is built.
+9. **Wired networks: yes**, a random address on untrusted wired networks by default.
+10. **Labels: yes**, these defaults (a note's own `visibility:` field can only narrow them; a damaged field means `owner`):
+
+    | Vault folder | Default | Why |
+    | --- | --- | --- |
+    | Talks, Entities, Inbox, Sources, Reflections | `local-model` | about me and the people I know; never leaves the computer |
+    | Daily, Security | `local-model` | this computer's status and findings |
+    | Decisions, Projects | `local-model` | may name private plans |
+    | Lessons, Guides, Playbooks, Study, Jokes | `online` | general know-how; still sent only after my yes on each call, cleaned |
+
+    No folder is `export` by default. Evidence and alerts follow R9 phase 1 (personal paths and captures: `owner`).
