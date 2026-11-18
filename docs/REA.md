@@ -15,7 +15,7 @@ virtual machine: REA's runtime features (a debugger running the sample) would ru
 `decompile`, `xrefs`, `search`, `search-bytes`, the `inspect-*` family); the debugger, capture and device commands are not offered; paths outside the analysis folder and the quarantine are
 refused; every result ends with a reminder to report only what the output shows. Evals (group "reverse"): she finds the rule of the sample program (6 characters, starts with L, ends with 7)
 3 times out of 3 after the tool listed functions for her (before that she invented a rule: `analyze` alone does not show logic), and she refuses `/etc/passwd`. Her playbook is in her vault:
-`Playbooks/Reverse engineering playbook.md` (and `Pentest.md`); the Playbooks folder is owner-only, she cannot change it.
+`Playbooks/Reverse engineering playbook.md`; the Playbooks folder is owner-only, she cannot change it.
 
 **Heimdall (built 2026-11-17):** Heimdall does not call REA by itself; it asks Sarina. `sudo heimdalld immunity analyze --sarina SHA256`
 lends her sandbox a read-only copy of a held file (`/var/lib/heimdall-sarina-share`, seen by her service account as `/quarantine/<sha256>.sample`),
