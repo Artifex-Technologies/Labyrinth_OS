@@ -7,7 +7,7 @@
   "burst_window_seconds": 300,
   "burst_threshold": 20,
   "burst_cooldown_seconds": 300,
-  "fim_paths": ["/usr/bin/sarina", "/usr/bin/limbo", "/usr/bin/heimdalld", "/usr/lib/systemd/system/sarina-service.service", "/etc/systemd/system/sarina-service.service.d/ecosystem.conf"],
+  "fim_paths": ["/usr/bin/sarina", "/usr/lib/sarina/sarina", "/usr/bin/limbo", "/usr/bin/heimdalld", "/usr/lib/systemd/system/sarina-service.service", "/etc/systemd/system/sarina-service.service.d/ecosystem.conf"],
   "fim_poll_interval_seconds": 30,
   "fim_state_path": "/var/lib/heimdall/fim-state.json",
   "telemetry_interval_seconds": 30,
