@@ -1,0 +1,58 @@
+# Maintainer: Labyrinth OS
+#
+# YARA-X's exact compile check of Heimdall's YARA rule drafts (Heimdall's docs/IMMUNITY.md, "Rules"), a package of its own:
+# it is built on the yara-x crate (wasmtime and Cranelift: about two minutes and 900 MB of build files here), while the program
+# is small (about 4 MB) and only runs when a draft is kept or tested. Heimdall works without it (its own lint and ClamAV).
+# Built from the Heimdall repository checked out next to this one, like heimdall-git (committed work only).
+# Layout needed: <dir>/Heimdall and <dir>/Labyrinth_OS/packages/pkgbuilds/heimdall-yara-check-git/PKGBUILD. The file list
+# lives in Heimdall's packaging/install.sh (its yara-check part).
+
+_src="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../Heimdall" && pwd)"
+
+pkgname=heimdall-yara-check-git
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="YARA-X's exact compile check and slow-pattern warnings for Heimdall's YARA rule drafts"
+arch=('x86_64')
+url='https://github.com/Artifex-Technologies/Heimdall'
+license=('MPL-2.0' 'BSD-3-Clause')
+depends=('glibc' 'gcc-libs')
+makedepends=('rust' 'git')
+provides=('heimdall-yara-check')
+conflicts=('heimdall-yara-check')
+options=('!debug')
+source=("heimdall::git+file://${_src}")
+sha256sums=('SKIP')
+
+# The version is Heimdall's own (the VERSION file in its repository); the build number counts the commits since that release
+# that touch this package's files (the crate and install.sh) and this recipe's (docs/VERSIONING.md).
+. "$startdir/../../../scripts/package-version.sh"
+_paths=(rust/yara-check packaging/install.sh)
+_version "$(_srcdir)/heimdall" "${_paths[@]}"
+
+pkgver() {
+  _version "$srcdir/heimdall" "${_paths[@]}"
+  echo "$pkgver"
+}
+
+prepare() {
+  _version "$srcdir/heimdall" "${_paths[@]}"
+  # its own workspace and lock file (rust/yara-check/Cargo.lock); yara-x 1.23 needs Rust 1.95
+  cd "$srcdir/heimdall/rust/yara-check"
+  cargo fetch --locked
+}
+
+build() {
+  cd "$srcdir/heimdall/rust/yara-check"
+  cargo build --release --locked --offline
+}
+
+check() {
+  cd "$srcdir/heimdall/rust/yara-check"
+  cargo test --release --locked --offline
+}
+
+package() {
+  cd "$srcdir/heimdall"
+  ./packaging/install.sh "$pkgdir" yara-check
+}

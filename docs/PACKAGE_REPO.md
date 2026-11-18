@@ -74,7 +74,7 @@ without uploading). Builds run with `makepkg -c`, so no build files are left beh
 folder, so an unchanged app is recognised as unchanged and not uploaded again. The source repositories are reset with
 `git clean`; anything a recipe keeps next to itself (the clone of a `-git` recipe) must be in `.gitignore` or it is wiped.
 
-Recipes that build from the publish copy itself (`git+file://`: heimdall-git, heimdall-private-mic-git, heimdall-multilink-git, sarina-git, limbo-git) take its `main` branch, so
+Recipes that build from the publish copy itself (`git+file://`: heimdall-git, heimdall-private-mic-git, heimdall-multilink-git, heimdall-yara-check-git, sarina-git, limbo-git) take its `main` branch, so
 each copy's `main` is moved to GitHub's on every publish. Until 2026-11-07 (6238b19) the copies were checked out detached, `main`
 stayed at the first clone, and the published Heimdall and Sarina were days behind.
 
