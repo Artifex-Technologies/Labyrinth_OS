@@ -1979,7 +1979,7 @@
    "id": "agent-usage",
    "name": "Agent usage",
    "subtitle": "Claude's limits in the top bar",
-   "description": "How much of Claude's weekly and 5-hour limits you have used, in the top bar (\"Claude 27% · 2d 12h\"), red when the week's use is ahead of an even pace; click it for every window and when each resets. It asks Anthropic with Claude Code's own sign-in, the way Claude Code does, at most every four minutes; nothing else is sent anywhere. Adapted from Omarchy's agent-usage plugin.",
+   "description": "How much of Claude's weekly and 5-hour limits you have used, in the top bar (\"Claude 27% · 2d 12h\"), red when the week's use is ahead of an even pace; click it for every window and when each resets. With it comes Agents: how many AI agents are running, with a ring for the busiest limit, and a card listing each one (Claude Code's sessions, Sarina, other agents) with its state, usage and last activity. Read-only: it never starts an agent. It asks Anthropic with Claude Code's own sign-in, the way Claude Code does, at most every four minutes; nothing else is sent anywhere. Either can be hidden in Settings. Adapted from Omarchy's agent-usage plugin.",
    "category": "Plugins",
    "subcategory": "Top bar",
    "source": {

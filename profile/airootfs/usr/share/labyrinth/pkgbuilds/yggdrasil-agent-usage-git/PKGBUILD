@@ -1,6 +1,7 @@
 # Maintainer: Labyrinth OS
 #
-# Agent usage, a Yggdrasil bar add-on (Claude's weekly and 5-hour limits in the top bar), built from Yggdrasil's public repository
+# Agent usage, a Yggdrasil bar add-on (Claude's weekly and 5-hour limits in the top bar) and Agents (every AI agent running, its
+# state, usage and last activity; read-only), built from Yggdrasil's public repository
 # (packages/agent-usage). Agora's Plugins installs it (labyrinth-apps install agent-usage). To build a local checkout instead:
 # YGGDRASIL_SRC=file://$HOME/Documents/Github/Yggdrasil makepkg -si
 pkgname=yggdrasil-agent-usage-git
@@ -9,7 +10,7 @@ pkgrel=1
 # 1 since 2026-11-07: the version names the app folder's last commit (it named Yggdrasil's newest commit, so two builds with
 # the same count were ordered at random), and the rebuild for any 64-bit CPU must reach installed systems as an update
 epoch=1
-pkgdesc="Yggdrasil bar add-on: Claude's weekly and 5-hour usage from Claude Code's own sign-in"
+pkgdesc="Yggdrasil bar add-ons: Claude's weekly and 5-hour usage from Claude Code's own sign-in, and every AI agent running"
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Yggdrasil'
 license=('MPL-2.0')
@@ -90,5 +91,6 @@ package() {
   cd "$srcdir/yggdrasil/packages/agent-usage"
   install -Dm755 "$srcdir/target/release/yggdrasil-agent-usage" "$pkgdir/usr/bin/yggdrasil-agent-usage"
   install -Dm644 agent-usage.conf "$pkgdir/usr/share/yggdrasil/integrations/agent-usage.conf"
+  install -Dm644 agents.conf "$pkgdir/usr/share/yggdrasil/integrations/agents.conf"
   install -Dm644 README.md "$pkgdir/usr/share/doc/yggdrasil-agent-usage/README.md"
 }

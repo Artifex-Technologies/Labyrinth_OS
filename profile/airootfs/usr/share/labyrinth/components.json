@@ -466,7 +466,7 @@
     {
       "id": "agent-usage",
       "name": "Agent usage (bar add-on)",
-      "description": "Claude's weekly and 5-hour limits in Yggdrasil's top bar, red when the week's use is ahead of an even pace. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
+      "description": "Claude's weekly and 5-hour limits in Yggdrasil's top bar, red when the week's use is ahead of an even pace, and Agents: every AI agent running (Claude Code's sessions, Sarina, other agents) with its state, usage and last activity. Built here with makepkg from Yggdrasil's repository (needs Rust once, to build).",
       "proprietary": false,
       "pkgbuild": "yggdrasil-agent-usage-git",
       "notes": "Shows nothing until Claude Code is signed in on this account. The numbers come from Anthropic, asked with Claude Code's own sign-in."
