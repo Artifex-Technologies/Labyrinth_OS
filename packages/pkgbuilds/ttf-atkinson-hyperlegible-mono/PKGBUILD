@@ -1,0 +1,38 @@
+# Maintainer: Labyrinth OS
+#
+# Atkinson Hyperlegible Mono: the monospaced member of the Braille Institute's Atkinson Hyperlegible Next family (for
+# terminals and code), seven weights in one variable file and its italic. One of the monospace fonts to choose from in the
+# installer and in Settings > Appearance > Font. Not in Arch's repositories, so my own recipe: the files Google Fonts
+# publishes (github.com/google/fonts, ofl/atkinsonhyperlegiblemono) at a fixed commit, checksums pinned. A new version: the
+# commit, pkgver (the fonts' own "Version" name) and the checksums, pkgrel back to 1.
+
+pkgname=ttf-atkinson-hyperlegible-mono
+pkgver=2.001
+pkgrel=1
+pkgdesc="Atkinson Hyperlegible Mono, the Braille Institute's monospaced typeface for low-vision readers (variable, with italic)"
+arch=('any')
+url='https://github.com/googlefonts/atkinson-hyperlegible-next-mono'
+license=('OFL-1.1')
+makedepends=('fontconfig')
+_commit=3a0be2fdd3252b377a0851f0ba01c3609f99b7ab
+_dir="https://raw.githubusercontent.com/google/fonts/$_commit/ofl/atkinsonhyperlegiblemono"
+source=("AtkinsonHyperlegibleMono-VF-$pkgver.ttf::$_dir/AtkinsonHyperlegibleMono%5Bwght%5D.ttf"
+        "AtkinsonHyperlegibleMono-Italic-VF-$pkgver.ttf::$_dir/AtkinsonHyperlegibleMono-Italic%5Bwght%5D.ttf"
+        "$pkgname-OFL-$pkgver.txt::$_dir/OFL.txt")
+sha256sums=('5ce8b1698d1ded7dff2178c1a3ad159470085a58ea239e8b2cb88f4fb4a6f646'
+            'e18f523877530e4abe229df6a36d394326254da488a7f5abb9b7b5ea8f780cd4'
+            '1ebb31cf7393164f20d10c1d48406cddb5314feff8465531cf1e4ba37e9dd740')
+
+# the files are the family they claim to be (fontconfig lists the weight in the name too: "..., Atkinson Hyperlegible Mono ExtraLight")
+check() {
+  local f
+  for f in AtkinsonHyperlegibleMono-VF-$pkgver.ttf AtkinsonHyperlegibleMono-Italic-VF-$pkgver.ttf; do
+    fc-scan --format '%{family[0]}\n' "$f" | grep -qx 'Atkinson Hyperlegible Mono'
+  done
+}
+
+package() {
+  install -Dm644 "AtkinsonHyperlegibleMono-VF-$pkgver.ttf" "$pkgdir/usr/share/fonts/TTF/AtkinsonHyperlegibleMono-VF.ttf"
+  install -Dm644 "AtkinsonHyperlegibleMono-Italic-VF-$pkgver.ttf" "$pkgdir/usr/share/fonts/TTF/AtkinsonHyperlegibleMono-Italic-VF.ttf"
+  install -Dm644 "$pkgname-OFL-$pkgver.txt" "$pkgdir/usr/share/licenses/$pkgname/OFL.txt"
+}

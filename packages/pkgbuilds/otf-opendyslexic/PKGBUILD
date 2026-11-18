@@ -1,0 +1,36 @@
+# Maintainer: Labyrinth OS
+#
+# OpenDyslexic (Abbie Gonzalez): a typeface with heavier letter bottoms, made with dyslexic readers in mind; regular, bold,
+# italic and bold italic. One of the system fonts to choose from in the installer and in Settings > Appearance > Font. Arch's
+# repositories have it only as a 41 MB Nerd Font (otf-opendyslexic-nerd, with thousands of icons added), so this is my own
+# recipe: the upstream release v0.91.12 (the newest; the sources moved to forge.hackers.town/antijingoist/opendyslexic in
+# 2025, the release files are the same), checksums pinned. Its monospaced cousin is otf-opendyslexic-mono (another licence).
+# A new release: pkgver, the licence's commit and the checksums, pkgrel back to 1.
+
+pkgname=otf-opendyslexic
+pkgver=0.91.12
+pkgrel=1
+pkgdesc="OpenDyslexic, a typeface made with dyslexic readers in mind"
+arch=('any')
+url='https://opendyslexic.org'
+license=('OFL-1.1')
+makedepends=('fontconfig')
+# the commit of the v0.91.12 tag
+_commit=449a41bbc25f7363c540ad112dfcef2f7b340c0a
+source=("https://github.com/antijingoist/opendyslexic/releases/download/v$pkgver/opendyslexic-0.910.12-rc2-2019.10.17.zip"
+        "$pkgname-OFL-$pkgver.txt::https://raw.githubusercontent.com/antijingoist/opendyslexic/$_commit/OFL.txt")
+sha256sums=('b92d7fcb9409f2bcfd23b65ac71647256eb49c429f4fbb1cc870381fc93eb486'
+            'caafcccfb70fc72458fcbda812ec8f0a06cb300cbabb87eabbb30b946124394b')
+
+check() {
+  local f
+  for f in OpenDyslexic-{Regular,Bold,Italic,Bold-Italic}.otf; do
+    fc-scan --format '%{family}\n' "$f" | grep -qx 'OpenDyslexic'
+  done
+}
+
+package() {
+  # the four type files only (the release also has web fonts and a PDF of every letter)
+  install -Dm644 -t "$pkgdir/usr/share/fonts/OTF" OpenDyslexic-{Regular,Bold,Italic,Bold-Italic}.otf
+  install -Dm644 "$pkgname-OFL-$pkgver.txt" "$pkgdir/usr/share/licenses/$pkgname/OFL.txt"
+}

@@ -15,8 +15,10 @@ HELPER = ROOT / "scripts" / "package-version.sh"
 STORE = ROOT / "profile" / "airootfs" / "usr" / "share" / "labyrinth" / "pkgbuilds"
 # data whose date is its version (the keys it holds, the dictionaries' snapshot)
 DATED = {"labyrinth-keyring", "yggdrasil-spell-packs"}
-# someone else's release built from its pinned source: the upstream version, pkgrel counts our rebuilds of it
-UPSTREAM = {"yara-x"}
+# someone else's release built from its pinned source: the upstream version, pkgrel counts our rebuilds of it (the fonts:
+# Settings > Appearance > Font, docs/PACKAGE_REPO.md)
+UPSTREAM = {"yara-x", "ttf-atkinson-hyperlegible-next", "ttf-atkinson-hyperlegible-mono", "ttf-lexend", "otf-opendyslexic",
+            "otf-opendyslexic-mono"}
 ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid", GIT_COMMITTER_NAME="t",
            GIT_COMMITTER_EMAIL="t@example.invalid", GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_NOSYSTEM="1")
 
@@ -79,10 +81,22 @@ class Recipes(unittest.TestCase):
     def test_an_upstream_release_is_pinned(self):
         for name in sorted(UPSTREAM):
             t = (ROOT / "packages" / "pkgbuilds" / name / "PKGBUILD").read_text()
-            self.assertRegex(t, r"(?m)^pkgver=\d+\.\d+\.\d+$", name)
+            # a font's own version has two parts (Version 2.001)
+            self.assertRegex(t, r"(?m)^pkgver=\d+\.\d+(\.\d+)?$", name)
             self.assertRegex(t, r"(?m)^pkgrel=[1-9]\d*$", name)
-            self.assertRegex(t, r"(?m)^sha256sums=\('[0-9a-f]{64}'\)$", f"{name}: the source's checksum is pinned")
+            sources = re.search(r"(?ms)^source=\((.*?)\)$", t).group(1)
+            sums = re.search(r"(?ms)^sha256sums=\((.*?)\)$", t)
+            self.assertTrue(sums, f"{name}: no sha256sums")
+            sums = sums.group(1).split()
+            self.assertEqual(len(sums), len(re.findall(r"""(?:'[^']*'|"[^"]*")""", sources)), f"{name}: one checksum per source")
+            for s in sums:
+                self.assertRegex(s, r"^'[0-9a-f]{64}'$", f"{name}: the source's checksum is pinned")
             self.assertNotIn("git+", t, f"{name}: a release tarball, not a moving branch")
+            # a file from a repository: at a fixed commit, never a branch
+            for url in re.findall(r"https://raw\.githubusercontent\.com/[^\s\"']+", t):
+                self.assertRegex(url, r"^https://raw\.githubusercontent\.com/[^/]+/[^/]+/(\$_commit|[0-9a-f]{40})/", f"{name}: {url}")
+            if "$_commit" in t:
+                self.assertRegex(t, r"(?m)^_commit=[0-9a-f]{40}$", f"{name}: the commit is a full hash")
 
 
 class Helper(unittest.TestCase):

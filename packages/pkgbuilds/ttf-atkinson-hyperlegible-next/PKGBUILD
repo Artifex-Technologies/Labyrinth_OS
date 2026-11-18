@@ -1,0 +1,39 @@
+# Maintainer: Labyrinth OS
+#
+# Atkinson Hyperlegible Next: the Braille Institute's typeface for readers with low vision (letters that are hard to mix up,
+# such as I, l and 1), the 2024 family with seven weights in one variable file and its italic. One of the system fonts to
+# choose from in the installer and in Settings > Appearance > Font (Yggdrasil's APPS_SETTINGS.md). Arch's repositories have
+# only the original Atkinson Hyperlegible (ttf-atkinson-hyperlegible, also on the ISO), so this is my own recipe: the files
+# Google Fonts publishes (github.com/google/fonts, ofl/atkinsonhyperlegiblenext) at a fixed commit, checksums pinned.
+# A new version: the commit, pkgver (the fonts' own "Version" name) and the checksums, pkgrel back to 1.
+
+pkgname=ttf-atkinson-hyperlegible-next
+pkgver=2.001
+pkgrel=1
+pkgdesc="Atkinson Hyperlegible Next, the Braille Institute's typeface for low-vision readers (variable, with italic)"
+arch=('any')
+url='https://github.com/googlefonts/atkinson-hyperlegible-next'
+license=('OFL-1.1')
+makedepends=('fontconfig')
+_commit=afbb27a87bc4be2b0005e17c144831438e82ab37
+_dir="https://raw.githubusercontent.com/google/fonts/$_commit/ofl/atkinsonhyperlegiblenext"
+source=("AtkinsonHyperlegibleNext-VF-$pkgver.ttf::$_dir/AtkinsonHyperlegibleNext%5Bwght%5D.ttf"
+        "AtkinsonHyperlegibleNext-Italic-VF-$pkgver.ttf::$_dir/AtkinsonHyperlegibleNext-Italic%5Bwght%5D.ttf"
+        "$pkgname-OFL-$pkgver.txt::$_dir/OFL.txt")
+sha256sums=('5a455d1cfa099b601ab70751bb9673e8fe1854dc4500c80e1a220d0d75e31745'
+            'ce9cffed32742ad2d9238c561a93220385e5934cdc02b8eb4097a50efa957dc6'
+            'aca6a428580965d2297d1b718042dd427c2a9443ece3b0d02d758e161e0c4030')
+
+# the files are the family they claim to be, at this version
+check() {
+  local f
+  for f in AtkinsonHyperlegibleNext-VF-$pkgver.ttf AtkinsonHyperlegibleNext-Italic-VF-$pkgver.ttf; do
+    fc-scan --format '%{family}\n' "$f" | grep -qx 'Atkinson Hyperlegible Next'
+  done
+}
+
+package() {
+  install -Dm644 "AtkinsonHyperlegibleNext-VF-$pkgver.ttf" "$pkgdir/usr/share/fonts/TTF/AtkinsonHyperlegibleNext-VF.ttf"
+  install -Dm644 "AtkinsonHyperlegibleNext-Italic-VF-$pkgver.ttf" "$pkgdir/usr/share/fonts/TTF/AtkinsonHyperlegibleNext-Italic-VF.ttf"
+  install -Dm644 "$pkgname-OFL-$pkgver.txt" "$pkgdir/usr/share/licenses/$pkgname/OFL.txt"
+}

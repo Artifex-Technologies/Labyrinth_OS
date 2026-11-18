@@ -20,7 +20,7 @@ repository can add Labyrinth's software but never replace the base system.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), and **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) and the reading fonts (Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and OpenDyslexic Mono: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## Built from someone else's source: yara-x
 
@@ -37,6 +37,27 @@ it). So `packages/pkgbuilds/yara-x` builds it here, my own recipe (the AUR's was
   the repository. Not on the ISO (nothing there needs it), so an ISO build leaves it out unless named.
 - A new YARA-X release is my choice: `pkgver` and the checksum in the recipe, `pkgrel` back to 1. If Arch ever packages
   `yara-x`, theirs wins (this repository is listed last) and the recipe can go.
+
+## Built from someone else's source: the reading fonts
+
+The fonts to choose from in the installer and in Settings > Appearance > Font (Yggdrasil's `docs/APPS_SETTINGS.md`, decided
+2026-11-18): Arch has only the original Atkinson Hyperlegible (`ttf-atkinson-hyperlegible`, taken from Arch), and OpenDyslexic
+only as a 41 MB Nerd Font. So five small recipes here, my own, pinned like yara-x (the upstream version as `pkgver`, `pkgrel`
+counting my rebuilds, every source's SHA-256 in the recipe, files from a repository at a fixed commit, never a branch:
+`tests/test_package_version.py` checks all of it):
+
+| Package | From | Licence | Package size |
+| --- | --- | --- | --- |
+| `ttf-atkinson-hyperlegible-next` 2.001 | Google Fonts (`google/fonts`, `ofl/atkinsonhyperlegiblenext`): one variable file and its italic | SIL OFL 1.1 | 128 KB |
+| `ttf-atkinson-hyperlegible-mono` 2.001 | Google Fonts (`ofl/atkinsonhyperlegiblemono`), the same | SIL OFL 1.1 | 75 KB |
+| `ttf-lexend` 1.007 | Google Fonts (`ofl/lexend`): one variable file | SIL OFL 1.1 | 103 KB |
+| `otf-opendyslexic` 0.91.12 | the upstream release zip (regular, bold, italic, bold italic; not its web fonts) | SIL OFL 1.1 | 484 KB |
+| `otf-opendyslexic-mono` 1.001 | the 2016 release of the older repository (`antijingoist/open-dyslexic`, tag 20160623-Stable): the only monospaced OpenDyslexic | Bitstream Vera (redistribution allowed, not to be sold on its own) | 52 KB |
+
+All six are on the ISO (about 1.5 MB installed together). Each recipe's `check()` makes sure the files are the family they claim
+to be (`fc-scan`). OpenDyslexic's sources moved from GitHub to forge.hackers.town in 2025; the release files are the same. A new
+version is my choice: the commit or release, `pkgver` and the checksums, `pkgrel` back to 1. If Arch packages one of them, its
+package wins (this repository is listed last).
 
 ## The key
 

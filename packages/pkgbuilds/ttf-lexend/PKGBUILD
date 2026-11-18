@@ -1,0 +1,31 @@
+# Maintainer: Labyrinth OS
+#
+# Lexend: a typeface with wide, evenly spaced letters, designed to make reading less tiring (Bonnie Shaver-Troup and Thomas
+# Jockin), all nine weights in one variable file. One of the system fonts to choose from in the installer and in Settings >
+# Appearance > Font. Not in Arch's repositories, so my own recipe: the file Google Fonts publishes (github.com/google/fonts,
+# ofl/lexend) at a fixed commit, checksums pinned. A new version: the commit, pkgver (the font's own "Version" name) and the
+# checksums, pkgrel back to 1.
+
+pkgname=ttf-lexend
+pkgver=1.007
+pkgrel=1
+pkgdesc="Lexend, a typeface with wide, evenly spaced letters made to ease reading (variable)"
+arch=('any')
+url='https://github.com/googlefonts/lexend'
+license=('OFL-1.1')
+makedepends=('fontconfig')
+_commit=e2332cf862ac3145c0ee5f24f04f4c1819b2410b
+_dir="https://raw.githubusercontent.com/google/fonts/$_commit/ofl/lexend"
+source=("Lexend-VF-$pkgver.ttf::$_dir/Lexend%5Bwght%5D.ttf"
+        "$pkgname-OFL-$pkgver.txt::$_dir/OFL.txt")
+sha256sums=('3add53e641fbc81da64da4bb254285e2831b52b029527bc0714e2b9610832ee6'
+            '5da8505887d0fa7fe963445fd58852707fda34adfeb65af25c99d152bab285bd')
+
+check() {
+  fc-scan --format '%{family}\n' "Lexend-VF-$pkgver.ttf" | grep -qx 'Lexend'
+}
+
+package() {
+  install -Dm644 "Lexend-VF-$pkgver.ttf" "$pkgdir/usr/share/fonts/TTF/Lexend-VF.ttf"
+  install -Dm644 "$pkgname-OFL-$pkgver.txt" "$pkgdir/usr/share/licenses/$pkgname/OFL.txt"
+}

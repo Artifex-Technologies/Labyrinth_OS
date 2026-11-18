@@ -124,6 +124,15 @@ nm-connection-editor
 btop
 # emoji font for the bar's weather icons
 noto-fonts-emoji
+# the fonts to choose from for reading (the installer's Font page, Settings > Appearance > Font; about 1.5 MB together): Atkinson
+# Hyperlegible (Arch's) and Atkinson Hyperlegible Next and Mono for low-vision readers, Lexend, OpenDyslexic and OpenDyslexic
+# Mono; the last five built in this repository (packages/pkgbuilds). Noto Sans stays the default.
+ttf-atkinson-hyperlegible
+ttf-atkinson-hyperlegible-next
+ttf-atkinson-hyperlegible-mono
+ttf-lexend
+otf-opendyslexic
+otf-opendyslexic-mono
 # Labyrinth's own file explorer, built from packages/pkgbuilds into the local repo
 yggdrasil-minos
 yggdrasil-settings

@@ -1,0 +1,32 @@
+# Maintainer: Labyrinth OS
+#
+# OpenDyslexic Mono: the monospaced OpenDyslexic, for terminals and code. The current OpenDyslexic (otf-opendyslexic, SIL OFL)
+# has no monospaced style; the last one is in the 2016 release of the older repository (antijingoist/open-dyslexic, tag
+# 20160623-Stable, archived), whose fonts are derived from Bitstream Vera Sans and carry the Bitstream Vera licence
+# (redistribution allowed; the font may not be sold on its own; the text is in LICENSE, copied from that release's README).
+# One of the monospace fonts to choose from in the installer and in Settings > Appearance > Font. My own recipe: the one file
+# at the tag's commit, checksum pinned. Its family name is "OpenDyslexicMono".
+
+pkgname=otf-opendyslexic-mono
+pkgver=1.001
+pkgrel=1
+pkgdesc="OpenDyslexic Mono, the monospaced OpenDyslexic (2016 release)"
+arch=('any')
+url='https://github.com/antijingoist/open-dyslexic'
+license=('Bitstream-Vera')
+makedepends=('fontconfig')
+# the commit of the 20160623-Stable tag
+_commit=03aa68333abaef14718091a46bff52794b34cf39
+source=("OpenDyslexicMono-Regular-$pkgver.otf::https://raw.githubusercontent.com/antijingoist/open-dyslexic/$_commit/otf/OpenDyslexicMono-Regular.otf"
+        'LICENSE')
+sha256sums=('cbb54f92f232b2314339a076c1e9a8ee9bbed227dfd89448800d08aff4e0f436'
+            'e1cf0dd008d2d36fcb815caabbbffb56f3ed96148448add25c12f0d450e98012')
+
+check() {
+  fc-scan --format '%{family}\n' "OpenDyslexicMono-Regular-$pkgver.otf" | grep -qx 'OpenDyslexicMono'
+}
+
+package() {
+  install -Dm644 "OpenDyslexicMono-Regular-$pkgver.otf" "$pkgdir/usr/share/fonts/OTF/OpenDyslexicMono-Regular.otf"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -31,6 +31,10 @@ the machine only when that cannot be reached.
 | This laptop: `fingerprint`, `thermald`, `on-screen-keyboard` | fprintd + libfprint; thermald; wvkbd (AUR) | Not on the ISO. Ticked by the hardware: a fingerprint reader libfprint supports (by exact USB id), an Intel laptop whose firmware does not run the cooling itself (not a ThinkPad with DYTC: thermald stops there), a tablet-mode switch. Installing fprintd changes nothing in PAM; fingerprint for sudo is a switch in Settings > Users, off until I turn it on. See HARDWARE.md |
 | `local-ai` | Ollama for Sarina (CUDA on NVIDIA, Vulkan otherwise) | Not in the image (~6 GB with CUDA); Sarina offers to install it on first use. Competes with games for GPU memory |
 
+**Not a component: the reading fonts.** Atkinson Hyperlegible, Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and
+OpenDyslexic Mono are in the base system on every install (about 1.5 MB together), so the installer's Font page and Settings >
+Appearance > Font can offer them offline. Five of them are built in this repository ([PACKAGE_REPO.md](PACKAGE_REPO.md)).
+
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
 obsidian), `everything` (all of the above including weather; your own setup). Spotify is in no preset and Obsidian only in
 `creative` (2026-11-13): neither is part of the OS, and Agora installs both.
