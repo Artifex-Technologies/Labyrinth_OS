@@ -15,6 +15,8 @@ HELPER = ROOT / "scripts" / "package-version.sh"
 STORE = ROOT / "profile" / "airootfs" / "usr" / "share" / "labyrinth" / "pkgbuilds"
 # data whose date is its version (the keys it holds, the dictionaries' snapshot)
 DATED = {"labyrinth-keyring", "yggdrasil-spell-packs"}
+# someone else's release built from its pinned source: the upstream version, pkgrel counts our rebuilds of it
+UPSTREAM = {"yara-x"}
 ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid", GIT_COMMITTER_NAME="t",
            GIT_COMMITTER_EMAIL="t@example.invalid", GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_NOSYSTEM="1")
 
@@ -45,7 +47,7 @@ class Recipes(unittest.TestCase):
         for p in recipes():
             t = p.read_text()
             name = p.parent.name
-            if name in DATED:
+            if name in DATED or name in UPSTREAM:
                 self.assertNotIn("_version ", t, name)
                 continue
             self.assertRegex(t, r"(?m)^_version ", f"{name}: no _version line (docs/VERSIONING.md)")
@@ -68,11 +70,19 @@ class Recipes(unittest.TestCase):
 
     def test_the_static_lines_start_at_one(self):
         for p in recipes():
-            if p.parent.name in DATED:
+            if p.parent.name in DATED or p.parent.name in UPSTREAM:
                 continue
             t = p.read_text()
             self.assertRegex(t, r"(?m)^pkgver=1\.0\.0$", p.parent.name)
             self.assertRegex(t, r"(?m)^pkgrel=1$", p.parent.name)
+
+    def test_an_upstream_release_is_pinned(self):
+        for name in sorted(UPSTREAM):
+            t = (ROOT / "packages" / "pkgbuilds" / name / "PKGBUILD").read_text()
+            self.assertRegex(t, r"(?m)^pkgver=\d+\.\d+\.\d+$", name)
+            self.assertRegex(t, r"(?m)^pkgrel=[1-9]\d*$", name)
+            self.assertRegex(t, r"(?m)^sha256sums=\('[0-9a-f]{64}'\)$", f"{name}: the source's checksum is pinned")
+            self.assertNotIn("git+", t, f"{name}: a release tarball, not a moving branch")
 
 
 class Helper(unittest.TestCase):

@@ -11,6 +11,7 @@ and the apps that stand on their own have their own, like apps from the App Stor
 | Heimdall, Limbo, Sarina, Kairos, Daedalus CAD, the Argus app, Ratatoskr, Icarus | each its own | `VERSION` in each one's repository |
 | The Argus firmware | its own `ARG-<upstream>r<N>` names, as before | its git tags |
 | labyrinth-keyring, yggdrasil-spell-packs | the date of the data they carry (the keys, the dictionaries' snapshot), as Arch's keyring does | their PKGBUILDs |
+| yara-x (someone else's program, built from its release source) | the upstream release's version; `pkgrel` counts my rebuilds of that release | its PKGBUILD |
 
 ## Before 1.0
 
