@@ -125,7 +125,7 @@ check() {
   cargo test --release --locked --target-dir "$srcdir/target"
   cd "$srcdir/sarina/packaging/helpers"
   cargo test --release --locked --target-dir "$srcdir/target"
-  # the Rust build as it starts: names, Heimdall's lock, the ported commands, the hand-over to the Go build
+  # the Rust build as it starts: names, Heimdall's lock, every command, arguments that are not UTF-8 refused
   cd "$srcdir/sarina/rust"
   cargo test --release --locked --test sarina_rs --target-dir "$srcdir/target"
   # sarina-tone's parts against what the Go package answered (testdata/parity/tone.json)
