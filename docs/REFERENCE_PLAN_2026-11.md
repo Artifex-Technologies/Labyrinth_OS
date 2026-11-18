@@ -87,6 +87,14 @@ Each item: where it goes, what exists, the phases (smallest first), what it need
   3. Yggdrasil's Settings device page and the Bluetooth page use the same crate through the Heimdall API.
 - **Notes:** IEEE data only. No other project's list and no merged list ships (their licences differ). Memory budget: the four
   files as a sorted array of `(prefix, len, offset)` with names interned, a few MB, mapped read-only.
+- **Status (2026-11-17):** phase 1 built: Heimdall `rust/macvendor` (crate `heimdall-macvendor`, no dependencies) and its Go
+  twin `internal/macvendor`, the same answers on a shared fixture; special addresses, multicast and private addresses before any
+  registry; the device list uses it in Go and Rust, the old readers are gone (Heimdall `e92c458`). Memory: one sorted array per
+  block size with names stored once, under 8 MB for the whole benchmark with all four IEEE files (59,062 blocks, ~150 ns a
+  lookup). The IEEE folder is `/var/lib/heimdall-ieee` (readable by everyone; `/var/lib/heimdall` is closed). Phase 2 is
+  designed in Heimdall's `docs/DEVICES.md` ("Vendor data") and waits on decision 3. Phase 3: Settings' Wi-Fi pages use the
+  crate directly as a git dependency (Yggdrasil `45fdcd9`); the device page shows what Heimdall's list says; the Bluetooth page
+  is still to do.
 
 ### R4 · Rule drafts: lint, then YARA-X · P1 · Heimdall immunity, Limbo image
 

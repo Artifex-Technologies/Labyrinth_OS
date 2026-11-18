@@ -344,3 +344,18 @@ previous package.
   `rust/privacy/src/lookalike.rs`; change it there first). `~/.config/heimdall/privacy.json` `"lookalike_warnings": false`
   turns the warning off.
 - The page: docs/PRIVACY_PACK.md (with Heimdall's downloads guard and Remove hidden info).
+
+### 2026-11-17 22:40 [Claude] R3: one maker lookup for every IEEE registry (Heimdall crate, Settings uses it)
+
+- Heimdall `e92c458`: `rust/macvendor` (crate `heimdall-macvendor`, no dependencies) and Go `internal/macvendor` say who made a
+  hardware address from the IEEE's MA-L, MA-M, MA-S and IAB blocks, longest prefix first; special addresses (broadcast,
+  multicast ranges, 802.1 groups, VRRP/HSRP, documentation), other multicast and private (locally administered) addresses come
+  first and are never a maker. Lists: the IEEE's CSV files in `/var/lib/heimdall-ieee` when there, else hwdata's `oui.txt` and
+  `iab.txt`. The device list (`heimdalld lan scan`) uses it in Go and Rust; the parity fixture is
+  `testdata/parity/macvendor.json`. Doc: Heimdall `docs/DEVICES.md`, "Vendor data".
+- Yggdrasil `45fdcd9`: Settings' Wi-Fi pages (access points' makers, vendor extras) use the crate as a git dependency pinned to
+  that commit; wifiscan's own list reader is gone.
+- Not built: the monthly download of the four IEEE files. Designed in `docs/DEVICES.md`; it is decision 3 in
+  `docs/REFERENCE_PLAN_2026-11.md`.
+- **For the owner:** nothing to do now. heimdall-git built from the Heimdall checkout picks this up (to-do step 5 when it has not
+  run yet; otherwise the next heimdall-git build); Settings comes with the next daily update.
