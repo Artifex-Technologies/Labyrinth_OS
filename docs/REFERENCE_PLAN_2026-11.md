@@ -299,7 +299,9 @@ Later: R2, R6, R10, R12, R14 to R18, R20 to R22.
 2. **ATT&CK data: yes.** The trimmed Enterprise table (Linux and Windows) ships in Heimdall with MITRE's notice.
 3. **IEEE downloads: no.** hwdata (Arch's package) stays the only vendor source; nothing fetches the IEEE files. The crate
    still reads `/var/lib/heimdall-ieee` if I ever put the files there by hand.
-4. **URLhaus ClamAV signatures: yes, on by default** (download only, CC0).
+4. **URLhaus ClamAV signatures: no** (changed the same day). abuse.ch now wants a personal account key for every download, and
+   non-commercial use only, so every user would need an account. The DNS block list keeps malware-filter's keyless CC0 copy
+   of URLhaus's hosts.
 5. **OTX: yes**, an optional account key, pull-only; absent key = off.
 6. **Playbooks: yes**, both restrict-only verbs may run on `auto`: `limbo-restrict` and `app-network-block` for a set time.
    Each playbook still starts as `propose`; I switch `auto` on per playbook.
