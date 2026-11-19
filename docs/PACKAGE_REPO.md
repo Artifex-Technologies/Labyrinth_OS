@@ -59,6 +59,17 @@ to be (`fc-scan`). OpenDyslexic's sources moved from GitHub to forge.hackers.tow
 version is my choice: the commit or release, `pkgver` and the checksums, `pkgrel` back to 1. If Arch packages one of them, its
 package wins (this repository is listed last).
 
+Each of the five has a small scriptlet (`<name>.install`, since pkgrel 2 on 2026-11-18): after installing or updating, when
+fontconfig does not list its family (`fc-list -q`), it makes the system's font caches again (`fc-cache -fs /usr/share/fonts`,
+about two seconds); otherwise it runs nothing. The reason, found on my PC: `pacman -S ttf-atkinson-hyperlegible` and then, in
+the same second, `pacman -U` of these five left `fc-list` showing only Atkinson Hyperlegible ("/usr/share/fonts/TTF: skipping,
+existing cache is valid: 4 fonts"). Fontconfig keeps a folder's cache while the folder's modification time is the same, and
+Arch's fontconfig 2.18.4 records that time in whole seconds (the cache's nanoseconds field is 0), so fontconfig's own hook
+after the second transaction kept the first one's caches of /usr/share/fonts/TTF and of /usr/share/fonts (which then did not
+list the new OTF folder at all). The files' own times and install paths play no part. Settings > Appearance > Fonts also
+checks for this on its own (Yggdrasil's `docs/APPS_SETTINGS.md`, "a stale font cache"). `tests/test_package_version.py`
+runs the scriptlets with stand-ins for fc-list and fc-cache.
+
 ## The key
 
 `C9CE784C8BD9B661042075972D3BD4B1E7CD07A5`, "Labyrinth OS packages", ed25519, signing only. Installed systems trust it

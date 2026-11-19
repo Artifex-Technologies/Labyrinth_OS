@@ -99,6 +99,48 @@ class Recipes(unittest.TestCase):
                 self.assertRegex(t, r"(?m)^_commit=[0-9a-f]{40}$", f"{name}: the commit is a full hash")
 
 
+class FontScriptlets(unittest.TestCase):
+    """The font recipes' scriptlet: the system's font caches made again only when fontconfig does not list the font once its
+    files are in (a stale cache: Yggdrasil's docs/APPS_SETTINGS.md). Run with stand-ins for fc-list and fc-cache."""
+
+    FONTS = sorted(UPSTREAM - {"yara-x"})
+
+    def run_scriptlet(self, name, fc_list_code):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp)
+        bin_dir = tmp / "bin"
+        bin_dir.mkdir()
+        log = tmp / "log"
+        if fc_list_code is not None:
+            (bin_dir / "fc-list").write_text(f'#!/bin/sh\necho "fc-list $*" >> "{log}"\nexit {fc_list_code}\n')
+            (bin_dir / "fc-cache").write_text(f'#!/bin/sh\necho "fc-cache $*" >> "{log}"\n')
+            for f in bin_dir.iterdir():
+                f.chmod(0o755)
+        script = ROOT / "packages" / "pkgbuilds" / name / f"{name}.install"
+        r = subprocess.run(["/bin/bash", "-c", f'. "{script}"; post_install; post_upgrade'], env={"PATH": str(bin_dir)},
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, f"{name}: {r.stderr}")
+        return log.read_text().splitlines() if log.exists() else []
+
+    def test_each_font_recipe_has_it_for_its_own_family(self):
+        for name in self.FONTS:
+            t = (ROOT / "packages" / "pkgbuilds" / name / "PKGBUILD").read_text()
+            self.assertRegex(t, r"(?m)^install=\$pkgname\.install$", name)
+            family = re.findall(r"grep -qx '([^']+)'", t)
+            self.assertTrue(family, f"{name}: check() names the family")
+            script = (ROOT / "packages" / "pkgbuilds" / name / f"{name}.install").read_text()
+            self.assertIn(f"_family='{family[0]}'", script, name)
+
+    def test_the_caches_are_made_again_only_when_the_font_is_not_listed(self):
+        for name in self.FONTS:
+            listed = self.run_scriptlet(name, 0)
+            self.assertEqual(len(listed), 2, f"{name}: {listed}")
+            self.assertTrue(all(line.startswith("fc-list -q ") for line in listed), f"{name}: {listed}")
+            stale = self.run_scriptlet(name, 1)
+            self.assertEqual(stale.count("fc-cache -fs /usr/share/fonts"), 2, f"{name}: {stale}")
+            self.assertEqual(self.run_scriptlet(name, None), [], f"{name}: no fontconfig, nothing run")
+
+
 class Helper(unittest.TestCase):
     """_version against two small repositories: A (the source, with a release) and B (a recipe in another repository)."""
 

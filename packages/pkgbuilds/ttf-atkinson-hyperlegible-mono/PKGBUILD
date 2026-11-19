@@ -8,12 +8,13 @@
 
 pkgname=ttf-atkinson-hyperlegible-mono
 pkgver=2.001
-pkgrel=1
+pkgrel=2
 pkgdesc="Atkinson Hyperlegible Mono, the Braille Institute's monospaced typeface for low-vision readers (variable, with italic)"
 arch=('any')
 url='https://github.com/googlefonts/atkinson-hyperlegible-next-mono'
 license=('OFL-1.1')
 makedepends=('fontconfig')
+install=$pkgname.install
 _commit=3a0be2fdd3252b377a0851f0ba01c3609f99b7ab
 _dir="https://raw.githubusercontent.com/google/fonts/$_commit/ofl/atkinsonhyperlegiblemono"
 source=("AtkinsonHyperlegibleMono-VF-$pkgver.ttf::$_dir/AtkinsonHyperlegibleMono%5Bwght%5D.ttf"

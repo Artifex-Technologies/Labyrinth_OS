@@ -8,12 +8,13 @@
 
 pkgname=ttf-lexend
 pkgver=1.007
-pkgrel=1
+pkgrel=2
 pkgdesc="Lexend, a typeface with wide, evenly spaced letters made to ease reading (variable)"
 arch=('any')
 url='https://github.com/googlefonts/lexend'
 license=('OFL-1.1')
 makedepends=('fontconfig')
+install=$pkgname.install
 _commit=e2332cf862ac3145c0ee5f24f04f4c1819b2410b
 _dir="https://raw.githubusercontent.com/google/fonts/$_commit/ofl/lexend"
 source=("Lexend-VF-$pkgver.ttf::$_dir/Lexend%5Bwght%5D.ttf"

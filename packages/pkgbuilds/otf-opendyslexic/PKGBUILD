@@ -9,12 +9,13 @@
 
 pkgname=otf-opendyslexic
 pkgver=0.91.12
-pkgrel=1
+pkgrel=2
 pkgdesc="OpenDyslexic, a typeface made with dyslexic readers in mind"
 arch=('any')
 url='https://opendyslexic.org'
 license=('OFL-1.1')
 makedepends=('fontconfig')
+install=$pkgname.install
 # the commit of the v0.91.12 tag
 _commit=449a41bbc25f7363c540ad112dfcef2f7b340c0a
 source=("https://github.com/antijingoist/opendyslexic/releases/download/v$pkgver/opendyslexic-0.910.12-rc2-2019.10.17.zip"

@@ -9,12 +9,13 @@
 
 pkgname=otf-opendyslexic-mono
 pkgver=1.001
-pkgrel=1
+pkgrel=2
 pkgdesc="OpenDyslexic Mono, the monospaced OpenDyslexic (2016 release)"
 arch=('any')
 url='https://github.com/antijingoist/open-dyslexic'
 license=('Bitstream-Vera')
 makedepends=('fontconfig')
+install=$pkgname.install
 # the commit of the 20160623-Stable tag
 _commit=03aa68333abaef14718091a46bff52794b34cf39
 source=("OpenDyslexicMono-Regular-$pkgver.otf::https://raw.githubusercontent.com/antijingoist/open-dyslexic/$_commit/otf/OpenDyslexicMono-Regular.otf"
