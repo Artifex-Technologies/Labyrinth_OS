@@ -1,8 +1,8 @@
 # Yggdrasil
 
 **Yggdrasil** is the desktop environment of Labyrinth OS (the OS keeps the name Labyrinth). It lives in its own repository:
-<https://github.com/Artifex-Technologies/Yggdrasil>. Its README, the plan to replace KDE, the compositor, the lock and login screens, Settings, Minos
-and the Marketplace are documented there: `docs/YGGDRASIL.md`, `docs/DESKTOP_ROADMAP.md`, `docs/INDEPENDENCE.md`, `docs/COMPOSITOR.md` and the rest.
+<https://github.com/Artifex-Technologies/Yggdrasil>. Its README, what replaced KDE, the compositor, the lock and login screens, Settings, Minos
+and the Marketplace are documented there: `docs/YGGDRASIL.md`, `docs/INDEPENDENCE.md`, `docs/COMPOSITOR.md` and the rest.
 
 ## What stays in this repository
 The operating system: the ISO profile, the installer and first boot, the boot theme, the games stack, the Sarina, Heimdall and Limbo setup, the system helper scripts, the
