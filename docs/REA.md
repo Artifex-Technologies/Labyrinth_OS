@@ -52,5 +52,5 @@ When the service's library exists, Heimdall's request asks Sarina for `similar` 
 matched them at 1.000, an unrelated one matched nothing, a stripped copy matched by its code alone, an `-O2` rebuild at
 0.70 to 0.78; about 9 s each.
 
-**Not done:** REA's MCP server for other tools; Hopper/IDA/JEB providers (commercial); `functions` needs a symbol table (stripped programs: use `search` and `xrefs`);
+**Known limitations:** REA has no MCP server for other tools; no Hopper, IDA or JEB providers (commercial); `functions` needs a symbol table (stripped programs: use `search` and `xrefs`);
 speed (Ghidra takes about 8 s for a tiny program, minutes for a large driver: the tool waits up to 6 minutes).

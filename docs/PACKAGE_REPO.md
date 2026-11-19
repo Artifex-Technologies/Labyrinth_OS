@@ -91,7 +91,7 @@ and how to make a release, is in [VERSIONING.md](VERSIONING.md). (Before, `build
 commit count into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at
 the same version, is not published again; a release always is.
 
-The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn, now Ratatoskr, moved to a private repository) have `epoch=1` since 2026-11-07, and `argus-git` since 2026-11-11 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08). The apps' version
+The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn, the video app, moved to a private repository) have `epoch=1` since 2026-11-07, and `argus-git` since 2026-11-11 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08). The apps' version
 ended in Yggdrasil's newest commit, so two builds with the same count were ordered at random; Argus's were commit counts
 (25.3078) that 1.0.0 sorts before without the epoch.
 

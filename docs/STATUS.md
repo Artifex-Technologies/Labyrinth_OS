@@ -1,6 +1,6 @@
 # Status (updated 2026-11-15)
 
-What Labyrinth OS is today, what is in progress, and what comes next. The older dated entries (the Windows and WSL builds,
+What Labyrinth OS is today and what is in progress. The older dated entries (the Windows and WSL builds,
 Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STATUS.md`.
 
 ## What it is today
@@ -63,19 +63,7 @@ main PC every day. `scripts/release-check.sh` runs every check that needs no roo
 - Settings > Wi-Fi & Network: Heimdall's list of devices on the network and its Wi-Fi checks (through the labyrinth-security
   integration).
 
-## Next
-
-1. The install check on every new ISO (the 2026-11-12 one, the first without Calamares and with signed local packages,
-   installed with ufw on): no live-user sudo or autologin carried over.
-2. A way back: a snapshot after install, the GRUB snapshot menu, a rescue USB.
-3. Privacy: the phone-home audit ([PHONE_HOME.md](PHONE_HOME.md)), hardened Vivaldi defaults, encrypted DNS. Then AppArmor.
-4. Decisions, all made 2026-11-07: GNOME Keyring stays; ghostwriter
-   stays and Kdenlive goes; Secure Boot left alone for now; Super+S tap to start and stop; frame generation is Kairos.
-5. The installer: shrink a partition to make room, partitions on more than one disk, the keyboard layout at the disk password.
-6. The desktop: a global menu, and the accessibility still missing (sticky, slow and bounce keys, mouse keys). The Task
-   Manager came on 2026-11-07; the magnifier and the screen reader switch are in, and the on-screen keyboard is on the laptop.
-
-## Known issues
+## Known limitations
 
 - No global menu: apps keep their own menus.
 - Secure Boot is not set up. Turn it off in the firmware before booting the stick.

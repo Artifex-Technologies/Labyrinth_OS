@@ -10,7 +10,7 @@
 #                                            Pushes nothing; every build number starts again at 1.
 #
 # PROJECT: system (Labyrinth OS: this repository and Yggdrasil), heimdall, limbo, sarina, kairos, argus (the app; the firmware
-# keeps its own ARG-... names), daedalus, ratatoskr (the video app, called Huginn until 2026-11-15), icarus.
+# keeps its own ARG-... names), daedalus, the video app (private; called Huginn until 2026-11-15), icarus.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

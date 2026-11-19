@@ -108,6 +108,6 @@ when online. One notification names what is missing for this computer's devices:
 Nothing installs without the click. Nothing polls or keeps running: udev, the dispatcher and the session start a short user
 service. See Yggdrasil's `packages/device-offers/README.md`.
 
-## Not done
+## Known limitations
 
 - Sizes are not listed: none has been measured.

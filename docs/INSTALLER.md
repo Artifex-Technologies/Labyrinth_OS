@@ -50,23 +50,9 @@ partition (erase disk) -> mount (btrfs subvolumes) -> unpackfs (copy live squash
 | Hostname | `labyrinth` | |
 | Min. disk / RAM | ~30 GB / ~4 GB | Both are guesses; the installed size is unmeasured |
 
-## Not done
+## Secure Boot (why it is off)
 
-- **Never run.** First test: build the ISO in WSL (Arch), boot it in a VM, install, reboot,
-  log in. Most likely fixes: the unpack path, the keyring step, GRUB on UEFI, whether
-  `snapper create-config` works in the installer chroot (it may not; then snapshots
-  are skipped with a warning and set up on first boot instead).
-- **Branding** is upstream's sample (squid logo included).
-- **Secure Boot**: not handled. Plan is to turn it off; see the next section.
-- **Disk encryption** is whatever the stock wizard offers; GRUB-unlocked LUKS is untested here.
-- **Dual boot**: `os-prober` is installed and enabled, so Windows and other systems already on the disks get a boot menu entry (with their emblem in the Labyrinth boot theme). The installer's Partitions page still has no "install alongside" wizard: shrink the disk by hand first (see ARCHITECTURE.md). Untested here with a real Windows disk.
-- **Agent-assisted install** (Sarina) does not exist yet.
-- NVIDIA early module loading in the initramfs is deliberately off (see `grubcfg.conf`
-  for what is set); add it only if the console flickers at boot.
-
-## Secure Boot
-
-**Plan: disable it in the BIOS before installing.** Reasons, none of them tested here:
+**Disable it in the BIOS before installing.** Reasons, none of them tested here:
 
 - **NVIDIA modules.** With Secure Boot the kernel enforces module signing (lockdown).
   The prebuilt `linux-cachyos-*-nvidia-open` modules, and anything built by DKMS,
@@ -87,7 +73,7 @@ Then toggling it in the BIOS each time gets old. The route would be:
 firmware in Setup Mode -> `sbctl create-keys` -> `sbctl enroll-keys --microsoft` (keep
 Microsoft's keys, or your GPU's firmware and Windows stop booting) -> sign the
 bootloader and kernels -> sign the NVIDIA modules, probably moving to systemd-boot with
-a signed unified kernel image and giving up GRUB snapshot entries. Not built.
+a signed unified kernel image and giving up GRUB snapshot entries. Labyrinth does not set this up.
 
 ## Testing the cleanup program yourself
 

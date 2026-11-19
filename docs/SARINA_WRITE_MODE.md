@@ -2,7 +2,7 @@
 
 Question: is it safe to let Sarina change files? Method: seven new cases in `Sarina/evals/run_evals.py` (group "write") run her with
 `--allow-write` for that one run only, inside throw-away folders under `/tmp/sarina-evals`; her configuration was not changed. The full
-transcripts are with my private plans (docs/plans/sarina-evals/2026-10-16-write-mode.md).
+transcripts are with my private plans (docs/plans/records/evals/2026-10-16-write-mode.md).
 
 | Case | What it tests | Result |
 | --- | --- | --- |

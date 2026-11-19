@@ -19,25 +19,23 @@ installed); every systemd unit verifies; every file `profiledef.sh` lists exists
 `cargo audit` reports "unmaintained" for `paste` and `ttf-parser`, pulled in by the GUI libraries (egui and friends). Nothing to fix on our
 side; they go away when those libraries move on. Re-run the audit before each release.
 
-## Checks from the reference plan (§3 of my reference plan, in my private plans)
+## Checks from the reference plan (in my private plans)
 
 - **No analysis network reaches the home connection (R8):** Limbo's `sh scripts/netns-sinkhole.sh` (no root; Limbo's CI runs
   it on every push): a guest on `sinkhole` or `none` gets zero packets out; `internet-only` is the control that must leak.
 - **Every data file has its licence and notice (R1, R3):** Heimdall's `NOTICE-ATTACK` (MITRE ATT&CK) is installed; the vendor
   lists come from Arch's hwdata.
-- **Nothing observed is sent off the machine unless its switch is on (R5, R6, R11):** to be checked when each lands.
+- **Nothing observed is sent off the machine unless its switch is on (R11):** no check yet; R5 and R6 were dropped.
 
-## Not done yet (needs root and time: ask the owner)
+## What it cannot check
 
-1. Build the ISO: `scripts/build-local-packages.sh && sudo scripts/build.sh` (the first as a normal user, since makepkg refuses
-   root; needs archiso, the CachyOS keyring, the Labyrinth signing key or `LABYRINTH_UNSIGNED=1`, and about 15 GB).
-2. Boot it in a VM (`scripts/vm`), run the installer (Install Labyrinth: `yggdrasil-installer` with `yggdrasil-install-system`),
-   reboot, then `labyrinth-selfcheck` and the checks in [FIRST_BOOT.md](FIRST_BOOT.md) §6.
-3. Secure Boot enrolment has not been exercised. The encrypted-disk install has (on real hardware, beside Windows).
+Building the ISO (`scripts/build-local-packages.sh && sudo scripts/build.sh`: the first as a normal user, since makepkg refuses
+root; needs archiso, the CachyOS keyring, the Labyrinth signing key or `LABYRINTH_UNSIGNED=1`, and about 15 GB), booting it in a
+VM (`scripts/vm`), installing (`yggdrasil-installer` with `yggdrasil-install-system`), and after the reboot `labyrinth-selfcheck`
+and the checks in [FIRST_BOOT.md](FIRST_BOOT.md) §6. The encrypted-disk install has been run on real hardware, beside Windows;
+Secure Boot enrolment has not been exercised.
 
 ## Done
 
 - shellcheck is installed on the build PC, so the local run checks shell scripts too.
-- `.github/workflows/checks.yml` runs `release-check.sh quick` and the Rust tests on every push and pull request. As of
-  2026-11-07 the quick job fails on two shell tests (`tests/test_install_cleanup.sh`, `tests/test_labyrinth_rollback.sh`); they
-  fail locally too and still need looking into.
+- `.github/workflows/checks.yml` runs `release-check.sh quick` and the Rust tests on every push and pull request.

@@ -68,7 +68,7 @@ substitutions:
 
 Keep: tabs + pinning + session restore, saved history, split pane, media gallery,
 tags/folder colors, multi-column sort, favorites sidebar, real-time index search.
-A Sarina hook ("organize these photos", "find duplicate takes") is a later phase.
+A Sarina hook ("organize these photos", "find duplicate takes") is not built.
 `packages/minos` currently holds only the GUI-independent core
 (tabs, history, address expansion).
 

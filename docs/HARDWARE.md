@@ -2,7 +2,7 @@
 
 Written 2026-11-12. One section per machine I have tested on: what works, which parts of the system and which optional components
 cover it, and the firmware (BIOS) settings it needs. The checklist for testing on a machine lives in my private plans (for the
-laptop: docs/plans/LAPTOP.md); this file is the reference once something is known.
+laptop: docs/plans/STEPS_LAPTOP.md); this file is the reference once something is known.
 
 Device software is never on the ISO (it stays small): the installer's **Optional software** page ticks what fits the machine and
 installs it at the first login, online; Agora has the same components afterwards. See [COMPONENTS.md](COMPONENTS.md).
@@ -17,7 +17,7 @@ the power button, Intel AX211 Wi-Fi 6E and Bluetooth, accelerometer for tablet m
 
 | Setting | Value | Why |
 | --- | --- | --- |
-| Secure Boot | **Off** | Our kernels and boot loader are not signed yet. `sbctl` is on the ISO for later; our own keys are a separate plan (do not enrol keys now). |
+| Secure Boot | **Off** | Our kernels and boot loader are not signed yet. `sbctl` is on the ISO; Labyrinth has no keys of its own yet (do not enrol keys now). |
 | Intel AMT | **Disabled** | Remote management in the chipset that works below the operating system; nothing here uses it, and it is attack surface. |
 | Sleep state | Linux / s2idle (the default on this generation) | `cat /sys/power/mem_sleep` should show `[s2idle]`. |
 
@@ -38,7 +38,7 @@ the power button, Intel AX211 Wi-Fi 6E and Bluetooth, accelerometer for tablet m
 | Tablet mode and rotation | Folding the screen back flips the tablet-mode switch (thinkpad_acpi's "ThinkPad Extra Buttons"); `/usr/lib/yggdrasil/tablet watch` then turns the screen with the accelerometer (iio-sensor-proxy, on the ISO), the touchscreen and pen with it, and shows the on-screen keyboard while no keyboard is plugged in. Settings > Displays > Tablet mode: Lock rotation, On-screen keyboard. On Hyprland only (Yggdrasil's own compositor cannot turn a screen yet). | Yggdrasil `934c24e` |
 | On-screen keyboard | wvkbd from the AUR | component `on-screen-keyboard`, ticked when the computer has a tablet-mode switch |
 | Fingerprint reader | fprintd + libfprint; Settings > Users > Fingerprint: add a finger, remove them, **Use for sudo** (off until I turn it on; an administrator's password to change; the password always works too). The lock screen and password boxes still take the password only (planned: Yggdrasil docs/DESKTOP.md). | component `fingerprint`, ticked when a reader libfprint supports is plugged in; Yggdrasil `934c24e` |
-| Firmware updates | Not yet: fwupd is not on the ISO. ThinkPads get BIOS, Thunderbolt and fingerprint-reader firmware from LVFS. | later, through Agora/Settings |
+| Firmware updates | Not on the ISO: fwupd is not installed. ThinkPads get BIOS, Thunderbolt and fingerprint-reader firmware from LVFS. | not offered yet |
 
 ### The fingerprint reader
 

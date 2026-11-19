@@ -122,17 +122,18 @@ them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from 
 | The measuring and differential harnesses: Yggdrasil `tools/bench-port.py`, `tools/parity-shell-ports.py`, `packages/*/parity/`; `packages/tools/parity/` and `packages/publish-repo/parity/` here | Python (standard library) | they run the old Python and shell programs (from git) side by side with the ports; not shipped. They go, or move to Rust, when nothing old is left to compare against |
 | `scripts/windows/Reset-UsbDrive.ps1` and `.cmd` | PowerShell | runs on Windows, to reset a USB stick |
 
-## To port
+## Not Rust yet, with no platform reason
 
-Smallest risk first. None of these runs as a service; the first one ships.
+None of these runs as a service.
 
-| What | Language, size | Runs | Plan |
-| --- | --- | --- | --- |
-| `profile/airootfs/usr/share/labyrinth/grub-evodevo/install.sh` (the boot menu theme's own installer, vendored, MIT) | sh, 884 lines | as root, by `labyrinth-grub-theme` at install | labyrinth-grub-theme does the few steps Labyrinth needs itself (copy the theme, set GRUB_THEME) and the vendored script goes |
-| `packages/labyrinth-driverlab/probe.sh` (hardware facts as JSON for the Driver Lab) | bash + python3 (only to escape JSON) | nothing runs it yet | a labyrinth-tools program when the Driver Lab is built |
-| Build and release tooling here: `scripts/build.sh` (wraps mkarchiso), `build-local-packages.sh` (wraps makepkg), `release.sh`, `release-check.sh`, `gen-packages.py`, `gen-wallpaper.py`, `gen-plymouth-rain.py`, `gen-logo.sh`, `logo-to-braille.py`, `icons/*.py`, `vm/*`, `xvfb/xv.sh`, `wsl-test.sh`, `voice/chatterbox_onnx_test.py` | bash, Python | by hand on my PC; not shipped | as each is touched; the Arch tools they call stay |
-| Yggdrasil's dev tooling: `scripts/screenshot-desktop.sh`, `tools/bakeoff/*`, `packages/saga-md/icon/gen-icon.py`, `packages/pycompat/gen_unicode.py` (and its copy `packages/tools/src/pycompat/gen_unicode.py` here) | bash, Python | by hand; not shipped | as each is touched |
-| Tests written in Python or shell that are not referees of a rollback copy: here `tests/*.py`, `tests/*.sh`, `tests/appnet_ask/*`; Yggdrasil `tests/a11y/*`, `tests/tools/fake_sni.py`, `tests/test_keyring_sync.sh`, `packages/*/tests/*.sh` | Python, bash | by hand or in CI | into each crate's `tests/` as the code they test is touched |
-
-Being ported by others now, not in this pass: Yggdrasil's `packages/idle/idle.d/keyboard-lights` (moved into yggdrasil-idle
-on 2026-11-12), the compositor and window manager crates, and `packages/settings-helpers/src/autozone.rs`.
+- `profile/airootfs/usr/share/labyrinth/grub-evodevo/install.sh`: the boot menu theme's own installer (vendored, MIT, sh), run as
+  root by `labyrinth-grub-theme` at install.
+- `packages/labyrinth-driverlab/probe.sh`: hardware facts as JSON for the Driver Lab (bash, python3 only to escape JSON); nothing
+  runs it.
+- The build and release tooling here (`scripts/build.sh`, `build-local-packages.sh`, `release.sh`, `release-check.sh`,
+  `gen-packages.py`, `gen-wallpaper.py`, `gen-plymouth-rain.py`, `gen-logo.sh`, `logo-to-braille.py`, `icons/*.py`, `vm/*`,
+  `xvfb/xv.sh`, `wsl-test.sh`, `voice/chatterbox_onnx_test.py`), run by hand; the Arch tools they call stay.
+- Yggdrasil's dev tooling (`scripts/screenshot-desktop.sh`, `tools/bakeoff/*`, `packages/saga-md/icon/gen-icon.py`,
+  `packages/pycompat/gen_unicode.py` and its copy `packages/tools/src/pycompat/gen_unicode.py` here), run by hand.
+- Tests in Python or shell that are not referees of a rollback copy: here `tests/*.py`, `tests/*.sh`, `tests/appnet_ask/*`;
+  Yggdrasil `tests/a11y/*`, `tests/tools/fake_sni.py`, `tests/test_keyring_sync.sh`, `packages/*/tests/*.sh`.

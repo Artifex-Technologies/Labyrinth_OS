@@ -49,8 +49,8 @@ websites the computer's local addresses. Vivaldi says "managed by your organisat
 Not set by policy: Vivaldi's own anonymous usage ping (a Vivaldi setting, not a Chromium policy; Settings > Privacy in Vivaldi),
 and Safe Browsing (a security feature; left on).
 
-## Still to do
+## Known limitations
 
-1. The capture that checklist asks for: a fresh install in a VM, idle for ten minutes, every connection (UDP too) listed.
-2. Encrypted DNS (DNS over TLS through systemd-resolved, with a choice of provider in Settings) and tracker blocking: to be
-   tested in a VM first, because the resolver also serves Tailscale's names and the VPN.
+- The audit above is read from Heimdall's connection record on a computer in use, not from a capture of a fresh install
+  sitting idle in a VM, so a connection made only on first boot or only after a long idle may be missing.
+- DNS is not encrypted and there is no tracker blocking yet: names are looked up in plain text through the network's resolver.

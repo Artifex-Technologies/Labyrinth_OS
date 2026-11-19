@@ -8,7 +8,7 @@ and the apps that stand on their own have their own, like apps from the App Stor
 | Labyrinth OS, the system | the system version | `VERSION` in this repository |
 | Labyrinth's own packages (labyrinth-tools, labyrinth-distress, labyrinth-ollama-tuning) | the system version | the same file |
 | Yggdrasil, the desktop: every package in its `packages/pkgbuilds`, and its apps in the store (2048, Sudoku, Timer, ...) | the system version, like Apple's built-in apps | `VERSION` in Yggdrasil, always the same as this repository's |
-| Heimdall, Limbo, Sarina, Kairos, Daedalus CAD, the Argus app, Ratatoskr, Icarus | each its own | `VERSION` in each one's repository |
+| Heimdall, Limbo, Sarina, Kairos, Daedalus CAD, the Argus app, the video app (private), Icarus | each its own | `VERSION` in each one's repository |
 | The Argus firmware | its own `ARG-<upstream>r<N>` names, as before | its git tags |
 | labyrinth-keyring, yggdrasil-spell-packs | the date of the data they carry (the keys, the dictionaries' snapshot), as Arch's keyring does | their PKGBUILDs |
 | yara-x (someone else's program, built from its release source) | the upstream release's version; `pkgrel` counts my rebuilds of that release | its PKGBUILD |
@@ -33,7 +33,7 @@ build number again at 1 (`1.1.0-1`).
 
 Everything started at 1.0.0 on 2026-11-11. Each package's new version sorts after the one it replaces (`vercmp 1.0.0-1
 0.1.0.r536-38` is 1); `argus-git` needed `epoch=1` for that (its old versions were commit counts like 25.3078), and the store's
-Yggdrasil apps and huginn-git (now ratatoskr-git, which keeps it) keep the epoch they already had.
+Yggdrasil apps and huginn-git (the video app, now in a private repository, keeps it) keep the epoch they already had.
 
 ## Where it shows
 
@@ -60,7 +60,7 @@ Every recipe works its version out itself, so a plain `makepkg` in its folder gi
 
 Recipes inside a repository source the helper (Yggdrasil's `packages/pkgbuilds/*`, this repository's `packages/pkgbuilds/*`);
 the store's recipes (`profile/airootfs/usr/share/labyrinth/pkgbuilds`, copied onto every system and built from there) and the
-apps' own recipes (Heimdall's and Limbo's `packaging/arch`, Ratatoskr's `pkgbuild`) carry a copy of it. `tests/test_package_version.py`
+apps' own recipes (Heimdall's and Limbo's `packaging/arch`, the video app's `pkgbuild`) carry a copy of it. `tests/test_package_version.py`
 keeps the copies here and in Yggdrasil the same.
 
 A `-git` recipe builds from makepkg's clone of the app's repository, so its numbers come from that clone: at the top of the
@@ -84,7 +84,7 @@ scripts/release.sh sarina minor         # 1.0.1 -> 1.1.0
 scripts/release.sh system 1.1.0         # Labyrinth OS 1.1: this repository, Yggdrasil and the medium's os-release
 ```
 
-PROJECT is `system`, `heimdall`, `limbo`, `sarina`, `kairos`, `argus` (the app), `daedalus`, `ratatoskr` or `icarus`; the version
+PROJECT is `system`, `heimdall`, `limbo`, `sarina`, `kairos`, `argus` (the app), `daedalus`, `icarus` or the video app's name; the version
 is `patch`, `minor`, `major` or an exact `X.Y.Z`. The script checks the new version is newer and that `VERSION` has no
 uncommitted change, writes `VERSION` (for the system also Yggdrasil's and `profile/airootfs/etc/os-release`; for Sarina also
 the version in `packaging/arch/PKGBUILD`, its recipe for a released tarball, and in `go/internal/version/version.go`, see
@@ -110,5 +110,5 @@ own for an app. The programs read the file when they are built, so a release cha
 Where Go and Rust builds of a program are compared (Heimdall's and Limbo's differentials), both read the same file, so they
 print the same version. Today: `heimdalld 1.0.0`, `limbo version` 1.0.0 and `limbo rs-version` "limbo-rs 1.0.0 (...)",
 `sarina 1.0.0 (commit ...)`, the Yggdrasil panel's notification server and `yggdrasil-weather/1.0.0`, Icarus's MCP server,
-Daedalus's STEP header ("Daedalus CAD 1.0.0") and the Argus app (1.0.0). Labyrinth's own crates, Kairos and Ratatoskr print no
+Daedalus's STEP header ("Daedalus CAD 1.0.0") and the Argus app (1.0.0). Labyrinth's own crates, Kairos and the video app print no
 version of their own.
