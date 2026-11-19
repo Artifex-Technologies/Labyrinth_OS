@@ -25,5 +25,5 @@ packages/pkgbuilds/*/*.deb
 packages/pkgbuilds/*-git/*/
 profile/airootfs/usr/share/labyrinth/pkgbuilds/*-git/*/
 
-# My private plans (a link to a private checkout on my computers)
-docs/plans/
+# My private plans (a link to a private checkout on my computers; no trailing slash, so the link itself matches)
+/docs/plans
