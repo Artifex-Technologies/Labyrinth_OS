@@ -1164,6 +1164,33 @@
    "logo": "ollama"
   },
   {
+   "id": "claude-desktop",
+   "name": "Claude",
+   "subtitle": "Anthropic's assistant: Chat, Cowork and Code",
+   "description": "Anthropic's official desktop app (Linux beta): chat with Claude, hand it tasks in Cowork, and use Claude Code. Cowork runs its tasks in a small virtual machine (QEMU). Computer use and dictation are not on Linux yet.",
+   "category": "Develop",
+   "subcategory": "AI",
+   "source": {
+    "type": "aur",
+    "packages": [
+     "claude-desktop"
+    ]
+   },
+   "icon": "claude-desktop",
+   "reviewed": true,
+   "note": "Reviewed 2026-11-19: the AUR package downloads Anthropic's own Debian package from downloads.claude.ai, pinned by SHA-256, and installs only its files (none of the Debian install scripts); it brings qemu-system-x86 and edk2-ovmf for Cowork's virtual machine.",
+   "tags": [
+    "claude",
+    "anthropic",
+    "ai",
+    "assistant",
+    "chat",
+    "cowork",
+    "code"
+   ],
+   "logo": "claude"
+  },
+  {
    "id": "ghidra",
    "name": "Ghidra and reverse engineering",
    "subtitle": "Analyze programs safely",
