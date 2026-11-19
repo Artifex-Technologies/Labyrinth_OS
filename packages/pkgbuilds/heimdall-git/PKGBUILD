@@ -15,8 +15,11 @@ pkgdesc='Heimdall: a separate security agent that watches Sarina for prompt inje
 arch=('x86_64')
 url='https://github.com/Artifex-Technologies/Heimdall'
 license=('MPL-2.0')
-depends=('glibc' 'curl' 'gzip' 'python' 'iproute2' 'iw' 'networkmanager' 'dnsmasq' 'nftables')
-makedepends=('go' 'git')
+# (no curl or gzip since the switch: the downloads are the Rust heimdalld's own; Heimdall's docs/RUST_CLI.md, "Shell programs")
+depends=('glibc' 'python' 'iproute2' 'iw' 'networkmanager' 'dnsmasq' 'nftables')
+# rust: /usr/bin/heimdalld is the Rust daemon since the switch; go: the Go one, kept for a week at /usr/lib/heimdall/heimdalld-go
+# as the rollback (Heimdall's RUST_SWITCH.md, stage 2 drops it)
+makedepends=('go' 'git' 'rust')
 optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)')
 provides=('heimdall')
 conflicts=('heimdall')
@@ -43,7 +46,9 @@ prepare() {
 build() {
   cd "$srcdir/heimdall"
   export CGO_ENABLED=0
-  go build -trimpath -ldflags "-s -w" -o heimdalld ./cmd/heimdalld
+  go build -trimpath -ldflags "-s -w" -o heimdalld-go ./cmd/heimdalld
+  # offline first, so a build with the crates already fetched never reaches the network
+  (cd rust && { cargo build --release --locked --offline || cargo build --release --locked; })
 }
 
 check() {
