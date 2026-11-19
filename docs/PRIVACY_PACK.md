@@ -103,7 +103,7 @@ Switch: Settings > Security > Privacy, look-alike warnings (`lookalike_warnings`
 
 Without it, Bluetooth Low Energy announces and connects with the computer's fixed hardware address, which anything nearby can
 record to follow the computer from place to place. With BlueZ's `Privacy = device` the address changes every 15 minutes and
-only paired devices recognise it. Labyrinth turns it on (2026-11-18, R19 of [REFERENCE_PLAN_2026-11.md](REFERENCE_PLAN_2026-11.md)):
+only paired devices recognise it. Labyrinth turns it on (2026-11-18, R19 of my reference plan, in my private plans):
 `labyrinth-bluetooth-privacy` (labyrinth-tools, `packages/tools/src/bt_privacy.rs`) adds the line under `[General]` in
 `/etc/bluetooth/main.conf`, with a comment above it, from the package's scriptlet at every install and update and from its
 pacman hook after bluez is installed or updated (on the image bluez can come after labyrinth-tools). The image has it, so a

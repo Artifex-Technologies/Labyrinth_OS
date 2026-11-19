@@ -13,7 +13,7 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   Task Manager (Ctrl+Shift+Esc; since 2026-11-15 with GPU columns, a page for every graphics card and the AI models Ollama has
   loaded). Small tools (Task Manager, Settings, calculator, the password box) float on tiling screens. Yggdrasil's own
   compositor is not the desktop yet: its hardware backend (DRM/KMS) reached its first milestone on 2026-11-15 in a virtual
-  machine; the laptop tests are next ([LAPTOP.md](LAPTOP.md)). No KDE:
+  machine; the laptop tests are next. No KDE:
   Plasma, KWin and SDDM left on 2026-10-24; the old Omarchy-style tiling desktop (waybar, mako, fuzzel and the rest) on 2026-11-05.
 - **Login:** greetd with Yggdrasil's greeter. On the live medium greetd signs the live user in by itself (`/etc/greetd/live.toml`,
   which the install removes).
@@ -30,7 +30,7 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
 - **Updates:** Labyrinth's signed package repository (GitHub release "packages", [PACKAGE_REPO.md](PACKAGE_REPO.md)) keeps an
   installed system current from any ISO. Since 2026-11-07 the ISO build's own packages are signed and checked too.
 - **Security:** Heimdall, Limbo, the hardening defaults, the firewall (ufw, incoming blocked), the distress password, a network
-  switch per app. Sarina is optional. See [SECURITY_ROADMAP.md](SECURITY_ROADMAP.md).
+  switch per app. Sarina is optional. How each part works: Heimdall's and Limbo's own documentation.
 - **The privacy pack (2026-11-15):** the downloads guard, Remove hidden info in Minos, viewer apps on "ask" before they first go
   online, and look-alike name warnings in Agora and Settings > Apps, each on by default with its own switch in Settings >
   Security > Privacy ([PRIVACY_PACK.md](PRIVACY_PACK.md)).
@@ -44,16 +44,15 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   `sarina-tone`; her Go build and Python helper stay installed one week as the rollback copies (until about 2026-11-25).
 
 **Seen working:** the ISO builds and boots (last built 2026-11-12, Labyrinth OS 1.0.0); the installer completes on real hardware,
-also beside Windows and encrypted, and on the ThinkPad X1 Yoga from that ISO ([LAPTOP.md](LAPTOP.md)); the desktop runs on my
+also beside Windows and encrypted, and on the ThinkPad X1 Yoga from that ISO ([HARDWARE.md](HARDWARE.md)); the desktop runs on my
 main PC every day. `scripts/release-check.sh` runs every check that needs no root
 ([RELEASE_CHECKS.md](RELEASE_CHECKS.md)); GitHub runs its quick part on every push, and it passes.
 
 ## In progress
 
-- The laptop (ThinkPad X1 Yoga Gen 8): what works and what is left to check is in [LAPTOP.md](LAPTOP.md).
+- The laptop (ThinkPad X1 Yoga Gen 8): what works so far is in [HARDWARE.md](HARDWARE.md); the rest is being checked.
 - Yggdrasil's own compositor on real screens: the hardware backend's next milestones, the laptop first.
-- Sarina's night training: `sarina-night.timer`, 22:30 to 04:20. Reports in `docs/sarina-evals/`, wrap-ups in
-  [TEAM_BOARD.md](TEAM_BOARD.md).
+- Sarina's training: her eval runs and their reports (kept with my private plans).
 - Frame generation for games: Kairos, Labyrinth's own Vulkan layer (`kairos-git`, a preview; named 2026-11-07, it was
   `labyrinth-framegen`; the old package is replaced on update and its launcher name still works), with
   lsfg-vk as the stopgap. Settings > Games chooses the games.
@@ -66,11 +65,11 @@ main PC every day. `scripts/release-check.sh` runs every check that needs no roo
 
 ## Next
 
-1. The install check in [GO_LIVE.md](GO_LIVE.md) §2 on every new ISO (the 2026-11-12 one, the first without Calamares and with
-   signed local packages, installed with ufw on): no live-user sudo or autologin carried over.
-2. The rest of GO_LIVE §1: a way back (a snapshot after install, the GRUB snapshot menu, a rescue USB).
-3. Privacy (GO_LIVE §3): the phone-home audit, hardened Vivaldi defaults, encrypted DNS. Then AppArmor.
-4. Decisions ([CATCH_UP_2026-11-07.md](CATCH_UP_2026-11-07.md) §A), all made 2026-11-07: GNOME Keyring stays; ghostwriter
+1. The install check on every new ISO (the 2026-11-12 one, the first without Calamares and with signed local packages,
+   installed with ufw on): no live-user sudo or autologin carried over.
+2. A way back: a snapshot after install, the GRUB snapshot menu, a rescue USB.
+3. Privacy: the phone-home audit ([PHONE_HOME.md](PHONE_HOME.md)), hardened Vivaldi defaults, encrypted DNS. Then AppArmor.
+4. Decisions, all made 2026-11-07: GNOME Keyring stays; ghostwriter
    stays and Kdenlive goes; Secure Boot left alone for now; Super+S tap to start and stop; frame generation is Kairos.
 5. The installer: shrink a partition to make room, partitions on more than one disk, the keyboard layout at the disk password.
 6. The desktop: a global menu, and the accessibility still missing (sticky, slow and bounce keys, mouse keys). The Task

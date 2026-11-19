@@ -24,3 +24,6 @@ packages/pkgbuilds/*/*.deb
 # bare clones made by git-based recipes (any folder makepkg clones next to a -git recipe)
 packages/pkgbuilds/*-git/*/
 profile/airootfs/usr/share/labyrinth/pkgbuilds/*-git/*/
+
+# My private plans (a link to a private checkout on my computers)
+docs/plans/

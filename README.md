@@ -2,10 +2,18 @@
 
 # Labyrinth OS
 
+[![checks](https://github.com/Artifex-Technologies/Labyrinth_OS/actions/workflows/checks.yml/badge.svg)](https://github.com/Artifex-Technologies/Labyrinth_OS/actions/workflows/checks.yml)
+
 **Labyrinth OS** is a privacy- and security-first Linux distribution (CachyOS-based) with the Artifex ecosystem built in. Its desktop
 is **Yggdrasil**, developed in its own repository and built to be reused: [LykanOS](https://github.com/Artifex-Technologies/LykanOS) (formerly
 Chymaera OS) will use it too. The aim is the most secure Linux desktop that is still a normal, fun computer to use: games, music,
 photo and video work, CAD, everyday browsing.
+
+**How it is tested.** Every push runs the `checks` workflow: the quick part of `scripts/release-check.sh` (the package list,
+every script parsed and shellchecked, every systemd unit verified, every PKGBUILD parsed, the Python and shell tests, the
+installer's tests) and, for every Rust crate, formatting, clippy, the tests and a dependency audit. The full release check
+runs before each release ([docs/RELEASE_CHECKS.md](docs/RELEASE_CHECKS.md)). Building the ISO and installing it are done by
+hand on real machines; [docs/HARDWARE.md](docs/HARDWARE.md) says what was seen working on each.
 
 ![The desktop: the top bar, the dock, and notification pop-ups at the bottom right](assets/screenshots/desktop.png)
 
@@ -116,7 +124,7 @@ For games, Settings > Games (Yggdrasil) has frame generation per game (Labyrinth
 | ![Distress password, the two sections](assets/screenshots/settings-distress-sections.png) | ![Distress password, saving the second section](assets/screenshots/settings-distress-warning.png) |
 | *Section 1 (no extra password to save) and Section 2 (asks for your password again).* | *Saving Section 2 shows a warning and asks for your password once more.* |
 
-*(These pictures show sample settings.)* More: [docs/SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md).
+*(These pictures show sample settings.)* More: [docs/PRIVACY_PACK.md](docs/PRIVACY_PACK.md) and Heimdall's documentation.
 
 ## What it is built from
 
@@ -146,12 +154,11 @@ is built and what is not.
 - [COMPONENTS.md](docs/COMPONENTS.md): optional software (Spotify, Obsidian, Steam, Proton Drive/Pass ...)
 - [PACKAGE_REPO.md](docs/PACKAGE_REPO.md): the signed package repository that keeps installed systems up to date
 - [RUST_PORT_REMAINING.md](docs/RUST_PORT_REMAINING.md): what of ours is not Rust yet, and why
-- [HARDWARE.md](docs/HARDWARE.md), [LAPTOP.md](docs/LAPTOP.md): the machines it is tested on, and the laptop's checks
+- [HARDWARE.md](docs/HARDWARE.md): the machines it is tested on
+- [RELEASE_CHECKS.md](docs/RELEASE_CHECKS.md): what `scripts/release-check.sh` checks before a release
 - [VERSIONING.md](docs/VERSIONING.md): versions (Labyrinth OS 1.0 and each app's own), build numbers, and how to make a release
-- [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [SECURITY_ROADMAP.md](docs/SECURITY_ROADMAP.md): security
+- [DISTRESS_PASSWORD.md](docs/DISTRESS_PASSWORD.md), [PHONE_HOME.md](docs/PHONE_HOME.md): security, and what the system talks to
 - [PRIVACY_PACK.md](docs/PRIVACY_PACK.md), [LOCATION_SOUNDS.md](docs/LOCATION_SOUNDS.md): privacy
-- [REFERENCE_PLAN_2026-11.md](docs/REFERENCE_PLAN_2026-11.md): ideas taken from reference projects, rewritten in Rust (plan, priorities, decisions)
-- [DRIVER_LAB.md](docs/DRIVER_LAB.md): the Sarina + Limbo driver idea
 - [GPU_UNLOCK.md](docs/GPU_UNLOCK.md): the gated Settings option for a GeForce tensor-rate unlock (facts, risks, phases; Phase 0 changes nothing on the GPU)
 - [PROTON_GAMES.md](docs/PROTON_GAMES.md): Valve's Proton (Windows games in Steam); [PROTON_AG.md](docs/PROTON_AG.md): Proton AG's services
 - Yggdrasil's [DESKTOP.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/DESKTOP.md),

@@ -19,7 +19,7 @@ installed); every systemd unit verifies; every file `profiledef.sh` lists exists
 `cargo audit` reports "unmaintained" for `paste` and `ttf-parser`, pulled in by the GUI libraries (egui and friends). Nothing to fix on our
 side; they go away when those libraries move on. Re-run the audit before each release.
 
-## Checks from the reference plan (REFERENCE_PLAN_2026-11.md §3)
+## Checks from the reference plan (§3 of my reference plan, in my private plans)
 
 - **No analysis network reaches the home connection (R8):** Limbo's `sh scripts/netns-sinkhole.sh` (no root; Limbo's CI runs
   it on every push): a guest on `sinkhole` or `none` gets zero packets out; `internet-only` is the control that must leak.

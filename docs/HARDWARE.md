@@ -1,8 +1,8 @@
 # Hardware: what Labyrinth OS does with particular machines
 
 Written 2026-11-12. One section per machine I have tested on: what works, which parts of the system and which optional components
-cover it, and the firmware (BIOS) settings it needs. The checklist for testing on a machine lives in its own plan (for the
-laptop: [LAPTOP.md](LAPTOP.md)); this file is the reference once something is known.
+cover it, and the firmware (BIOS) settings it needs. The checklist for testing on a machine lives in my private plans (for the
+laptop: docs/plans/LAPTOP.md); this file is the reference once something is known.
 
 Device software is never on the ISO (it stays small): the installer's **Optional software** page ticks what fits the machine and
 installs it at the first login, online; Agora has the same components afterwards. See [COMPONENTS.md](COMPONENTS.md).
@@ -27,7 +27,7 @@ the power button, Intel AX211 Wi-Fi 6E and Bluetooth, accelerometer for tablet m
 | --- | --- | --- |
 | Graphics | Mesa (`vulkan-intel`, `intel-media-driver` for video decoding) | on the ISO |
 | Wi-Fi and Bluetooth (AX211) | `iwlwifi` firmware in `linux-firmware`, NetworkManager, BlueZ | on the ISO |
-| Sound | `sof-firmware` and `alsa-ucm-conf` (Intel's audio DSP) | on the ISO; to be checked (LAPTOP.md) |
+| Sound | `sof-firmware` and `alsa-ucm-conf` (Intel's audio DSP) | on the ISO; to be checked |
 | Battery | Top bar battery, power mode (power-profiles-daemon), charge limit 60/80/90/100 % | Yggdrasil `c1d06b7`, `8d428b1`, `f3ac236` |
 | Fans and temperature | Run by the firmware; Settings > Power > Cooling shows them, read only (my choice) | Yggdrasil `0d23a97` |
 | Power modes | power-profiles-daemon switches the ThinkPad's platform profile (DYTC: the firmware's own cooling and power limits) and the processor's energy preference | on the ISO |
@@ -43,7 +43,7 @@ the power button, Intel AX211 Wi-Fi 6E and Bluetooth, accelerometer for tablet m
 ### The fingerprint reader
 
 The X1 Yoga Gen 8's reader is a USB device from Synaptics (`06cb`) or Goodix (`27c6`); which one is on my laptop is still to be
-read with `lsusb` (LAPTOP.md). Both vendors also make readers libfprint cannot drive, so the installer ticks the component by the
+read with `lsusb`. Both vendors also make readers libfprint cannot drive, so the installer ticks the component by the
 exact device: the list in `installer-extras.json` is every USB reader libfprint 1.94.100 supports (its udev hwdb, the "Known
 unsupported devices" section left out). Readers on SPI (some Elan ones) are not in that list; they are added from Agora.
 

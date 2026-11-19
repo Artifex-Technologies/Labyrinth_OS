@@ -1,5 +1,6 @@
 //! labyrinth-bluetooth-privacy [FILE [OS-RELEASE]]: Bluetooth address privacy on by default (R19 of
-//! docs/REFERENCE_PLAN_2026-11.md). Without `Privacy` in /etc/bluetooth/main.conf, Bluetooth Low Energy announces and connects
+//! my reference plan, in my private plans: docs/plans/REFERENCE_PLAN_2026-11.md). Without `Privacy` in
+//! /etc/bluetooth/main.conf, Bluetooth Low Energy announces and connects
 //! with this computer's fixed address, which anything nearby can record to follow it from place to place; with
 //! `Privacy = device` the address changes every 15 minutes and only paired devices recognise it. Heimdall's hardening check
 //! `bluetooth-privacy-off` warns until the file says so. BlueZ reads no drop-in folder, so the line goes into main.conf itself.

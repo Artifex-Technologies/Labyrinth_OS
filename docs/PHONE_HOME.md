@@ -1,6 +1,6 @@
 # What Labyrinth OS talks to (phone-home audit, first pass)
 
-GO_LIVE.md §3 asks for a list of every host an installed system contacts, each one justified. This first pass, written
+My go-live checklist (§3, in my private plans) asks for a list of every host an installed system contacts, each one justified. This first pass, written
 2026-11-07, is not yet the idle-VM capture that section describes: it reads a week of Heimdall's connection record on my own PC
 (in daily use: games, coding, browsing), grouped by program and by the organisation behind the address. No address, network
 name or account is written here.
@@ -51,6 +51,6 @@ and Safe Browsing (a security feature; left on).
 
 ## Still to do
 
-1. The capture GO_LIVE.md asks for: a fresh install in a VM, idle for ten minutes, every connection (UDP too) listed.
+1. The capture that checklist asks for: a fresh install in a VM, idle for ten minutes, every connection (UDP too) listed.
 2. Encrypted DNS (DNS over TLS through systemd-resolved, with a choice of provider in Settings) and tracker blocking: to be
    tested in a VM first, because the resolver also serves Tailscale's names and the VPN.

@@ -27,7 +27,7 @@
   `nvidia_drm.fbdev=1`.
 - The i9-9900K has an Intel UHD 630 iGPU. Keep it enabled: it is the display
   fallback if the NVIDIA stack breaks, and it enables passthrough testing of
-  the 2080 Ti (see DRIVER_LAB.md).
+  the 2080 Ti (the Driver Lab idea, in my private plans).
 - Gaming: Steam, Proton-CachyOS, gamemode, mangohud, lib32 NVIDIA/Vulkan.
 
 ## 3. Desktop: Yggdrasil
