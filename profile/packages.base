@@ -197,3 +197,6 @@ foomatic-db
 foomatic-db-engine
 # Labyrinth's own programs in Rust (packages/tools): scan, quarantine, per-app network, launcher, optional software
 labyrinth-tools
+# the distress password (Settings > Security > Distress password; DISTRESS_PASSWORD.md): its root helper and PAM
+# module; the Settings page shows only where it is installed, and it does nothing until switched on there
+labyrinth-distress
