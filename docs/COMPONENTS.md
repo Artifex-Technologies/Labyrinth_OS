@@ -33,7 +33,8 @@ the machine only when that cannot be reached.
 
 **Not a component: the reading fonts.** Atkinson Hyperlegible, Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and
 OpenDyslexic Mono are in the base system on every install (about 1.5 MB together), so the installer's Font page and Settings >
-Appearance > Font can offer them offline. Five of them are built in this repository ([PACKAGE_REPO.md](PACKAGE_REPO.md)).
+Appearance > Font can offer them offline; Yggdrasil's Settings and theme packages depend on them, so updates bring them to
+older installs too. Atkinson Hyperlegible and its Mono are the default. Five of them are built in this repository ([PACKAGE_REPO.md](PACKAGE_REPO.md)).
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
 obsidian), `everything` (all of the above including weather; your own setup). Spotify is in no preset and Obsidian only in

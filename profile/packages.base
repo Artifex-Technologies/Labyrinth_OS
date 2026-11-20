@@ -126,7 +126,9 @@ btop
 noto-fonts-emoji
 # the fonts to choose from for reading (the installer's Font page, Settings > Appearance > Font; about 1.5 MB together): Atkinson
 # Hyperlegible (Arch's) and Atkinson Hyperlegible Next and Mono for low-vision readers, Lexend, OpenDyslexic and OpenDyslexic
-# Mono; the last five built in this repository (packages/pkgbuilds). Noto Sans stays the default.
+# Mono; the last five built in this repository (packages/pkgbuilds). Atkinson Hyperlegible and its Mono are the default
+# (yggdrasil-theme's 58-yggdrasil-default-font.conf). yggdrasil-settings depends on all six and yggdrasil-theme on the two
+# defaults, so an installed system gets them on its next update too; listed here as well so the ISO has them by name.
 ttf-atkinson-hyperlegible
 ttf-atkinson-hyperlegible-next
 ttf-atkinson-hyperlegible-mono

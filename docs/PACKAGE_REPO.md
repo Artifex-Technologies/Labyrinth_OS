@@ -54,7 +54,9 @@ counting my rebuilds, every source's SHA-256 in the recipe, files from a reposit
 | `otf-opendyslexic` 0.91.12 | the upstream release zip (regular, bold, italic, bold italic; not its web fonts) | SIL OFL 1.1 | 484 KB |
 | `otf-opendyslexic-mono` 1.001 | the 2016 release of the older repository (`antijingoist/open-dyslexic`, tag 20160623-Stable): the only monospaced OpenDyslexic | Bitstream Vera (redistribution allowed, not to be sold on its own) | 52 KB |
 
-All six are on the ISO (about 1.5 MB installed together). Each recipe's `check()` makes sure the files are the family they claim
+All six are on the ISO (about 1.5 MB installed together), and Yggdrasil's packages depend on them, so a system installed
+before they were added gets them with its next update: `yggdrasil-settings` on all six (Appearance > Fonts),
+`yggdrasil-theme` on Atkinson Hyperlegible and Atkinson Hyperlegible Mono, the default system font since 2026-11-19. Each recipe's `check()` makes sure the files are the family they claim
 to be (`fc-scan`). OpenDyslexic's sources moved from GitHub to forge.hackers.town in 2025; the release files are the same. A new
 version is my choice: the commit or release, `pkgver` and the checksums, `pkgrel` back to 1. If Arch packages one of them, its
 package wins (this repository is listed last).

@@ -15,6 +15,16 @@ tell the other side.
 - **Where:** `docs/PACKAGE_REPO.md`; `packages/publish-repo` (`labyrinth-publish-repo`); `packages/pkgbuilds/labyrinth-keyring`;
   `profile/pacman.conf`.
 
+## The reading fonts (`ttf-atkinson-hyperlegible-next`, `-mono`, `ttf-lexend`, `otf-opendyslexic`, `-mono`)
+
+- **What:** five font packages built in this repository and published in `[labyrinth]`, by these names, with their files where
+  Yggdrasil's `packages/yggdrasil-conf/src/fonts.rs` looks for them (`/usr/share/fonts/TTF/...`, `/usr/share/fonts/OTF/...`).
+  The sixth, `ttf-atkinson-hyperlegible`, is Arch's.
+- **Who uses it:** Yggdrasil: `yggdrasil-theme` depends on `ttf-atkinson-hyperlegible` and `ttf-atkinson-hyperlegible-mono`
+  (the default system font, its `58-yggdrasil-default-font.conf`), `yggdrasil-settings` on all six (Appearance > Fonts), so
+  an update brings them to every installed system; LykanOS through the same packages.
+- **Where:** `packages/pkgbuilds/<name>`; `docs/PACKAGE_REPO.md`, "the reading fonts".
+
 ## The recipes built from the sibling repositories
 
 - **What:** `packages/pkgbuilds/<name>` builds each project from its own repository's `main` (never a working tree):
