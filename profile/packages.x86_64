@@ -141,6 +141,7 @@ gutenprint
 foomatic-db
 foomatic-db-engine
 labyrinth-tools
+labyrinth-distress
 # component: steam
 steam
 lib32-nvidia-utils
