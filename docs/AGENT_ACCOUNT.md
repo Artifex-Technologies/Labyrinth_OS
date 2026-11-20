@@ -37,10 +37,61 @@ Three things happened, in this order:
 
 So today, on my PC, both are live: `labyrinth-agent` and the broad list. What the repository ships (`labyrinth-agent-setup`)
 is the narrowed design. In both cases every use is logged by sudo in the journal under the agent's name, with the command
-and the folder (`journalctl -t sudo`), and `claude-sudo CMD` is shorthand for `sudo -n -u claude-agent sudo -n CMD`.
+and the folder (`journalctl -t sudo`), and `claude-sudo CMD` is shorthand for `sudo -n -u claude-agent sudo -n CMD`
+(through the recorder since 2026-11-19, below).
 Until 2026-11-19 sudo also recorded the agent's terminal input and output for replay (`/var/log/sudo-io`); sudo is sudo-rs
-since then ([RUST_BASE.md](RUST_BASE.md)), which has no such recording, and I chose the memory-safe sudo over the recordings.
-Recordings made before then stay in `/var/log/sudo-io` and `sudoreplay` is gone with GNU sudo.
+since then ([RUST_BASE.md](RUST_BASE.md)), which has no such recording. Recordings made before then stay in
+`/var/log/sudo-io` (`sudoreplay` is gone with GNU sudo). The same day the recordings came back through our own recorder, and
+the kernel audit log now keeps every program the agent's root sessions start (next section).
+
+## 2026-11-19: the session recorder and the audit rule
+
+sudo-rs records nothing, so I replaced the recording with two things the agent can neither read nor change: both are written
+by root, in places only root may enter.
+
+**The recorder, `labyrinth-agent-rec`** (labyrinth-tools, packages/tools/src/agent_rec.rs, /usr/bin). The agent's account
+has one root rule now, the recorder; `claude-sudo CMD...` is `sudo -n -u claude-agent sudo -n /usr/bin/labyrinth-agent-rec --
+CMD...`. What the agent may run as root (the gate, and the window's list while it is open; on my PC also the broad list) is
+written for a second account, `claude-agent-rules`: a system account with no home, no shell and a locked password, that no
+rule lets anyone become. For each command the recorder finds it on sudo's path (/usr/local/sbin, /usr/local/bin, /usr/bin)
+and asks sudo itself whether the rules allow exactly that command line (`sudo -n -l -U claude-agent-rules -- /ABS/CMD
+ARGS...`). Refused: one line to the agent, one in the journal, nothing runs. Allowed: it runs the command with no shell, in a
+session of its own, and copies its input, output and errors through to the agent and into the record as they flow.
+SIGINT, SIGTERM and SIGHUP are passed on, and the exit code is the command's. So the rules are the same as before; only the
+path to them goes through the recorder.
+
+What a session leaves:
+
+- `/var/log/labyrinth-agent/ID.jsonl` (the folder 0700, the file 0600, both root's; ID is the start in UTC to the
+  millisecond and the recorder's pid). JSON lines: a header (start, invoker, uid, folder, the command as typed and as found,
+  the login uid set, the audit session), the data (`{"t": ms since the start, "s": "in"|"out"|"err", "b64": ...}`, byte for
+  byte), and a footer (end, exit code, the bytes of each stream, whether it was cut). At most 64 MiB of data is recorded per
+  session; what comes after still passes through and the footer says `truncated`.
+- Two journal lines, tag `labyrinth-agent-rec`, facility auth: the session and its command at the start, and at the end the
+  exit code and the SHA-256 of the finished record. A record changed afterwards no longer matches its line.
+- The kernel audit log: the recorder sets each session's login uid to the agent's (`/proc/self/loginuid`), and
+  labyrinth-agent-setup writes `/etc/audit/rules.d/50-labyrinth-agent.rules`, which logs every `execve` and `execveat` (64-
+  and 32-bit) with that login uid under the key `labyrinth-agent`. That covers everything the session starts, also what a
+  program started by the agent starts in turn. labyrinth-agent-setup enables auditd (and audit-rules.service, which loads the
+  rules at boot) and loads the rules with `augenrules --load`.
+
+How I read them (as myself, with my password; the agent is refused even through its recorder rule):
+
+```
+sudo labyrinth-agent-rec list [N]              # the last N sessions, newest first: id, start, who, exit code, command
+sudo labyrinth-agent-rec replay ID             # the output and errors again, with their timing (--fast: at once; --input: what was typed too)
+journalctl -t labyrinth-agent-rec              # the start and end lines (the record's SHA-256: sudo sha256sum /var/log/labyrinth-agent/ID.jsonl)
+sudo ausearch -k labyrinth-agent -i            # every program the agent's root sessions started
+```
+
+What this is not: with the window open (or the broad list on my PC) the agent can run pacman, install and systemd-run as
+root, which is root in effect; it could then reach the records and the audit log too. The journal lines and the audit log
+make that visible after the fact; they do not make it impossible. With the narrowed rules alone (the gate), the agent cannot
+reach either.
+
+Known limitations: the command never has a terminal, also when the agent's input is one (it runs in a session of its own
+with pipes: programs that ask on /dev/tty cannot, colours and progress bars are off). The record holds the output as the
+command wrote it, not a terminal's screen.
 
 ## 2026-11-11: holes closed, and a Rust port
 
@@ -73,9 +124,12 @@ together with the shell scripts' ports); the Python script was kept in packages/
 
 ## Built, in the repository
 
-- `labyrinth-agent-setup` (labyrinth-tools, packages/tools/src/agent_setup.rs; read it first): creates `claude-agent` (password locked), writes
-  `/etc/sudoers.d/50-labyrinth-agent` (validated with visudo), installs `claude-sudo`, and tells Heimdall who may open a
-  maintenance window. `sudo labyrinth-agent-setup --owner USER [--owner-login]`; undo the rules with `--remove`.
+- `labyrinth-agent-setup` (labyrinth-tools, packages/tools/src/agent_setup.rs; read it first): creates `claude-agent` (password
+  locked) and `claude-agent-rules` (a system account nobody can become), writes `/etc/sudoers.d/50-labyrinth-agent` (validated
+  with visudo), installs `claude-sudo`, tells Heimdall who may open a maintenance window, and writes and loads the audit rule.
+  `sudo labyrinth-agent-setup --owner USER [--owner-login]`; run again, it moves a system set up before to the recorder; undo
+  the rules with `--remove` (the sudo rules, claude-sudo and the audit rule; the accounts and auditd stay).
+- `labyrinth-agent-rec` (packages/tools, bin `labyrinth-agent-rec`, /usr/bin): the recorder (above).
 - `labyrinth-agent` (packages/tools, bin `labyrinth-agent`, installed as /usr/bin/labyrinth-agent by labyrinth-tools; the Python
   script it replaced was packages/tools/python/labyrinth-agent until 2026-11-15) and `labyrinth-agent-window` (/usr/bin, labyrinth-tools; above).
 - Heimdall (commit "Maintenance window..."): 

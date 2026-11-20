@@ -17,7 +17,8 @@ while games and a local model share the computer).
 | `ipconfig` | Windows' `ipconfig` from `ip` and NetworkManager | on demand | done |
 | `steam_playall` (was `steam_playall.py`) | Steam Play for all titles in Steam's config.vdf | `labyrinth-gaming setup` | done |
 | `labyrinth-first-components` | the optional parts chosen in the installer, at the first login | the session's autostart | done |
-| `labyrinth-agent` (was in /usr/local/sbin) | the gate: the root actions the engineering agent may take alone, each checked (sudo lets its account run this and nothing else as root) | on demand, through `claude-sudo` | done |
+| `labyrinth-agent` (was in /usr/local/sbin) | the gate: the root actions the engineering agent may take alone, each checked (its rules account may run this and nothing else as root) | on demand, through `claude-sudo` | done |
+| `labyrinth-agent-rec` (new, 2026-11-19) | the recorder of the agent's root sessions: checks each command against the agent's rules (`sudo -l -U AGENT-rules`), runs it and records its input, output and errors in /var/log/labyrinth-agent (`list`, `replay` for root); the one program sudo lets the agent's account run as root | every `claude-sudo` | new |
 
 Each module (`src/*.rs`) says what it is and where it is not 1:1. Where a script stopped with a traceback (exit code 1), its port
 stops too, with exit code 1 and one line on standard error. `src/pycompat` is a copy of Yggdrasil's `packages/pycompat` (the few
@@ -47,8 +48,8 @@ already allows any pacman and systemd-run, so it gives nothing more).
 | labyrinth-rollback | src/rollback.rs | 30/30 |
 | labyrinth-install-bootfinish | src/bootfinish.rs | 32/32 |
 | labyrinth-install-cleanup | src/install_cleanup.rs | 18/18 (and tests/test_install_cleanup.sh's 21 with LABYRINTH_CLEANUP) |
-| labyrinth-agent-setup | src/agent_setup.rs | 20/20 |
-| labyrinth-agent-window (sbin) | src/agent_window.rs | 11/11 |
+| labyrinth-agent-setup | src/agent_setup.rs | 20/20 (until 2026-11-19: the recorder, its rules account and the audit rule differ on purpose) |
+| labyrinth-agent-window (sbin) | src/agent_window.rs | 11/11 (until 2026-11-19: the list is the rules account's since) |
 | labyrinth-ecosystem-setup | src/ecosystem.rs | 14/14 |
 | labyrinth-hardware-setup | src/hardware.rs | 9/9 |
 | labyrinth-grub-theme | src/grub_theme.rs | 15/15 |

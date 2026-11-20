@@ -46,9 +46,11 @@ wheel group keeps sudo, and says so; the rules in `/etc/sudoers` and `/etc/sudoe
 is fixed.
 
 sudo-rs does not support every option. The ones Labyrinth used and dropped: the agent account's `requiretty` and its
-input/output recording (`log_input`, `log_output`, `iolog_dir`: sudo-rs has no recording; every command is still in the
-journal with the user, the command and the folder), and `timestamp_type=global` (sudo-rs keeps one time stamp per
-terminal). [AGENT_ACCOUNT.md](AGENT_ACCOUNT.md) has what that means for the agent.
+input/output recording (`log_input`, `log_output`, `iolog_dir`: sudo-rs has no recording), and `timestamp_type=global`
+(sudo-rs keeps one time stamp per terminal). The recordings are back through labyrinth-agent-rec (labyrinth-tools), our own
+recorder of the agent's root sessions, which the agent's one sudo rule names, together with a kernel audit rule for every
+program those sessions start; every command is also still in sudo's journal lines with the user, the command and the
+folder. [AGENT_ACCOUNT.md](AGENT_ACCOUNT.md) has what that means for the agent.
 
 ## How it was checked (2026-11-19)
 
