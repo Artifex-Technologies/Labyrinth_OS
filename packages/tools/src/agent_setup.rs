@@ -1,5 +1,6 @@
 //! labyrinth-agent-setup: gives the engineering agent (Claude) its own account and the sudo rules that let it run the gate
-//! (labyrinth-agent) and nothing else as root; --remove takes the rules away. The bash script of the same name with the same
+//! (labyrinth-agent) and nothing else as root, each session recorded (labyrinth-agent-rec) and every program in it in the kernel
+//! audit log; --remove takes the rules away. The bash script of the same name with the same
 //! options, output, files (the sudoers file, claude-sudo, Heimdall's maintenance_actors), calls and exit codes; its help is
 //! src/doc/labyrinth-agent-setup.txt (what the rules mean is there).
 //!
@@ -19,7 +20,15 @@
 //!     read NaN and Infinity, and kept big numbers exact); a file that is not JSON, not an object, or whose maintenance_actors is
 //!     not a list stops it with exit code 1 and one line, as Python's traceback did;
 //!   - it no longer needs python3 for that step (the script skipped it without python3).
+//!
+//! Since 2026-11-19 (sudo-rs records no session): the agent's one root rule is the recorder, /usr/bin/labyrinth-agent-rec, and
+//! the agent's real rules (the gate here, labyrinth-agent-window's list) are written for a second account, `{agent}-rules`
+//! (useradd -r, no home, nologin, password locked), that no rule lets anyone become: the recorder asks sudo about it. The
+//! recorder sets each session's login uid to the agent's, and /etc/audit/rules.d/50-labyrinth-agent.rules logs every execve
+//! with that login uid (auditd enabled, the rules loaded with augenrules). Running it again on a system that has the agent's
+//! account moves that system to this design.
 
+use crate::agent_rec::{rules_user, REC};
 use crate::pycompat::json::{self, Value};
 use crate::sh::{self, Io};
 use std::fs;
@@ -28,6 +37,10 @@ use std::os::unix::fs::MetadataExt;
 pub const DOC: &str = include_str!("doc/labyrinth-agent-setup.txt");
 const SUDOERS: &str = "/etc/sudoers.d/50-labyrinth-agent";
 const CLAUDE_SUDO: &str = "/usr/local/bin/claude-sudo";
+pub const AUDIT_RULES: &str = "/etc/audit/rules.d/50-labyrinth-agent.rules";
+/// The key of the audit rule (ausearch -k labyrinth-agent).
+pub const AUDIT_KEY: &str = "labyrinth-agent";
+const NOLOGIN: &str = "/usr/bin/nologin";
 /// The gate sudo lets the agent run, and the owner's window (the script checks both are there); both come with labyrinth-tools.
 pub const GATE: &str = "/usr/bin/labyrinth-agent";
 pub const WINDOW: &str = "/usr/bin/labyrinth-agent-window";
@@ -41,10 +54,10 @@ fn err(msg: &str, code: i32) -> i32 {
     code
 }
 
-/// ^[a-z][a-z0-9-]{1,30}$
+/// ^[a-z][a-z0-9-]{1,25}$: at most 26, so that its rules account (`{agent}-rules`) is a valid name too (32 at most).
 pub fn agent_name_ok(a: &str) -> bool {
     let b = a.as_bytes();
-    (2..=31).contains(&b.len())
+    (2..=26).contains(&b.len())
         && b[0].is_ascii_lowercase()
         && b[1..].iter().all(|&c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
 }
@@ -55,15 +68,106 @@ pub fn rules(agent: &str, owner: &str, owner_login: bool) -> String {
     } else {
         format!("{owner} ALL=({agent}) NOPASSWD: ALL")
     };
+    let rules = rules_user(agent);
     format!(
         "# Written by labyrinth-agent-setup. See that script for what this means.\n\
-         {agent} ALL=(root) NOPASSWD: {GATE}, {GATE} *\n\
+         # The agent runs one program as root, the recorder; what it may run through it is {rules}'s (nobody can become that\n\
+         # account: the recorder asks sudo about it).\n\
+         {agent} ALL=(root) NOPASSWD: {REC}, {REC} *\n\
+         {rules} ALL=(root) NOPASSWD: {GATE}, {GATE} *\n\
          {owner_rule}\n"
     )
 }
 
 pub fn claude_sudo(agent: &str) -> String {
-    format!("#!/bin/sh\n# claude-sudo CMD...: run CMD as root through the audited agent account ({agent}).\nexec sudo -n -u {agent} sudo -n \"$@\"\n")
+    format!(
+        "#!/bin/sh\n# claude-sudo CMD...: run CMD as root through the audited agent account ({agent}), recorded by labyrinth-agent-rec.\n\
+         exec sudo -n -u {agent} sudo -n {REC} -- \"$@\"\n"
+    )
+}
+
+/// The kernel audit rules: every program started (execve, execveat; 64- and 32-bit calls) with the agent's login uid, which
+/// labyrinth-agent-rec gives each of its sessions.
+pub fn audit_rules(agent: &str, uid: u32) -> String {
+    let mut s = format!(
+        "## Written by labyrinth-agent-setup: every program started in {agent}'s root sessions. labyrinth-agent-rec sets the\n\
+         ## login uid of each session to {agent}'s ({uid}), so these match the session and all it starts.\n"
+    );
+    for arch in ["b64", "b32"] {
+        s.push_str(&format!("-a always,exit -F arch={arch} -S execve -S execveat -F auid={uid} -k {AUDIT_KEY}\n"));
+    }
+    s
+}
+
+/// The account's login shell (None: no such account).
+fn login_shell(name: &str) -> Option<String> {
+    let c = std::ffi::CString::new(name).ok()?;
+    let pw = unsafe { libc::getpwnam(c.as_ptr()) };
+    if pw.is_null() || unsafe { (*pw).pw_shell }.is_null() {
+        return None;
+    }
+    Some(unsafe { std::ffi::CStr::from_ptr((*pw).pw_shell) }.to_string_lossy().into_owned())
+}
+
+/// The rules account: made when missing (a system account, no home, no shell, password locked); one that is there must be a
+/// system account nobody logs in to. Err: the exit code (said why).
+fn rules_account(name: &str) -> Result<(), i32> {
+    match sh::user_id(name) {
+        None => {
+            let c = sh::status(&["useradd", "-r", "-M", "-s", NOLOGIN, "-c", "The engineering agent's sudo rules (nobody logs in)", name]);
+            if c != 0 {
+                return Err(c);
+            }
+        }
+        Some((uid, _)) if uid == 0 || uid >= 1000 => {
+            return Err(err(&format!("{name} exists and is not a system account; it would hold the agent's root rules"), 2));
+        }
+        Some(_) => {
+            let shell = login_shell(name).unwrap_or_default();
+            if !["/usr/bin/nologin", "/sbin/nologin", "/usr/sbin/nologin", "/bin/false", "/usr/bin/false"].contains(&shell.as_str()) {
+                return Err(err(
+                    &format!("{name} has the login shell {shell}; it holds the agent's root rules, so nobody may log in to it"),
+                    2,
+                ));
+            }
+        }
+    }
+    match sh::run(&["passwd", "-l", name], Io::Null, Io::Inherit) {
+        0 => Ok(()),
+        c => Err(c),
+    }
+}
+
+/// augenrules --load, when the audit package is there: the rules in /etc/audit/rules.d into the kernel. Err: why not.
+fn load_audit() -> Result<(), String> {
+    if !sh::executable("/usr/bin/augenrules") {
+        return Err("augenrules is missing (the audit package)".into());
+    }
+    match sh::run(&["/usr/bin/augenrules", "--load"], Io::Null, Io::Inherit) {
+        0 => Ok(()),
+        c => Err(format!("augenrules --load failed (exit code {c})")),
+    }
+}
+
+/// The audit rule written, auditd on (now and at boot, with the unit that loads the rules at boot where audit has one), the
+/// rules loaded. Err: what failed (the rest was done).
+fn audit_on(agent: &str, uid: u32) -> Result<(), String> {
+    let dir = crate::py::dirname(AUDIT_RULES);
+    sh::mkdir_p_mode(&dir, 0o750).map_err(|e| format!("cannot make {dir}: {e}"))?;
+    sh::replace_file(AUDIT_RULES, audit_rules(agent, uid).as_bytes(), 0o640, Some((0, 0)))
+        .map_err(|e| format!("cannot write {AUDIT_RULES}: {e}"))?;
+    let mut units = vec!["enable", "--now", "auditd.service"];
+    if sh::exists("/usr/lib/systemd/system/audit-rules.service") {
+        units.push("audit-rules.service");
+    }
+    let mut argv = vec!["systemctl"];
+    argv.extend(units);
+    let c = sh::run(&argv, Io::Null, Io::Inherit);
+    let loaded = load_audit();
+    if c != 0 {
+        return Err(format!("systemctl enable --now auditd failed (exit code {c})"));
+    }
+    loaded
 }
 
 /// Heimdall's maintenance_actors with the owner and the agent in it (Python's json.load, list.append and json.dump(indent=2)).
@@ -116,12 +220,21 @@ pub fn main(args: &[String]) -> i32 {
         return err("bad account name", 2);
     }
     if remove {
-        for f in [SUDOERS, CLAUDE_SUDO] {
+        let had_audit = sh::exists(AUDIT_RULES);
+        for f in [SUDOERS, CLAUDE_SUDO, AUDIT_RULES] {
             if let Err(e) = sh::rm_f(f) {
                 return err(&format!("rm: cannot remove '{f}': {}", crate::py::strerror(e.raw_os_error().unwrap_or(0))), 1);
             }
         }
-        println!("removed the sudo rules; the account {agent} and its home are left (userdel -r {agent} deletes them)");
+        let rules = rules_user(&agent);
+        println!(
+            "removed the sudo rules and the audit rule; the accounts {agent} and {rules} and {agent}'s home are left (userdel -r {agent}; userdel {rules})"
+        );
+        if had_audit {
+            if let Err(e) = load_audit() {
+                return err(&format!("the audit rule is removed but still loaded: {e}"), 1);
+            }
+        }
         return 0;
     }
     if owner.is_empty() {
@@ -150,13 +263,17 @@ pub fn main(args: &[String]) -> i32 {
     if code != 0 {
         return code;
     }
+    if let Err(code) = rules_account(&rules_user(&agent)) {
+        return code;
+    }
+    let Some((agent_uid, _)) = sh::user_id(&agent) else { return err(&format!("no such user: {agent}"), 1) };
     // the Limbo manifests the agent may start, root's alone (labyrinth-agent refuses a manifest when it or a folder above it is
     // not root's or may be written by others)
     let dir = "/var/lib/limbo/build-agent";
     if let Err(e) = sh::install_dir(dir, 0o755, Some((0, 0))) {
         return err(&format!("install: cannot make {dir}: {e}"), 1);
     }
-    for p in [GATE, WINDOW] {
+    for p in [GATE, WINDOW, REC] {
         if !sh::executable(p) {
             return err(&format!("{p} is missing (it comes with the labyrinth-tools package)"), 1);
         }
@@ -189,7 +306,14 @@ pub fn main(args: &[String]) -> i32 {
         }
         sh::quiet(&["systemctl", "try-restart", "heimdall.service"]);
     }
-    println!("done: account {agent} (locked password), rules in {SUDOERS}, helper claude-sudo; every use is in the journal");
+    if let Err(e) = audit_on(&agent, agent_uid) {
+        return err(&format!("the sudo rules are in place, but the audit rule is not on: {e}"), 1);
+    }
+    println!(
+        "done: account {agent} (locked password), rules in {SUDOERS} (the agent's for {}), helper claude-sudo; every session is \
+         recorded in /var/log/labyrinth-agent and every program in it in the audit log (ausearch -k {AUDIT_KEY})",
+        rules_user(&agent)
+    );
     0
 }
 
@@ -223,7 +347,8 @@ mod tests {
 
     #[test]
     fn names() {
-        assert!(agent_name_ok("claude-agent") && agent_name_ok("ab"));
+        assert!(agent_name_ok("claude-agent") && agent_name_ok("ab") && agent_name_ok(&"a".repeat(26)));
+        assert!(sh::account_name(&rules_user(&"a".repeat(26))) && !agent_name_ok(&"a".repeat(27)));
         assert!(
             !agent_name_ok("a")
                 && !agent_name_ok("Root")
@@ -236,12 +361,36 @@ mod tests {
     #[test]
     fn the_rules() {
         let r = rules("claude-agent", "owner", false);
-        assert!(r.contains("claude-agent ALL=(root) NOPASSWD: /usr/bin/labyrinth-agent, /usr/bin/labyrinth-agent *\n"));
+        // the agent itself: the recorder and nothing else; the gate is its rules account's
+        let agent: Vec<&str> = r.lines().filter(|l| l.starts_with("claude-agent ")).collect();
+        assert_eq!(agent, ["claude-agent ALL=(root) NOPASSWD: /usr/bin/labyrinth-agent-rec, /usr/bin/labyrinth-agent-rec *"]);
+        assert!(r.contains("\nclaude-agent-rules ALL=(root) NOPASSWD: /usr/bin/labyrinth-agent, /usr/bin/labyrinth-agent *\n"));
+        // nobody may become the rules account
+        assert!(!r.contains("(claude-agent-rules)") && !r.contains("=(ALL"));
         assert!(r.ends_with("owner ALL=(claude-agent) NOPASSWD: ALL\n"));
         let r = rules("claude-agent", "owner", true);
         assert!(r.ends_with("Defaults:owner timestamp_timeout=720\nowner ALL=(claude-agent) ALL\n"));
         // sudo-rs reads every line: it has no I/O logging (log_input, iolog_dir), requiretty or timestamp_type=global
         assert!(!r.contains("log_input") && !r.contains("requiretty") && !r.contains("global"));
+    }
+
+    #[test]
+    fn helper_and_audit_rules() {
+        assert_eq!(
+            claude_sudo("claude-agent"),
+            "#!/bin/sh\n# claude-sudo CMD...: run CMD as root through the audited agent account (claude-agent), recorded by \
+             labyrinth-agent-rec.\nexec sudo -n -u claude-agent sudo -n /usr/bin/labyrinth-agent-rec -- \"$@\"\n"
+        );
+        let a = audit_rules("claude-agent", 1001);
+        let rules: Vec<&str> = a.lines().filter(|l| !l.starts_with('#')).collect();
+        assert_eq!(
+            rules,
+            [
+                "-a always,exit -F arch=b64 -S execve -S execveat -F auid=1001 -k labyrinth-agent",
+                "-a always,exit -F arch=b32 -S execve -S execveat -F auid=1001 -k labyrinth-agent"
+            ]
+        );
+        assert!(a.lines().all(|l| l.starts_with("## ") || l.starts_with("-a ")));
     }
 
     #[test]
