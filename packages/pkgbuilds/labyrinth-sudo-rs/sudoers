@@ -1,0 +1,5 @@
+## sudoers for sudo-rs (labyrinth-sudo-rs). Edit with: visudo
+## Only used where no edited /etc/sudoers was already there: the swap from GNU sudo keeps the existing file.
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+root ALL=(ALL:ALL) ALL
+@includedir /etc/sudoers.d

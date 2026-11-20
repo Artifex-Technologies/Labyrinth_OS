@@ -9,7 +9,9 @@ tell the other side.
 - **What:** a signed pacman repository on the GitHub release named `packages`
   (`https://github.com/Artifex-Technologies/Labyrinth_OS/releases/download/packages`), listed last in `pacman.conf` with
   `SigLevel = Required`; every package and the database are signed with the Labyrinth key (`labyrinth-keyring`). A package of
-  the same name in Arch's or CachyOS's repositories always wins.
+  the same name in Arch's or CachyOS's repositories always wins. It replaces two base packages, on every system that
+  uses it (LykanOS too): `coreutils` with `labyrinth-coreutils-rs` and `sudo` with `labyrinth-sudo-rs`, their packaged Rust
+  versions ([RUST_BASE.md](RUST_BASE.md)); no others.
 - **Who uses it:** every installed Labyrinth system and Agora's updates; LykanOS (its ISO and installs take Sarina, Heimdall,
   Limbo and the desktop from it); Limbo's analysis image (`yara-x`, fetched on the host).
 - **Where:** `docs/PACKAGE_REPO.md`; `packages/publish-repo` (`labyrinth-publish-repo`); `packages/pkgbuilds/labyrinth-keyring`;

@@ -1,0 +1,39 @@
+# sudo from sudo-rs (Rust, Arch's sudo-rs package, which installs as sudo-rs/visudo-rs): sudo, sudoedit and visudo in
+# /usr/bin become links to them. Replaces sudo on every system that takes Labyrinth's packages: one of the two base
+# packages the [labyrinth] repository may replace (with coreutils; CLAUDE.md, docs/RUST_BASE.md).
+#
+# GNU sudo's package owns /etc/sudoers and /etc/pam.d/sudo. sudo-rs needs both, and without the PAM file every sudo
+# would be refused (PAM's "other" denies all). So this package owns them too: in the swap, pacman moves them from sudo
+# to this package and keeps the files on disk as they are (an edited sudoers stays; ours arrives as a .pacnew). The
+# install script then checks the sudoers with sudo-rs's visudo and, only if sudo-rs cannot read it, writes
+# /etc/sudoers-rs (which sudo-rs reads first) so the wheel group keeps sudo. To go back: pacman -S sudo.
+pkgname=labyrinth-sudo-rs
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="sudo from sudo-rs, written in Rust"
+arch=('any')
+url="https://github.com/Artifex-Technologies/Labyrinth_OS"
+license=('MPL-2.0')
+depends=('sudo-rs>=0.2.15' 'pam')
+provides=('sudo')
+conflicts=('sudo')
+replaces=('sudo')
+backup=('etc/sudoers' 'etc/pam.d/sudo')
+install=labyrinth-sudo-rs.install
+source=('sudoers' 'sudo.pam')
+sha256sums=('68ffad7c2c89764e9a388710c8682499517f084dc7a15ced90fb5941130c158f'
+            '7ec1c668c10e0f83d00e25f336872212fe04ce2c2563e1d661d34d28852f4649')
+# The version is the system's (VERSION at the top of this repository); the build number counts the commits since that release
+# which touch this recipe's folder (scripts/package-version.sh, docs/VERSIONING.md)
+. "$startdir/../../../scripts/package-version.sh"
+_version "$startdir" "$startdir"
+
+package() {
+  install -dm755 "$pkgdir/usr/bin"
+  ln -s sudo-rs "$pkgdir/usr/bin/sudo"
+  ln -s sudoedit-rs "$pkgdir/usr/bin/sudoedit"
+  ln -s visudo-rs "$pkgdir/usr/bin/visudo"
+  install -Dm440 "$srcdir/sudoers" "$pkgdir/etc/sudoers"
+  install -dm750 "$pkgdir/etc/sudoers.d"
+  install -Dm644 "$srcdir/sudo.pam" "$pkgdir/etc/pam.d/sudo"
+}
