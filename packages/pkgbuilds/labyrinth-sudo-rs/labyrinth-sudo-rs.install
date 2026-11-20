@@ -1,4 +1,4 @@
-# The swap removes GNU sudo before this package is installed, and pacman moves an edited /etc/sudoers (or
+# The swap removes the old sudo before this package is installed, and pacman moves an edited /etc/sudoers (or
 # /etc/pam.d/sudo) aside as .pacsave, then installs this package's default. _restore puts the system's own file back
 # (the default goes to .pacnew), only a .pacsave made by this transaction (its inode changed in the last 10 minutes).
 _restore() {
@@ -10,7 +10,7 @@ _restore() {
 # If sudo-rs cannot read the sudoers (an option it does not support), every sudo would be refused. Then
 # /etc/sudoers-rs, which sudo-rs reads instead, keeps sudo for the wheel group.
 _check_sudoers() {
-  if visudo-rs -c -f /etc/sudoers >/dev/null 2>&1; then
+  if visudo -c -f /etc/sudoers >/dev/null 2>&1; then
     return 0
   fi
   if [ -e /etc/sudoers-rs ]; then
@@ -19,7 +19,7 @@ _check_sudoers() {
   fi
   umask 0337
   cat > /etc/sudoers-rs <<'RULES'
-## Written by labyrinth-sudo-rs because sudo-rs could not read /etc/sudoers (see: visudo-rs -c -f /etc/sudoers).
+## Written by labyrinth-sudo-rs because sudo-rs could not read /etc/sudoers (see: visudo -c -f /etc/sudoers).
 ## sudo-rs reads this file instead of /etc/sudoers while it exists. Fix /etc/sudoers, then delete this file.
 Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
 root ALL=(ALL:ALL) ALL
@@ -27,7 +27,7 @@ root ALL=(ALL:ALL) ALL
 RULES
   echo "==> WARNING: sudo-rs cannot read /etc/sudoers. Members of wheel keep sudo through /etc/sudoers-rs;"
   echo "    the rules in /etc/sudoers and /etc/sudoers.d are NOT in use until /etc/sudoers is fixed:"
-  visudo-rs -c -f /etc/sudoers 2>&1 | sed 's/^/    /'
+  visudo -c -f /etc/sudoers 2>&1 | sed 's/^/    /'
 }
 
 post_install() {

@@ -1,39 +1,70 @@
-# sudo from sudo-rs (Rust, Arch's sudo-rs package, which installs as sudo-rs/visudo-rs): sudo, sudoedit and visudo in
-# /usr/bin become links to them. Replaces sudo on every system that takes Labyrinth's packages: one of the two base
-# packages the [labyrinth] repository may replace (with coreutils; CLAUDE.md, docs/RUST_BASE.md).
+# Maintainer: Labyrinth OS
 #
-# GNU sudo's package owns /etc/sudoers and /etc/pam.d/sudo. sudo-rs needs both, and without the PAM file every sudo
-# would be refused (PAM's "other" denies all). So this package owns them too: in the swap, pacman moves them from sudo
-# to this package and keeps the files on disk as they are (an edited sudoers stays; ours arrives as a .pacnew). The
-# install script then checks the sudoers with sudo-rs's visudo and, only if sudo-rs cannot read it, writes
-# /etc/sudoers-rs (which sudo-rs reads first) so the wheel group keeps sudo. To go back: pacman -S sudo.
+# sudo from sudo-rs (Rust), built here from the Trifecta Tech Foundation's source and installed under the usual names
+# (sudo, sudoedit, visudo), with its own /etc/sudoers, /etc/pam.d/sudo and time-stamp folder. One package for Labyrinth
+# and LykanOS alike, from no distribution's build: Arch's sudo-rs installs only beside GNU sudo (as sudo-rs), and
+# CachyOS's, which replaces it, is not for LykanOS. It replaces sudo (and either sudo-rs), so pacman -Syu makes the swap
+# on every system that takes Labyrinth's packages: one of the two base packages the [labyrinth] repository may replace
+# (with coreutils; CLAUDE.md, docs/RUST_BASE.md). The install script keeps the system's own sudoers.
+# Pinned like yara-x: a new sudo-rs release is changed here by hand (pkgver and the checksum, pkgrel back to 1); its
+# security fixes reach installed systems only then, so a newer upstream release is a reason to publish the same day.
+
 pkgname=labyrinth-sudo-rs
-pkgver=1.0.0
+pkgver=0.2.15
 pkgrel=1
-pkgdesc="sudo from sudo-rs, written in Rust"
-arch=('any')
-url="https://github.com/Artifex-Technologies/Labyrinth_OS"
-license=('MPL-2.0')
-depends=('sudo-rs>=0.2.15' 'pam')
+pkgdesc="sudo from sudo-rs, written in Rust, under the usual names"
+arch=('x86_64')
+url='https://github.com/trifectatechfoundation/sudo-rs'
+license=('Apache-2.0 OR MIT')
+depends=('glibc' 'gcc-libs' 'pam')
+makedepends=('rust')
 provides=('sudo')
-conflicts=('sudo')
-replaces=('sudo')
+conflicts=('sudo' 'sudo-rs')
+replaces=('sudo' 'sudo-rs')
 backup=('etc/sudoers' 'etc/pam.d/sudo')
 install=labyrinth-sudo-rs.install
-source=('sudoers' 'sudo.pam')
-sha256sums=('68ffad7c2c89764e9a388710c8682499517f084dc7a15ced90fb5941130c158f'
-            '7ec1c668c10e0f83d00e25f336872212fe04ce2c2563e1d661d34d28852f4649')
-# The version is the system's (VERSION at the top of this repository); the build number counts the commits since that release
-# which touch this recipe's folder (scripts/package-version.sh, docs/VERSIONING.md)
-. "$startdir/../../../scripts/package-version.sh"
-_version "$startdir" "$startdir"
+# !lto: makepkg's -flto is for C and C++ only
+options=('!lto' '!debug')
+# the release tag's tarball (the v0.2.15 tag is signed by an upstream maintainer; GitHub showed it verified on 2026-11-19)
+source=("sudo-rs-$pkgver.tar.gz::https://github.com/trifectatechfoundation/sudo-rs/archive/refs/tags/v$pkgver.tar.gz"
+        'sudoers' 'sudo.pam' 'sudo.tmpfiles')
+sha256sums=('ae857c3cde962a1ade2b981f7e01cf95e9fa05d5c5f95f94cf5f35394c1bf899'
+            'afaae60836f65e9c145e243b4a757e97922500befef7e31c121a9c9be9292553'
+            'd1738818070684a5d2c9b26224906aad69a4fea77aabd960fc2675aee2df1fa2'
+            '3e85ae9aeabd6f74d6e0d36ee39fa30d08741118540010bc52c95dbc85f2d76a')
+
+prepare() {
+  cd "sudo-rs-$pkgver"
+  # the release's own lock file; only this machine's target
+  cargo fetch --locked --target "$(rustc --print host-tuple)"
+}
+
+build() {
+  cd "sudo-rs-$pkgver"
+  cargo build --release --locked --offline --bin sudo --bin visudo
+}
+
+# Not the test suite (parts of it need root and a real sudo setup), and not sudo itself (it refuses to run unless it is
+# root's and setuid): visudo is the release built, and it reads this package's sudoers (without the include of
+# /etc/sudoers.d, which only root may read).
+check() {
+  cd "sudo-rs-$pkgver"
+  target/release/visudo -V | grep -q "$pkgver"
+  sed '/^@includedir /d' "$srcdir/sudoers" >"$srcdir/sudoers.check"
+  target/release/visudo -c -f "$srcdir/sudoers.check"
+}
 
 package() {
-  install -dm755 "$pkgdir/usr/bin"
-  ln -s sudo-rs "$pkgdir/usr/bin/sudo"
-  ln -s sudoedit-rs "$pkgdir/usr/bin/sudoedit"
-  ln -s visudo-rs "$pkgdir/usr/bin/visudo"
+  cd "sudo-rs-$pkgver"
+  install -Dm4755 target/release/sudo "$pkgdir/usr/bin/sudo"
+  ln -s sudo "$pkgdir/usr/bin/sudoedit"
+  install -Dm755 target/release/visudo "$pkgdir/usr/bin/visudo"
   install -Dm440 "$srcdir/sudoers" "$pkgdir/etc/sudoers"
   install -dm750 "$pkgdir/etc/sudoers.d"
   install -Dm644 "$srcdir/sudo.pam" "$pkgdir/etc/pam.d/sudo"
+  install -Dm644 "$srcdir/sudo.tmpfiles" "$pkgdir/usr/lib/tmpfiles.d/sudo.conf"
+  install -Dm644 docs/man/sudo.8.man "$pkgdir/usr/share/man/man8/sudo.8"
+  install -Dm644 docs/man/sudoers.5.man "$pkgdir/usr/share/man/man5/sudoers.5"
+  install -Dm644 docs/man/visudo.8.man "$pkgdir/usr/share/man/man8/visudo.8"
+  install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE-APACHE LICENSE-MIT
 }

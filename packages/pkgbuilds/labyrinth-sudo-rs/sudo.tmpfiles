@@ -1,0 +1,3 @@
+# sudo-rs keeps its time stamps here (one per terminal)
+d /run/sudo 0711 root root
+D /run/sudo/ts 0700 root root

@@ -1,15 +1,15 @@
 # Rust in the base system: coreutils and sudo
 
-Labyrinth's own programs are Rust. Two base packages are swapped for Rust ones too, because ready-made, packaged Rust
-versions exist for them: GNU coreutils (`ls`, `cp`, `mv`, `rm`, `sort`, `head`, `wc` and the rest) and sudo. Nothing
-here is my own rewrite: the programs come from Arch's `uutils-coreutils` and `sudo-rs` packages. The `[labyrinth]`
-repository adds two small packages that put them under the usual names, and these are the only base packages it
-replaces (CLAUDE.md, "The base system is not ours").
+Labyrinth's own programs are Rust. Two base packages are swapped for Rust ones too, on Labyrinth and LykanOS alike:
+GNU coreutils (`ls`, `cp`, `mv`, `rm`, `sort`, `head`, `wc` and the rest) and sudo. Neither is my own rewrite: coreutils
+comes from uutils (Arch's `uutils-coreutils` package), sudo from sudo-rs (built here from its release). These are the only
+base packages the `[labyrinth]` repository replaces (CLAUDE.md, "The base system is not ours"). Nothing in either comes
+from CachyOS, so LykanOS, which takes no CachyOS packages, gets the same swap.
 
-| Package | Replaces | What it holds |
+| Package | Replaces | What it is |
 | --- | --- | --- |
-| `labyrinth-coreutils-rs` | `coreutils` | links in `/usr/bin`, one for each of GNU coreutils 9.12's 102 programs, to uutils' single program (`uu-coreutils`, which picks the tool by the name it was started as) |
-| `labyrinth-sudo-rs` | `sudo` | `sudo`, `sudoedit` and `visudo` as links to `sudo-rs`, `sudoedit-rs` and `visudo-rs`; `/etc/sudoers`, `/etc/pam.d/sudo` and `/etc/sudoers.d` |
+| `labyrinth-coreutils-rs` | `coreutils` | links in `/usr/bin`, one for each of GNU coreutils 9.12's 102 programs, to uutils' single program (`uu-coreutils` from Arch's `uutils-coreutils`, which picks the tool by the name it was started as) |
+| `labyrinth-sudo-rs` | `sudo`, `sudo-rs` | sudo-rs 0.2.15 built from the release tag's source (`sudo`, setuid root, `sudoedit`, `visudo`), with `/etc/sudoers`, `/etc/pam.d/sudo`, `/etc/sudoers.d` and the time-stamp folder (`/run/sudo/ts`) |
 
 Both declare `replaces`, so `pacman -Syu` on any system that takes Labyrinth's packages offers the swap and makes it, also
 with `--noconfirm`.
@@ -22,32 +22,51 @@ programs do get such bugs now and then (a `sort` buffer over-read in 2025, for o
 
 What the swap does not buy: the Rust versions have their own bugs, of behaviour rather than memory. Ubuntu, which made
 both its default in 25.10, found a `date` difference that broke its automatic updates. On Arch the coreutils run under
-pacman's hooks, mkinitcpio and makepkg, so the swap ran on my PC before it reached any other machine.
+pacman's hooks, mkinitcpio and makepkg, so the swap runs on my PC for a week before it reaches other machines.
 
-## The sudo swap and the files sudo-rs needs
+## Why sudo-rs is built here
 
-GNU sudo's package owns `/etc/sudoers` and `/etc/pam.d/sudo`, and sudo-rs's package ships neither. A plain swap (CachyOS's
-`sudo-rs`, which conflicts with `sudo`) removes them: the PAM file goes, PAM falls back to its `other` service, which
-denies everything, and no one can use sudo again without a live USB. So `labyrinth-sudo-rs` owns both files. During the
-swap pacman removes sudo first and moves an edited `/etc/sudoers` (or PAM file) aside as `.pacsave`, then installs the
-package's defaults; the install script puts the system's own files back (the defaults go to `.pacnew`), taking only a
-`.pacsave` made in that transaction. It then checks the sudoers with `visudo-rs -c`. If sudo-rs cannot read it (an option
-it does not support), it writes `/etc/sudoers-rs`, which sudo-rs reads instead, so the wheel group keeps sudo, and says
-so; the rules in `/etc/sudoers` and `/etc/sudoers.d` then are not in use until the file is fixed.
+Arch's `sudo-rs` installs beside GNU sudo, as `sudo-rs` and `visudo-rs`, and replaces nothing. CachyOS's replaces sudo
+and ships its own `/etc/sudoers` and `/etc/pam.d/sudo`, but it is CachyOS's, and LykanOS takes nothing from CachyOS; a
+package that relied on it made `pacman -Syu` fail outright on a system without CachyOS's repositories (I tried it). So
+`labyrinth-sudo-rs` builds sudo-rs itself, pinned like `yara-x`: the release tarball with its checksum, the release's own
+`Cargo.lock`. The `v0.2.15` tag is signed by an upstream maintainer (GitHub showed it verified on 2026-11-19). It replaces
+GNU sudo and either distribution's sudo-rs.
+
+The cost: sudo-rs's security releases reach installed systems only when the recipe is moved to them, not through Arch or
+CachyOS. A new upstream release is published the same day it is noticed.
+
+## The sudoers in the swap
+
+During the swap pacman removes the old sudo first, moves an edited `/etc/sudoers` (or `/etc/pam.d/sudo`) aside as
+`.pacsave`, and installs the package's defaults. The install script puts the system's own files back (the defaults go to
+`.pacnew`), taking only a `.pacsave` made in that transaction. It then checks the sudoers with sudo-rs's `visudo -c`. If
+sudo-rs cannot read it (an option it does not support), it writes `/etc/sudoers-rs`, which sudo-rs reads instead, so the
+wheel group keeps sudo, and says so; the rules in `/etc/sudoers` and `/etc/sudoers.d` then are not in use until the file
+is fixed.
+
+sudo-rs does not support every option. The ones Labyrinth used and dropped: the agent account's `requiretty` and its
+input/output recording (`log_input`, `log_output`, `iolog_dir`: sudo-rs has no recording; every command is still in the
+journal with the user, the command and the folder), and `timestamp_type=global` (sudo-rs keeps one time stamp per
+terminal). [AGENT_ACCOUNT.md](AGENT_ACCOUNT.md) has what that means for the agent.
 
 ## How it was checked (2026-11-19)
 
-- **Every program is there.** All 102 names of GNU coreutils 9.12 (`pacman -Ql coreutils`), and nothing else, are in the
-  package; uutils 0.12.0's program answered `--version` as uutils under each of them.
-- **The packages are the real ones.** Arch's `uutils-coreutils` and `sudo-rs` (and CachyOS's swap packages, read for
-  comparison) checked against pacman's keyring before anything ran.
-- **The swap, in a throwaway Arch container**: GNU coreutils and sudo installed, a user in wheel with a password, the
-  wheel line enabled in `/etc/sudoers`, and a no-password rule in `/etc/sudoers.d`. `pacman -Syu --noconfirm` with a test
-  repository holding the two packages offered both replacements and made them. After it: `ls` and `sort` are uutils
-  0.12.0; the edited `/etc/sudoers` is byte for byte the one from before (the default as `.pacnew`), and
-  `visudo -c` reads it, including GNU's own default lines; sudo with the user's password, `sudo -i`, and the
-  no-password rule work; `sort`, `date -d` and `-r`, `touch -d`, `stdbuf`, `wc`, `seq`, `tac`, `env -i`, `cp -a`, `mv`, `rm`,
-  `mkdir -p`, `timeout`, `stat` and `test` give GNU's answers.
+- **Every coreutils program is there.** All 102 names of GNU coreutils 9.12 (`pacman -Ql coreutils`), and nothing else,
+  are in the package; uutils 0.12.0's program answered `--version` as uutils under each of them.
+- **The packages are the real ones.** Arch's `uutils-coreutils` checked against pacman's keyring; sudo-rs's source from
+  the signed release tag, its checksum in the recipe.
+- **The swap, in throwaway Arch containers**, each with GNU coreutils and sudo installed, a user in wheel with a password,
+  the wheel line enabled in `/etc/sudoers`, and a no-password rule in `/etc/sudoers.d`; `pacman -Syu --noconfirm` with a
+  test repository holding the two packages, and no CachyOS repository:
+  - **GNU sudo**: both replaced; `ls` and `sort` are uutils 0.12.0; the edited `/etc/sudoers` is byte for byte the one
+    from before (the default as `.pacnew`); sudo with the user's password, `sudo -i` and the no-password rule work;
+    `sort`, `date -d` and `-r`, `touch -d`, `stdbuf`, `wc`, `seq`, `tac`, `env -i`, `cp -a`, `mv`, `rm`, `mkdir -p`,
+    `timeout`, `stat` and `test` give GNU's answers.
+  - **A sudoers sudo-rs cannot read** (a `requiretty` line added): the install script says so and writes
+    `/etc/sudoers-rs`; the wheel user's sudo with a password works, the no-password rule is (as it says) not in use.
+  - **CachyOS's sudo-rs installed before** (as on my PC): `pacman -Syu` replaces it with `labyrinth-sudo-rs`; the sudoers
+    kept, sudo and the no-password rule work.
 - The first container run, before the install script put the sudoers back, showed why it must: the wheel user lost sudo.
 
 ## Going back
@@ -64,5 +83,5 @@ of wheel, and pacman's snapshots (snap-pac) are in the boot menu.
 
 ## Known limitations
 
-- `su` stays util-linux's: it is part of that package, which is not swapped. sudo-rs's `su-rs` is installed beside it.
-- The ISO still installs GNU coreutils and sudo; an installed system swaps them at its first update.
+- `su` stays util-linux's: it is part of that package, which is not swapped.
+- The ISOs still install GNU coreutils and sudo; an installed system swaps them at its first update.

@@ -51,13 +51,12 @@ pub fn agent_name_ok(a: &str) -> bool {
 
 pub fn rules(agent: &str, owner: &str, owner_login: bool) -> String {
     let owner_rule = if owner_login {
-        format!("Defaults:{owner} timestamp_type=global, timestamp_timeout=720\n{owner} ALL=({agent}) ALL")
+        format!("Defaults:{owner} timestamp_timeout=720\n{owner} ALL=({agent}) ALL")
     } else {
         format!("{owner} ALL=({agent}) NOPASSWD: ALL")
     };
     format!(
         "# Written by labyrinth-agent-setup. See that script for what this means.\n\
-         Defaults:{agent} !requiretty, log_input, log_output, iolog_dir=/var/log/sudo-io/{agent}\n\
          {agent} ALL=(root) NOPASSWD: {GATE}, {GATE} *\n\
          {owner_rule}\n"
     )
@@ -151,12 +150,11 @@ pub fn main(args: &[String]) -> i32 {
     if code != 0 {
         return code;
     }
-    // sudo's recordings of the agent; the Limbo manifests the agent may start, root's alone (labyrinth-agent refuses a manifest
-    // when it or a folder above it is not root's or may be written by others)
-    for (dir, mode) in [("/var/log/sudo-io", 0o750), ("/var/lib/limbo/build-agent", 0o755)] {
-        if let Err(e) = sh::install_dir(dir, mode, Some((0, 0))) {
-            return err(&format!("install: cannot make {dir}: {e}"), 1);
-        }
+    // the Limbo manifests the agent may start, root's alone (labyrinth-agent refuses a manifest when it or a folder above it is
+    // not root's or may be written by others)
+    let dir = "/var/lib/limbo/build-agent";
+    if let Err(e) = sh::install_dir(dir, 0o755, Some((0, 0))) {
+        return err(&format!("install: cannot make {dir}: {e}"), 1);
     }
     for p in [GATE, WINDOW] {
         if !sh::executable(p) {
@@ -191,7 +189,7 @@ pub fn main(args: &[String]) -> i32 {
         }
         sh::quiet(&["systemctl", "try-restart", "heimdall.service"]);
     }
-    println!("done: account {agent} (locked password), rules in {SUDOERS}, helper claude-sudo, I/O logs in /var/log/sudo-io/{agent}");
+    println!("done: account {agent} (locked password), rules in {SUDOERS}, helper claude-sudo; every use is in the journal");
     0
 }
 
@@ -241,7 +239,9 @@ mod tests {
         assert!(r.contains("claude-agent ALL=(root) NOPASSWD: /usr/bin/labyrinth-agent, /usr/bin/labyrinth-agent *\n"));
         assert!(r.ends_with("owner ALL=(claude-agent) NOPASSWD: ALL\n"));
         let r = rules("claude-agent", "owner", true);
-        assert!(r.ends_with("Defaults:owner timestamp_type=global, timestamp_timeout=720\nowner ALL=(claude-agent) ALL\n"));
+        assert!(r.ends_with("Defaults:owner timestamp_timeout=720\nowner ALL=(claude-agent) ALL\n"));
+        // sudo-rs reads every line: it has no I/O logging (log_input, iolog_dir), requiretty or timestamp_type=global
+        assert!(!r.contains("log_input") && !r.contains("requiretty") && !r.contains("global"));
     }
 
     #[test]

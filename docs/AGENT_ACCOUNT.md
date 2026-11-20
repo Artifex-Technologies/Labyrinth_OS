@@ -27,7 +27,8 @@ Three things happened, in this order:
 
    Anything broader needs the owner: `sudo labyrinth-agent-window HOURS` opens the old broad list for 1 to 12 hours
    (`/etc/sudoers.d/51-labyrinth-agent-window`), and a timer closes it. `--owner-login` makes the owner's own session reach the
-   agent account only after the owner's password (once per boot, kept 12 hours).
+   agent account only after the owner's password (once per terminal, kept 12 hours; once per boot until sudo-rs, which has
+   no global timestamp).
 3. **2026-11-02, broad rules kept on my PC.** The narrowed rules were applied on my PC without my asking, and they stopped
    work I need done. My choice: claude-agent keeps the broad list, permanently, in `/etc/sudoers.d/52-claude-agent-broad`, while
    the work continues. `labyrinth-agent` stays installed beside it. That file is written by a script outside this repository
@@ -35,8 +36,11 @@ Three things happened, in this order:
    these rules again without asking me first.
 
 So today, on my PC, both are live: `labyrinth-agent` and the broad list. What the repository ships (`labyrinth-agent-setup`)
-is the narrowed design. In both cases every use is logged by sudo under the agent's name, with its terminal input and output
-(`sudoreplay -d /var/log/sudo-io/claude-agent -l`), and `claude-sudo CMD` is shorthand for `sudo -n -u claude-agent sudo -n CMD`.
+is the narrowed design. In both cases every use is logged by sudo in the journal under the agent's name, with the command
+and the folder (`journalctl -t sudo`), and `claude-sudo CMD` is shorthand for `sudo -n -u claude-agent sudo -n CMD`.
+Until 2026-11-19 sudo also recorded the agent's terminal input and output for replay (`/var/log/sudo-io`); sudo is sudo-rs
+since then ([RUST_BASE.md](RUST_BASE.md)), which has no such recording, and I chose the memory-safe sudo over the recordings.
+Recordings made before then stay in `/var/log/sudo-io` and `sudoreplay` is gone with GNU sudo.
 
 ## 2026-11-11: holes closed, and a Rust port
 
