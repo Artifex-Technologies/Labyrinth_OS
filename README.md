@@ -35,7 +35,7 @@ the lock and login screens (greetd), the password box, the screenshot tool, the 
 every graphics card) and the installer. No KDE. Its programs are Rust, as are Labyrinth's own tools; Yggdrasil's own compositor is on its
 way (its hardware backend's first milestone runs in a virtual machine), and Hyprland stays the compositor until it is ready. Its README,
 screenshots and docs are in [Yggdrasil](https://github.com/Artifex-Technologies/Yggdrasil). Labyrinth builds its packages from a
-checkout next to this repository (`scripts/build-local-packages.sh`); what Labyrinth adds to the desktop (Heimdall, Sarina, the
+checkout next to this repository (`labyrinth-publish-repo build`, [docs/PACKAGE_REPO.md](docs/PACKAGE_REPO.md)); what Labyrinth adds to the desktop (Heimdall, Sarina, the
 installer's steps, the distress password) plugs in through integration files in `/usr/share/yggdrasil/integrations`.
 
 ## Installing

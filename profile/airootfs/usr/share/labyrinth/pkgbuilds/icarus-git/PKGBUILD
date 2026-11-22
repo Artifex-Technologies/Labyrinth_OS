@@ -3,7 +3,7 @@
 # Icarus: vehicle diagnostics and tuning in Rust (a vehicle's modules, trouble codes and live data through an OBD adapter,
 # actuator tests, ECU maps and what a tune changed), built from its public repository; the desktop entry, icons and the udev
 # rule for tuners with no Linux driver of their own are the project's own (packaging/). Only in Agora, not on the ISO
-# (scripts/build-local-packages.sh leaves it out); the publish puts it in [labyrinth]. To build a local checkout instead:
+# (the ISO's local build leaves it out); the publish puts it in [labyrinth]. To build a local checkout instead:
 # ICARUS_SRC=file://$HOME/Documents/Github/Icarus makepkg -si
 pkgname=icarus-git
 pkgver=1.0.0

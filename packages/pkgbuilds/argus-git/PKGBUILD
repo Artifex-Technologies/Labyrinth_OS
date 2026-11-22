@@ -2,7 +2,7 @@
 # Zero with a capture store, Wireshark export and a local control API) and the Argus firmware for the Flipper, built here
 # as an update bundle the app installs (Install from file: /usr/share/argus/firmware/argus-firmware.tgz).
 # LykanOS's: its Agora lists it (LykanOS profile/airootfs/usr/share/lykanos/agora/catalog.json), Labyrinth's does not,
-# and it is not on Labyrinth's ISO (scripts/build-local-packages.sh leaves it out); the publish puts it in [labyrinth], from
+# and it is not on Labyrinth's ISO (the ISO's local build leaves it out); the publish puts it in [labyrinth], from
 # which LykanOS installs. The firmware build downloads Flipper's ARM toolchain once, next to this file by default
 # ($FBT_TOOLCHAIN_PATH; kept, like the clones, by .gitignore).
 pkgname=argus-git

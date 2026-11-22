@@ -89,8 +89,8 @@ through the **labyrinth-keyring** package (on the ISO; `pacman-init.service` pop
 Since 2026-11-11 every package has a version and a build number: the system version (Labyrinth OS 1.0) for Labyrinth's and
 Yggdrasil's own, each app's own for Sarina, Heimdall, Limbo, Kairos, Daedalus, Icarus and Argus, and as `pkgrel` the count of
 commits since that release which touch the package's source (`1.0.0-37`). Each recipe works them out itself; the whole scheme,
-and how to make a release, is in [VERSIONING.md](VERSIONING.md). (Before, `build-local-packages.sh` stamped the repository's
-commit count into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at
+and how to make a release, is in [VERSIONING.md](VERSIONING.md). (Before, the build script of the time stamped the
+repository's commit count into the version: `0.1.0.r405-27`.) A new build whose files and dependencies are the same as the published one, at
 the same version, is not published again; a release always is.
 
 The store's Yggdrasil apps (`yggdrasil-2048-git` and the other plugins; `huginn-git` until 2026-11-08, when Huginn, the video app, moved to a private repository) have `epoch=1` since 2026-11-07, and `argus-git` since 2026-11-11 (makepkg then puts a colon in the file name, `name-1:ver`, which GitHub does not keep: the publish names those files with a dot instead, `name-1.ver`, and the database lists that name; 2026-11-08). The apps' version
@@ -99,7 +99,7 @@ ended in Yggdrasil's newest commit, so two builds with the same count were order
 
 ## Build settings
 
-Everything here is built for any 64-bit PC: both build scripts give makepkg `scripts/makepkg.conf`, which takes the build
+Everything here is built for any 64-bit PC: every build gives makepkg `scripts/makepkg.conf`, which takes the build
 machine's settings and replaces only the compiler's CPU target (`-march=x86-64`, Rust's default CPU). A plain `makepkg` on
 CachyOS builds for the machine's own CPU (`-march=native`, `target-cpu=native`), and the program then stops with "illegal
 instruction" on other processors. Until 2026-11-07 every Rust program in the repository was built that way, for an i9-9900K;
@@ -119,10 +119,33 @@ publish keeps an unchanged program's published file only when that file was not 
 rollback until 2026-11-15, after the timer had run the program twice; git has it) builds from fresh copies of each repository's `main` on GitHub (never a working tree), in
 `/var/lib/labyrinth-publish` (outside the home folder, see above; made once with
 `sudo install -d -o $USER -g $USER /var/lib/labyrinth-publish`, or set `LABYRINTH_PUBLISH_DIR`), then signs, uploads the packages, uploads the database last, and removes the files of the
-publish before last. It does nothing when no repository changed (`--force` to publish anyway, `--dry-run` to build and sign
-without uploading). Builds run with `makepkg -c`, so no build files are left behind, and the store's apps build in a fixed
-folder, so an unchanged app is recognised as unchanged and not uploaded again. The source repositories are reset with
-`git clean`; anything a recipe keeps next to itself (the clone of a `-git` recipe) must be in `.gitignore` or it is wiped.
+publish before last. It uploads nothing when no repository changed and nothing was built (`--force` to build everything and
+publish anyway, `--dry-run` to build and sign without uploading). Builds run with `makepkg -c`, so no build files are left
+behind, and the store's apps build in a fixed folder, so an unchanged app is recognised as unchanged and not uploaded again.
+The source repositories are reset with `git clean`; anything a recipe keeps next to itself (the clone of a `-git` recipe)
+must be in `.gitignore` or it is wiped.
+
+### The builds (since 2026-11-21)
+
+The publish and the ISO's local build (below) build the same way (`packages/publish-repo/src/build.rs`; until 2026-11-21
+`scripts/build-local-packages.sh`, which built one recipe after another and stopped at the first failure):
+
+- **Only what changed.** Each recipe has a key: the files makepkg says it makes (version and build number), the recipe as
+  committed, the commit each of its git sources points at now (a sibling copy's `main`, or GitHub's for the store's apps),
+  `scripts/makepkg.conf`, and the checkout's uncommitted changes (none in the publish's fresh copies; in a working tree, any
+  change rebuilds that checkout's recipes, since which recipe it feeds cannot be told). A recipe whose key matches its last
+  good build, with that build's files still in `repo/x86_64`, is not built again. The keys are in `repo/builds.json`.
+  The builds run even when none of the five repositories changed: the store's apps come from other repositories.
+- **A few at a time.** Three builds at once, each with 4 compile jobs and at most 8 GB (its own `systemd-run --user --scope`,
+  no swap), the longest first. `LABYRINTH_BUILDS_AT_ONCE`, `LABYRINTH_BUILD_JOBS` and `LABYRINTH_BUILD_MEMORY` (empty: no cap)
+  change them.
+- **A failure is named, and the rest go on.** The journal says which package failed, what makepkg was doing ("A failure
+  occurred in check()."), and the lines of its log that say why (the failing tests and their assertions, the compiler's or
+  linker's errors, a missing dependency, a kill for memory); each build's whole log is `repo/logs/NAME.log`. The other
+  packages are published; the failed one keeps its last good build online and is built again on the next run. The program
+  then ends with exit code 1, so the unit shows as failed. (From 2026-11-18 to 2026-11-21 one failing package a day, a
+  different one each day, held back every other change while the journal said only "exit status 4".)
+- **makepkg installs nothing** (no `-s`): a missing build dependency is a failure that names it.
 
 Recipes that build from the publish copy itself (`git+file://`: heimdall-git, heimdall-private-mic-git, heimdall-multilink-git, heimdall-yara-check-git, sarina-git, limbo-git) take its `main` branch, so
 each copy's `main` is moved to GitHub's on every publish. Until 2026-11-07 (6238b19) the copies were checked out detached, `main`
@@ -141,16 +164,20 @@ journalctl --user -u labyrinth-publish     # what the last publish did
 
 ## The ISO build's own packages
 
-The ISO takes Labyrinth's software from packages built on the build PC from the same recipes (`scripts/build-local-packages.sh`
-puts them in `repo/x86_64`). Since
-2026-11-07 they are signed too, and checked like any repository:
+The ISO takes Labyrinth's software from packages built on the build PC from the same recipes: `labyrinth-publish-repo build`,
+run as a normal user inside this checkout, builds its recipes and those of the Yggdrasil checkout next to it (`../Yggdrasil`,
+or `YGGDRASIL_DIR`) into `repo/x86_64`, the way the publish builds (above). Without names it builds what changed and leaves
+out the apps that are not on the ISO (Daedalus CAD, Icarus, Argus, yara-x; `LABYRINTH_SKIP` replaces the list); named
+recipes are always built (`labyrinth-publish-repo build yggdrasil-panel`), `--force` builds everything. Not installed? From
+the checkout: `cargo run --release --manifest-path packages/publish-repo/Cargo.toml -- build`. Since 2026-11-07 the packages
+are signed too, and checked like any repository:
 
-- `build-local-packages.sh` signs every package and the database with the Labyrinth key, from the same keyring as above
+- The build signs every package and the database with the Labyrinth key, from the same keyring as above
   (`LABYRINTH_GNUPGHOME` points elsewhere). Without the key it stops and says so.
 - `scripts/build.sh` adds the key to the build host's pacman from this checkout's `labyrinth-keyring` package, checks its full
   fingerprint, and only then signs it locally.
 - `profile/pacman.conf` has `SigLevel = Required` for the local `[labyrinth]` repository.
-- `LABYRINTH_UNSIGNED=1` (for both scripts) builds once without signatures on a host that does not have the key; `build.sh`
+- `LABYRINTH_UNSIGNED=1` (for the build and for `build.sh`) builds once without signatures on a host that does not have the key; `build.sh`
   then trusts the local packages unsigned for that build, and says so.
 
 ## Agora

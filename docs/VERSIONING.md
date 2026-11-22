@@ -49,7 +49,7 @@ Yggdrasil apps and huginn-git (the video app, now in a private repository, keeps
 ## How a package gets its numbers
 
 Every recipe works its version out itself, so a plain `makepkg` in its folder gives the same numbers as
-`scripts/build-local-packages.sh` and the publish. The helper is `scripts/package-version.sh` (`_version CHECKOUT [PATH...]`):
+the ISO's local build and the publish (both `labyrinth-publish-repo`). The helper is `scripts/package-version.sh` (`_version CHECKOUT [PATH...]`):
 
 - **the version** is the `VERSION` file in the source's repository, as committed;
 - **the release** is the commit that last changed that file (the one `scripts/release.sh` makes and tags `vX.Y.Z`);
