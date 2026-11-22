@@ -25,8 +25,8 @@ scripts/release-check.sh            # also every crate's cargo test and cargo au
 python3 tests/test_NAME.py          # one Python test; bash tests/test_NAME.sh for a shell one
 ```
 
-The ISO (root, about 15 GB; the owner runs it): `labyrinth-publish-repo build` in this checkout as a normal user (makepkg
-refuses root; `LABYRINTH_UNSIGNED=1` without the signing key; docs/PACKAGE_REPO.md), then `sudo scripts/build.sh`; `scripts/vm` boots it. What only that run can
+The ISO (root, about 15 GB; the owner runs it): `scripts/build-local-packages.sh` as a normal user (makepkg refuses root;
+`LABYRINTH_UNSIGNED=1` without the signing key), then `sudo scripts/build.sh`; `scripts/vm` boots it. What only that run can
 check is in [docs/RELEASE_CHECKS.md](docs/RELEASE_CHECKS.md).
 
 CI (`.github/workflows/checks.yml`, every push and pull request): `release-check.sh quick` against a pinned Yggdrasil

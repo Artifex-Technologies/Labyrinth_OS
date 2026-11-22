@@ -26,7 +26,7 @@ measurements and the limits are in Heimdall's
   Heimdall's Rust crates `heimdall-scrub` and `heimdall-scrub-ladspa`; its file list is the private-mic part of Heimdall's
   `packaging/install.sh`). It is in the base system (`profile/packages.base`), so every install has it, with or without the
   optional Heimdall, and Settings will not uninstall it (`/etc/yggdrasil/protected-packages`). heimdall-git ships none of
-  its files. It is published to [labyrinth] with the rest ([PACKAGE_REPO.md](PACKAGE_REPO.md)).
+  its files. It is published to [labyrinth] with the rest (`scripts/build-local-packages.sh`).
 - ffmpeg, which the file tool uses, is on the ISO already (ffmpegthumbnailer and others need it). PipeWire and WirePlumber are
   the ISO's sound system.
 - Nothing phones out: the scrub needs no network, and no flight data is fetched anywhere.

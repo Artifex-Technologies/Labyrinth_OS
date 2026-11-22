@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the Labyrinth OS ISO with mkarchiso. Run as root on Arch Linux (VM, bare metal or
-# WSL), after `labyrinth-publish-repo build` (packages/publish-repo, as a normal user) has filled repo/x86_64/.
+# WSL), after scripts/build-local-packages.sh has filled repo/x86_64/.
 #
 #   1. Makes the CachyOS keyring and mirrorlists available on this build host.
 #   2. Copies profile/ to a work directory, points [labyrinth] at the absolute repo path,
@@ -32,7 +32,7 @@ grep -qx "VERSION_ID=$version" "$repo_root/profile/airootfs/etc/os-release" \
   || { echo "error: profile/airootfs/etc/os-release does not say VERSION_ID=$version (scripts/release.sh writes both)" >&2; exit 1; }
 
 echo "==> Labyrinth's package key on the build host"
-# The local packages are signed (labyrinth-publish-repo build) and the build checks them (profile/pacman.conf). The key comes
+# The local packages are signed (scripts/build-local-packages.sh) and the build checks them (profile/pacman.conf). The key comes
 # from this checkout's labyrinth-keyring package, by its full fingerprint, and is signed locally only once it matches.
 LABYRINTH_FPR=C9CE784C8BD9B661042075972D3BD4B1E7CD07A5
 if [[ ${LABYRINTH_UNSIGNED:-} == 1 ]]; then
@@ -70,10 +70,10 @@ else
 fi
 
 compgen -G "$repo_root/repo/x86_64/labyrinth.db*" >/dev/null \
-  || { echo "error: no local repo at repo/x86_64; run labyrinth-publish-repo build as a regular user first (docs/PACKAGE_REPO.md)" >&2; exit 1; }
+  || { echo "error: no local repo at repo/x86_64; run scripts/build-local-packages.sh as a regular user first" >&2; exit 1; }
 
 echo "==> Stale copies of the local packages in pacman's cache"
-# A build can make a package again under the same version (a -git recipe, or --force), so a file of the same name can sit in this host's
+# scripts/build-local-packages.sh rebuilds some packages under the same version, so a file of the same name can sit in this host's
 # pacman cache with other contents. mkarchiso uses that cache, finds the old file first and stops on its checksum (2026-11-12:
 # labyrinth-keyring). Such a copy is only an older build of one of these packages: it goes, its signature with it.
 while read -r cache; do
