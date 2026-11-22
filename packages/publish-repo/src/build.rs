@@ -149,6 +149,12 @@ fn can_cap(size: &str) -> bool {
         .is_ok_and(|s| s.success())
 }
 
+/// makepkg.conf as it counts for the builds: its settings, not its comments or blank lines.
+fn settings_of(conf: &str) -> String {
+    let lines: Vec<&str> = conf.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')).collect();
+    hex(Sha256::digest(lines.join("\n")))
+}
+
 fn hex(d: impl AsRef<[u8]>) -> String {
     d.as_ref().iter().map(|b| format!("{b:02x}")).collect()
 }
@@ -555,7 +561,8 @@ pub fn build_all(recipes: Vec<Recipe>, s: &Settings) -> R<Report> {
     let state_file = s.state_file();
     let mut good = load(&state_file)?;
     let before = good.clone();
-    let conf = hex(Sha256::digest(fs::read(&s.makepkg_conf).map_err(|e| format!("error: cannot read {}: {e}", s.makepkg_conf.display()))?));
+    let conf = fs::read_to_string(&s.makepkg_conf).map_err(|e| format!("error: cannot read {}: {e}", s.makepkg_conf.display()))?;
+    let conf = settings_of(&conf);
     let mut dirty: HashMap<PathBuf, String> = HashMap::new();
     for r in &recipes {
         if !dirty.contains_key(&r.checkout) {
@@ -809,6 +816,13 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
             cause("error: could not compile `x` (bin \"x\")\nCaused by:\n  process didn't exit successfully (signal: 9, SIGKILL: kill)\n");
         assert_eq!(why, "makepkg stopped without saying why");
         assert!(lines.last().unwrap().contains("out of memory"), "{lines:?}");
+    }
+
+    #[test]
+    fn a_comment_in_makepkg_conf_changes_no_build() {
+        let a = settings_of("# for any PC\nCFLAGS=\"-O2\"\n");
+        assert_eq!(a, settings_of("# for any 64-bit PC, said otherwise\n\n  CFLAGS=\"-O2\"\n"));
+        assert_ne!(a, settings_of("CFLAGS=\"-O3\"\n"));
     }
 
     #[test]

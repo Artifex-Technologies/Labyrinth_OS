@@ -132,7 +132,7 @@ The publish and the ISO's local build (below) build the same way (`packages/publ
 
 - **Only what changed.** Each recipe has a key: the files makepkg says it makes (version and build number), the recipe as
   committed, the commit each of its git sources points at now (a sibling copy's `main`, or GitHub's for the store's apps),
-  `scripts/makepkg.conf`, and the checkout's uncommitted changes (none in the publish's fresh copies; in a working tree, any
+  `scripts/makepkg.conf` (its settings, not its comments), and the checkout's uncommitted changes (none in the publish's fresh copies; in a working tree, any
   change rebuilds that checkout's recipes, since which recipe it feeds cannot be told). A recipe whose key matches its last
   good build, with that build's files still in `repo/x86_64`, is not built again. The keys are in `repo/builds.json`.
   The builds run even when none of the five repositories changed: the store's apps come from other repositories.
