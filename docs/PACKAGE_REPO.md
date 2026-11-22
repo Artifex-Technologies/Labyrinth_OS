@@ -143,7 +143,9 @@ The publish and the ISO's local build (below) build the same way (`packages/publ
   occurred in check()."), and the lines of its log that say why (the failing tests and their assertions, the compiler's or
   linker's errors, a missing dependency, a kill for memory); each build's whole log is `repo/logs/NAME.log`. The other
   packages are published; the failed one keeps its last good build online and is built again on the next run. A failure
-  that is the network's (a connection GitHub reset, a download that failed) is built once more a minute later first. The program
+  that is the network's (a connection GitHub reset, a download that failed, a transfer stalled under 1 KB/s for a minute)
+  is built once more a minute later first. The store's apps keep their downloads (their git clones) in
+  `/var/lib/labyrinth-publish/store-sources` from one publish to the next, so a clone is fetched, not made again. The program
   then ends with exit code 1, so the unit shows as failed. (From 2026-11-18 to 2026-11-21 one failing package a day, a
   different one each day, held back every other change while the journal said only "exit status 4".)
 - **makepkg installs nothing** (no `-s`): a missing build dependency is a failure that names it.

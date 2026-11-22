@@ -32,7 +32,9 @@ labyrinth-publish-repo build [--force] [NAME ...]   # the ISO's local repository
   was doing, and the lines of the log that say why (failing tests and their assertions, compiler and linker errors, missing
   dependencies, a kill for memory). The others go on; the failed package's last good build stays published and is tried
   again on the next run; the program ends with exit code 1 and names the failed packages. A failure that is the network's
-  (a reset connection, a failed download: 2026-11-21, argus-git's firmware submodules) is built once more a minute later.
+  (a reset connection, a failed download, a git transfer under 1 KB/s for a minute: 2026-11-21, argus-git's firmware
+  submodules and the store's apps) is built once more a minute later. The store's apps keep their downloads in
+  `store-sources/` of the work folder, so each publish fetches their clones instead of cloning Yggdrasil again.
 - makepkg runs without `-s`: nothing is installed, and a missing build dependency is a failure that names it.
 - The ISO's build (`build`) leaves out what is not on the ISO unless named (`LABYRINTH_SKIP`, default
   `daedalus-cad-git icarus-git argus-git yara-x`), and signs every package and the database (`LABYRINTH_UNSIGNED=1` without

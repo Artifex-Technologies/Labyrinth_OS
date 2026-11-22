@@ -46,6 +46,15 @@ pub struct Recipe {
     pub out: Option<PathBuf>,
 }
 
+impl Recipe {
+    /// Where makepkg keeps a store recipe's downloads (its git clone): kept from one publish to the next, so a clone is
+    /// fetched again, not made again (each store app cloned all of Yggdrasil every day until 2026-11-22).
+    fn sources(&self) -> Option<PathBuf> {
+        let out = self.out.as_ref()?;
+        Some(out.parent()?.with_file_name("store-sources").join(out.file_name()?))
+    }
+}
+
 fn folders_with_a_recipe(dir: &Path) -> R<Vec<String>> {
     let rd = fs::read_dir(dir).map_err(|e| format!("error: cannot read {}: {e}", dir.display()))?;
     let mut names = Vec::new();
@@ -131,7 +140,7 @@ impl Settings {
     fn makepkg(&self, r: &Recipe) -> Cmd {
         let c = Cmd::new([&self.makepkg]).arg("--config").arg(&self.makepkg_conf).cwd(&r.dir);
         match &r.out {
-            Some(o) => c.env("BUILDDIR", o).env("SRCDEST", o).env("PKGDEST", o),
+            Some(o) => c.env("BUILDDIR", o).env("SRCDEST", r.sources().unwrap_or_else(|| o.clone())).env("PKGDEST", o),
             None => c.env("PKGDEST", &r.dir),
         }
     }
@@ -456,8 +465,12 @@ fn build_one(s: &Settings, r: &Recipe, log: &Path) -> Result<Vec<String>, (Strin
     // -c: makepkg removes its src/ and pkg/ folders after a good build (they hold gigabytes of build files)
     c.arg("--config").arg(&s.makepkg_conf).args(["-f", "-c", "--noconfirm", "--nocolor"]).current_dir(&r.dir);
     c.env("PKGDEST", &out).env("CARGO_BUILD_JOBS", s.jobs.to_string()).env("MAKEFLAGS", format!("-j{}", s.jobs));
+    // a clone or fetch that stalls (under 1 KB/s for a minute) gives up, and the network's failure is built once more
+    c.env("GIT_HTTP_LOW_SPEED_LIMIT", "1000").env("GIT_HTTP_LOW_SPEED_TIME", "60");
     if r.out.is_some() {
-        c.env("BUILDDIR", &out).env("SRCDEST", &out);
+        let sources = r.sources().unwrap_or_else(|| out.clone());
+        fs::create_dir_all(&sources).map_err(|e| io("cannot make", &sources, e))?;
+        c.env("BUILDDIR", &out).env("SRCDEST", &sources);
     }
     let status = c.stdin(Stdio::null()).stdout(file).stderr(err).status().map_err(|e| (format!("cannot run makepkg: {e}"), Vec::new()))?;
     if !status.success() {
@@ -866,7 +879,7 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
                 &fake,
                 "#!/bin/sh\n. ./PKGBUILD\nfile=\"$pkgname-$pkgver-any.pkg.tar.zst\"\nfor a; do case $a in\n\
                  --packagelist) echo \"$PKGDEST/$file\"; exit 0;;\n--printsrcinfo) echo \"pkgbase = $pkgname\"; exit 0;;\nesac; done\n\
-                 echo \"==> Making package: $pkgname $pkgver\"\n\
+                 echo \"==> Making package: $pkgname $pkgver\"\n[ -n \"$SRCDEST\" ] && touch \"$SRCDEST/fetched\"\n\
                  if [ -n \"$fail\" ]; then echo 'test tests::it_works ... FAILED'; echo 'test result: FAILED. 0 passed; 1 failed'; \
                  echo '==> ERROR: A failure occurred in check().'; exit 4; fi\n\
                  if [ -n \"$flaky\" ] && [ ! -e flaked ]; then touch flaked; \
@@ -990,6 +1003,15 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
         assert_eq!(fs::read_to_string(&r.failed[0].log).unwrap().matches("Making package").count(), 1);
     }
 
+    /// The store's recipes built again (the rest as they were).
+    fn all_again(w: &World, store: &Path) -> Vec<String> {
+        let d = w.checkout().join(STORE).join("zzz");
+        fs::write(d.join("PKGBUILD"), "pkgname=zzz\npkgver=1-2\n").unwrap();
+        w.commit();
+        let all = recipes(&w.checkout(), &w.dir.join("ygg"), Some(store)).unwrap();
+        build_all(all, &w.settings()).unwrap().built
+    }
+
     #[test]
     fn the_stores_recipes_come_after_and_are_not_built_twice() {
         let w = World::new("store");
@@ -998,6 +1020,7 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
             fs::create_dir_all(&d).unwrap();
             fs::write(d.join("PKGBUILD"), format!("pkgname={name}\npkgver=1-1\n")).unwrap();
         }
+        w.commit();
         let store = w.dir.join("store");
         let all = recipes(&w.checkout(), &w.dir.join("ygg"), Some(&store)).unwrap();
         let names: Vec<&str> = all.iter().map(|r| r.name.as_str()).collect();
@@ -1008,6 +1031,9 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
         let report = build_all(all, &w.settings()).unwrap();
         assert_eq!(sorted(report.built), ["aaa", "bbb", "ccc", "zzz"]);
         assert!(store.join("zzz/zzz-1-1-any.pkg.tar.zst").is_file(), "the store's builds are made in their own folder");
+        assert!(w.dir.join("store-sources/zzz").is_dir(), "its downloads are kept apart, for the next publish");
+        assert_eq!(all_again(&w, &store), ["zzz"]);
+        assert!(w.dir.join("store-sources/zzz/fetched").is_file(), "and they are still there after the next build");
         assert!(w.checkout().join("repo/x86_64/zzz-1-1-any.pkg.tar.zst").is_file());
     }
 }
