@@ -99,6 +99,8 @@ pub struct Settings {
     pub memory: Option<String>,
     /// the makepkg to run (the tests' is a stand-in)
     pub makepkg: OsString,
+    /// how long to wait before building again after a network failure
+    pub network_pause: std::time::Duration,
 }
 
 fn env_number(name: &str) -> Option<usize> {
@@ -114,7 +116,8 @@ impl Settings {
         let jobs = env_number("LABYRINTH_BUILD_JOBS").unwrap_or((threads / at_once).clamp(1, 4));
         let size = std::env::var("LABYRINTH_BUILD_MEMORY").unwrap_or_else(|_| "8G".into());
         let memory = (!size.trim().is_empty() && can_cap(size.trim())).then(|| size.trim().to_string());
-        Settings { makepkg_conf, repo_dir, force, at_once, jobs, memory, makepkg: "makepkg".into() }
+        let network_pause = std::time::Duration::from_secs(60);
+        Settings { makepkg_conf, repo_dir, force, at_once, jobs, memory, makepkg: "makepkg".into(), network_pause }
     }
 
     fn state_file(&self) -> PathBuf {
@@ -477,8 +480,15 @@ fn build_one(s: &Settings, r: &Recipe, log: &Path) -> Result<Vec<String>, (Strin
 
 enum Event {
     Started(String),
+    /// a network failure: built once more after a pause
+    Again(String),
     Unchanged(String),
-    Built { name: String, key: String, files: Vec<String>, secs: u64 },
+    Built {
+        name: String,
+        key: String,
+        files: Vec<String>,
+        secs: u64,
+    },
     Failed(Failure),
 }
 
@@ -498,10 +508,35 @@ fn work(s: &Settings, r: &Recipe, before: Option<&Good>, conf: &str, dirty: &str
     }
     let _ = tx.send(Event::Started(r.name.clone()));
     let started = Instant::now();
-    match build_one(s, r, &log) {
+    let mut result = build_one(s, r, &log);
+    // the network let the download or a clone down (GitHub resets a connection now and then): once more, a little later
+    if let Err((_, lines)) = &result {
+        if lines.iter().any(|l| the_network(l)) {
+            let _ = tx.send(Event::Again(r.name.clone()));
+            std::thread::sleep(s.network_pause);
+            result = build_one(s, r, &log);
+        }
+    }
+    match result {
         Ok(files) => Event::Built { name: r.name.clone(), key, files, secs: started.elapsed().as_secs() },
         Err((why, lines)) => failed(why, lines),
     }
+}
+
+/// A line saying the network failed, not the build.
+fn the_network(l: &str) -> bool {
+    const SAID: [&str; 9] = [
+        "Connection reset by peer",
+        "Could not resolve host",
+        "Connection timed out",
+        "Failed to connect to",
+        "early EOF",
+        "RPC failed",
+        "Failure while downloading",
+        "Operation timed out",
+        "The requested URL returned error: 5",
+    ];
+    SAID.iter().any(|s| l.contains(s))
 }
 
 fn took(secs: u64) -> String {
@@ -559,6 +594,7 @@ pub fn build_all(recipes: Vec<Recipe>, s: &Settings) -> R<Report> {
         for ev in rx {
             match ev {
                 Event::Started(name) => say(&format!("{name}: building")),
+                Event::Again(name) => say(&format!("{name}: the network failed during the build; trying once more in a minute")),
                 Event::Unchanged(name) => {
                     say(&format!("{name}: unchanged since its last build"));
                     report.unchanged.push(name);
@@ -818,7 +854,10 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
                  --packagelist) echo \"$PKGDEST/$file\"; exit 0;;\n--printsrcinfo) echo \"pkgbase = $pkgname\"; exit 0;;\nesac; done\n\
                  echo \"==> Making package: $pkgname $pkgver\"\n\
                  if [ -n \"$fail\" ]; then echo 'test tests::it_works ... FAILED'; echo 'test result: FAILED. 0 passed; 1 failed'; \
-                 echo '==> ERROR: A failure occurred in check().'; exit 4; fi\necho built > \"$PKGDEST/$file\"\n",
+                 echo '==> ERROR: A failure occurred in check().'; exit 4; fi\n\
+                 if [ -n \"$flaky\" ] && [ ! -e flaked ]; then touch flaked; \
+                 echo \"fatal: unable to access 'https://h/x.git/': Recv failure: Connection reset by peer\"; \
+                 echo '==> ERROR: A failure occurred in build().'; exit 4; fi\necho built > \"$PKGDEST/$file\"\n",
             )
             .unwrap();
             fs::set_permissions(&fake, fs::Permissions::from_mode(0o755)).unwrap();
@@ -855,6 +894,7 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
                 jobs: 1,
                 memory: None,
                 makepkg: self.dir.join("makepkg").into_os_string(),
+                network_pause: std::time::Duration::ZERO,
             }
         }
 
@@ -916,6 +956,24 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
         // and --force builds everything
         let s = Settings { force: true, ..w.settings() };
         assert_eq!(sorted(build_all(recipes(&w.checkout(), &w.dir.join("ygg"), None).unwrap(), &s).unwrap().built), ["aaa", "bbb", "ccc"]);
+    }
+
+    #[test]
+    fn a_network_failure_is_built_once_more_and_a_build_failure_is_not() {
+        let w = World::new("network");
+        let d = w.checkout().join("packages/pkgbuilds/aaa");
+        fs::write(d.join("PKGBUILD"), "pkgname=aaa\npkgver=1-1\nflaky=1\n").unwrap();
+        w.commit();
+        let r = w.build();
+        assert!(r.failed.is_empty(), "{:?}", r.failed);
+        assert_eq!(sorted(r.built), ["aaa", "bbb", "ccc"]);
+        assert!(d.join("flaked").exists(), "the first try failed");
+        // a test that fails is not the network: one try only, and named
+        w.recipe("bbb", "1-2", true);
+        w.commit();
+        let r = w.build();
+        assert_eq!(r.failed.len(), 1);
+        assert_eq!(fs::read_to_string(&r.failed[0].log).unwrap().matches("Making package").count(), 1);
     }
 
     #[test]
