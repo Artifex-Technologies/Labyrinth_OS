@@ -10,6 +10,6 @@ Labyrinth package recipes, the brand icon pack, and the security parts that belo
 (`packages/distress`, `packages/distress-pam`; [DISTRESS_PASSWORD.md](DISTRESS_PASSWORD.md)). Settings shows the distress password page only when that helper is installed.
 
 ## How the two fit together
-- `scripts/build-local-packages.sh` builds the desktop's packages from a Yggdrasil checkout next to this repository (`../Yggdrasil`, or `YGGDRASIL_DIR`).
+- `labyrinth-publish-repo build` ([PACKAGE_REPO.md](PACKAGE_REPO.md)) builds the desktop's packages from a Yggdrasil checkout next to this repository (`../Yggdrasil`, or `YGGDRASIL_DIR`).
 - LykanOS (formerly Chymaera OS; [Artifex-Technologies/LykanOS](https://github.com/Artifex-Technologies/LykanOS)) will use Labyrinth as a template (installer, boot theme, its own branding) and Yggdrasil as its desktop.
 - **Icons:** the system's icon pack is **Liki** (`liki-icon-theme`, in the Yggdrasil repository: [LIKI.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/LIKI.md)), the same for Labyrinth and LykanOS. No KDE (Breeze) or macOS (MacTahoe) icons are used.

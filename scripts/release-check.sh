@@ -81,7 +81,7 @@ if ((quick)); then warn "quick mode: Rust tests and the dependency audit were sk
 fi
 
 echo
-echo "Not done here (need root or a VM): 1) sudo scripts/build-local-packages.sh && sudo scripts/build.sh  (builds the ISO)"
+echo "Not done here (need root or a VM): 1) labyrinth-publish-repo build && sudo scripts/build.sh  (builds the ISO)"
 echo "                                   2) boot the ISO in a VM (scripts/vm), run the installer, then run labyrinth-selfcheck"
 echo "Result: $fails failed, $warns warning(s)."
 exit $((fails > 0))

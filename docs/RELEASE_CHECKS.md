@@ -29,7 +29,7 @@ side; they go away when those libraries move on. Re-run the audit before each re
 
 ## What it cannot check
 
-Building the ISO (`scripts/build-local-packages.sh && sudo scripts/build.sh`: the first as a normal user, since makepkg refuses
+Building the ISO (`labyrinth-publish-repo build && sudo scripts/build.sh`: the first as a normal user, since makepkg refuses
 root; needs archiso, the CachyOS keyring, the Labyrinth signing key or `LABYRINTH_UNSIGNED=1`, and about 15 GB), booting it in a
 VM (`scripts/vm`), installing (`yggdrasil-installer` with `yggdrasil-install-system`), and after the reboot `labyrinth-selfcheck`
 and the checks in [FIRST_BOOT.md](FIRST_BOOT.md) §6. The encrypted-disk install has been run on real hardware, beside Windows;

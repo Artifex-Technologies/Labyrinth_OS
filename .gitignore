@@ -11,7 +11,7 @@ profile/airootfs/usr/share/icons/Labyrinth/apps/scalable/*
 !profile/airootfs/usr/share/icons/Labyrinth/apps/scalable/.keep
 !profile/airootfs/usr/share/icons/Labyrinth/apps/scalable/computer.png
 
-# makepkg build output (scripts/build-local-packages.sh): sources, the staging folders and the packages themselves
+# makepkg build output (labyrinth-publish-repo build): sources, the staging folders and the packages themselves
 packages/pkgbuilds/*/src/
 packages/pkgbuilds/*/pkg/
 packages/pkgbuilds/*/*.pkg.tar.*
@@ -21,6 +21,10 @@ packages/pkgbuilds/*/*.tar.xz
 packages/pkgbuilds/*/*.zip
 packages/pkgbuilds/*/*.rpm
 packages/pkgbuilds/*/*.deb
+# the fonts' downloaded files and licences (ttf-lexend, otf-opendyslexic, ...)
+packages/pkgbuilds/*/*.ttf
+packages/pkgbuilds/*/*.otf
+packages/pkgbuilds/*/*-OFL-*.txt
 # bare clones made by git-based recipes (any folder makepkg clones next to a -git recipe)
 packages/pkgbuilds/*-git/*/
 profile/airootfs/usr/share/labyrinth/pkgbuilds/*-git/*/

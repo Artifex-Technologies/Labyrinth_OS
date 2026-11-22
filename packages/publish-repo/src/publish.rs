@@ -2,10 +2,11 @@
 //!
 //!   1. fresh copies of Labyrinth_OS, Yggdrasil, Sarina, Heimdall and Limbo from GitHub (main as pushed, never a working tree
 //!      with unfinished changes), side by side in the work folder;
-//!   2. nothing more when none of them changed since the last publish (unless --force);
-//!   3. the packages built from them: scripts/build-local-packages.sh (the ISO's packages) and the store's own recipes
-//!      (profile/airootfs/usr/share/labyrinth/pkgbuilds); each recipe works out its version and build number
-//!      (docs/VERSIONING.md);
+//!   2. the packages built from them (src/build.rs): Labyrinth's and Yggdrasil's recipes and the store's own
+//!      (profile/airootfs/usr/share/labyrinth/pkgbuilds), only those whose sources changed since their last good build, a
+//!      few at a time; a build that fails is named with its cause and the others go on (that package's last good build
+//!      stays published); each recipe works out its version and build number (docs/VERSIONING.md);
+//!   3. nothing more when no source changed since the last publish and nothing was built (unless --force);
 //!   4. of each package the newest build; a build whose files and dependencies are the same as what is already published, at
 //!      the same version, is not published again (the published one stays, so nobody downloads the same program twice); a
 //!      release (a new version) is always published;
@@ -133,7 +134,7 @@ fn rmtree(p: &Path) -> R<()> {
 }
 
 /// shutil.copy2: contents, permission bits and times
-fn copy2(from: &Path, to: &Path) -> R<()> {
+pub(crate) fn copy2(from: &Path, to: &Path) -> R<()> {
     fs::copy(from, to).map_err(|e| format!("error: cannot copy {} to {}: {e}", shown(from), shown(to)))?;
     copy_times(from, to)
 }
@@ -230,51 +231,15 @@ fn fresh_copies(src: &Path) -> R<Vec<(String, String)>> {
     Ok(heads)
 }
 
-// --- 3: building ---------------------------------------------------------------------------------------------------------
+// --- 2: building ---------------------------------------------------------------------------------------------------------
 
-fn build(src: &Path, work: &Path) -> R<PathBuf> {
+fn build(src: &Path, work: &Path, force: bool) -> R<(PathBuf, crate::build::Report)> {
     let labyrinth = src.join("Labyrinth_OS");
-    say("building the ISO's packages (scripts/build-local-packages.sh)");
-    // LABYRINTH_SKIP empty: the publish leaves nothing out, whatever the caller's environment says
-    Cmd::new([labyrinth.join("scripts").join("build-local-packages.sh")])
-        .cwd(&labyrinth)
-        .env("YGGDRASIL_DIR", src.join("Yggdrasil"))
-        .env("LABYRINTH_SKIP", "")
-        .run()?;
+    // the publish leaves nothing out: the apps that are not on the ISO are in [labyrinth] too
+    let recipes = crate::build::recipes(&labyrinth, &src.join("Yggdrasil"), Some(&work.join("store")))?;
     let repo_dir = labyrinth.join("repo").join("x86_64");
-    // the store's own recipes (they clone from GitHub); those also built above from a local checkout are not built twice
-    let mut built_above: HashSet<OsString> = HashSet::new();
-    for d in [labyrinth.join("packages").join("pkgbuilds"), src.join("Yggdrasil").join("packages").join("pkgbuilds")] {
-        built_above.extend(names_in(&d)?);
-    }
-    let store = labyrinth.join("profile/airootfs/usr/share/labyrinth/pkgbuilds");
-    for name in names_in(&store)? {
-        let d = store.join(&name);
-        if !d.join("PKGBUILD").is_file() || built_above.contains(&name) {
-            continue;
-        }
-        say(&format!("building the store's {}", name.to_string_lossy()));
-        // always the same folder: a build path ends up inside the programs, and a new random one each time would make every
-        // build look changed (and be published again for nothing). makepkg reads the recipe where it is, in the clone (its
-        // build number counts the recipe's own commits, docs/VERSIONING.md), and puts everything it makes in that folder:
-        // the recipe's folder stays as committed (it goes onto the ISO).
-        let w = work.join("store").join(&name);
-        if w.exists() {
-            rmtree(&w)?;
-        }
-        mkdir_new(&w)?;
-        Cmd::new([OsStr::new("makepkg"), OsStr::new("--config"), labyrinth.join("scripts/makepkg.conf").as_os_str()])
-            .args(["-f", "-s", "-c", "--noconfirm"])
-            .cwd(&d)
-            .env("BUILDDIR", &w)
-            .env("SRCDEST", &w)
-            .env("PKGDEST", &w)
-            .run()?;
-        for f in packages_in(&w) {
-            copy2(&f, &repo_dir.join(f.file_name().unwrap_or_default()))?;
-        }
-    }
-    Ok(repo_dir)
+    let settings = crate::build::Settings::new(labyrinth.join("scripts").join("makepkg.conf"), repo_dir.clone(), force);
+    Ok((repo_dir, crate::build::build_all(recipes, &settings)?))
 }
 
 // --- 4: choosing what to publish -----------------------------------------------------------------------------------------
@@ -552,7 +517,8 @@ fn upload(stage_dir: &Path, state: &Path) -> R<Vec<String>> {
     Ok(files)
 }
 
-pub fn publish(opts: &Options) -> R<()> {
+/// The publish; the names of the packages that did not build (their last good builds stay published).
+pub fn publish(opts: &Options) -> R<Vec<String>> {
     let ctx = Ctx { work: work_dir(), gnupg: gnupg_home() };
     if !ctx.gpg(["--batch", "--list-secret-keys", KEY]).quiet_ok()? {
         return Err(format!(
@@ -566,16 +532,21 @@ pub fn publish(opts: &Options) -> R<()> {
     let state = work.join("published.json");
     let src = work.join("src");
     let heads = fresh_copies(&src)?;
+    let mut same_heads = false;
     if state.is_file() {
         let last = read_json(&state)?;
         let Value::Object(last) = last else { return Err(format!("error: {} is not a JSON object", shown(&state))) };
         let now: serde_json::Map<String, Value> = heads.iter().map(|(k, v)| (k.clone(), Value::String(v.clone()))).collect();
-        if last.get("heads") == Some(&Value::Object(now)) && !opts.force {
-            say("nothing changed on GitHub since the last publish");
-            return Ok(());
-        }
+        same_heads = last.get("heads") == Some(&Value::Object(now));
     }
-    let repo_dir = build(&src, work)?;
+    // the builds come first even when the five sources did not change: the store's apps come from other repositories
+    // (Icarus, Kairos, ...), and a build that failed last time is tried again
+    let (repo_dir, report) = build(&src, work, opts.force)?;
+    let failed: Vec<String> = report.failed.iter().map(|f| f.name.clone()).collect();
+    if same_heads && report.built.is_empty() && !opts.force {
+        say("nothing changed since the last publish");
+        return Ok(failed);
+    }
     let published_dir = work.join("published");
     let chosen = choose(&src.join("Labyrinth_OS"), &repo_dir, &published_dir)?;
     let stage_dir = work.join("stage");
@@ -585,7 +556,7 @@ pub fn publish(opts: &Options) -> R<()> {
     say(&format!("{} packages, {} new or changed: {listed}", chosen.len(), changed.len()));
     if opts.dry_run {
         say(&format!("dry run: nothing uploaded; the signed repository is in {}", shown(&stage_dir)));
-        return Ok(());
+        return Ok(failed);
     }
     let files = upload(&stage_dir, &state)?;
     // what is published now becomes what the next publish compares against
@@ -595,7 +566,7 @@ pub fn publish(opts: &Options) -> R<()> {
     copytree(&stage_dir, &published_dir)?;
     fs::write(&state, state_json(&heads, &files)).map_err(|e| io("cannot write", &state, e))?;
     say(&format!("published: https://github.com/{GH_REPO}/releases/tag/{TAG}"));
-    Ok(())
+    Ok(failed)
 }
 
 #[cfg(test)]
