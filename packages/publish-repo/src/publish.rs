@@ -238,7 +238,9 @@ fn build(src: &Path, work: &Path, force: bool) -> R<(PathBuf, crate::build::Repo
     // the publish leaves nothing out: the apps that are not on the ISO are in [labyrinth] too
     let recipes = crate::build::recipes(&labyrinth, &src.join("Yggdrasil"), Some(&work.join("store")))?;
     let repo_dir = labyrinth.join("repo").join("x86_64");
-    let settings = crate::build::Settings::new(labyrinth.join("scripts").join("makepkg.conf"), repo_dir.clone(), force);
+    let mut settings = crate::build::Settings::new(labyrinth.join("scripts").join("makepkg.conf"), repo_dir.clone(), force);
+    // the store's recipes clone Yggdrasil from GitHub on a user's system; here they take the copy step 1 just fetched
+    settings.copies = Some(src.to_path_buf());
     Ok((repo_dir, crate::build::build_all(recipes, &settings)?))
 }
 

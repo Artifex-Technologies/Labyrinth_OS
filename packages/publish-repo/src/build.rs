@@ -12,7 +12,7 @@
 //! - makepkg never installs anything (no `-s`): a missing dependency is a failure that names it.
 
 use crate::cmd::{Cmd, R};
-use crate::publish::{copy2, say, KEY};
+use crate::publish::{copy2, say, KEY, ORG};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, VecDeque};
@@ -26,7 +26,7 @@ use std::process::{Command, Stdio};
 use std::sync::{mpsc, Mutex};
 use std::time::Instant;
 
-/// The store's recipes: copied onto every system, built by the publish only (they clone from GitHub).
+/// The store's recipes: copied onto every system (where they clone from GitHub), built by the publish only.
 pub const STORE: &str = "profile/airootfs/usr/share/labyrinth/pkgbuilds";
 /// Left out of the ISO's local build unless named (LABYRINTH_SKIP replaces the list): Daedalus CAD and Icarus are only in
 /// the Marketplace, Argus is LykanOS's (its firmware build fetches Flipper's ARM toolchain), yara-x is for Limbo's analysis
@@ -46,13 +46,26 @@ pub struct Recipe {
     pub out: Option<PathBuf>,
 }
 
-impl Recipe {
-    /// Where makepkg keeps a store recipe's downloads (its git clone): kept from one publish to the next, so a clone is
-    /// fetched again, not made again (each store app cloned all of Yggdrasil every day until 2026-11-22).
-    fn sources(&self) -> Option<PathBuf> {
-        let out = self.out.as_ref()?;
-        Some(out.parent()?.with_file_name("store-sources").join(out.file_name()?))
+/// A recipe's sources from one of our repositories that the recipe lets a variable replace, as (variable, repository):
+/// `name::git+${YGGDRASIL_SRC:-https://github.com/ORG/Yggdrasil.git}` gives ("YGGDRASIL_SRC", "Yggdrasil").
+pub fn own_sources(pkgbuild: &str) -> Vec<(String, String)> {
+    let marker = format!(":-https://github.com/{ORG}/");
+    let mut found: Vec<(String, String)> = Vec::new();
+    for (at, _) in pkgbuild.match_indices(&marker) {
+        let Some(open) = pkgbuild[..at].rfind("${") else { continue };
+        let var = &pkgbuild[open + 2..at];
+        let is_variable = var.starts_with(|c: char| c.is_ascii_uppercase())
+            && var.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
+        let rest = &pkgbuild[at + marker.len()..];
+        let Some(close) = rest.find('}') else { continue };
+        let repo = rest[..close].trim_end_matches('/');
+        let repo = repo.strip_suffix(".git").unwrap_or(repo);
+        let is_repo = !repo.is_empty() && repo.chars().all(|c| c.is_ascii_alphanumeric() || "_.-".contains(c));
+        if is_variable && is_repo && !found.iter().any(|(v, _)| v == var) {
+            found.push((var.to_string(), repo.to_string()));
+        }
     }
+    found
 }
 
 fn folders_with_a_recipe(dir: &Path) -> R<Vec<String>> {
@@ -110,6 +123,11 @@ pub struct Settings {
     pub makepkg: OsString,
     /// how long to wait before building again after a network failure
     pub network_pause: std::time::Duration,
+    /// the publish's fresh copies of our repositories (one folder each, by the repository's name): a source of one of
+    /// them is built from its copy, so each repository is downloaded once a publish (until 2026-11-22 the store's eight
+    /// apps each cloned all of Yggdrasil from GitHub, and on a slow night all eight failed with the copy right there).
+    /// None: the sources the recipes name.
+    pub copies: Option<PathBuf>,
 }
 
 fn env_number(name: &str) -> Option<usize> {
@@ -126,7 +144,18 @@ impl Settings {
         let size = std::env::var("LABYRINTH_BUILD_MEMORY").unwrap_or_else(|_| "8G".into());
         let memory = (!size.trim().is_empty() && can_cap(size.trim())).then(|| size.trim().to_string());
         let network_pause = std::time::Duration::from_secs(60);
-        Settings { makepkg_conf, repo_dir, force, at_once, jobs, memory, makepkg: "makepkg".into(), network_pause }
+        Settings { makepkg_conf, repo_dir, force, at_once, jobs, memory, makepkg: "makepkg".into(), network_pause, copies: None }
+    }
+
+    /// The variables that point a recipe's sources at the copies (see `copies`), as `VAR=file://COPY`.
+    fn copies_for(&self, r: &Recipe) -> Vec<(String, String)> {
+        let Some(copies) = &self.copies else { return Vec::new() };
+        let text = fs::read_to_string(r.dir.join("PKGBUILD")).unwrap_or_default();
+        own_sources(&text)
+            .into_iter()
+            .filter(|(_, repo)| copies.join(repo).join(".git").is_dir())
+            .map(|(var, repo)| (var, format!("file://{}", copies.join(repo).display())))
+            .collect()
     }
 
     fn state_file(&self) -> PathBuf {
@@ -138,9 +167,12 @@ impl Settings {
     }
 
     fn makepkg(&self, r: &Recipe) -> Cmd {
-        let c = Cmd::new([&self.makepkg]).arg("--config").arg(&self.makepkg_conf).cwd(&r.dir);
+        let mut c = Cmd::new([&self.makepkg]).arg("--config").arg(&self.makepkg_conf).cwd(&r.dir);
+        for (var, url) in self.copies_for(r) {
+            c = c.env(var, url);
+        }
         match &r.out {
-            Some(o) => c.env("BUILDDIR", o).env("SRCDEST", r.sources().unwrap_or_else(|| o.clone())).env("PKGDEST", o),
+            Some(o) => c.env("BUILDDIR", o).env("SRCDEST", o).env("PKGDEST", o),
             None => c.env("PKGDEST", &r.dir),
         }
     }
@@ -467,10 +499,9 @@ fn build_one(s: &Settings, r: &Recipe, log: &Path) -> Result<Vec<String>, (Strin
     c.env("PKGDEST", &out).env("CARGO_BUILD_JOBS", s.jobs.to_string()).env("MAKEFLAGS", format!("-j{}", s.jobs));
     // a clone or fetch that stalls (under 1 KB/s for a minute) gives up, and the network's failure is built once more
     c.env("GIT_HTTP_LOW_SPEED_LIMIT", "1000").env("GIT_HTTP_LOW_SPEED_TIME", "60");
+    c.envs(s.copies_for(r));
     if r.out.is_some() {
-        let sources = r.sources().unwrap_or_else(|| out.clone());
-        fs::create_dir_all(&sources).map_err(|e| io("cannot make", &sources, e))?;
-        c.env("BUILDDIR", &out).env("SRCDEST", &sources);
+        c.env("BUILDDIR", &out).env("SRCDEST", &out);
     }
     let status = c.stdin(Stdio::null()).stdout(file).stderr(err).status().map_err(|e| (format!("cannot run makepkg: {e}"), Vec::new()))?;
     if !status.success() {
@@ -853,6 +884,20 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
         );
     }
 
+    #[test]
+    fn the_sources_from_our_repositories_are_found() {
+        let pkgbuild = "source=(\"yggdrasil::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}\"\n\
+                        \"pa::git+https://github.com/someone/else.git#commit=1\"\n\
+                        \"git+${LIMBO_SRC:-https://github.com/Artifex-Technologies/Limbo}\"\n\
+                        \"${_src:-https://github.com/Artifex-Technologies/Sarina.git}\"\n\
+                        \"${OTHER_SRC:-https://github.com/someone/Yggdrasil.git}\"\n\
+                        \"again::git+${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}\")\n";
+        let found = own_sources(pkgbuild);
+        let want: Vec<(String, String)> =
+            [("YGGDRASIL_SRC", "Yggdrasil"), ("LIMBO_SRC", "Limbo")].iter().map(|(v, r)| (v.to_string(), r.to_string())).collect();
+        assert_eq!(found, want, "only an upper-case variable for one of our repositories, each once");
+    }
+
     /// A made-up world: a git checkout with three recipes, and a stand-in makepkg that "builds" by writing the package file
     /// named in the recipe, or fails the way a test run does when the recipe says so.
     struct World {
@@ -879,7 +924,7 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
                 &fake,
                 "#!/bin/sh\n. ./PKGBUILD\nfile=\"$pkgname-$pkgver-any.pkg.tar.zst\"\nfor a; do case $a in\n\
                  --packagelist) echo \"$PKGDEST/$file\"; exit 0;;\n--printsrcinfo) echo \"pkgbase = $pkgname\"; exit 0;;\nesac; done\n\
-                 echo \"==> Making package: $pkgname $pkgver\"\n[ -n \"$SRCDEST\" ] && touch \"$SRCDEST/fetched\"\n\
+                 echo \"==> Making package: $pkgname $pkgver\"\n[ -n \"$YGGDRASIL_SRC\" ] && echo \"$YGGDRASIL_SRC\" > \"$PKGDEST/from\"\n\
                  if [ -n \"$fail\" ]; then echo 'test tests::it_works ... FAILED'; echo 'test result: FAILED. 0 passed; 1 failed'; \
                  echo '==> ERROR: A failure occurred in check().'; exit 4; fi\n\
                  if [ -n \"$flaky\" ] && [ ! -e flaked ]; then touch flaked; \
@@ -922,6 +967,7 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
                 memory: None,
                 makepkg: self.dir.join("makepkg").into_os_string(),
                 network_pause: std::time::Duration::ZERO,
+                copies: None,
             }
         }
 
@@ -1031,9 +1077,28 @@ error: test failed, to rerun pass `--bin yggdrasil-installer`
         let report = build_all(all, &w.settings()).unwrap();
         assert_eq!(sorted(report.built), ["aaa", "bbb", "ccc", "zzz"]);
         assert!(store.join("zzz/zzz-1-1-any.pkg.tar.zst").is_file(), "the store's builds are made in their own folder");
-        assert!(w.dir.join("store-sources/zzz").is_dir(), "its downloads are kept apart, for the next publish");
         assert_eq!(all_again(&w, &store), ["zzz"]);
-        assert!(w.dir.join("store-sources/zzz/fetched").is_file(), "and they are still there after the next build");
         assert!(w.checkout().join("repo/x86_64/zzz-1-1-any.pkg.tar.zst").is_file());
+    }
+
+    #[test]
+    fn a_source_the_publish_has_a_copy_of_is_built_from_the_copy() {
+        let w = World::new("copies");
+        let source = |repo: &str, var: &str| format!("source=\"x::git+${{{var}:-https://github.com/{ORG}/{repo}.git}}\"\n");
+        for (name, src) in [("yyy", source("Yggdrasil", "YGGDRASIL_SRC")), ("zzz", source("Heimdall", "YGGDRASIL_SRC"))] {
+            let d = w.checkout().join(STORE).join(name);
+            fs::create_dir_all(&d).unwrap();
+            fs::write(d.join("PKGBUILD"), format!("pkgname={name}\npkgver=1-1\n{src}")).unwrap();
+        }
+        w.commit();
+        let copies = w.dir.join("copies");
+        fs::create_dir_all(copies.join("Yggdrasil/.git")).unwrap();
+        let store = w.dir.join("store");
+        let all = recipes(&w.checkout(), &w.dir.join("ygg"), Some(&store)).unwrap();
+        let s = Settings { copies: Some(copies.clone()), ..w.settings() };
+        assert_eq!(sorted(build_all(all, &s).unwrap().built), ["aaa", "bbb", "ccc", "yyy", "zzz"]);
+        let from = fs::read_to_string(store.join("yyy/from")).unwrap();
+        assert_eq!(from.trim(), format!("file://{}", copies.join("Yggdrasil").display()));
+        assert!(!store.join("zzz/from").exists(), "no copy of Heimdall: the recipe's own source, from GitHub");
     }
 }

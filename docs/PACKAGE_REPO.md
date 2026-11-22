@@ -144,11 +144,14 @@ The publish and the ISO's local build (below) build the same way (`packages/publ
   linker's errors, a missing dependency, a kill for memory); each build's whole log is `repo/logs/NAME.log`. The other
   packages are published; the failed one keeps its last good build online and is built again on the next run. A failure
   that is the network's (a connection GitHub reset, a download that failed, a transfer stalled under 1 KB/s for a minute)
-  is built once more a minute later first. The store's apps keep their downloads (their git clones) in
-  `/var/lib/labyrinth-publish/store-sources` from one publish to the next, so a clone is fetched, not made again. The program
-  then ends with exit code 1, so the unit shows as failed. (From 2026-11-18 to 2026-11-21 one failing package a day, a
+  is built once more a minute later first. The program then ends with exit code 1, so the unit shows as failed. (From 2026-11-18 to 2026-11-21 one failing package a day, a
   different one each day, held back every other change while the journal said only "exit status 4".)
 - **makepkg installs nothing** (no `-s`): a missing build dependency is a failure that names it.
+- **Each repository is downloaded once.** The store's apps name Yggdrasil as
+  `${YGGDRASIL_SRC:-https://github.com/Artifex-Technologies/Yggdrasil.git}`; a user's system clones it from GitHub, the
+  publish sets the variable to its own fresh copy (`file:///var/lib/labyrinth-publish/src/Yggdrasil`), the commit it
+  builds everything else of Yggdrasil from. Any recipe source written that way for one of the five repositories is built
+  from the copy. (On 2026-11-22 the line was slow and all eight store apps failed to clone Yggdrasil from GitHub.)
 
 Recipes that build from the publish copy itself (`git+file://`: heimdall-git, heimdall-private-mic-git, heimdall-multilink-git, heimdall-yara-check-git, sarina-git, limbo-git) take its `main` branch, so
 each copy's `main` is moved to GitHub's on every publish. Until 2026-11-07 (6238b19) the copies were checked out detached, `main`
