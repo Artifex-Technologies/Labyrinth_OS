@@ -6,6 +6,7 @@
 pub mod args;
 pub mod build;
 pub mod cmd;
+pub mod notify;
 pub mod pkg;
 pub mod publish;
 pub mod py;

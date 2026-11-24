@@ -32,6 +32,11 @@ fn main() {
             }
             Err(msg) => {
                 eprintln!("{msg}");
+                // the whole publish stopped (no key, no network, the release refused): said on the desktop too (LAB-53)
+                if !dry_run {
+                    let first = msg.lines().next().unwrap_or_default();
+                    labyrinth_publish_repo::notify::send("Labyrinth packages: the publish stopped", first);
+                }
                 1
             }
         },

@@ -545,6 +545,11 @@ pub fn publish(opts: &Options) -> R<Vec<String>> {
     // (Icarus, Kairos, ...), and a build that failed last time is tried again
     let (repo_dir, report) = build(&src, work, opts.force)?;
     let failed: Vec<String> = report.failed.iter().map(|f| f.name.clone()).collect();
+    // the timer's runs reach only the journal: a notification names what did not build (LAB-53)
+    if !report.failed.is_empty() && !opts.dry_run {
+        let (title, body) = crate::notify::failures_text(&report.failed);
+        crate::notify::send(&title, &body);
+    }
     if same_heads && report.built.is_empty() && !opts.force {
         say("nothing changed since the last publish");
         return Ok(failed);
