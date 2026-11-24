@@ -11,7 +11,8 @@ What happens to a find (set `action` in ~/.config/labyrinth/scan.conf):
   action = notify       never move anything; always a warning
 Nothing is ever deleted without you. "Restore" puts the file back and remembers it, so the same file is not caught again.
 
-To stop it looking at something, put a folder, file or pattern (one per line) in ~/.config/labyrinth/scan-exclude, e.g.:
+To stop it looking at something, add it under Settings > Security > Not scanned, or put a folder, file or pattern (one
+per line) in ~/.config/labyrinth/scan-exclude, e.g.:
     ~/Downloads/big-isos
     *.iso
 
