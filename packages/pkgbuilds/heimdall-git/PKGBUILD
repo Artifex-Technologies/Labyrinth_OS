@@ -20,7 +20,8 @@ depends=('glibc' 'python' 'iproute2' 'iw' 'networkmanager' 'dnsmasq' 'nftables')
 # rust: /usr/bin/heimdalld is the Rust daemon since the switch; go: the Go one, kept for a week at /usr/lib/heimdall/heimdalld-go
 # as the rollback (Heimdall's RUST_SWITCH.md, stage 2 drops it)
 makedepends=('go' 'git' 'rust')
-optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)')
+optdepends=('clamav: malware scanning (held files, downloads; with clamav-freshclam for signatures)'
+            'heimdall-yara-check: YARA-X checks the rule drafts Heimdall writes before it keeps them (Heimdall docs/IMMUNITY.md)')
 provides=('heimdall')
 conflicts=('heimdall')
 backup=('etc/heimdall/dns-allow.txt' 'etc/NetworkManager/dnsmasq.d/heimdall-blocklist.conf')

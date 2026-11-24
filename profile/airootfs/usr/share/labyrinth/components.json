@@ -189,10 +189,11 @@
     {
       "id": "local-ai",
       "name": "Local AI runtime",
-      "description": "Ollama, the model server Sarina uses: ollama-cuda on NVIDIA (about 6 GB with CUDA), ollama-vulkan otherwise. Not in the image; Sarina offers to install it the first time it is needed. Models compete with games for GPU memory.",
+      "description": "Ollama, the model server Sarina uses: ollama-cuda on NVIDIA (about 6 GB with CUDA), ollama-vulkan otherwise, with Labyrinth's settings for it (labyrinth-ollama-tuning: the context Sarina needs, kept across Ollama's updates). Not in the image; Sarina offers to install it the first time it is needed. Models compete with games for GPU memory.",
       "proprietary": false,
       "packages": [
-        "ollama-cuda"
+        "ollama-cuda",
+        "labyrinth-ollama-tuning"
       ]
     },
     {

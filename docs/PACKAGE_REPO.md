@@ -18,6 +18,11 @@ So `pacman -Syu` and Agora's updates bring the desktop (Yggdrasil), Sarina, Heim
 date, from any ISO. Last on purpose: a package of the same name in Arch's or CachyOS's repositories always wins, so this
 repository can add Labyrinth's software but never replace the base system.
 
+Every package in it is installed by something: the ISO's list, a component (what the installer and Agora install), Agora's
+catalog, or another package's `depends` or `optdepends`. `tests/test_installed_by.py` (run by `scripts/release-check.sh`)
+fails on a recipe nothing installs, here or in Yggdrasil; the few installed another way (Argus by LykanOS's Agora, `yara-x`
+in Limbo's analysis image, the own compositor while it is tried by hand) are listed in it with the reason.
+
 | In the repository | Not in it, and why |
 |---|---|
 | Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) and the reading fonts (Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and OpenDyslexic Mono: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
