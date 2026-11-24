@@ -4,14 +4,21 @@ name: checks
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "53 5 * * 1" # the audit weekly, for advisories published after the last change
+permissions:
+  contents: read
 jobs:
   quick:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     container: archlinux:latest
     steps:
       - name: Tools
         run: pacman -Syu --noconfirm --needed git python base-devel systemd shellcheck nftables libnotify
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0, pinned by commit
+        with:
+          persist-credentials: false
       - name: Let git trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: "Release checks (quick, no Rust tests or audit)"
@@ -25,11 +32,14 @@ jobs:
           su ci -c "cd '$GITHUB_WORKSPACE' && YGGDRASIL_DIR=/home/ci/Yggdrasil scripts/release-check.sh quick"
   rust:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     container: archlinux:latest
     steps:
       - name: Tools
         run: pacman -Syu --noconfirm --needed git rust base-devel pkgconf wayland libxkbcommon fontconfig pam dbus python
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0, pinned by commit
+        with:
+          persist-credentials: false
       - name: Format, lint, test and audit every crate
         run: |
           # RUSTSEC-2026-0370/0371/0372: zvariant, zbus_names and zvariant_derive are marked unmaintained (no vulnerability); zbus uses them
