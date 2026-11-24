@@ -31,3 +31,6 @@ profile/airootfs/usr/share/labyrinth/pkgbuilds/*-git/*/
 
 # My private plans (a link to a private checkout on my computers; no trailing slash, so the link itself matches)
 /docs/plans
+
+# scripts/release.sh: private projects, named only on my computers
+/scripts/release.local

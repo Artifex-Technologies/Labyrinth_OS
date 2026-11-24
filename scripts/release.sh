@@ -10,7 +10,8 @@
 #                                            Pushes nothing; every build number starts again at 1.
 #
 # PROJECT: system (Labyrinth OS: this repository and Yggdrasil), heimdall, limbo, sarina, kairos, argus (the app; the firmware
-# keeps its own ARG-... names), daedalus, the video app (private; called Huginn until 2026-11-15), icarus.
+# keeps its own ARG-... names), daedalus, icarus; and private projects named in scripts/release.local (git-ignored, one
+# `name=folder` per line, the folder beside this repository's or absolute), listed after these.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,8 +19,17 @@ parent="$(dirname "$root")"
 ygg="${YGGDRASIL_DIR:-$parent/Yggdrasil}"
 declare -A dirs=([system]="$root" [heimdall]="$parent/Heimdall" [limbo]="$parent/Limbo" [sarina]="$parent/Sarina"
                  [kairos]="$parent/Kairos" [argus]="$parent/Argus_App" [daedalus]="$parent/Daedalus_CAD"
-                 [ratatoskr]="$parent/Ratatoskr" [icarus]="$parent/Icarus")
-order=(system heimdall limbo sarina kairos argus daedalus ratatoskr icarus)
+                 [icarus]="$parent/Icarus")
+order=(system heimdall limbo sarina kairos argus daedalus icarus)
+# private projects: from a local file that is never committed, so this script names no private repository
+if [[ -f "$root/scripts/release.local" ]]; then
+  while IFS='=' read -r name folder; do
+    [[ $name =~ ^[a-z][a-z0-9-]*$ && -n $folder && -z ${dirs[$name]+x} ]] || continue
+    [[ $folder == /* ]] || folder="$parent/$folder"
+    dirs[$name]=$folder
+    order+=("$name")
+  done < "$root/scripts/release.local"
+fi
 die() { echo "error: $*" >&2; exit 1; }
 
 # --- the list ------------------------------------------------------------------------------------------------------------
