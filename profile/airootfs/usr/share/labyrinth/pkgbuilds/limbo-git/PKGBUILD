@@ -131,9 +131,11 @@ package() {
   install -dm755 "$pkgdir/usr/lib/systemd/system/timers.target.wants"
   ln -s ../limbo-image-verify.timer "$pkgdir/usr/lib/systemd/system/timers.target.wants/limbo-image-verify.timer"
   # Limbo's wine: programs that run `wine` from PATH land in Limbo's sandbox. Not on PATH by itself; it is linked from
-  # a folder before /usr/bin (sudo ln -s /usr/lib/limbo/bin/wine /usr/local/bin/wine). Wine's other command names are
-  # links to the shim, which runs the matching program inside the sandbox.
-  install -Dm755 packaging/wine/wine "$pkgdir/usr/lib/limbo/bin/wine"
+  # a folder before /usr/bin (sudo ln -s /usr/lib/limbo/bin/wine /usr/local/bin/wine). It is limbo itself, which
+  # started as wine runs `limbo wine --shim` (Limbo 2afb05e); Wine's other command names are links to it, and run the
+  # matching program inside the sandbox.
+  install -dm755 "$pkgdir/usr/lib/limbo/bin"
+  ln -s /usr/bin/limbo "$pkgdir/usr/lib/limbo/bin/wine"
   for name in wineboot winecfg wineconsole winedbg winefile winemine winepath msiexec notepad regedit regsvr32; do
     ln -s wine "$pkgdir/usr/lib/limbo/bin/$name"
   done
