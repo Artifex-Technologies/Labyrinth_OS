@@ -1420,28 +1420,6 @@
    "flathub": "net.waterfox.waterfox"
   },
   {
-   "id": "opera",
-   "name": "Opera",
-   "subtitle": "Opera's browser, with built-in VPN and sidebar",
-   "description": "Opera's Chromium-based browser: a free built-in VPN (a proxy for the browser only), ad blocker, messengers in the sidebar and Aria, its AI. From Flathub, as Opera publishes it.",
-   "category": "Internet",
-   "subcategory": "Browsers",
-   "source": {
-    "type": "flatpak",
-    "app": "com.opera.Opera"
-   },
-   "icon": "com.opera.Opera",
-   "logo": "opera",
-   "reviewed": true,
-   "proprietary": true,
-   "tags": [
-    "browser",
-    "chromium",
-    "vpn"
-   ],
-   "flathub": "com.opera.Opera"
-  },
-  {
    "id": "tor-browser",
    "name": "Tor Browser",
    "subtitle": "Private web browser",

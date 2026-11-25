@@ -12,8 +12,6 @@
   {"id": "mullvad-browser", "name": "Mullvad Browser", "note": "Tor Browser's anti-tracking, for use with a VPN instead of Tor", "chosen": false,
    "packages": ["mullvad-browser-bin"], "desktop": ["mullvad-browser.desktop", "mullvadbrowser.desktop"]},
   {"id": "waterfox", "name": "Waterfox", "note": "Independent Firefox-based browser, no telemetry", "chosen": false,
-   "packages": ["waterfox-bin"], "desktop": ["waterfox.desktop", "waterfox-bin.desktop"]},
-  {"id": "opera", "name": "Opera", "note": "Chromium-based, built-in browser VPN and ad blocker (from Flathub)", "chosen": false,
-   "flatpak": "com.opera.Opera", "desktop": ["com.opera.Opera.desktop"]}
+   "packages": ["waterfox-bin"], "desktop": ["waterfox.desktop", "waterfox-bin.desktop"]}
  ]
 }

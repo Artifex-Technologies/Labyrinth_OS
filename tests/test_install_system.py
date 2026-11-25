@@ -120,7 +120,7 @@ class Browsers(unittest.TestCase):
 
     def test_the_offered_browsers_are_the_linux_ones(self):
         ids = [b["id"] for b in self.cat]
-        self.assertEqual(ids, ["vivaldi", "firefox", "brave", "librewolf", "mullvad-browser", "waterfox", "opera"])
+        self.assertEqual(ids, ["vivaldi", "firefox", "brave", "librewolf", "mullvad-browser", "waterfox"])
         self.assertEqual([b["id"] for b in self.cat if b.get("chosen")], ["vivaldi"], "Vivaldi is chosen to start with")
         for b in self.cat:
             self.assertTrue(b.get("packages") or b.get("flatpak"), b["id"])
@@ -128,12 +128,12 @@ class Browsers(unittest.TestCase):
         self.assertEqual(inst.browser_catalog("/nonexistent.json"), [])
 
     def test_a_choice_removes_the_others_and_installs_its_own(self):
-        p = inst.browser_plan(self.cat, ["librewolf", "opera"])
+        p = inst.browser_plan(self.cat, ["librewolf", "brave"])
         self.assertIn("vivaldi", p["remove"])
         self.assertIn("vivaldi-ffmpeg-codecs", p["remove"])
         self.assertIn("firefox", p["remove"])
-        self.assertEqual(p["install"], ["librewolf"])
-        self.assertEqual(p["flatpaks"], ["com.opera.Opera"])
+        self.assertEqual(p["install"], ["brave-bin", "librewolf"])
+        self.assertEqual(p["flatpaks"], [], "no browser on the list comes from Flathub")
         none = inst.browser_plan(self.cat, [])
         self.assertEqual((none["install"], none["flatpaks"]), ([], []))
         self.assertIn("vivaldi", none["remove"])
