@@ -14,8 +14,6 @@
   {"id": "waterfox", "name": "Waterfox", "note": "Independent Firefox-based browser, no telemetry", "chosen": false,
    "packages": ["waterfox-bin"], "desktop": ["waterfox.desktop", "waterfox-bin.desktop"]},
   {"id": "opera", "name": "Opera", "note": "Chromium-based, built-in browser VPN and ad blocker (from Flathub)", "chosen": false,
-   "flatpak": "com.opera.Opera", "desktop": ["com.opera.Opera.desktop"]},
-  {"id": "opera-gx", "name": "Opera GX", "note": "Opera for gamers: CPU, memory and network limits, Twitch and Discord (from Flathub)", "chosen": false,
-   "flatpak": "com.opera.opera-gx", "desktop": ["com.opera.opera-gx.desktop"]}
+   "flatpak": "com.opera.Opera", "desktop": ["com.opera.Opera.desktop"]}
  ]
 }

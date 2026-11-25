@@ -1442,28 +1442,6 @@
    "flathub": "com.opera.Opera"
   },
   {
-   "id": "opera-gx",
-   "name": "Opera GX",
-   "subtitle": "The browser for gamers",
-   "description": "Opera's gaming browser: limits on how much memory, CPU and network it may use, Twitch and Discord in the sidebar, GX Corner for game deals, and themes and sounds. Released for Linux in 2026; live wallpapers are not in the Linux version. From Flathub, as Opera publishes it.",
-   "category": "Internet",
-   "subcategory": "Browsers",
-   "source": {
-    "type": "flatpak",
-    "app": "com.opera.opera-gx"
-   },
-   "icon": "com.opera.opera-gx",
-   "logo": "opera",
-   "reviewed": true,
-   "proprietary": true,
-   "tags": [
-    "browser",
-    "gaming",
-    "chromium"
-   ],
-   "flathub": "com.opera.opera-gx"
-  },
-  {
    "id": "tor-browser",
    "name": "Tor Browser",
    "subtitle": "Private web browser",
