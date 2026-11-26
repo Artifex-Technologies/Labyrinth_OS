@@ -16,6 +16,7 @@
 //!   playall     steam_playall               Steam Play for all titles in Steam's config.vdf (labyrinth-gaming setup)
 //!   first_components  labyrinth-first-components  the optional parts chosen in the installer, at the first login
 //!   agent       labyrinth-agent             the engineering agent's root actions, each checked (the gate sudo lets it run)
+//!   agent_rec   labyrinth-agent-rec         the recorder of the agent's root sessions (what sudo lets its account run)
 //!
 //! The shell scripts' ports (sh: what they share):
 //!   rollback         labyrinth-rollback            the whole system back to a snapshot, and back again
@@ -38,6 +39,7 @@
 //!   bt_privacy       labyrinth-bluetooth-privacy   Bluetooth address privacy on in BlueZ's main.conf (scriptlet and hook)
 
 pub mod agent;
+pub mod agent_rec;
 pub mod agent_setup;
 pub mod agent_window;
 pub mod appnet;

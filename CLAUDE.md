@@ -49,7 +49,8 @@ shell tests of labyrinth-tools' programs on that debug build. Watch it by the fu
   week after the switched package runs on the owner's PC. No dead code.
 - **Light**: nothing resident that is not asked for; it must run on modest hardware, down to a Raspberry Pi for Yggdrasil.
 - **The base system is not ours**: pacman, the AUR, the Arch and CachyOS repositories and their tooling stay as they are;
-  the `[labyrinth]` repository is listed last and never replaces a base package.
+  the `[labyrinth]` repository is listed last and never replaces a base package, except coreutils and sudo, which it swaps
+  for their packaged Rust versions ([docs/RUST_BASE.md](docs/RUST_BASE.md)); no others.
 - **The GPU unlock** follows the safety rules in [docs/GPU_UNLOCK.md](docs/GPU_UNLOCK.md); nothing touches a graphics card's
   clocks, power or firmware outside them.
 - **A change another repository relies on** (a recipe's paths, the package repository, an integration file, the voice unit,

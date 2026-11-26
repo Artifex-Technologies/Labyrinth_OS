@@ -1,0 +1,32 @@
+labyrinth-agent-rec: the recorder of the engineering agent's root sessions. sudo-rs records no session, so this does: it is the
+one program sudo lets the agent's account (claude-agent) run as root (/etc/sudoers.d/50-labyrinth-agent, written by
+labyrinth-agent-setup), and claude-sudo CMD... runs `sudo -n -u claude-agent sudo -n /usr/bin/labyrinth-agent-rec -- CMD...`.
+
+  labyrinth-agent-rec [--] CMD [ARG...]      run CMD as root for the agent, recorded. What the agent may run is written in
+                                             sudoers for a second account, claude-agent-rules, that nobody can become; sudo is
+                                             asked whether those rules allow exactly this command line (sudo -n -l -U
+                                             claude-agent-rules -- /ABS/CMD ARG...) and anything else is refused, in one line
+                                             and in the journal, and nothing runs. CMD is looked for in /usr/local/sbin,
+                                             /usr/local/bin and /usr/bin (sudo's secure_path). The exit code is CMD's (128 + N
+                                             when signal N ended it); SIGINT, SIGTERM and SIGHUP are passed on to it.
+  labyrinth-agent-rec list [N]               the last N sessions (20), newest first: id, start (UTC), who, exit code, command
+  labyrinth-agent-rec replay ID [--fast] [--input]
+                                             a session's output and errors written back with their timing (--fast: at once;
+                                             --input: what was typed too, on the output)
+
+list and replay read /var/log/labyrinth-agent, which only root may enter, and refuse the agent itself: sudo labyrinth-agent-rec
+list, as the owner.
+
+What a session leaves:
+  * /var/log/labyrinth-agent/ID.jsonl (0600, root's; ID is the start in UTC to the millisecond and the recorder's pid,
+    20261119T210304.123Z-4242): JSON lines, a header (start, id, invoker, uid, cwd, argv, abs, loginuid, audit_session),
+    the data as it flowed ({"t": ms since the start, "s": "in"|"out"|"err", "b64": the bytes in base64}) and a footer (end,
+    exit, bytes per stream, recorded, truncated, signal; journal: false when the start's journal line failed).
+    At most 64 MiB of data is recorded per session; what comes after still passes through and the footer says truncated;
+  * two journal lines (tag labyrinth-agent-rec, facility auth): the session and its command at the start, the exit code and
+    the record's SHA-256 at the end (sha256sum of the file must match it): journalctl -t labyrinth-agent-rec;
+  * the session's login uid is set to the agent's (/proc/self/loginuid), so the kernel audit log attributes the session and
+    every program it starts to the agent: ausearch -k labyrinth-agent -i (labyrinth-agent-setup's audit rule).
+
+Known limitation: CMD never has a terminal, also when standard input is one: it runs in a session of its own and its input,
+output and errors are pipes (programs that ask on /dev/tty cannot; colours and progress bars are off).

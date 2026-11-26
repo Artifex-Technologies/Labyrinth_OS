@@ -11,11 +11,13 @@
 # (her answer said aloud). Their units come with them (same names). Since 2026-11-12 also labyrinth-os-release, which the
 # scriptlet runs to write the system version into /etc/os-release (it was an awk program there). Since 2026-11-18 also
 # labyrinth-bluetooth-privacy, which the scriptlet and a pacman hook (after bluez is installed or updated) run to turn on BlueZ's
-# address privacy (Privacy = device in /etc/bluetooth/main.conf).
+# address privacy (Privacy = device in /etc/bluetooth/main.conf). Since 2026-11-19 also labyrinth-agent-rec, the recorder of the
+# engineering agent's root sessions (sudo-rs records none): the one program sudo lets the agent's account run as root, which
+# checks each command against the agent's rules and records it in /var/log/labyrinth-agent.
 pkgname=labyrinth-tools
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers, Sarina's voice scripts, Bluetooth address privacy"
+pkgdesc="Labyrinth OS's own programs in Rust: malware scan and quarantine, per-app network rules, app launcher, optional software, self-check, ipconfig, Steam Play for all, first-login installs, the engineering agent's gate and session recorder, system rollback, install steps, agent set-up, Sarina's and the desktop's helpers, Sarina's voice scripts, Bluetooth address privacy"
 arch=('x86_64')
 url="https://github.com/Artifex-Technologies/Labyrinth_OS"
 license=('MPL-2.0')
@@ -54,7 +56,7 @@ check() {
 
 package() {
   for b in labyrinth-scan-downloads labyrinth-quarantine labyrinth-appnet labyrinth-appnet-ask labyrinth-appnet-ask-agent labyrinth-launch labyrinth-apps \
-           labyrinth-selfcheck ipconfig steam_playall labyrinth-first-components labyrinth-agent \
+           labyrinth-selfcheck ipconfig steam_playall labyrinth-first-components labyrinth-agent labyrinth-agent-rec \
            labyrinth-rollback labyrinth-install-bootfinish labyrinth-install-cleanup labyrinth-agent-setup labyrinth-agent-window \
            labyrinth-ecosystem-setup labyrinth-hardware-setup labyrinth-grub-theme labyrinth-security-setting labyrinth-gaming \
            labyrinth-sarina labyrinth-sarina-setting labyrinth-sarina-reflect labyrinth-sarina-voice-setup labyrinth-sarina-warm \

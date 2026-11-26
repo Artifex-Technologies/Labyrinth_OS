@@ -17,7 +17,7 @@ STORE = ROOT / "profile" / "airootfs" / "usr" / "share" / "labyrinth" / "pkgbuil
 DATED = {"labyrinth-keyring", "yggdrasil-spell-packs"}
 # someone else's release built from its pinned source: the upstream version, pkgrel counts our rebuilds of it (the fonts:
 # Settings > Appearance > Font, docs/PACKAGE_REPO.md)
-UPSTREAM = {"yara-x", "ttf-atkinson-hyperlegible-next", "ttf-atkinson-hyperlegible-mono", "ttf-lexend", "otf-opendyslexic",
+UPSTREAM = {"yara-x", "labyrinth-sudo-rs", "ttf-atkinson-hyperlegible-next", "ttf-atkinson-hyperlegible-mono", "ttf-lexend", "otf-opendyslexic",
             "otf-opendyslexic-mono"}
 ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid", GIT_COMMITTER_NAME="t",
            GIT_COMMITTER_EMAIL="t@example.invalid", GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_NOSYSTEM="1")
@@ -103,7 +103,7 @@ class FontScriptlets(unittest.TestCase):
     """The font recipes' scriptlet: the system's font caches made again only when fontconfig does not list the font once its
     files are in (a stale cache: Yggdrasil's docs/APPS_SETTINGS.md). Run with stand-ins for fc-list and fc-cache."""
 
-    FONTS = sorted(UPSTREAM - {"yara-x"})
+    FONTS = sorted(UPSTREAM - {"yara-x", "labyrinth-sudo-rs"})
 
     def run_scriptlet(self, name, fc_list_code):
         tmp = Path(tempfile.mkdtemp())

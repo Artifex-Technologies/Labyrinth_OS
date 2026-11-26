@@ -57,13 +57,13 @@ def array(text, name):
 
 
 def recipes():
-    """(folder, names it builds, names it provides, what it pulls in: depends and optdepends)."""
+    """(folder, names it builds, names it provides, what it pulls in: depends and optdepends, what it replaces)."""
     out = []
     for f in sorted((ROOT / "packages" / "pkgbuilds").glob("*/PKGBUILD")) + sorted((YGG / "packages" / "pkgbuilds").glob("*/PKGBUILD")):
         t = f.read_text(encoding="utf-8")
         m = re.search(r"(?m)^pkgname=(\(.*?\)|\S+)", t, re.S)
         names = [n.strip("'\"") for n in re.findall(r"[^\s()]+", m.group(1))] if m else []
-        out.append((f.parent, names, array(t, "provides"), array(t, "depends") + array(t, "optdepends")))
+        out.append((f.parent, names, array(t, "provides"), array(t, "depends") + array(t, "optdepends"), array(t, "replaces")))
     return out
 
 
@@ -80,7 +80,7 @@ def installers(all_recipes):
         s = a.get("source", {})
         if s.get("type") in ("pacman", "aur") and s.get("package"):
             names.add(s["package"])
-    for _, _, _, pulls in all_recipes:
+    for _, _, _, pulls, _ in all_recipes:
         names |= set(pulls)
     return names
 
@@ -90,16 +90,17 @@ class InstalledBy(unittest.TestCase):
         all_recipes = recipes()
         wanted = installers(all_recipes)
         lonely = []
-        for folder, names, provides, _ in all_recipes:
+        for folder, names, provides, _, replaces in all_recipes:
             for n in names:
-                if n in ELSEWHERE or n in wanted or any(p in wanted for p in provides):
+                # a recipe that replaces a package is installed by pacman -Syu wherever that package is (coreutils, sudo)
+                if n in ELSEWHERE or n in wanted or any(p in wanted for p in provides) or replaces:
                     continue
                 lonely.append(f"{n} ({folder.relative_to(folder.parent.parent.parent.parent)})")
         self.assertEqual(lonely, [], "published but nothing installs it: put it on the ISO, in a component, in Agora or in a "
                                      "recipe's depends or optdepends, or delete the recipe")
 
     def test_the_exceptions_are_still_recipes(self):
-        built = {n for _, names, _, _ in recipes() for n in names}
+        built = {n for _, names, _, _, _ in recipes() for n in names}
         if YGG.is_dir():
             self.assertEqual(sorted(set(ELSEWHERE) - built), [], "an exception for a recipe that is gone")
 

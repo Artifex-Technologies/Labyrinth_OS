@@ -1,0 +1,35 @@
+# GNU coreutils' programs from uutils (Rust, Arch's uutils-coreutils): each of GNU's 102 names in /usr/bin is a link to
+# uutils' one program, which picks the tool by the name it was started as. Replaces coreutils on every system that takes
+# Labyrinth's packages: one of the two base packages the [labyrinth] repository may replace (with sudo; CLAUDE.md,
+# docs/RUST_BASE.md). To go back: pacman -S coreutils (it conflicts with this package and takes its place).
+pkgname=labyrinth-coreutils-rs
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="The coreutils programs (ls, cp, mv, rm, sort...) from uutils, written in Rust"
+arch=('any')
+url="https://github.com/Artifex-Technologies/Labyrinth_OS"
+license=('MPL-2.0')
+depends=('uutils-coreutils>=0.12.0')
+provides=('coreutils')
+conflicts=('coreutils')
+replaces=('coreutils')
+# The version is the system's (VERSION at the top of this repository); the build number counts the commits since that release
+# which touch this recipe's folder (scripts/package-version.sh, docs/VERSIONING.md)
+. "$startdir/../../../scripts/package-version.sh"
+_version "$startdir" "$startdir"
+
+# GNU coreutils 9.12's programs, all of which uutils 0.12 has (docs/RUST_BASE.md says how this was checked)
+_tools=('[' b2sum base32 base64 basename basenc cat chgrp chmod chown chroot cksum comm cp csplit cut date dd df dir
+  dircolors dirname du echo env expand expr factor false fmt fold groups head hostid id install join link ln logname ls
+  md5sum mkdir mkfifo mknod mktemp mv nice nl nohup nproc numfmt od paste pathchk pinky pr printenv printf ptx pwd
+  readlink realpath rm rmdir seq sha1sum sha224sum sha256sum sha384sum sha512sum shred shuf sleep sort split stat stdbuf
+  stty sum sync tac tail tee test timeout touch tr true truncate tsort tty uname unexpand uniq unlink users vdir wc who
+  whoami yes)
+
+package() {
+  install -dm755 "$pkgdir/usr/bin"
+  local t
+  for t in "${_tools[@]}"; do
+    ln -s uu-coreutils "$pkgdir/usr/bin/$t"
+  done
+}

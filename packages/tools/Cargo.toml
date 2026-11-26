@@ -60,6 +60,11 @@ path = "src/bin/labyrinth-first-components.rs"
 name = "labyrinth-agent"
 path = "src/bin/labyrinth-agent.rs"
 
+# the recorder of the agent's root sessions: the one program sudo lets the agent's account run as root (since 2026-11-19)
+[[bin]]
+name = "labyrinth-agent-rec"
+path = "src/bin/labyrinth-agent-rec.rs"
+
 # the shell scripts' ports (the scripts were in profile/airootfs/usr/local/bin, then packages/tools/shell until 2026-11-15)
 [[bin]]
 name = "labyrinth-rollback"

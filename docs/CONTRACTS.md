@@ -9,7 +9,9 @@ tell the other side.
 - **What:** a signed pacman repository on the GitHub release named `packages`
   (`https://github.com/Artifex-Technologies/Labyrinth_OS/releases/download/packages`), listed last in `pacman.conf` with
   `SigLevel = Required`; every package and the database are signed with the Labyrinth key (`labyrinth-keyring`). A package of
-  the same name in Arch's or CachyOS's repositories always wins.
+  the same name in Arch's or CachyOS's repositories always wins. It replaces two base packages, on every system that
+  uses it (LykanOS too): `coreutils` with `labyrinth-coreutils-rs` and `sudo` with `labyrinth-sudo-rs`, their packaged Rust
+  versions ([RUST_BASE.md](RUST_BASE.md)); no others.
 - **Who uses it:** every installed Labyrinth system and Agora's updates; LykanOS (its ISO and installs take Sarina, Heimdall,
   Limbo and the desktop from it); Limbo's analysis image (`yara-x`, fetched on the host).
 - **Where:** `docs/PACKAGE_REPO.md`; `packages/publish-repo` (`labyrinth-publish-repo`); `packages/pkgbuilds/labyrinth-keyring`;
@@ -72,8 +74,14 @@ tell the other side.
 
 ## The engineering agent's account (`labyrinth-agent`)
 
-- **What:** `/usr/bin/labyrinth-agent`, the one program the `claude-agent` account may run as root, with its fixed verbs
+- **What:** `/usr/bin/labyrinth-agent`, the one program the agent's rules allow as root, with its fixed verbs
   (`pkg-install`, `pkg-add`, `service`, `logs`, `maintenance`, `limbo`, `rollback`, `firewall-status`, `deploy`), each logged
-  for Heimdall.
-- **Who uses it:** Claude Code sessions on a Labyrinth system; Heimdall (reads the log, attributes the actions).
-- **Where:** `packages/tools/src/agent.rs`, `agent_setup.rs`, `agent_window.rs`; `docs/AGENT_ACCOUNT.md`.
+  for Heimdall. Since 2026-11-19 the `claude-agent` account itself may run only the recorder,
+  `/usr/bin/labyrinth-agent-rec`, as root; its rules (the gate, the window's list) are written for `claude-agent-rules`, which
+  nobody can become, and `claude-sudo CMD...` is `sudo -n -u claude-agent sudo -n /usr/bin/labyrinth-agent-rec -- CMD...`.
+  The gate still sees the caller in `SUDO_USER`/`SUDO_UID` (the recorder passes sudo's environment on). Each session is
+  recorded in `/var/log/labyrinth-agent` (journal tag `labyrinth-agent-rec`), and every program in it is in the kernel audit
+  log under the agent's login uid (key `labyrinth-agent`).
+- **Who uses it:** Claude Code sessions on a Labyrinth system (through `claude-sudo`); Heimdall (reads the log, attributes the
+  actions).
+- **Where:** `packages/tools/src/agent.rs`, `agent_rec.rs`, `agent_setup.rs`, `agent_window.rs`; `docs/AGENT_ACCOUNT.md`.

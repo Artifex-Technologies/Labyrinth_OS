@@ -1,0 +1,5 @@
+## sudoers for sudo-rs (labyrinth-sudo-rs). Edit with: visudo
+## The swap from another sudo keeps that system's own file; this one is only used where there was none.
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+root ALL=(ALL:ALL) ALL
+@includedir /etc/sudoers.d

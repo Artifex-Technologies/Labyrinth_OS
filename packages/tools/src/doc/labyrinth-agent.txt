@@ -1,8 +1,9 @@
 labyrinth-agent: the root actions the engineering agent (Claude, account claude-agent) may take without the owner, each one
-checked. sudo lets the agent run this program and nothing else as root (/etc/sudoers.d/50-labyrinth-agent); anything broader
-needs the owner to open a window with their password (labyrinth-agent-window). Every action is written to the journal (tag
-labyrinth-agent), where Heimdall reads it, and sudo records the session. The programs it starts are found in /usr/bin only and
-see none of the caller's environment but sudo's own variables.
+checked. sudo lets the agent run this program as root, through its recorder (labyrinth-agent-rec), and nothing else
+(/etc/sudoers.d/50-labyrinth-agent); anything broader needs the owner to open a window with their password
+(labyrinth-agent-window). Every action is written to the journal (tag labyrinth-agent), where Heimdall reads it, and
+labyrinth-agent-rec records the session. The programs it starts are found in /usr/bin only and see none of the caller's
+environment but sudo's own variables.
 
   labyrinth-agent pkg-install FILE...        install packages built here: Artifex/Labyrinth names only (yggdrasil-*, labyrinth-*,
                                              heimdall*, sarina*, limbo*, liki-*, agora*); each file is copied (read as the account

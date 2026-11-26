@@ -32,13 +32,16 @@ fn note(msg: &str) -> Result<(), i32> {
     Ok(())
 }
 
+/// The list is written for the agent's rules account: the agent itself runs only the recorder, which asks sudo about that
+/// account (labyrinth-agent-setup, labyrinth-agent-rec).
 pub fn rules(user: &str, hours: &str) -> String {
+    let rules = crate::agent_rec::rules_user(AGENT);
     format!(
         "# Written by labyrinth-agent-window for {user}: removed by the timer {UNIT} after {hours} h, or by --close.\n\
          Cmnd_Alias AGENT_WINDOW = /usr/bin/pacman, /usr/bin/systemctl, /usr/bin/journalctl, /usr/bin/loginctl, /usr/bin/systemd-run, \\\n    \
          /usr/bin/heimdalld maintenance *, /usr/bin/limbo, /usr/bin/limbo *, /usr/bin/ufw *, /usr/local/bin/labyrinth-*, /usr/bin/labyrinth-*, \\\n    \
          /usr/bin/install, /usr/bin/mkdir, /usr/bin/chown, /usr/bin/chmod\n\
-         {AGENT} ALL=(root) NOPASSWD: AGENT_WINDOW\n"
+         {rules} ALL=(root) NOPASSWD: AGENT_WINDOW\n"
     )
 }
 
@@ -145,6 +148,7 @@ mod tests {
             "# Written by labyrinth-agent-window for owner: removed by the timer labyrinth-agent-window-close after 4 h, or by --close.\n"
         ));
         assert!(r.contains("/usr/bin/systemd-run, \\\n    /usr/bin/heimdalld maintenance *"));
-        assert!(r.ends_with("claude-agent ALL=(root) NOPASSWD: AGENT_WINDOW\n"));
+        assert!(r.ends_with("\nclaude-agent-rules ALL=(root) NOPASSWD: AGENT_WINDOW\n"));
+        assert!(!r.contains("\nclaude-agent ALL"));
     }
 }
