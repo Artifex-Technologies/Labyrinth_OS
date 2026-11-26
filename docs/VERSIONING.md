@@ -87,8 +87,7 @@ scripts/release.sh system 1.1.0         # Labyrinth OS 1.1: this repository, Ygg
 PROJECT is `system`, `heimdall`, `limbo`, `sarina`, `kairos`, `argus` (the app), `daedalus`, `icarus` or the video app's name; the version
 is `patch`, `minor`, `major` or an exact `X.Y.Z`. The script checks the new version is newer and that `VERSION` has no
 uncommitted change, writes `VERSION` (for the system also Yggdrasil's and `profile/airootfs/etc/os-release`; for Sarina also
-the version in `packaging/arch/PKGBUILD`, its recipe for a released tarball, and in `go/internal/version/version.go`, see
-below), commits only those files ("Release X.Y.Z"), tags the commit `vX.Y.Z` and prints the `git push` that publishes it. It
+the version in `packaging/arch/PKGBUILD`, its recipe for a released tarball), commits only those files ("Release X.Y.Z"), tags the commit `vX.Y.Z` and prints the `git push` that publishes it. It
 pushes nothing and builds nothing: the next publish after the push builds every package of that project as `X.Y.Z-1`, and
 installed systems update to it. For the system, build a new ISO after the push; its name carries the version.
 
@@ -102,8 +101,6 @@ own for an app. The programs read the file when they are built, so a release cha
   `version` in each `Cargo.toml` is not used for it and is left as it is.
 - **Go** (Heimdall, Limbo): `version.go` at the top of the repository embeds `VERSION` (`//go:embed`), and the commands use
   its `Version`. No recipe passes anything in.
-- **Sarina's Go**: its module (`go/`) cannot embed a file above it, so `go/internal/version/version.go` keeps the number as a
-  constant; a test holds it equal to `VERSION`, and `scripts/release.sh` writes both.
 - **The Argus app**: `qflipper_common.pri` reads `VERSION` into `APP_VERSION` (the window, `qFlipper-cli --version`, the
   Chymaera API); `argus-tools` reads it as the Rust programs do. The firmware keeps its own `ARG-...` names.
 
