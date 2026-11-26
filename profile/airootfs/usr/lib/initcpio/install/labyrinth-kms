@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MPL-2.0
+# labyrinth-kms: mkinitcpio's kms hook without the drivers blacklisted in modprobe.d. nvidia-utils blacklists nouveau (and
+# nova) so that NVIDIA's own driver has the card, yet kms puts nouveau in the start-up image with its firmware for every
+# NVIDIA generation (107 MB unpacked), where it never loads: a blacklisted module is never loaded for a device, in the image
+# or later. The Intel or AMD chip beside an NVIDIA card keeps its early start, and a computer where nouveau is not
+# blacklisted keeps nouveau. It takes kms's place through /etc/mkinitcpio.conf.d/zz-labyrinth-kms.conf.
+
+build() {
+    local word m major minor
+    local -a skip=()
+    # the blacklist of the system the image is built for (modprobe -c: every modprobe.d folder, as modprobe reads them)
+    while read -r word m _; do
+        [[ $word == blacklist && $m =~ ^[A-Za-z0-9_-]+$ ]] || continue
+        m=${m//-/_}
+        skip+=(-f "/${m//_/[-_]}\.ko")
+    done < <(modprobe -c 2>/dev/null)
+
+    # what kms does (/usr/lib/initcpio/install/kms), the blacklisted modules filtered out
+    add_checked_modules "${skip[@]}" '/drivers/char/agp/'
+    add_checked_modules "${skip[@]}" '/drivers/gpu/drm/'
+    IFS=.- read -r major minor _ <<<"$KERNELVERSION"
+    if ((major > 5 || (major == 5 && minor >= 17))); then
+        add_checked_modules_from_symbol 'drm_privacy_screen_register' '=drivers/platform'
+    fi
+}
+
+help() {
+    cat <<HELPEOF
+Adds KMS and privacy screen drivers to the image, as kms does, without the ones blacklisted in modprobe.d (nouveau where
+NVIDIA's own driver is installed).
+HELPEOF
+}
