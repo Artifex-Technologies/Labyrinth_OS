@@ -9,8 +9,8 @@ Pacman, the AUR, the Arch and CachyOS repositories and their tooling (makepkg, m
 and stay as they are.
 
 This page covers this repository and Yggdrasil. Heimdall, Limbo and Sarina keep their own porting plans in their repositories
-(as of 2026-11-15: Limbo is Rust only, its Go deleted; Heimdall's Rust port is done but not switched on yet; Sarina is about
-half ported, the rest still handed over to Go, see its `docs/RUST_PORT.md`).
+(Limbo is Rust only, its Go deleted; Heimdall's package installs only its Rust build since 2026-11-26; what Sarina installs
+is all Rust, see its `docs/RUST_PORT.md`).
 
 How it was made: every file with a `#!` line or a `.sh`/`.py`/`.lua` name in both repositories; every `install` line of the
 PKGBUILDs (what ships); everything under `profile/airootfs` (what the image carries); every `ExecStart`/`Exec=` of the units,
@@ -97,14 +97,10 @@ program to find no file). yggdrasil-settings no longer depends on Python.
 
 ## Copies kept for a rollback
 
-The copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git keeps
-them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there.
-
-- Sarina's voice server, `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py`
-  (Python, Chatterbox Turbo through ONNX Runtime): switched on 2026-11-17 to `sarina-voiced` (Rust, Sarina's
-  `packaging/voiced`, built by `sarina-git`; `labyrinth-voiced.service` starts `/usr/bin/sarina-voiced`). I had run the Rust
-  one through a drop-in since 2026-11-12. The Python stays one week after the switched package runs on my PC, for a rollback
-  (a drop-in with the old `ExecStart`, `docs/SARINA_VOICE.md`), then goes with `tests/test_voiced_text.py`.
+None. The copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git
+keeps them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there. Sarina's Python voice service
+(`labyrinth-voiced` and `chatterbox_engine.py`, switched to `sarina-voiced` on 2026-11-17) went after its week, with
+`tests/test_voiced_text.py`.
 
 ## Must stay (the platform needs it)
 
@@ -119,7 +115,7 @@ them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from 
 | Yggdrasil `packages/session/hyprland/plugin/minimize.cpp` | C++ | Hyprland's plugin interface, until our own compositor |
 | Command lines a person types or writes: Task Manager's "Run new task", Minos running a script you double-click, the distress password's "Run commands" | sh | the shell is the feature; everything the computer itself supplies goes by argv |
 | The compositor's key bindings run through `/bin/sh` (Yggdrasil `packages/compositor`) | sh | binding lines are command lines; the compositor's own work, not this pass |
-| Sarina's model training and eval harness (`tools/training`, `tools/voice_clone`, `evals/`) | Python | Sarina's repository and plan; training stays Python. Her ML/voice helper (embeddings, the ONNX classifier) is Rust since 2026-11-18 (`sarina-helpers`); the Python copy goes after its rollback week |
+| Sarina's model training and eval harness (`tools/training`, `tools/voice_clone`, `evals/`) | Python | Sarina's repository and plan; training stays Python. Her ML/voice helper (embeddings, the ONNX classifier) is Rust since 2026-11-18 (`sarina-helpers`); its Python copy is gone |
 | The measuring and differential harnesses: Yggdrasil `tools/bench-port.py`, `tools/parity-shell-ports.py`, `packages/*/parity/`; `packages/tools/parity/` here | Python (standard library) | they run the old Python and shell programs (from git) side by side with the ports; not shipped. They go, or move to Rust, when nothing old is left to compare against |
 | `scripts/windows/Reset-UsbDrive.ps1` and `.cmd` | PowerShell | runs on Windows, to reset a USB stick |
 
