@@ -9,9 +9,9 @@ Not related to Proton AG (Proton Drive, Proton Pass): see [PROTON_AG.md](PROTON_
   users should use that. Building it yourself needs Docker/Podman, so Labyrinth
   does not build it.
 - Labyrinth ships `steam` plus: `proton-cachyos` (CachyOS's tuned build),
-  `protonup-qt` (install/switch Proton-GE and others), `protontricks`,
-  `umu-launcher` (run Proton outside Steam), `gamemode`, `mangohud`.
-  Names are unverified against the repos.
+  `umu-launcher` (run Proton outside Steam), `gamemode`, `mangohud`. ProtonUp-Qt
+  (install/switch Proton-GE and others) and Protontricks are in Agora (Play > Games);
+  `labyrinth-gaming setup` installs what of the set is missing.
 - 32-bit NVIDIA/Vulkan libs are in `packages.x86_64` (multilib), which Proton needs.
 - Anti-cheat: see ARCHITECTURE.md section 6; support is per game.
 - Not yet tested on the target machine: Vulkan on the 2080 Ti, Proton runs.

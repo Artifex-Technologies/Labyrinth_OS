@@ -76,6 +76,24 @@ fn proton_and_vscode_come_from_proton_and_microsoft_through_the_aur() {
     }
 }
 
+/// The ISO carries no build tools (LAB-62): a build from the AUR or from a recipe here installs base-devel first, once.
+#[test]
+fn a_build_brings_the_build_tools_and_a_plain_install_does_not() {
+    let w = world(&[], true);
+    for comp in ["vscode", "weather"] {
+        let (rc, out, _) = run_apps(&w, &["install", comp, "--dry-run"]);
+        assert_eq!(rc, 0);
+        let pacman = out.lines().find(|l| l.contains("pacman -S")).unwrap_or_else(|| panic!("{out}"));
+        assert!(pacman.contains("base-devel"), "{out}");
+        assert!(out.find("pacman -S").unwrap() < out.find(if comp == "vscode" { "yay -S" } else { "makepkg -si" }).unwrap());
+    }
+    let (_, out, _) = run_apps(&w, &["install", "obsidian", "--dry-run"]);
+    assert!(!out.contains("base-devel"), "{out}");
+    let w = world(&["base-devel"], true);
+    let (_, out, _) = run_apps(&w, &["install", "vscode", "--dry-run"]);
+    assert!(!out.contains("base-devel"), "already there: {out}");
+}
+
 #[test]
 fn preset_expands() {
     let w = world(&[], true);

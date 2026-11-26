@@ -18,7 +18,8 @@ use crate::sh::{self, Io};
 
 const REQUIRED: [&str; 7] =
     ["steam", "lib32-nvidia-utils", "nvidia-utils", "lib32-vulkan-icd-loader", "vulkan-icd-loader", "gamemode", "mangohud"];
-const OPTIONAL: [&str; 4] = ["proton-cachyos", "protonup-qt", "protontricks", "umu-launcher"];
+// ProtonUp-Qt and Protontricks are Agora apps since 2026-11-26 (off the ISO), not part of the set-up
+const OPTIONAL: [&str; 2] = ["proton-cachyos", "umu-launcher"];
 const HELPER: &str = "/usr/bin/steam_playall";
 const SYSTEM_TOOLS: &str = "/usr/share/steam/compatibilitytools.d";
 

@@ -4,7 +4,7 @@
     {
       "id": "steam",
       "name": "Steam and Proton",
-      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, ProtonUp-Qt, Protontricks, umu GameMode, MangoHud, 32-bit NVIDIA, AMD and Vulkan libraries.",
+      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, umu, GameMode, MangoHud, 32-bit NVIDIA, AMD and Vulkan libraries.",
       "proprietary": true,
       "packages": [
         "steam",
@@ -14,13 +14,10 @@
         "gamemode",
         "mangohud",
         "proton-cachyos",
-        "protonup-qt",
-        "protontricks",
         "umu-launcher"
       ],
       "unverified_packages": [
-        "proton-cachyos",
-        "protonup-qt"
+        "proton-cachyos"
       ],
       "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup"
     },
@@ -577,6 +574,22 @@
       "containers",
       "flatpak",
       "sarina",
+      "heimdall",
+      "dev"
+    ],
+    "full": [
+      "steam",
+      "weather",
+      "proton-drive",
+      "proton-pass",
+      "proton-vpn",
+      "accessibility",
+      "creative",
+      "virtualization",
+      "limbo",
+      "vscode",
+      "containers",
+      "flatpak",
       "heimdall",
       "dev"
     ]

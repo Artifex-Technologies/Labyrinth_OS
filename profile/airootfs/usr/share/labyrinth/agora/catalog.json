@@ -806,6 +806,40 @@
    "flathub": "net.lutris.Lutris"
   },
   {
+   "id": "protonup-qt",
+   "name": "ProtonUp-Qt",
+   "subtitle": "Other Proton versions for Steam and Lutris",
+   "description": "Installs and updates Proton-GE and other compatibility tools for Steam and Lutris, for a game that runs better on one of them.",
+   "category": "Play",
+   "subcategory": "Games",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "protonup-qt"
+    ]
+   },
+   "icon": "net.davidotek.pupgui2",
+   "reviewed": true,
+   "tags": []
+  },
+  {
+   "id": "protontricks",
+   "name": "Protontricks",
+   "subtitle": "Fixes inside a Steam game's Proton prefix",
+   "description": "Runs winetricks inside the prefix Proton made for a Steam game: the extra Windows parts (fonts, runtimes) a few games need.",
+   "category": "Play",
+   "subcategory": "Games",
+   "source": {
+    "type": "pacman",
+    "packages": [
+     "protontricks"
+    ]
+   },
+   "icon": "wine",
+   "reviewed": true,
+   "tags": []
+  },
+  {
    "id": "heroic",
    "name": "Heroic Games Launcher",
    "subtitle": "Epic, GOG and Amazon games",

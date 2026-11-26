@@ -2,7 +2,7 @@
 # airootfs/usr/share/labyrinth/components.json; scripts/gen-packages.py combines the two
 # into packages.x86_64. Comments on their own lines only.
 base
-base-devel
+# no base-devel: the build tools come with the first build (labyrinth-apps and Agora install them first)
 # every firmware part (the meta-package): among them MediaTek, Realtek and Atheros for USB Wi-Fi adapters (mt76, rtw88,
 # rtl8xxxu, ath9k_htc in the kernel); tests/test_install_system.py checks it
 linux-firmware

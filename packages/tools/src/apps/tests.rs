@@ -47,7 +47,8 @@ fn pkgbuild_component_uses_makepkg_when_no_repository_has_it() {
     let steps = plan_install(&["limbo".to_string()], &m, &[], &|_| false, false).unwrap();
     let built: Vec<&Vec<String>> = steps.iter().filter(|s| s.2.is_some()).map(|s| &s.1).collect();
     assert_eq!(built, vec![&vec!["makepkg".to_string(), "-si".to_string()]]);
-    assert_eq!(steps[0].2.as_deref(), Some("limbo-git"));
+    assert_eq!(steps[1].2.as_deref(), Some("limbo-git"));
+    assert!(steps[0].1.contains(&"base-devel".to_string()), "the build tools first: {:?}", steps[0].1);
 }
 
 #[test]

@@ -2,7 +2,6 @@
 # components below. Edit those, not this file. Names unverified against CachyOS repos
 # unless noted in components.json.
 base
-base-devel
 linux-firmware
 intel-ucode
 amd-ucode
@@ -151,8 +150,6 @@ lib32-vulkan-icd-loader
 gamemode
 mangohud
 proton-cachyos
-protonup-qt
-protontricks
 umu-launcher
 # component: weather
 yggdrasil-weather

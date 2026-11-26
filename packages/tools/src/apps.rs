@@ -231,6 +231,19 @@ pub fn plan_install(chosen: &[String], m: &Manifest, installed: &[String], in_re
             }
         }
     }
+    let mut aur: Vec<String> = vec![];
+    for i in chosen {
+        for p in texts(comp(i)?.get("aur"))? {
+            if !installed.contains(&p) && !aur.contains(&p) {
+                aur.push(p);
+            }
+        }
+    }
+    // a build (the AUR, or a recipe here) needs the build tools, which the ISO no longer carries (LAB-62)
+    let build_tools = "base-devel".to_string();
+    if (!aur.is_empty() || !built_here.is_empty()) && !installed.contains(&build_tools) && !repo.contains(&build_tools) {
+        repo.push(build_tools);
+    }
     if !repo.is_empty() {
         let quiet = if gui_sudo().is_some() { s(&["--noconfirm"]) } else { vec![] };
         let (desc, verb) = if fresh {
@@ -242,14 +255,6 @@ pub fn plan_install(chosen: &[String], m: &Manifest, installed: &[String], in_re
         cmd.extend(quiet);
         cmd.extend(repo.iter().cloned());
         steps.push((desc, sudo(cmd), None));
-    }
-    let mut aur: Vec<String> = vec![];
-    for i in chosen {
-        for p in texts(comp(i)?.get("aur"))? {
-            if !installed.contains(&p) && !aur.contains(&p) {
-                aur.push(p);
-            }
-        }
     }
     if !aur.is_empty() {
         let mut cmd = s(&["yay", "-S", "--needed"]);

@@ -8,7 +8,7 @@ the machine only when that cannot be reached.
 
 | Component | What it is | Notes |
 | --- | --- | --- |
-| `steam` | Steam, Valve's Proton, Proton-CachyOS, ProtonUp-Qt, Protontricks, umu, GameMode, MangoHud, 32-bit NVIDIA/Vulkan (no system Wine: Proton has its own) | `proton-cachyos` and `protonup-qt` are not in Arch's repos (CachyOS repo or AUR) |
+| `steam` | Steam, Valve's Proton, Proton-CachyOS, umu, GameMode, MangoHud, 32-bit NVIDIA/Vulkan (no system Wine: Proton has its own) | `proton-cachyos` is not in Arch's repos (CachyOS's). ProtonUp-Qt and Protontricks are Agora apps (Play > Games): Protontricks brings winetricks and Wine (about 600 MB), which most players never need |
 | `spotify` | `spotify-launcher`, which downloads Spotify's own client | Spotify's [Linux page](https://www.spotify.com/us/download/linux/) offers only Snap and a Debian repo and says Linux is "not a platform that we actively support". `spotify-launcher` is Arch's way to run that same official client without Snap |
 | `obsidian` | Obsidian, from Arch's repo | Proprietary, free for personal use |
 | `weather` | Labyrinth's multi-model weather engine and its hourly recording timer (see [WEATHER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/WEATHER.md)) | Optional: the bar's weather slot hides itself when it is not installed |
@@ -37,7 +37,9 @@ Appearance > Font can offer them offline; Yggdrasil's Settings and theme package
 older installs too. Atkinson Hyperlegible and its Mono are the default. Five of them are built in this repository ([PACKAGE_REPO.md](PACKAGE_REPO.md)).
 
 **Presets:** `minimal` (nothing extra), `gaming` (steam), `creative` (creative +
-obsidian), `everything` (all of the above including weather; your own setup). Spotify is in no preset and Obsidian only in
+obsidian), `full` (everything but Sarina: the release ISO for other people, where Sarina, the reverse-engineering tools and
+the local AI stay downloads), `everything` (all of the above including weather and Sarina; your own setup). No preset carries
+`base-devel`: the first build (an AUR app in Agora, or a component built from its recipe by `labyrinth-apps`) installs it. Spotify is in no preset and Obsidian only in
 `creative` (2026-11-13): neither is part of the OS, and Agora installs both.
 
 ## Software that only lists Fedora or Debian
