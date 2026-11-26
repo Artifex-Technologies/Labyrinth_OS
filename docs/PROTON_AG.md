@@ -102,7 +102,7 @@ for this one sign-in. **Not yet tested against a real Proton account.**
 Inside Proton Drive, Minos's details view has a **Status** column like Windows: a blue cloud outline = only in Proton Drive
 (opening it downloads it; a partly downloaded file still counts as cloud), a green ring with a check = whole file on this computer.
 It is read from rclone's cache (`~/.cache/rclone/vfs` and `vfsMeta`), so it needs no network and assumes the remote is named `proton`.
-Narrow panes and the grid view show the mark next to the name instead. Settings > Apps > Minos > "Show Proton Drive file status" switches it off.
+Narrow panes and the grid view show the mark next to the name instead. Minos's Menu > Settings... > "Show Proton Drive file status" switches it off.
 
 Two more marks: blue circling arrows = uploading (or waiting to upload), red cross = the upload failed. rclone keeps retrying by itself;
 right-click the file and choose **Retry sync** to try at once. These come from rclone's upload queue through a control socket
