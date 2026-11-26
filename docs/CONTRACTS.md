@@ -49,8 +49,8 @@ tell the other side.
 
 - **What:** `/usr/share/yggdrasil/integrations/labyrinth-*.conf` (app rules, branding, installer, packages, report, security):
   how Yggdrasil's panel, Settings, Agora and installer show and drive Labyrinth's parts, in the format Yggdrasil defines. The
-  report file names where Settings > About > Report a problem sends a report (support@artifextech.sh) and adds Labyrinth's
-  self-check and package list to it.
+  report file names where Settings > About > Report a problem sends a report (support@artifextech.sh, or a GitHub issue on
+  this repository for someone with an account) and adds Labyrinth's self-check and package list to it.
 - **Who uses it:** Yggdrasil (Settings, Agora, the installer, the panel).
 - **Where:** `profile/airootfs/usr/share/yggdrasil/integrations/`; on a system, owned by `labyrinth-system-files` (since
   2026-11-26), so updates bring a changed file. The installer's file stays on the live medium only.
