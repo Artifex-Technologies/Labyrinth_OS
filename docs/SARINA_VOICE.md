@@ -215,8 +215,9 @@ thinking, 0.66 s without; one that needs a tool 15.3 s with, 6.8 s without.
 
 ## The voice service in Rust (2026-11-11; switched 2026-11-17)
 
-`labyrinth-voiced` and `chatterbox_engine.py` are ported to Rust: `sarina-voiced`, in Sarina's repository
-(`packaging/voiced`, its README has the design, the checks and the numbers). Same socket, requests, answers, files and
+Sarina's voice service is `sarina-voiced` (Rust), in Sarina's repository (`packaging/voiced`, its README has the design, the
+checks and the numbers); it replaced the Python service (`labyrinth-voiced` with `chatterbox_engine.py`), which is no longer
+in the image. Same socket, requests, answers, files and
 environment variables, so `labyrinth-sarina-speak` and the warm-up talk to it unchanged. It loads the voice venv's own ONNX
 Runtime (onnxruntime-gpu 1.31.0's `libonnxruntime.so`) and CUDA libraries at run time, so it runs the build the Python ran.
 
@@ -234,12 +235,12 @@ Runtime (onnxruntime-gpu 1.31.0's `libonnxruntime.so`) and CUDA libraries at run
   the same; the fix changes what Sarina says, so it waits for me. Also fixed by the port: a 240-character part with no comma or
   space hung the Python service; a failed background load left it locked.
 - **Switch (merged 2026-11-17):** `labyrinth-voiced.service` starts `/usr/bin/sarina-voiced` (built by `sarina-git`, also
-  the store's recipe); the Python stays in the image for a rollback, one week after the switched package runs on my PC. I
-  ran the Rust service on the card through a user drop-in from 2026-11-12 (Sarina's `packaging/voiced/README.md`, "The
-  switch, the check on the card, and the way back") before merging. **Rollback:** a drop-in,
-  `~/.config/systemd/user/labyrinth-voiced.service.d/python.conf`, with `[Service]`, `ExecStart=` and
-  `ExecStart=%h/.local/share/labyrinth/tts/gpu-venv/bin/python /usr/local/bin/labyrinth-voiced`, then
-  `systemctl --user daemon-reload && systemctl --user restart labyrinth-voiced`.
+  the store's recipe). I ran the Rust service on the card through a user drop-in from 2026-11-12 before merging.
+- **The voice venv** (`~/.local/share/labyrinth/tts/gpu-venv`) is only where `sarina-voiced` finds its libraries: ONNX
+  Runtime (`onnxruntime-gpu`'s `libonnxruntime.so`) and the NVIDIA packages with the CUDA and cuDNN libraries
+  (`nvidia-cublas`, `-cuda-nvrtc`, `-cuda-runtime`, `-cudnn-cu13`, `-cufft`, `-curand`, `-nvjitlink`). SciPy, soundfile and
+  tokenizers were the Python service's and are not needed (about 155 MB); numpy (about 43 MB) is not used either, but pip
+  keeps it as `onnxruntime-gpu`'s own dependency. Without the venv the service runs on the processor with `onnxruntime-cpu`.
 - **An installed system** gets the new unit with the next image; until then the unit there still names the Python, so the
   update that brings `/usr/bin/sarina-voiced` also has to put the new `labyrinth-voiced.service` in
   `/usr/lib/systemd/user` (no package owns that file).

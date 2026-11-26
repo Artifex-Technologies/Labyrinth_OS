@@ -97,14 +97,10 @@ program to find no file). yggdrasil-settings no longer depends on Python.
 
 ## Copies kept for a rollback
 
-The copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git keeps
-them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there.
-
-- Sarina's voice server, `profile/airootfs/usr/local/bin/labyrinth-voiced` and `/usr/local/lib/labyrinth/chatterbox_engine.py`
-  (Python, Chatterbox Turbo through ONNX Runtime): switched on 2026-11-17 to `sarina-voiced` (Rust, Sarina's
-  `packaging/voiced`, built by `sarina-git`; `labyrinth-voiced.service` starts `/usr/bin/sarina-voiced`). I had run the Rust
-  one through a drop-in since 2026-11-12. The Python stays one week after the switched package runs on my PC, for a rollback
-  (a drop-in with the old `ExecStart`, `docs/SARINA_VOICE.md`), then goes with `tests/test_voiced_text.py`.
+None. The copies of the switches of 2026-11-09 to -13 were removed on 2026-11-15 with the tests that only tested them; git
+keeps them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them from there. Sarina's Python voice service
+(`labyrinth-voiced` and `chatterbox_engine.py`, switched to `sarina-voiced` on 2026-11-17) went after its week, with
+`tests/test_voiced_text.py`.
 
 ## Must stay (the platform needs it)
 
