@@ -1,0 +1,17 @@
+[Unit]
+Description=Graphics drivers for the chips in this computer, when they changed
+Documentation=https://github.com/Artifex-Technologies/Labyrinth_OS/tree/main/packages/tools
+# never on the live medium, which keeps every driver for the install
+ConditionPathExists=!/run/archiso
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# does nothing while the chips match its record of the last run (/var/lib/labyrinth/hardware-chips)
+ExecStart=/usr/bin/labyrinth-hardware-setup --if-changed
+Nice=19
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

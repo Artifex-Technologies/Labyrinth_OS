@@ -7,6 +7,8 @@
    "note": "Your local AI assistant: answers about this computer, fixes, voice. Runs only on this computer; works best with a graphics card with 8 GB or more. The first time you use her she fetches her model server and AI model (several GB)."},
   {"id": "heimdall", "name": "Heimdall", "components": ["heimdall"], "chosen_if_exists": "/usr/bin/heimdalld", "group": "AI and security",
    "note": "Watches this computer for attacks, holds suspicious files and explains what it found. Works on its own; with Sarina it can also explain things in conversation."},
+  {"id": "steam", "name": "Steam", "components": ["steam"], "chosen_if_exists": "/usr/bin/steam", "group": "Games",
+   "note": "Steam with Proton for Windows games, GameMode and MangoHud. Proton-CachyOS, CachyOS's tuned Proton, is downloaded at your first login."},
   {"id": "logitech", "group": "Devices", "name": "Logitech", "components": ["logitech"], "chosen_if_usb": ["046d"], "usb_kind": "input",
    "note": "Solaar: pairs Unifying and Bolt receivers, battery levels, mouse and keyboard settings."},
   {"id": "gaming-mice", "group": "Devices", "name": "Gaming mice", "components": ["gaming-mice"], "usb_kind": "mouse",

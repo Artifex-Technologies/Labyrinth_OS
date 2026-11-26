@@ -8,7 +8,7 @@ the machine only when that cannot be reached.
 
 | Component | What it is | Notes |
 | --- | --- | --- |
-| `steam` | Steam, Valve's Proton, Proton-CachyOS, umu, GameMode, MangoHud, 32-bit NVIDIA/Vulkan (no system Wine: Proton has its own) | `proton-cachyos` is not in Arch's repos (CachyOS's). ProtonUp-Qt and Protontricks are Agora apps (Play > Games): Protontricks brings winetricks and Wine (about 600 MB), which most players never need |
+| `steam` | Steam, Valve's Proton, Proton-CachyOS, umu, GameMode, MangoHud, and the 32-bit Vulkan driver for this computer's graphics chips (`labyrinth-hardware-setup` after the install; no system Wine: Proton has its own) | `proton-cachyos` is not in Arch's repos (CachyOS's) and not on the ISO: the installer offers Steam (ticked when the medium carries it) and Proton-CachyOS is downloaded at the first login. ProtonUp-Qt and Protontricks are Agora apps (Play > Games): Protontricks brings winetricks and Wine (about 600 MB), which most players never need |
 | `spotify` | `spotify-launcher`, which downloads Spotify's own client | Spotify's [Linux page](https://www.spotify.com/us/download/linux/) offers only Snap and a Debian repo and says Linux is "not a platform that we actively support". `spotify-launcher` is Arch's way to run that same official client without Snap |
 | `obsidian` | Obsidian, from Arch's repo | Proprietary, free for personal use |
 | `weather` | Labyrinth's multi-model weather engine and its hourly recording timer (see [WEATHER.md](https://github.com/Artifex-Technologies/Yggdrasil/blob/main/docs/WEATHER.md)) | Optional: the bar's weather slot hides itself when it is not installed |

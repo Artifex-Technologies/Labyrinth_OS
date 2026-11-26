@@ -16,8 +16,8 @@
 
 use crate::sh::{self, Io};
 
-const REQUIRED: [&str; 7] =
-    ["steam", "lib32-nvidia-utils", "nvidia-utils", "lib32-vulkan-icd-loader", "vulkan-icd-loader", "gamemode", "mangohud"];
+// the vendor's 32-bit Vulkan driver is added for this computer's chips (gpu::vulkan32): NVIDIA's only where NVIDIA is
+const REQUIRED: [&str; 5] = ["steam", "lib32-vulkan-icd-loader", "vulkan-icd-loader", "gamemode", "mangohud"];
 // ProtonUp-Qt and Protontricks are Agora apps since 2026-11-26 (off the ISO), not part of the set-up
 const OPTIONAL: [&str; 2] = ["proton-cachyos", "umu-launcher"];
 const HELPER: &str = "/usr/bin/steam_playall";
@@ -25,6 +25,12 @@ const SYSTEM_TOOLS: &str = "/usr/share/steam/compatibilitytools.d";
 
 fn pkg(p: &str) -> bool {
     sh::quiet(&["pacman", "-Q", p])
+}
+
+/// What Steam's games need here: the fixed set and this computer's 32-bit Vulkan drivers.
+fn required() -> Vec<String> {
+    let chips = crate::gpu::chips(&crate::gpu::controllers("/sys"));
+    REQUIRED.iter().map(|s| s.to_string()).chain(crate::gpu::vulkan32(chips)).collect()
 }
 
 fn home() -> String {
@@ -104,7 +110,7 @@ impl Check {
 fn check() -> i32 {
     let mut c = Check { fails: 0 };
     println!("Packages");
-    for p in REQUIRED {
+    for p in &required() {
         if pkg(p) {
             c.pass(&format!("{p} installed"));
         } else {
@@ -238,7 +244,8 @@ fn spaced(names: &[String]) -> String {
 }
 
 fn setup() -> i32 {
-    let missing: Vec<&str> = REQUIRED.iter().chain(OPTIONAL.iter()).copied().filter(|p| !pkg(p)).collect();
+    let wanted = required();
+    let missing: Vec<&str> = wanted.iter().map(String::as_str).chain(OPTIONAL.iter().copied()).filter(|p| !pkg(p)).collect();
     if !missing.is_empty() {
         println!("Installing: {}", missing.join(" "));
         let mut argv = vec!["sudo", "pacman", "-S", "--needed"];

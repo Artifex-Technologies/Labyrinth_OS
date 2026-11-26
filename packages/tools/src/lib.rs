@@ -51,6 +51,7 @@ pub mod bt_privacy;
 pub mod ecosystem;
 pub mod first_components;
 pub mod gaming;
+pub mod gpu;
 pub mod grub_theme;
 pub mod hardware;
 pub mod install_cleanup;

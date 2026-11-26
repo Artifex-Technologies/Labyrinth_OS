@@ -73,8 +73,11 @@ package() {
     install -dm755 "$pkgdir/usr/lib/systemd/user/$t.wants"
     ln -s ../labyrinth-first-components.service "$pkgdir/usr/lib/systemd/user/$t.wants/labyrinth-first-components.service"
   done
-  for u in labyrinth-appnet.service labyrinth-appnet-ask.service; do
+  for u in labyrinth-appnet.service labyrinth-appnet-ask.service labyrinth-hardware-setup.service; do
     install -Dm644 "$_src/units/system/$u" "$pkgdir/usr/lib/systemd/system/$u"
   done
+  # the drivers follow the chips: at each start, doing nothing while they match the last run (labyrinth-hardware-setup)
+  install -dm755 "$pkgdir/usr/lib/systemd/system/multi-user.target.wants"
+  ln -s ../labyrinth-hardware-setup.service "$pkgdir/usr/lib/systemd/system/multi-user.target.wants/labyrinth-hardware-setup.service"
   install -Dm644 "$_src/hooks/labyrinth-bluetooth-privacy.hook" "$pkgdir/usr/share/libalpm/hooks/labyrinth-bluetooth-privacy.hook"
 }

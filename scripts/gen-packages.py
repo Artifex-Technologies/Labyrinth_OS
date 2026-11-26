@@ -58,7 +58,9 @@ def compose(base_pkgs, data, ids):
         add(p)
     for i in ids:
         c = comps[i]
-        pk = list(c.get("packages", [])) + ([c["pkgbuild"]] if c.get("pkgbuild") else [])
+        # online_only: never on an ISO (downloaded at the first login); iso_packages: only on an ISO (every vendor's driver)
+        skip = set(c.get("online_only", []))
+        pk = [p for p in c.get("packages", []) if p not in skip] + list(c.get("iso_packages", [])) + ([c["pkgbuild"]] if c.get("pkgbuild") else [])
         if pk:
             lines.append(f"# component: {i}")
             for p in pk:

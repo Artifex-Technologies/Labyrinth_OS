@@ -144,13 +144,13 @@ labyrinth-tools
 labyrinth-distress
 # component: steam
 steam
-lib32-nvidia-utils
-lib32-vulkan-radeon
 lib32-vulkan-icd-loader
 gamemode
 mangohud
-proton-cachyos
 umu-launcher
+lib32-nvidia-utils
+lib32-vulkan-radeon
+lib32-vulkan-intel
 # component: weather
 yggdrasil-weather
 # component: proton-drive

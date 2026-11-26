@@ -251,7 +251,7 @@ class Extras(unittest.TestCase):
         try:
             self.assertIsNone(inst.check_plan(dict(base, extras=["sarina"])))
             self.assertIsNone(inst.check_plan(dict(base, extras=[])))
-            self.assertEqual(inst.check_plan(dict(base, extras=["steam"])), "unknown optional part chosen")
+            self.assertEqual(inst.check_plan(dict(base, extras=["not-a-part"])), "unknown optional part chosen")
             self.assertEqual(inst.check_plan(dict(base, extras="sarina")), "unknown optional part chosen")
         finally:
             inst.EXTRAS_FILE = old

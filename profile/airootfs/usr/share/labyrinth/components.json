@@ -1,15 +1,13 @@
 {
-  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR). enable_global: user services enabled for every user (systemctl --global); enable_system: system services (systemctl enable --now).",
+  "_comment": "Optional software for Labyrinth. Everything not listed here is the base system. Used by /usr/bin/labyrinth-apps on an installed system and by scripts/gen-packages.py when building an ISO. Package names marked unverified were not found in Arch's repos (CachyOS repo or AUR). enable_global: user services enabled for every user (systemctl --global); enable_system: system services (systemctl enable --now). iso_packages: also on an ISO that carries the component, never installed with it (every vendor's driver, which labyrinth-hardware-setup then trims to the computer's chips). online_only: in the component but never on an ISO (downloaded at the first login when the installer's choice is on).",
   "components": [
     {
       "id": "steam",
       "name": "Steam and Proton",
-      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, umu, GameMode, MangoHud, 32-bit NVIDIA, AMD and Vulkan libraries.",
+      "description": "Steam, Valve's Proton (ships inside Steam), Proton-CachyOS, umu, GameMode, MangoHud, and the 32-bit Vulkan driver for this computer's graphics chips.",
       "proprietary": true,
       "packages": [
         "steam",
-        "lib32-nvidia-utils",
-        "lib32-vulkan-radeon",
         "lib32-vulkan-icd-loader",
         "gamemode",
         "mangohud",
@@ -19,7 +17,20 @@
       "unverified_packages": [
         "proton-cachyos"
       ],
-      "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup"
+      "notes": "Start Steam once and sign in, then run: labyrinth-gaming setup",
+      "after_install": [
+        [
+          "labyrinth-hardware-setup"
+        ]
+      ],
+      "iso_packages": [
+        "lib32-nvidia-utils",
+        "lib32-vulkan-radeon",
+        "lib32-vulkan-intel"
+      ],
+      "online_only": [
+        "proton-cachyos"
+      ]
     },
     {
       "id": "kairos",
