@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MPL-2.0
+# labyrinth-gpu-firmware: leaves the NVIDIA open driver's firmware for card generations this computer does not have out of
+# the start-up image. The driver loads early for the boot animation, and mkinitcpio adds its firmware for every generation:
+# Turing's (and GA100's: gsp_tu10x, ucodes_tu10x, 29 MB) and Ampere's and later ones' (gsp_ga10x, ucodes_ga10x, 74 MB).
+# Read from /sys when the image is built (the installer builds it on the computer itself). Both stay when no NVIDIA card is
+# found or one is older than Turing; a card swapped for another generation gets its firmware back when
+# labyrinth-hardware-setup rebuilds the images at the next start.
+
+build() {
+    local d id tu=0 ga=0 f sys=${LABYRINTH_HW_SYS:-/sys} fw=${LABYRINTH_FW_DIR:-/usr/lib/firmware}
+    for d in "$sys"/bus/pci/devices/*; do
+        [[ -r $d/vendor && -r $d/class && $(<"$d/vendor") == 0x10de && $(<"$d/class") == 0x03* ]] || continue
+        id=$(($(<"$d/device")))
+        if ((id >= 0x2200)); then
+            ga=1
+        elif ((id >= 0x1e00)); then
+            tu=1
+        else
+            return 0
+        fi
+    done
+    ((tu || ga)) || return 0
+    # mkinitcpio adds a module's firmware after the hooks, and skips a file the image already has: an empty one in each
+    # unneeded file's place keeps it out (were that to change, the firmware would only come back)
+    for f in "$fw"/nvidia/*/{gsp,ucodes}_{tu10x,ga10x}.bin*; do
+        [[ -e $f ]] || continue
+        case $f in
+            *_tu10x.bin*) ((tu)) && continue ;;
+            *_ga10x.bin*) ((ga)) && continue ;;
+        esac
+        mkdir -p -- "$BUILDROOT${f%/*}" && : >"$BUILDROOT$f"
+    done
+}
+
+help() {
+    cat <<HELPEOF
+Leaves the NVIDIA open driver's firmware for card generations this computer does not have out of the image.
+HELPEOF
+}

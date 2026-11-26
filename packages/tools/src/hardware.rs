@@ -3,7 +3,8 @@
 //! sleep services and power setting only with NVIDIA, GPU switching for two graphics chips, ASUS's tools. The installer runs
 //! it on the installed system (the image carries every driver and installs offline); labyrinth-hardware-setup.service runs
 //! it at each start with --if-changed, which does nothing while the chips match the record of the last run
-//! (/var/lib/labyrinth/hardware-chips), so a swapped card gets its driver and loses the old one. Output and calls go to
+//! (/var/lib/labyrinth/hardware-chips), so a swapped card gets its driver and loses the old one, and the start-up images are
+//! rebuilt for the new chips (their drivers and firmware were chosen for the old ones). Output and calls go to
 //! /var/log/labyrinth-hardware.log. LABYRINTH_HW_SYS, LABYRINTH_HW_MODULES and LABYRINTH_HW_RECORD (tests only) are another
 //! /sys, /usr/lib/modules and record.
 
@@ -73,6 +74,8 @@ pub fn main(args: &[String]) -> i32 {
     if flags.contains(&"--if-changed") && sh::cat(&record).as_deref() == Some(signature.trim_end()) {
         return 0;
     }
+    // a record from an earlier run that differs: a card was swapped, added or taken out
+    let swapped = sh::cat(&record).is_some_and(|old| old != signature.trim_end());
     let chips = gpu::chips(&controllers);
     let vendor = sh::cat(&format!("{sys}/class/dmi/id/sys_vendor")).unwrap_or_default();
 
@@ -147,6 +150,11 @@ pub fn main(args: &[String]) -> i32 {
             argv.extend(&pk);
             c.run(&argv);
         }
+    }
+    if done && swapped {
+        // the start-up images hold the drivers and firmware autodetect and labyrinth-gpu-firmware chose for the old chips
+        c.say("the graphics chips changed: rebuilding the start-up images");
+        c.run(&["mkinitcpio", "-P"]);
     }
     if done && !c.dry {
         let _ = sh::install_dir(&record[..record.rfind('/').unwrap_or(0)], 0o755, None);

@@ -33,6 +33,7 @@ fn world(chips: &[(&str, &str)], installed: &[&str], install_works: bool) -> Wor
         ),
     );
     stub(&bin, "systemctl", &format!("echo \"systemctl $*\" >> {calls}"));
+    stub(&bin, "mkinitcpio", &format!("echo \"mkinitcpio $*\" >> {calls}"));
     let env = vec![
         ("PATH".into(), bin),
         ("LABYRINTH_HW_SYS".into(), d.p("sys")),
@@ -88,6 +89,7 @@ fn the_start_does_nothing_while_the_chips_match_the_record() {
     let w2 = world(&[INTEL], &["nvidia-utils"], true);
     write(&w2.d.p("record"), "0x10de:0x1e07\n");
     assert!(w2.run(&["--if-changed"]).contains("removing the drivers no chip here needs: nvidia-utils"));
+    assert_eq!(w2.calls().last().map(String::as_str), Some("mkinitcpio -P"), "the start-up images follow the new chips");
 }
 
 #[test]
