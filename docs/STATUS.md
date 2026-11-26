@@ -39,8 +39,8 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   It shows up as "Microphone (private)". On every install (`heimdall-private-mic-git`, in the base system), with or without
   Heimdall; see [LOCATION_SOUNDS.md](LOCATION_SOUNDS.md).
 - **Rust:** Labyrinth's and Yggdrasil's own tools are Rust; the Python and shell copies kept for a rollback were removed on
-  2026-11-15 ([RUST_PORT_REMAINING.md](RUST_PORT_REMAINING.md)). Limbo is Rust only (its Go is gone). Heimdall's Rust port is
-  done but not switched on yet. What Sarina installs is all Rust: her core, her ML/voice helper and `sarina-tone` since 2026-11-18, her
+  2026-11-15 ([RUST_PORT_REMAINING.md](RUST_PORT_REMAINING.md)). Limbo is Rust only (its Go is gone). Heimdall is Rust since
+  2026-11-19, and its package installs no Go and no Python since 2026-11-26. What Sarina installs is all Rust: her core, her ML/voice helper and `sarina-tone` since 2026-11-18, her
   voice service since 2026-11-17; her Go build, Python helper and Python voice service are gone.
 
 **Seen working:** the ISO builds and boots (last built 2026-11-12, Labyrinth OS 1.0.0); the installer completes on real hardware,

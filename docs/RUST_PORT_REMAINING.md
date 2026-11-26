@@ -9,8 +9,8 @@ Pacman, the AUR, the Arch and CachyOS repositories and their tooling (makepkg, m
 and stay as they are.
 
 This page covers this repository and Yggdrasil. Heimdall, Limbo and Sarina keep their own porting plans in their repositories
-(as of 2026-11-15: Limbo is Rust only, its Go deleted; Heimdall's Rust port is done but not switched on yet; Sarina is about
-half ported, the rest still handed over to Go, see its `docs/RUST_PORT.md`).
+(Limbo is Rust only, its Go deleted; Heimdall's package installs only its Rust build since 2026-11-26; what Sarina installs
+is all Rust, see its `docs/RUST_PORT.md`).
 
 How it was made: every file with a `#!` line or a `.sh`/`.py`/`.lua` name in both repositories; every `install` line of the
 PKGBUILDs (what ships); everything under `profile/airootfs` (what the image carries); every `ExecStart`/`Exec=` of the units,
