@@ -16,7 +16,6 @@ SHARE = ROOT / "profile" / "airootfs" / "usr" / "share" / "labyrinth"
 # Published, but installed some other way; each with its reason.
 ELSEWHERE = {
     # LykanOS's app: LykanOS's own Agora catalog lists it and installs it from [labyrinth]
-    "argus-git": "LykanOS's Agora",
     # Limbo's analysis guest image installs YARA-X's scanner from [labyrinth]; nothing on this computer needs it
     "yara-x": "Limbo's analysis image",
     # the own compositor is tried by hand (packages/compositor/session/install-session.sh) until it becomes the session

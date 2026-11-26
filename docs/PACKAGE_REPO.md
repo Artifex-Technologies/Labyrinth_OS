@@ -20,12 +20,12 @@ repository can add Labyrinth's software but never replace the base system.
 
 Every package in it is installed by something: the ISO's list, a component (what the installer and Agora install), Agora's
 catalog, or another package's `depends` or `optdepends`. `tests/test_installed_by.py` (run by `scripts/release-check.sh`)
-fails on a recipe nothing installs, here or in Yggdrasil; the few installed another way (Argus by LykanOS's Agora, `yara-x`
+fails on a recipe nothing installs, here or in Yggdrasil; the few installed another way (`yara-x`
 in Limbo's analysis image, the own compositor while it is tried by hand) are listed in it with the reason.
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-system-files (the ISO's own files: see below), labyrinth-coreutils-rs and labyrinth-sudo-rs (they replace coreutils and sudo with their Rust versions: [RUST_BASE.md](RUST_BASE.md)), labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) and the reading fonts (Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and OpenDyslexic Mono: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-system-files (the ISO's own files: see below), labyrinth-coreutils-rs and labyrinth-sudo-rs (they replace coreutils and sudo with their Rust versions: [RUST_BASE.md](RUST_BASE.md)), labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) and the reading fonts (Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and OpenDyslexic Mono: see below) | **Argus** (the Flipper Zero console): LykanOS's alone since 2026-11-26, built and published in LykanOS's `[lykanos]` repository. **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## Built from someone else's source: yara-x
 
@@ -178,7 +178,7 @@ journalctl --user -u labyrinth-publish     # what the last publish did
 The ISO takes Labyrinth's software from packages built on the build PC from the same recipes: `labyrinth-publish-repo build`,
 run as a normal user inside this checkout, builds its recipes and those of the Yggdrasil checkout next to it (`../Yggdrasil`,
 or `YGGDRASIL_DIR`) into `repo/x86_64`, the way the publish builds (above). Without names it builds what changed and leaves
-out the apps that are not on the ISO (Daedalus CAD, Icarus, Argus, yara-x; `LABYRINTH_SKIP` replaces the list); named
+out the apps that are not on the ISO (Daedalus CAD, Icarus, yara-x; `LABYRINTH_SKIP` replaces the list); named
 recipes are always built (`labyrinth-publish-repo build yggdrasil-panel`), `--force` builds everything. Not installed? From
 the checkout: `cargo run --release --manifest-path packages/publish-repo/Cargo.toml -- build`. Since 2026-11-07 the packages
 are signed too, and checked like any repository:

@@ -31,7 +31,7 @@ pub const STORE: &str = "profile/airootfs/usr/share/labyrinth/pkgbuilds";
 /// Left out of the ISO's local build unless named (LABYRINTH_SKIP replaces the list): Daedalus CAD and Icarus are only in
 /// the Marketplace, Argus is LykanOS's (its firmware build fetches Flipper's ARM toolchain), yara-x is for Limbo's analysis
 /// guest image. The publish builds them all.
-pub const NOT_ON_THE_ISO: &str = "daedalus-cad-git icarus-git argus-git yara-x";
+pub const NOT_ON_THE_ISO: &str = "daedalus-cad-git icarus-git yara-x";
 /// The most lines of a log shown for a failure; the log has the rest.
 const SHOWN: usize = 12;
 
