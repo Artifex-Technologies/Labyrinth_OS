@@ -34,6 +34,9 @@ mkroot() {  # $1 = list of kernel pkgbases
   printf 'vt = 7\n' >"$r/etc/greetd/config.toml"
   printf '[Service]\nExecStart=\n' >"$r/etc/systemd/system/greetd.service.d/live.conf"
   printf 'x' >"$r/home/live/.config/hypr/hyprland.conf"
+  mkdir -p "$r/usr/share/labyrinth/sync" "$r/etc/tmpfiles.d"
+  printf 'core list' >"$r/usr/share/labyrinth/sync/core.db"
+  printf 'C /var/lib/pacman/sync\n' >"$r/etc/tmpfiles.d/labyrinth-live-sync.conf"
   for k in $1; do
     mkdir -p "$r/usr/lib/modules/6.99-$k"
     printf '%s\n' "$k" >"$r/usr/lib/modules/6.99-$k/pkgbase"
@@ -56,6 +59,7 @@ check "live sudoers removed"             "[ ! -e $r/etc/sudoers.d/00-live-nopass
 check "autologin removed"                "[ ! -e $r/etc/greetd/live.toml ] && [ ! -e $r/etc/systemd/system/greetd.service.d ]"
 check "login screen config kept"         "[ -e $r/etc/greetd/config.toml ]"
 check "live home removed"                "[ ! -d $r/home/live ]"
+check "the live package lists removed"   "[ ! -e $r/usr/share/labyrinth/sync ] && [ ! -e $r/etc/tmpfiles.d/labyrinth-live-sync.conf ]"
 check "desktop config seeded to skel"    "[ -f $r/etc/skel/.config/hypr/hyprland.conf ]"
 check "no LTS warning when LTS present"  "! grep -q WARNING <<<\"\$out\""
 rm -rf "$r"

@@ -152,6 +152,17 @@ done
 echo "==> Clearing the previous mkarchiso work directory"
 rm -rf --one-file-system "${work_dir:?}/iso"
 
+# The package lists the image is built from (mkarchiso removes its own after pacstrap). The live system copies them into
+# /var/lib/pacman/sync at start (etc/tmpfiles.d/labyrinth-live-sync.conf), so the installer's pacman can install a chosen
+# browser from them without a full upgrade; the installed system drops them (labyrinth-install-cleanup). Fetched just before
+# mkarchiso's own pacstrap, with the same pacman.conf.
+echo "==> Saving the package lists for the installer"
+lists=$(mktemp -d)
+pacman -Sy --config "$profile_build_dir/pacman.conf" --dbpath "$lists" --logfile /dev/null >/dev/null
+install -d -m 755 "$profile_build_dir/airootfs/usr/share/labyrinth/sync"
+find "$lists/sync" -maxdepth 1 -type f \( -name '*.db' -o -name '*.db.sig' \) -exec install -m 644 -t "$profile_build_dir/airootfs/usr/share/labyrinth/sync" {} +
+rm -rf --one-file-system "${lists:?}"
+
 echo "==> Running mkarchiso"
 mkdir -p "$out_dir"
 mkarchiso -v -w "$work_dir/iso" -o "$out_dir" "$profile_build_dir"

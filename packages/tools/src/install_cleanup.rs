@@ -16,7 +16,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-const LIVE_ONLY: [&str; 11] = [
+const LIVE_ONLY: [&str; 12] = [
     "/etc/mkinitcpio.conf.d/archiso.conf",
     "/etc/greetd/live.toml",
     "/etc/systemd/system/greetd.service.d/live.conf",
@@ -26,6 +26,7 @@ const LIVE_ONLY: [&str; 11] = [
     "/etc/polkit-1/rules.d/49-live-nopasswd.rules",
     "/etc/sysusers.d/live.conf",
     "/etc/tmpfiles.d/live-home.conf",
+    "/etc/tmpfiles.d/labyrinth-live-sync.conf",
     "/usr/share/applications/labyrinth-install.desktop",
     "/usr/share/yggdrasil/integrations/labyrinth-installer.conf",
 ];
@@ -154,6 +155,9 @@ fn run(r: &str) -> Res {
     let _ = fs::remove_dir(format!("{r}/etc/systemd/system/greetd.service.d"));
     let home = format!("{r}/home/live");
     sh::rm_rf(&home).map_err(|e| fail(&format!("cannot remove {home}"), e))?;
+    // the package lists the live medium's pacman started with (scripts/build.sh): the installed system fetches its own
+    let lists = format!("{r}/usr/share/labyrinth/sync");
+    sh::rm_rf(&lists).map_err(|e| fail(&format!("cannot remove {lists}"), e))?;
     say("removed live-only configuration");
 
     // the serial-port login is for testing the live medium; on a desktop it fails and restarts every 10 seconds: off and masked
