@@ -25,7 +25,7 @@ in Limbo's analysis image, the own compositor while it is tried by hand) are lis
 
 | In the repository | Not in it, and why |
 |---|---|
-| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-coreutils-rs and labyrinth-sudo-rs (they replace coreutils and sudo with their Rust versions: [RUST_BASE.md](RUST_BASE.md)), labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) and the reading fonts (Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and OpenDyslexic Mono: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
+| Everything built from Yggdrasil (panel, Settings, compositor, Agora, Minos, spell check, Liki, ...), Sarina, Heimdall, Limbo, labyrinth-keyring, labyrinth-distress, labyrinth-system-files (the ISO's own files: see below), labyrinth-coreutils-rs and labyrinth-sudo-rs (they replace coreutils and sudo with their Rust versions: [RUST_BASE.md](RUST_BASE.md)), labyrinth-ollama-tuning, Kairos (frame generation), Daedalus CAD, Icarus, Argus (LykanOS's: its Agora lists it, Labyrinth's does not; not on Labyrinth's ISO), the store's apps (Timer, 2048, Sudoku, Authenticator, Health, controllers, agent usage, browser warm-up), **yara-x** (YARA-X's `yr`, built from VirusTotal's source: see below) and the reading fonts (Atkinson Hyperlegible Next and Mono, Lexend, OpenDyslexic and OpenDyslexic Mono: see below) | **Proton Pass, Proton Mail, VS Code**: their licences do not let Labyrinth pass them on. Agora installs them from the AUR (`proton-pass-bin`, `proton-mail-bin`, `visual-studio-code-bin`), downloaded from Proton and Microsoft, and its updates keep them current (`aur_updates_ok` in the catalog). |
 
 ## Built from someone else's source: yara-x
 
@@ -190,6 +190,23 @@ are signed too, and checked like any repository:
 - `profile/pacman.conf` has `SigLevel = Required` for the local `[labyrinth]` repository.
 - `LABYRINTH_UNSIGNED=1` (for the build and for `build.sh`) builds once without signatures on a host that does not have the key; `build.sh`
   then trusts the local packages unsigned for that build, and says so.
+
+## The ISO's own files: labyrinth-system-files
+
+The files the ISO adds in `profile/airootfs` (Agora's catalog and recipes, the optional components, the installer's extras,
+the desktop's integration files, icons, the boot animation, wallpapers, policies, pacman hooks, defaults in /etc) are owned
+by `labyrinth-system-files`, so `pacman -Syu` brings a changed catalog or integration file to an installed system. Left out,
+in `profile/not-packaged.txt`: what only the live medium needs, what each machine writes for itself (hostname, locale,
+os-release, the kernel preset) and the files other packages own (pacman.conf, the mirror list, PAM, greetd, ClamAV), which
+the image overrides at build. `scripts/system-files.sh` lists the package's files for the recipe and for `scripts/build.sh`,
+which takes them out of the ISO's copy of airootfs (a file both there and in a package stops mkarchiso's pacstrap); the image
+gets them from the package. Files in /etc are kept when a machine changed them (the dock and the default browser, written
+by the installer): the new version arrives beside them as `.pacnew`. `tests/test_system_files.py` fails on a rule that
+matches nothing and on a file another recipe also ships.
+
+A system installed before 2026-11-26 has these files unowned, so its first install of the package takes them over once:
+`sudo pacman -S --overwrite '*' labyrinth-system-files` would take every path; the narrower form names each of the package's
+files (`pacman -Qlp` of the package file lists them).
 
 ## Agora
 

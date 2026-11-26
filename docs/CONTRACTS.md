@@ -50,7 +50,8 @@ tell the other side.
 - **What:** `/usr/share/yggdrasil/integrations/labyrinth-*.conf` (app rules, branding, installer, packages, security): how
   Yggdrasil's panel, Settings, Agora and installer show and drive Labyrinth's parts, in the format Yggdrasil defines.
 - **Who uses it:** Yggdrasil (Settings, Agora, the installer, the panel).
-- **Where:** `profile/airootfs/usr/share/yggdrasil/integrations/`.
+- **Where:** `profile/airootfs/usr/share/yggdrasil/integrations/`; on a system, owned by `labyrinth-system-files` (since
+  2026-11-26), so updates bring a changed file. The installer's file stays on the live medium only.
 
 ## Sarina's voice unit and settings
 

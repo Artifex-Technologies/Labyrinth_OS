@@ -1,0 +1,40 @@
+# Files in profile/airootfs that the labyrinth-system-files package does not own (scripts/system-files.sh). Everything else
+# there is that package's, so an update refreshes it on an installed system. One pattern per line, from the airootfs root; *
+# matches across folders. "recipe:" marks a file another of our recipes ships: it stays out of this package and out of the
+# ISO's copy of airootfs (that package brings it).
+
+# only the live medium needs these (labyrinth-install-cleanup removes them from an installed system)
+/home/live/*
+/etc/greetd/live.toml
+/etc/systemd/system/greetd.service.d/live.conf
+/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf
+/etc/sudoers.d/00-live-nopasswd
+/etc/polkit-1/rules.d/49-live-nopasswd.rules
+/etc/sysusers.d/live.conf
+/etc/tmpfiles.d/live-home.conf
+/etc/tmpfiles.d/labyrinth-live-sync.conf
+/etc/mkinitcpio.conf.d/archiso.conf
+/usr/share/applications/labyrinth-install.desktop
+/usr/share/yggdrasil/integrations/labyrinth-installer.conf
+
+# archiso's keyring unit: on the medium, and an installed system's safety net when its keyring is missing
+/etc/systemd/system/pacman-init.service
+
+# each machine writes its own (the installer, labyrinth-install-cleanup, labyrinth-tools' scriptlet)
+/etc/hostname
+/etc/locale.conf
+/etc/os-release
+/etc/mkinitcpio.d/linux-cachyos.preset
+
+# owned by other packages: the image's version replaces theirs at build (pacman keeps it as a changed configuration file)
+/etc/locale.gen
+/etc/pacman.conf
+/etc/pacman.d/mirrorlist
+/etc/clamav/clamd.conf
+/etc/pam.d/passwd
+/etc/pam.d/chpasswd
+/etc/pam.d/greetd
+/etc/greetd/config.toml
+
+# shipped by another of our recipes
+recipe:/usr/share/polkit-1/actions/org.labyrinth.distress.policy

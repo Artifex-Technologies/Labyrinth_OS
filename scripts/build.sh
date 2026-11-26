@@ -104,6 +104,15 @@ fi
 
 sed -i "s|^iso_version=\"|iso_version=\"$version-|" "$profile_build_dir/profiledef.sh"
 
+# What labyrinth-system-files (and another of our recipes) brings leaves the ISO's copy of airootfs: mkarchiso copies airootfs
+# before it installs the packages, and a file in both stops pacstrap ("exists in filesystem"). The image gets them from the
+# packages, so an installed system's updates refresh them (scripts/system-files.sh, profile/not-packaged.txt).
+echo "==> Leaving the packaged files to their packages"
+{ "$repo_root/scripts/system-files.sh"; "$repo_root/scripts/system-files.sh" recipes; } | while IFS= read -r f; do
+  rm -f -- "$profile_build_dir/airootfs$f"
+done
+find "$profile_build_dir/airootfs" -mindepth 1 -type d -empty -delete
+
 # Service wiring as symlinks (mkarchiso copies airootfs over the pacstrapped root as-is).
 sysd="$profile_build_dir/airootfs/etc/systemd/system"
 mkdir -p "$sysd/multi-user.target.wants" "$sysd/bluetooth.target.wants"

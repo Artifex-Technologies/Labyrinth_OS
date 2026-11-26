@@ -1,0 +1,38 @@
+# Labyrinth OS's own system files from the ISO (profile/airootfs), owned by a package so that an update refreshes them on an
+# installed system: the store's catalog and recipes, the optional components, the installer's extras, the desktop's
+# integration files, icons, the boot animation, wallpapers, policies, pacman hooks and defaults. What only the live medium
+# needs, what each machine writes for itself and what other packages own stay out (profile/not-packaged.txt,
+# scripts/system-files.sh); scripts/build.sh takes the rest out of the ISO's own copy of airootfs, so the image gets them from
+# here. Files in /etc are kept when a machine changed them (the installer writes the dock and the default browser): pacman
+# puts the new version beside them as .pacnew.
+pkgname=labyrinth-system-files
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Labyrinth OS's own system files: store catalog, components, desktop integration files, icons, boot animation, policies and defaults"
+arch=('any')
+url="https://github.com/Artifex-Technologies/Labyrinth_OS"
+license=('MPL-2.0')
+options=('!strip' '!debug')
+_src="$startdir/../../../profile/airootfs"
+# The version is the system's; the build number counts the commits since that release which touch these files, the list of
+# what stays out, the lister and this recipe (scripts/package-version.sh, docs/VERSIONING.md)
+. "$startdir/../../../scripts/package-version.sh"
+_version "$startdir" "$_src" "$startdir/../../../profile/not-packaged.txt" "$startdir/../../../scripts/system-files.sh"
+mapfile -t _files < <("$startdir/../../../scripts/system-files.sh")
+backup=()
+for _f in "${_files[@]}"; do
+  [[ $_f == /etc/* && ! -L $_src$_f ]] && backup+=("${_f#/}")
+done
+unset _f
+
+package() {
+  local f
+  for f in "${_files[@]}"; do
+    if [[ -L $_src$f ]]; then
+      install -dm755 "$pkgdir${f%/*}"
+      cp -P -- "$_src$f" "$pkgdir$f"
+    else
+      install -Dm644 -- "$_src$f" "$pkgdir$f"
+    fi
+  done
+}

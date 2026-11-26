@@ -18,6 +18,5 @@ file_permissions=(
   ["/root"]="0:0:750"
   ["/etc/sudoers.d/00-live-nopasswd"]="0:0:440"
   ["/home/live/"]="1000:1000:700"
-  ["/usr/share/labyrinth/grub-evodevo/install.sh"]="0:0:755"
   ["/home/live/Desktop/install-labyrinth.desktop"]="1000:1000:755"
 )

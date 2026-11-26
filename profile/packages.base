@@ -99,6 +99,8 @@ yggdrasil-theme
 liki-icon-theme
 # the key Labyrinth's own packages are signed with (its [labyrinth] repository, see etc/pacman.conf)
 labyrinth-keyring
+# the ISO's own system files, so updates refresh them (packages/pkgbuilds/labyrinth-system-files)
+labyrinth-system-files
 # the AUR helper: Agora installs AUR apps (Proton Pass, Proton Mail, VS Code...) and takes their updates with it
 yay
 # desktop 2, Omarchy-style tiling: Hyprland session, bar, launcher, terminal, notifications (no dock)
