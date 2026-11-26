@@ -34,7 +34,8 @@ root; needs archiso, the CachyOS keyring, the Labyrinth signing key or `LABYRINT
 VM (`scripts/vm`), installing (`yggdrasil-installer` with `yggdrasil-install-system`), and after the reboot `labyrinth-selfcheck`
 and the checks in [FIRST_BOOT.md](FIRST_BOOT.md) §6. The encrypted-disk install has been run on real hardware, beside Windows;
 Secure Boot enrolment has not been exercised. Two install paths only a VM run shows: an install with the image copied into
-memory at boot (`copytoram=y` on the boot line; the installer then copies `/run/archiso/copytoram/airootfs.sfs` and keeps the
+memory at boot (the boot menu's "run from memory" entry, `copytoram=y`; the other entries start the desktop straight from
+the stick, `copytoram=n`, rather than wait for archiso to read the whole image into memory; the installer then copies `/run/archiso/copytoram/airootfs.sfs` and keeps the
 stick off its disk list), and an install with a browser ticked that the medium lacks (Firefox): the new system's pacman takes
 the lists the ISO was built from (`/usr/share/labyrinth/sync`, copied into the live system's `/var/lib/pacman/sync` at start)
 and the live keyring, and installs it without a full upgrade.
