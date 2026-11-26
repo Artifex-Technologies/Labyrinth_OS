@@ -63,7 +63,10 @@ tell the other side.
 ## Heimdall's configuration template
 
 - **What:** the default `/etc/heimdall/config.json` Labyrinth installs, including the file-integrity list (`fim_paths`: the
-  Sarina, Limbo and Heimdall binaries and units) and the agent session folder (`/var/lib/sarina/sessions`).
+  Sarina (`/usr/bin/sarina`, her ML and voice helper `/usr/lib/sarina/sarina-helpers`), Limbo and Heimdall binaries and
+  units) and the agent session folder (`/var/lib/sarina/sessions`). `labyrinth-ecosystem-setup` writes it only where there is
+  no `/etc/heimdall/config.json` yet, so an existing one keeps its own list: one written while Sarina still had a Go build
+  names `/usr/lib/sarina/sarina`, which is gone; replace it there by hand (as root) with `/usr/lib/sarina/sarina-helpers`.
 - **Who uses it:** Heimdall (reads it); Sarina (her session folder must match).
 - **Where:** `packages/tools/src/text/heimdall-config.json`.
 
