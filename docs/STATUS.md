@@ -40,8 +40,8 @@ Plasma, SDDM, Calamares) are in this file's git history: `git log -p -- docs/STA
   Heimdall; see [LOCATION_SOUNDS.md](LOCATION_SOUNDS.md).
 - **Rust:** Labyrinth's and Yggdrasil's own tools are Rust; the Python and shell copies kept for a rollback were removed on
   2026-11-15 ([RUST_PORT_REMAINING.md](RUST_PORT_REMAINING.md)). Limbo is Rust only (its Go is gone). Heimdall's Rust port is
-  done but not switched on yet. Sarina's core runs in Rust since 2026-11-18, and so do her ML/voice helper and
-  `sarina-tone`; her Go build and Python helper stay installed one week as the rollback copies (until about 2026-11-25).
+  done but not switched on yet. What Sarina installs is all Rust: her core, her ML/voice helper and `sarina-tone` since 2026-11-18, her
+  voice service since 2026-11-17; her Go build, Python helper and Python voice service are gone.
 
 **Seen working:** the ISO builds and boots (last built 2026-11-12, Labyrinth OS 1.0.0); the installer completes on real hardware,
 also beside Windows and encrypted, and on the ThinkPad X1 Yoga from that ISO ([HARDWARE.md](HARDWARE.md)); the desktop runs on my

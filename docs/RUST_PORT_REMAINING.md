@@ -115,7 +115,7 @@ keeps them (Yggdrasil f9c76a5, here 5ed56c8), and the parity harnesses take them
 | Yggdrasil `packages/session/hyprland/plugin/minimize.cpp` | C++ | Hyprland's plugin interface, until our own compositor |
 | Command lines a person types or writes: Task Manager's "Run new task", Minos running a script you double-click, the distress password's "Run commands" | sh | the shell is the feature; everything the computer itself supplies goes by argv |
 | The compositor's key bindings run through `/bin/sh` (Yggdrasil `packages/compositor`) | sh | binding lines are command lines; the compositor's own work, not this pass |
-| Sarina's model training and eval harness (`tools/training`, `tools/voice_clone`, `evals/`) | Python | Sarina's repository and plan; training stays Python. Her ML/voice helper (embeddings, the ONNX classifier) is Rust since 2026-11-18 (`sarina-helpers`); the Python copy goes after its rollback week |
+| Sarina's model training and eval harness (`tools/training`, `tools/voice_clone`, `evals/`) | Python | Sarina's repository and plan; training stays Python. Her ML/voice helper (embeddings, the ONNX classifier) is Rust since 2026-11-18 (`sarina-helpers`); its Python copy is gone |
 | The measuring and differential harnesses: Yggdrasil `tools/bench-port.py`, `tools/parity-shell-ports.py`, `packages/*/parity/`; `packages/tools/parity/` here | Python (standard library) | they run the old Python and shell programs (from git) side by side with the ports; not shipped. They go, or move to Rust, when nothing old is left to compare against |
 | `scripts/windows/Reset-UsbDrive.ps1` and `.cmd` | PowerShell | runs on Windows, to reset a USB stick |
 
