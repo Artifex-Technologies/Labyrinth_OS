@@ -116,7 +116,10 @@ fn run() -> R<i32> {
         return Ok(0);
     }
     let names = ids.join(", ");
-    notify("Installing what you chose", &format!("Getting {names}. Your password is asked once; this can take a while."))?;
+    notify(
+        "Installing what you chose",
+        &format!("Getting {names}. Your password is asked once (once more if something has to be built); this can take a while."),
+    )?;
     let log_dir = py::expanduser("~/.local/state/labyrinth");
     py::makedirs(&log_dir)?;
     let log_path = py::join(&log_dir, "first-components.log");

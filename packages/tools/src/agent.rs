@@ -933,7 +933,7 @@ pub fn caller(uid: Option<OsString>, gid: Option<OsString>) -> Result<Option<Cal
     }))
 }
 
-fn account_name(uid: u32) -> Option<B> {
+pub(crate) fn account_name(uid: u32) -> Option<B> {
     let mut buf = vec![0u8; 4096];
     loop {
         let mut pw: libc::passwd = unsafe { std::mem::zeroed() };

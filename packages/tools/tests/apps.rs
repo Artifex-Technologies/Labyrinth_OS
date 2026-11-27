@@ -137,6 +137,41 @@ fn weather_enables_its_timer_and_removing_it_disables_the_timer_first() {
 }
 
 #[test]
+fn setup_and_teardown_are_the_administrators_part_of_install_and_remove() {
+    let w = world(&["yggdrasil-weather"], true);
+    let (rc, _, e) = run_apps(&w, &["setup", "weather"]);
+    assert_eq!(rc, 2, "not run half-way as a user");
+    assert!(e.contains("administrator"), "{e}");
+    let (rc, out, _) = run_apps(&w, &["setup", "weather", "--dry-run"]);
+    assert_eq!(rc, 0);
+    assert!(out.contains("systemctl --global enable yggdrasil-weather-record.timer yggdrasil-weather-nowcast.timer"), "{out}");
+    let (rc, out, _) = run_apps(&w, &["teardown", "weather", "--dry-run"]);
+    assert_eq!(rc, 0);
+    assert!(out.contains("systemctl --global disable yggdrasil-weather-record.timer"), "{out}");
+    // nothing of it installed: nothing is set up; unknown or no component: refused
+    let w = world(&[], true);
+    let (rc, _, e) = run_apps(&w, &["setup", "weather", "--dry-run"]);
+    assert_eq!(rc, 2);
+    assert!(e.contains("not installed"), "{e}");
+    assert_eq!(run_apps(&w, &["setup", "nope", "--dry-run"]).0, 2);
+    assert_eq!(run_apps(&w, &["setup", "--dry-run"]).0, 2);
+}
+
+#[test]
+fn an_install_asks_the_password_box_for_pacman_and_one_setup_only() {
+    let mut w = world(&[], true);
+    let bin = w.env.iter().find(|(k, _)| k == "PATH").unwrap().1.clone();
+    let calls = format!("{bin}/../calls");
+    let sudo = stub(&bin, "agora-sudo", &format!("printf '%s\n' \"$*\" >> {calls}"));
+    w.env.push(("AGORA_SUDO".into(), sudo));
+    w.env.push(("LABYRINTH_APPS".into(), APPS.into()));
+    let (rc, out, e) = run_apps(&w, &["install", "waydroid"]);
+    assert_eq!(rc, 0, "{out}{e}");
+    let asked = std::fs::read_to_string(&calls).unwrap();
+    assert_eq!(asked, format!("pacman -S --needed --noconfirm waydroid\n{APPS} setup waydroid\n"), "each line is one password box");
+}
+
+#[test]
 fn without_pacman_it_explains_instead_of_crashing() {
     let w = world(&[], false);
     let (rc, _, e1) = run_apps(&w, &["install", "obsidian"]);

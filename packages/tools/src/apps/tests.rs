@@ -104,3 +104,93 @@ fn weather_is_optional() {
         assert!(!m.presets.iter().find(|(n, _)| n == p).unwrap().1.contains(&"weather".to_string()), "{p}");
     }
 }
+
+fn plain_env() -> std::sync::MutexGuard<'static, ()> {
+    let g = env_lock();
+    for k in ["AGORA_SUDO", "LABYRINTH_SUDO", "LABYRINTH_APPS"] {
+        std::env::remove_var(k);
+    }
+    g
+}
+
+fn ids(v: &[&str]) -> Vec<String> {
+    v.iter().map(|s| s.to_string()).collect()
+}
+
+#[test]
+fn a_components_root_steps_are_one_setup_step_so_the_password_is_asked_once() {
+    let _g = plain_env();
+    let m = load_ok(&manifest_path());
+    let steps = plan_install(&ids(&["waydroid"]), &m, &[], &|_| true, false).unwrap();
+    assert_eq!(steps.len(), 2, "the packages, then one setup step: {steps:?}");
+    assert_eq!(steps[1].1, ids(&["sudo", "/usr/bin/labyrinth-apps", "setup", "waydroid"]));
+    let what = &steps[1].0;
+    assert!(what.contains("waydroid init") && what.contains("systemctl enable --now waydroid-container.service"), "{what}");
+    // a component with nothing to set up has no setup step
+    let steps = plan_install(&ids(&["obsidian"]), &m, &[], &|_| true, false).unwrap();
+    assert!(!steps.iter().any(|s| s.1.contains(&"setup".to_string())), "{steps:?}");
+}
+
+#[test]
+fn the_setup_is_the_components_commands_groups_and_services_run_as_root() {
+    let _g = plain_env();
+    let m = load_ok(&manifest_path());
+    let steps = plan_setup(&ids(&["razer", "waydroid"]), &m, "tester").unwrap();
+    let argvs: Vec<String> = steps.iter().map(|s| s.1.join(" ")).collect();
+    assert_eq!(
+        argvs,
+        [
+            "waydroid init",
+            "usermod -aG openrazer tester",
+            "systemctl enable --now input-remapper.service",
+            "systemctl enable --now waydroid-container.service",
+        ],
+        "in the old order (setup commands, groups, services), without sudo"
+    );
+    // without the user who asked (root's own shell) no one is added to a group
+    let steps = plan_setup(&ids(&["razer"]), &m, "").unwrap();
+    assert!(!steps.iter().any(|s| s.1[0] == "usermod"), "{steps:?}");
+}
+
+#[test]
+fn removing_undoes_the_setup_first_in_one_step() {
+    let _g = plain_env();
+    let m = load_ok(&manifest_path());
+    let steps = plan_remove(&ids(&["weather"]), &m, &ids(&["yggdrasil-weather"])).unwrap();
+    assert_eq!(steps.len(), 2, "{steps:?}");
+    assert_eq!(steps[0].1, ids(&["sudo", "/usr/bin/labyrinth-apps", "teardown", "weather"]));
+    assert_eq!(steps[1].1[..2], ids(&["sudo", "pacman"]));
+    let down = plan_teardown(&ids(&["weather"]), &m, &ids(&["yggdrasil-weather"])).unwrap();
+    assert_eq!(
+        down.iter().map(|s| s.1.join(" ")).collect::<Vec<_>>(),
+        ["systemctl --global disable yggdrasil-weather-record.timer yggdrasil-weather-nowcast.timer"]
+    );
+    assert!(plan_teardown(&ids(&["weather"]), &m, &[]).unwrap().is_empty(), "nothing installed, nothing to switch off");
+}
+
+#[test]
+fn the_setup_step_names_this_program_where_a_test_puts_it() {
+    let _g = plain_env();
+    let m = load_ok(&manifest_path());
+    std::env::set_var("LABYRINTH_APPS", "/x/labyrinth-apps");
+    std::env::set_var("AGORA_SUDO", "/usr/lib/agora/sudo");
+    let steps = plan_install(&ids(&["waydroid"]), &m, &ids(&["waydroid"]), &|_| true, false).unwrap();
+    std::env::remove_var("LABYRINTH_APPS");
+    std::env::remove_var("AGORA_SUDO");
+    assert_eq!(steps.len(), 1, "the package is there; only the setup is left: {steps:?}");
+    assert_eq!(steps[0].1, ids(&["/usr/lib/agora/sudo", "/x/labyrinth-apps", "setup", "waydroid"]));
+}
+
+#[test]
+fn the_user_who_asked_is_sudos_or_pkexecs() {
+    let _g = plain_env();
+    std::env::set_var("SUDO_USER", "tester");
+    std::env::set_var("PKEXEC_UID", "0");
+    assert_eq!(asking_user(), "tester");
+    std::env::remove_var("SUDO_USER");
+    assert_eq!(asking_user(), "root", "run through plain pkexec (an older sudo stand-in): its PKEXEC_UID");
+    std::env::set_var("PKEXEC_UID", "x");
+    assert_eq!(asking_user(), "");
+    std::env::remove_var("PKEXEC_UID");
+    assert_eq!(asking_user(), "", "root's own shell: no one");
+}

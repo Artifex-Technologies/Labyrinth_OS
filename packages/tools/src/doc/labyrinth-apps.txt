@@ -4,6 +4,9 @@ labyrinth-apps: install or remove Labyrinth's optional software.
   labyrinth-apps info ID
   labyrinth-apps install ID...        or  --preset NAME
   labyrinth-apps remove ID...
+  labyrinth-apps setup ID...          as root: a component's steps after its packages (its
+                                      setup commands, groups and services); install runs it
+  labyrinth-apps teardown ID...       as root: its services switched off; remove runs it first
   add --dry-run to print the commands without running anything
 
 Components are described in /usr/share/labyrinth/components.json. Packages come from

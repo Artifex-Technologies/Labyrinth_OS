@@ -104,7 +104,9 @@ A computer installed offline, or with a device's software switched off, is offer
 stays in one place. It looks at sign-in, when a USB device is plugged in, and when the computer comes online, and only offers
 when online. One notification names what is missing for this computer's devices:
 
-- **Install**: `labyrinth-apps install ...` through Agora's password box;
+- **Install**: `labyrinth-apps install ...` through Agora's password box, which asks once (once more when something is built
+  from the AUR): a component's setup commands, groups and services are one step, `labyrinth-apps setup ID...`, run by Agora's
+  root helper;
 - **Don't ask again**;
 - closing it means not now (asked again next session).
 

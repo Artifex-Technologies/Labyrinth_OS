@@ -1,8 +1,13 @@
 //! labyrinth-apps: installs or removes Labyrinth's optional software (list, info, install ID... / --preset NAME, remove ID...,
 //! --dry-run), from /usr/share/labyrinth/components.json: pacman packages, AUR packages through yay, and builds of the PKGBUILDs
-//! in /usr/share/labyrinth/pkgbuilds. Agora (the app store) calls it, with AGORA_SUDO for its password box. The Python script
-//! of the same name with the same commands, plan, output, environment (LABYRINTH_COMPONENTS, LABYRINTH_PKGBUILDS,
-//! LABYRINTH_PACMAN_SYNC, AGORA_SUDO, LABYRINTH_SUDO) and exit codes; its help text is src/doc/labyrinth-apps.txt.
+//! in /usr/share/labyrinth/pkgbuilds. Agora (the app store) calls it, with AGORA_SUDO for its password box. A component's root
+//! steps beside its packages (setup commands, groups, services) are one step, `labyrinth-apps setup ID...` (and `teardown ID...`
+//! before a removal), which Agora's sudo stand-in runs through its root helper, so an install asks for the password once (and
+//! once more for a yay run).
+//!
+//! It replaced the Python script of the same name: the same commands, plan, output, environment (LABYRINTH_COMPONENTS,
+//! LABYRINTH_PKGBUILDS, LABYRINTH_PACMAN_SYNC, AGORA_SUDO, LABYRINTH_SUDO) and exit codes, until setup and teardown were added
+//! (2026-11-27; LABYRINTH_APPS names this program for the tests). Its help text is src/doc/labyrinth-apps.txt.
 //!
 //! Not 1:1: each "==>" line is written as its step starts (the script's output was block-buffered when it was not a terminal, so
 //! in Agora or a log the lines came after the steps' own output); for a components.json that is not JSON the parser's own words
@@ -267,26 +272,74 @@ pub fn plan_install(chosen: &[String], m: &Manifest, installed: &[String], in_re
     for pb in built_here {
         steps.push((format!("build and install {pb} from its PKGBUILD"), s(&["makepkg", "-si"]), Some(pb)));
     }
+    let user = match py::env("SUDO_USER") {
+        Some(u) if !u.is_empty() => u,
+        _ => py::env_or("USER", ""),
+    };
+    let mut set: Vec<String> = vec![];
+    for i in chosen {
+        if !plan_setup(std::slice::from_ref(i), m, &user)?.is_empty() {
+            set.push(i.clone());
+        }
+    }
+    if !set.is_empty() {
+        let what: Vec<String> = plan_setup(&set, m, &user)?.iter().map(|s| s.1.join(" ")).collect();
+        let mut cmd = vec![this_program(), "setup".into()];
+        cmd.extend(set.iter().cloned());
+        steps.push((format!("set up {} as administrator: {}", names(&set, m)?, what.join("; ")), sudo(cmd), None));
+    }
+    Ok(steps)
+}
+
+/// The user who asked for a setup run as root: sudo's (SUDO_USER, which Agora's root helper sets too), else pkexec's
+/// (PKEXEC_UID: an older sudo stand-in ran it through plain pkexec); none in root's own shell.
+pub fn asking_user() -> String {
+    if let Some(u) = py::env("SUDO_USER").filter(|u| !u.is_empty()) {
+        return u;
+    }
+    py::env("PKEXEC_UID")
+        .and_then(|u| u.parse::<u32>().ok())
+        .and_then(crate::agent::account_name)
+        .and_then(|n| String::from_utf8(n).ok())
+        .unwrap_or_default()
+}
+
+/// This program, as the setup and teardown steps name it (LABYRINTH_APPS: a test's copy).
+fn this_program() -> String {
+    py::env_get("LABYRINTH_APPS", "/usr/bin/labyrinth-apps")
+}
+
+/// The components' names, for a step's line.
+fn names(ids: &[String], m: &Manifest) -> R<String> {
+    let mut v: Vec<String> = vec![];
+    for i in ids {
+        v.push(name_of(m.get(i).ok_or_else(|| Crash(format!("KeyError: {}", py::repr(i))))?)?);
+    }
+    Ok(v.join(", "))
+}
+
+/// What `setup ID...` runs as root once the packages are in: the components' setup commands, the user who asked added to their
+/// groups (none without one), their services enabled, in that order. One step of install runs it, so Agora's root helper asks
+/// for the password once for all of them.
+pub fn plan_setup(chosen: &[String], m: &Manifest, user: &str) -> R<Vec<Step>> {
+    let comp = |i: &str| m.get(i).ok_or_else(|| Crash(format!("KeyError: {}", py::repr(i))));
+    let mut steps: Vec<Step> = vec![];
     for i in chosen {
         let c = comp(i)?;
         for cmd in iter_of(c.get("after_install"))? {
             if let Value::Array(a) = &cmd {
                 if !a.is_empty() && a.iter().all(|x| x.is_string()) {
                     let argv: Vec<String> = a.iter().map(|x| x.as_str().unwrap_or("").to_string()).collect();
-                    steps.push((format!("set up {}: {}", name_of(c)?, argv.join(" ")), sudo(argv), None));
+                    steps.push((format!("set up {}: {}", name_of(c)?, argv.join(" ")), argv, None));
                 }
             }
         }
     }
-    let user = match py::env("SUDO_USER") {
-        Some(u) if !u.is_empty() => u,
-        _ => py::env_or("USER", ""),
-    };
     for i in chosen {
         let groups = texts(comp(i)?.get("add_groups"))?;
         if !groups.is_empty() && !user.is_empty() {
             let desc = format!("let {user} use the device ({} group; log out and in again)", groups.join(", "));
-            steps.push((desc, sudo(s(&["usermod", "-aG", &groups.join(","), &user])), None));
+            steps.push((desc, s(&["usermod", "-aG", &groups.join(","), user]), None));
         }
     }
     for i in chosen {
@@ -295,13 +348,39 @@ pub fn plan_install(chosen: &[String], m: &Manifest, installed: &[String], in_re
         if !units.is_empty() {
             let mut cmd = s(&["systemctl", "--global", "enable"]);
             cmd.extend(units.iter().cloned());
-            steps.push((format!("enable {} for every user", units.join(", ")), sudo(cmd), None));
+            steps.push((format!("enable {} for every user", units.join(", ")), cmd, None));
         }
         let units = texts(c.get("enable_system"))?;
         if !units.is_empty() {
             let mut cmd = s(&["systemctl", "enable", "--now"]);
             cmd.extend(units.iter().cloned());
-            steps.push((format!("start {}", units.join(", ")), sudo(cmd), None));
+            steps.push((format!("start {}", units.join(", ")), cmd, None));
+        }
+    }
+    Ok(steps)
+}
+
+/// What `teardown ID...` runs as root before the packages go: the services of the components with a package installed,
+/// disabled (the system's also stopped).
+pub fn plan_teardown(chosen: &[String], m: &Manifest, installed: &[String]) -> R<Vec<Step>> {
+    let comp = |i: &str| m.get(i).ok_or_else(|| Crash(format!("KeyError: {}", py::repr(i))));
+    let mut steps: Vec<Step> = vec![];
+    for i in chosen {
+        let c = comp(i)?;
+        if !all_packages(c)?.iter().any(|p| installed.contains(p)) {
+            continue;
+        }
+        let units = texts(c.get("enable_global"))?;
+        if !units.is_empty() {
+            let mut cmd = s(&["systemctl", "--global", "disable"]);
+            cmd.extend(units.iter().cloned());
+            steps.push((format!("disable {}", units.join(", ")), cmd, None));
+        }
+        let units = texts(c.get("enable_system"))?;
+        if !units.is_empty() {
+            let mut cmd = s(&["systemctl", "disable", "--now"]);
+            cmd.extend(units.iter().cloned());
+            steps.push((format!("stop {}", units.join(", ")), cmd, None));
         }
     }
     Ok(steps)
@@ -318,21 +397,17 @@ pub fn plan_remove(chosen: &[String], m: &Manifest, installed: &[String]) -> R<V
         }
     }
     let mut steps: Vec<Step> = vec![];
+    let mut down: Vec<String> = vec![];
     for i in chosen {
-        let c = comp(i)?;
-        let any = all_packages(c)?.iter().any(|p| installed.contains(p));
-        let units = texts(c.get("enable_global"))?;
-        if !units.is_empty() && any {
-            let mut cmd = s(&["systemctl", "--global", "disable"]);
-            cmd.extend(units.iter().cloned());
-            steps.push((format!("disable {}", units.join(", ")), sudo(cmd), None));
+        if !plan_teardown(std::slice::from_ref(i), m, installed)?.is_empty() {
+            down.push(i.clone());
         }
-        let units = texts(c.get("enable_system"))?;
-        if !units.is_empty() && any {
-            let mut cmd = s(&["systemctl", "disable", "--now"]);
-            cmd.extend(units.iter().cloned());
-            steps.push((format!("stop {}", units.join(", ")), sudo(cmd), None));
-        }
+    }
+    if !down.is_empty() {
+        let what: Vec<String> = plan_teardown(&down, m, installed)?.iter().map(|s| s.1.join(" ")).collect();
+        let mut cmd = vec![this_program(), "teardown".into()];
+        cmd.extend(down.iter().cloned());
+        steps.push((format!("switch off {} as administrator: {}", names(&down, m)?, what.join("; ")), sudo(cmd), None));
     }
     if !pk.is_empty() {
         let mut cmd = s(&["pacman", "-Rs"]);
@@ -442,7 +517,7 @@ fn run(argv: &[String], installed: Option<Vec<String>>) -> R<i32> {
             match pacman_installed()? {
                 Some(i) => i,
                 None => {
-                    if (cmd == "install" || cmd == "remove") && !dry {
+                    if ["install", "remove", "setup", "teardown"].contains(&cmd) && !dry {
                         eprintln!("error: pacman not found; labyrinth-apps works on Arch-based systems only (use --dry-run to see what it would do)");
                         return Ok(2);
                     }
@@ -495,6 +570,42 @@ fn run(argv: &[String], installed: Option<Vec<String>>) -> R<i32> {
             println!("after install: {n}");
         }
         return Ok(0);
+    }
+    if cmd == "setup" || cmd == "teardown" {
+        if rest.is_empty() {
+            eprintln!("error: nothing selected");
+            return Ok(2);
+        }
+        let mut chosen: Vec<String> = vec![];
+        for i in rest {
+            if m.get(i).is_none() {
+                eprintln!("error: unknown component {}", py::repr(i));
+                return Ok(2);
+            }
+            if !chosen.contains(i) {
+                chosen.push(i.clone());
+            }
+        }
+        if py::geteuid() != 0 && !dry {
+            eprintln!("error: {cmd} is the administrator's part of install and remove: run it with sudo (or see it with --dry-run)");
+            return Ok(2);
+        }
+        let steps = if cmd == "setup" {
+            for i in &chosen {
+                if state(m.get(i).unwrap(), &installed)? == "not installed" {
+                    eprintln!("error: {} is not installed; nothing set up", py::repr(i));
+                    return Ok(2);
+                }
+            }
+            plan_setup(&chosen, &m, &asking_user())?
+        } else {
+            plan_teardown(&chosen, &m, &installed)?
+        };
+        if steps.is_empty() {
+            println!("nothing to do");
+            return Ok(0);
+        }
+        return run_steps(&steps, dry);
     }
     if cmd == "install" || cmd == "remove" {
         let mut ids: Vec<String> = rest.to_vec();

@@ -206,7 +206,10 @@ reaches the network.
   (it stopped the script).
 - `labyrinth-apps` writes each "==>" line as its step starts (the script's output was block-buffered when not a terminal, so in
   Agora or a log those lines came after the steps' own output); for a components.json that is not JSON the parser's own words after
-  "cannot read FILE: " differ; component ids that are not text are refused (exit code 1).
+  "cannot read FILE: " differ; component ids that are not text are refused (exit code 1). Since 2026-11-27 it also differs on
+  purpose: a component's root steps beside its packages (setup commands, groups, services) are one step, `labyrinth-apps setup
+  ID...` (before a removal `teardown ID...`), which Agora's sudo stand-in sends through its root helper, so an install from Agora
+  asks for the password once (once more for a yay run); the script ran each of them through sudo.
 - JSON files with numbers beyond 64 bits keep them as floating point (Python kept the exact integer).
 - `labyrinth-selfcheck`, `ipconfig`: a tool's output that is not UTF-8 has its bad bytes replaced (the scripts stopped); JSON from
   hyprctl, ip or Heimdall's config with NaN, Infinity or a lone surrogate counts as not JSON (Python read it); kernel module
