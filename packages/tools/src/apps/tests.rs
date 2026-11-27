@@ -117,13 +117,20 @@ fn ids(v: &[&str]) -> Vec<String> {
     v.iter().map(|s| s.to_string()).collect()
 }
 
+/// A root step as planned: behind `password_box` for a user, as it is for root (CI's container runs the tests as root).
+fn root_step(password_box: &str, v: &[&str]) -> Vec<String> {
+    let mut out = if py::geteuid() == 0 { vec![] } else { ids(&[password_box]) };
+    out.extend(ids(v));
+    out
+}
+
 #[test]
 fn a_components_root_steps_are_one_setup_step_so_the_password_is_asked_once() {
     let _g = plain_env();
     let m = load_ok(&manifest_path());
     let steps = plan_install(&ids(&["waydroid"]), &m, &[], &|_| true, false).unwrap();
     assert_eq!(steps.len(), 2, "the packages, then one setup step: {steps:?}");
-    assert_eq!(steps[1].1, ids(&["sudo", "/usr/bin/labyrinth-apps", "setup", "waydroid"]));
+    assert_eq!(steps[1].1, root_step("sudo", &["/usr/bin/labyrinth-apps", "setup", "waydroid"]));
     let what = &steps[1].0;
     assert!(what.contains("waydroid init") && what.contains("systemctl enable --now waydroid-container.service"), "{what}");
     // a component with nothing to set up has no setup step
@@ -158,8 +165,8 @@ fn removing_undoes_the_setup_first_in_one_step() {
     let m = load_ok(&manifest_path());
     let steps = plan_remove(&ids(&["weather"]), &m, &ids(&["yggdrasil-weather"])).unwrap();
     assert_eq!(steps.len(), 2, "{steps:?}");
-    assert_eq!(steps[0].1, ids(&["sudo", "/usr/bin/labyrinth-apps", "teardown", "weather"]));
-    assert_eq!(steps[1].1[..2], ids(&["sudo", "pacman"]));
+    assert_eq!(steps[0].1, root_step("sudo", &["/usr/bin/labyrinth-apps", "teardown", "weather"]));
+    assert!(steps[1].1.contains(&"pacman".to_string()) && steps[1].1.contains(&"-Rs".to_string()), "{steps:?}");
     let down = plan_teardown(&ids(&["weather"]), &m, &ids(&["yggdrasil-weather"])).unwrap();
     assert_eq!(
         down.iter().map(|s| s.1.join(" ")).collect::<Vec<_>>(),
@@ -178,7 +185,7 @@ fn the_setup_step_names_this_program_where_a_test_puts_it() {
     std::env::remove_var("LABYRINTH_APPS");
     std::env::remove_var("AGORA_SUDO");
     assert_eq!(steps.len(), 1, "the package is there; only the setup is left: {steps:?}");
-    assert_eq!(steps[0].1, ids(&["/usr/lib/agora/sudo", "/x/labyrinth-apps", "setup", "waydroid"]));
+    assert_eq!(steps[0].1, root_step("/usr/lib/agora/sudo", &["/x/labyrinth-apps", "setup", "waydroid"]));
 }
 
 #[test]

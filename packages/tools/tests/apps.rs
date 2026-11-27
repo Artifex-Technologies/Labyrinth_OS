@@ -139,9 +139,12 @@ fn weather_enables_its_timer_and_removing_it_disables_the_timer_first() {
 #[test]
 fn setup_and_teardown_are_the_administrators_part_of_install_and_remove() {
     let w = world(&["yggdrasil-weather"], true);
-    let (rc, _, e) = run_apps(&w, &["setup", "weather"]);
-    assert_eq!(rc, 2, "not run half-way as a user");
-    assert!(e.contains("administrator"), "{e}");
+    // SAFETY: geteuid has no preconditions
+    if unsafe { libc::geteuid() } != 0 {
+        let (rc, _, e) = run_apps(&w, &["setup", "weather"]);
+        assert_eq!(rc, 2, "not run half-way as a user");
+        assert!(e.contains("administrator"), "{e}");
+    }
     let (rc, out, _) = run_apps(&w, &["setup", "weather", "--dry-run"]);
     assert_eq!(rc, 0);
     assert!(out.contains("systemctl --global enable yggdrasil-weather-record.timer yggdrasil-weather-nowcast.timer"), "{out}");
@@ -159,6 +162,11 @@ fn setup_and_teardown_are_the_administrators_part_of_install_and_remove() {
 
 #[test]
 fn an_install_asks_the_password_box_for_pacman_and_one_setup_only() {
+    // SAFETY: geteuid has no preconditions
+    if unsafe { libc::geteuid() } == 0 {
+        eprintln!("skipped: as root nothing goes through a password box (CI's container)");
+        return;
+    }
     let mut w = world(&[], true);
     let bin = w.env.iter().find(|(k, _)| k == "PATH").unwrap().1.clone();
     let calls = format!("{bin}/../calls");
